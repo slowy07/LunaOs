@@ -23,7 +23,7 @@ STATIC_LUNA_bit_mode equ 32
 STATIC_LUNA_address equ 0x7C00
 STATIC_LUNA_stack equ 0x8000
 STATIC_LUNA_magic equ 0xAA55
-STATIC_LUNA_memory_address equ 0x1000
+STATIC_LUNA_kernel_address equ 0x1000
 STATIC_LUNA_memory_map equ 0x1000
 STATIC_LUNA_multiboot_header equ 0x0500
 
@@ -42,7 +42,7 @@ STATIC_SEGMENT_to_pointer equ 4
 
 STATIC_PML4_TABLE_address equ 0x0000A000
 STATIC_PAGE_SIZE_4KiB_byte equ 0x1000
-STATIC_PAGE_SIZE_4MiB_byte equ 0x00200000
+STATIC_PAGE_SIZE_2MiB_byte equ 0x00200000
 
 STATIC_PAGE_FLAG_available equ 00000001b
 STATIC_PAGE_FLAG_writeable equ 00000010b

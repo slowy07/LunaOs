@@ -29,118 +29,18 @@ kernel_memory_map_address_end dq STATIC_EMPTY
 
 kernel_memory_lock_semaphore db STATIC_FALSE
 
-kernel_memory_alloc_page_internal:
-  push rsi
 
-  mov rsi, qword [kernel_memory_map_address]
-  
-  call kernel_memory_lock
-  
-  test rbp, rbp
-  jz .unreserved
-  
-  dec rbp
-
-  inc qword [kernel_page_free_count]
-
-  dec qword [kernel_page_reserved_count]
-  jns .unreserved
-
-  xchg bx, bx
-
-  nop
-
-  jmp $
-
-.unreserved:
-  call kernel_memory_alloc_page
-  jc .error
-
-  mov byte [kernel_memory_lock_semaphore], STATIC_FALSE
-
-  add rsi, KERNEL_BASE_address
-  
-.error:
-  pop rsi
-  ret
-
-kernel_memory_alloc_space_internal:
-  push rsi
-
-  mov rsi, qword [kernel_memory_map_address]
-  
-  call kernel_memory_lock
-  call kernel_memory_alloc_space
-  jc .error
-
-  sub qword [kernel_page_free_count], rcx
-
-  mov byte [kernel_memory_lock_semaphore], STATIC_FALSE
-
-  add rdi, KERNEL_BASE_address
-
-.error:
-  pop rsi
-  ret
-
-kernel_memory_lock:
-  macro_close kernel_memory_lock_semaphore, 0
-  ret
-
-kernel_memory_alloc_page:
-  push rcx
-  push rsi
-
-  cmp qword [kernel_page_free_count], STATIC_EMPTY
-  je .error
-
-  dec qword [kernel_page_free_count]
-
-  mov rcx, STATIC_STRUCTURE_BLOCK.link << STATIC_MULTIPLE_BY_8_shift
-  
-  xor edi, edi
-
-.search:
-  bt qword [rsi], rdi
-  jc .found
-
-  inc rdi
-
-  cmp rdi, rcx
-  jne .search
-
-  xchg bx, bx
-
-  nop
-
-  jmp $
-
-.found:
-  btr qword [rsi], rdi
-
-  shl rdi, STATIC_MULTIPLE_BY_PAGE_shift
-
-  jmp .end
-
-.error:
-  stc
-
-.end:
-  pop rsi
-  pop rcx
-
-  ret
-
-kernel_memory_alloc_space:
+kernel_memory_alloc:
   push rax
-  push rbx
   push rdx
   push rsi
+  push rbp
   push rcx
 
   mov rax, STATIC_MAX_unsigned
 
-  mov rcx, STATIC_STRUCTURE_BLOCK.link << STATIC_MULTIPLE_BY_8_shift
+  mov rcx, qword [kernel_page_total_count]
+  mov rsi, qword [kernel_memory_map_address]
 
 .reload:
   xor edx, edx
@@ -179,17 +79,31 @@ kernel_memory_alloc_space:
   mov rax, rbx
 
 .lock:
-  btr qword [rsi], rbx
+  btr qword [rsi], rax
 
-  inc rbx
+  test rbp, rbp
+  jz .empty
+
+  dec rbp
+  dec dword [kernel_page_reserved_count]
+
+  jmp .next
+
+.empty:
+  dec qword [kernel_page_free_count]
+
+.next:
+  inc rax
 
   dec rdx
   jnz .lock
 
-  mov rdi, rax
+  mov rdi, rbx
   shl rdi, STATIC_MULTIPLE_BY_PAGE_shift
   
+  add rdi, KERNEL_BASE_address
 .end:
+  mov byte [kernel_memory_lock_semaphore], STATIC_FALSE
   pop rcx
   pop rdx
   pop rbx

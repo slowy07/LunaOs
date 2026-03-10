@@ -56,8 +56,6 @@ kernel_init_memory:
   call kernel_panic
 
 .found:
-  xchg bx, bx
-  
   mov rcx, qword [rbx + KERNEL_INIT_MEMORY_MULTIBOOT_STRUCTURE_MEMORY_MAP.limit]
   shr rcx, STATIC_DIVIDE_BY_PAGE_shift
   
@@ -88,4 +86,4 @@ kernel_init_memory:
   shr rdi, STATIC_DIVIDE_BY_PAGE_shift
 
   mov rcx, rdi
-  call kernel_memory_alloc_space_internal
+  call kernel_memory_alloc

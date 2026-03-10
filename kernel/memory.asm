@@ -83,6 +83,10 @@ kernel_memory_alloc_space_internal:
   pop rsi
   ret
 
+kernel_memory_lock:
+  macro_close kernel_memory_lock_semaphore, 0
+  ret
+
 kernel_memory_alloc_page:
   push rcx
   push rsi
@@ -127,7 +131,7 @@ kernel_memory_alloc_page:
 
   ret
 
-kernel_memory_alloc_page:
+kernel_memory_alloc_space:
   push rax
   push rbx
   push rdx
@@ -135,15 +139,14 @@ kernel_memory_alloc_page:
   push rcx
 
   mov rax, STATIC_MAX_unsigned
-  
+
   mov rcx, STATIC_STRUCTURE_BLOCK.link << STATIC_MULTIPLE_BY_8_shift
-  
+
 .reload:
   xor edx, edx
 
 .search:
   inc rax
-
   cmp rax, rcx
   je .error
 
@@ -154,7 +157,6 @@ kernel_memory_alloc_page:
 
 .check:
   inc rax
-  
   inc rdx
 
   cmp rdx, qword [rsp]
@@ -162,7 +164,7 @@ kernel_memory_alloc_page:
 
   cmp rax, rcx
   je .error
-  
+
   bt qword [rsi], rax
   jc .check
 
@@ -170,6 +172,7 @@ kernel_memory_alloc_page:
 
 .error:
   stc
+
   jmp .end
 
 .found:
@@ -177,8 +180,9 @@ kernel_memory_alloc_page:
 
 .lock:
   btr qword [rsi], rbx
-  
+
   inc rbx
+
   dec rdx
   jnz .lock
 
@@ -187,7 +191,6 @@ kernel_memory_alloc_page:
   
 .end:
   pop rcx
-  pop rsi
   pop rdx
   pop rbx
   pop rax

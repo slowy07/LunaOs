@@ -35,6 +35,7 @@ KERNEL_PAGE_PML1_SIZE_byte equ KERNEL_PAGE_RECORDS_amount * KERNEL_PAGE_SIZE_byt
 
 kernel_page_pml4_address dq STATIC_EMPTY
 kernel_page_total_count dq STATIC_EMPTY
+kernel_page_free_count dq STATIC_EMPTY
 kernel_page_reserved_count dq STATIC_EMPTY
 kernel_page_paged_count dq STATIC_EMPTY
 
@@ -65,7 +66,7 @@ kernel_page_drain:
 kernel_page_drain_few:
   push rcx
 
-  shl rcx, KENREL_PAGE_SIZE_shift
+  shl rcx, KERNEL_PAGE_SIZE_shift
   call kernel_page_drain.proceed
   
   pop rcx

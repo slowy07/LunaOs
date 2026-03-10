@@ -27,7 +27,7 @@ struc KERNEL_INIT_MEMORY_MULTIBOOT_HEADER
   .mmap_addr resb 4
 endstruc
 
-stric KERNEL_INIT_MEMORY_MULTIBOOT_STRUCTURE_MEMORY_MAP
+struc KERNEL_INIT_MEMORY_MULTIBOOT_STRUCTURE_MEMORY_MAP
   .size resb 4
   .address resb 8
   .limit resb 8
@@ -85,7 +85,7 @@ kernel_init_memory:
 
   call library_page_align_up
   sub rdi, KERNEL_BASE_address
-  shr rd, STATIC_DIVIDE_BY_PAGE_shift
+  shr rdi, STATIC_DIVIDE_BY_PAGE_shift
 
   mov rcx, rdi
   call kernel_memory_alloc_space_internal

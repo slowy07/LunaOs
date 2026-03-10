@@ -18,11 +18,24 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-kernel_init_string_error_memory db "Init Error: Memory map error"
-kernel_init_string_error_memory_end:
+HEADER_MAGIC equ 0x1BADB002
 
-kernel_init_video_string_welcome db "welcome cik", STATIC_ASCII_NEW_LINE
-kernel_init_video_string_welcome_end:
+HEADER_FLAG_align equ 1 << 0
+HEADER_FLAG_memory_map equ 1 << 1
+HEADER_FLAG_header equ 1 << 16
+HEADER_FLAG_default equ HEADER_FLAG_align | HEADER_FLAG_memory_map | HEADER_FLAG_header
 
-kernel_init_memory_string_error db "Error: memory map got error"
-kernel_init_memory_string_error_end:
+HEADER_CHECKSUM equ -(HEADER_FLAG_default + HEADER_MAGIC)
+
+align 0x04
+header:
+  dd HEADER_MAGIC
+  dd HEADER_FLAG_default
+  dd HEADER_CHECKSUM
+  dd header
+  dd init
+  dd STATIC_EMPTY
+  dd STATIC_EMPTY
+  dd init
+align 0x10
+header_end:

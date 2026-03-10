@@ -85,5 +85,3 @@ kernel_init_header_gdt_64bit:
   dw kernel_init_table_gdt_64bit_end - kernel_init_table_gdt_64bit - 0x01
   dd kernel_init_table_gdt_64bit
 
-[BITS 64]
-kernel_init_long_mode:

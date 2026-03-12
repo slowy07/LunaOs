@@ -29,7 +29,6 @@ kernel_memory_map_address_end dq STATIC_EMPTY
 
 kernel_memory_lock_semaphore db STATIC_FALSE
 
-
 kernel_memory_alloc:
   push rax
   push rdx
@@ -40,6 +39,7 @@ kernel_memory_alloc:
   mov rax, STATIC_MAX_unsigned
 
   mov rcx, qword [kernel_page_total_count]
+
   mov rsi, qword [kernel_memory_map_address]
 
 .reload:
@@ -47,6 +47,7 @@ kernel_memory_alloc:
 
 .search:
   inc rax
+
   cmp rax, rcx
   je .error
 
@@ -57,8 +58,9 @@ kernel_memory_alloc:
 
 .check:
   inc rax
-  inc rdx
 
+  inc rdx
+  
   cmp rdx, qword [rsp]
   je .found
 
@@ -100,13 +102,21 @@ kernel_memory_alloc:
 
   mov rdi, rbx
   shl rdi, STATIC_MULTIPLE_BY_PAGE_shift
-  
+
   add rdi, KERNEL_BASE_address
+
 .end:
   mov byte [kernel_memory_lock_semaphore], STATIC_FALSE
+
   pop rcx
+  pop rsi
   pop rdx
   pop rbx
   pop rax
+
+  ret
+
+kernel_memory_lock:
+  macro_close kernel_memory_lock_semaphore, 0
 
   ret

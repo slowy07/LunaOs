@@ -59,21 +59,11 @@ kernel_init_memory:
   mov rcx, qword [rbx + KERNEL_INIT_MEMORY_MULTIBOOT_STRUCTURE_MEMORY_MAP.limit]
   shr rcx, STATIC_DIVIDE_BY_PAGE_shift
   
-  mov qword [kernel_page_total_count], rcx
-  mov qword [kernel_page_free_count], rcx
-
-  mov rdi, kernel_end
-  call library_page_align_up
-  
-  mov qword [kernel_memory_map_address], rdi
-
-  shr rcx, STATIC_DIVIDE_BY_8_shift
-
   push rcx
 
   call library_page_from_size
   call kernel_page_drain_few
-
+  
   pop rcx
 
   mov al, STATIC_MAX_unsigned

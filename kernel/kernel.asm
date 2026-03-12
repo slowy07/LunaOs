@@ -22,6 +22,7 @@
 %include "kernel/config.asm"
 
 [BITS 32]
+
 [ORG KERNEL_BASE_address]
 
 init:
@@ -33,10 +34,13 @@ kernel:
   jmp $
 
   %include "kernel/macro/close.asm"
+  
+  ; kernel root
   %include "kernel/panic.asm"
   %include "kernel/page.asm"
   %include "kernel/memory.asm"
   %include "kernel/video.asm"
+
+  ; library
   %include "library/page_align_up.asm"
   %include "library/page_from_size.asm"
-kernel_end:

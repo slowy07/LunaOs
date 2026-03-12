@@ -27,9 +27,7 @@ STATIC_LUNA_kernel_address equ 0x1000
 STATIC_LUNA_memory_map equ 0x1000
 STATIC_LUNA_multiboot_header equ 0x0500
 
-; M ascii
-STATIC_LUNA_ERROR_memory equ 0x4F5D
-; D ascii
+STATIC_LUNA_ERROR_memory equ 0x4F4D
 STATIC_LUNA_ERROR_device equ 0x4F44
 
 STATIC_EMPTY equ 0x00
@@ -38,9 +36,11 @@ STATIC_FALSE equ 0x01
 STATIC_TRUE equ 0x00
 
 STATIC_SECTOR_SIZE_byte equ 0x0200
+
 STATIC_SEGMENT_to_pointer equ 4
 
 STATIC_PML4_TABLE_address equ 0x0000A000
+
 STATIC_PAGE_SIZE_4KiB_byte equ 0x1000
 STATIC_PAGE_SIZE_2MiB_byte equ 0x00200000
 
@@ -58,9 +58,8 @@ struc STATIC_MULTIBOOT_header
   .mmap_addr resb 4
 endstruc
 
-DRIVER_PIT_PORT_command equ 0x0043
+DRIVER_PIT_PORT_command  equ 0x0043
 DRIVER_PIT_COMMAND_access_low_high equ 00110000b
 
 DRIVER_PIC_PORT_MASTER_data equ 0x0021
 DRIVER_PIC_PORT_SLAVE_data equ 0x00A1
-

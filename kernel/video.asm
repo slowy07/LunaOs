@@ -26,12 +26,6 @@ KERNEL_VIDEO_CHAR_SIZE_byte equ 0x02
 KERNEL_VIDEO_LINE_SIZE_byte equ KERNEL_VIDEO_WIDTH_char * KERNEL_VIDEO_CHAR_SIZE_byte
 KERNEL_VIDEO_SIZE_byte equ KERNEL_VIDEO_LINE_SIZE_byte * KERNEL_VIDEO_HEIGHT_char
 
-kernel_video_width dq KERNEL_VIDEO_WIDTH_char
-kernel_video_height dq KERNEL_VIDEO_HEIGHT_char
-kernel_video_char_size_byte dq KERNEL_VIDEO_CHAR_SIZE_byte
-kernel_video_line_size_byte dq KERNEL_VIDEO_LINE_SIZE_byte
-kernel_video_size_byte dq KERNEL_VIDEO_LINE_SIZE_byte * KERNEL_VIDEO_HEIGHT_char
-
 kernel_video_pointer dq KERNEL_VIDEO_BASE_address
 kernel_video_cursor dd STATIC_EMPTY
                     dd STATIC_EMPTY
@@ -64,7 +58,7 @@ kernel_video_cursor_set:
   mov cx, ax
 
   mov al, 0x0F
-  mov dx, 0x03D4
+  mov dx, 0x3D4
   out dx, al
 
   inc dx
@@ -102,7 +96,7 @@ kernel_video_string:
 
   mov ebx, dword [kernel_video_cursor]
   mov edx, dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]
-  
+
 .loop:
   lodsb
 
@@ -179,18 +173,18 @@ kernel_video_char:
   mov eax, ebx
   shl eax, STATIC_MULTIPLE_BY_2_shift
   sub rdi, rax
-  xor ebx, eax
+  xor ebx, ebx
 
   inc edx
   add rdi, KERNEL_VIDEO_LINE_SIZE_byte
-
+  
   pop rax
 
   jmp .continue
 
 .backspace:
   xchg bx, bx
-  
+
   test ebx, ebx
   jz .begin
 
@@ -210,10 +204,7 @@ kernel_video_char:
   sub rdi, KERNEL_VIDEO_CHAR_SIZE_byte
 
   mov word [rdi], 0x0720
-  
+
   jmp .continue
 
 kernel_video_scroll:
-
-
-

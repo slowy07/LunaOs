@@ -27,4 +27,3 @@
 kernel_init_long_mode:
   %include "kernel/init/video.asm"
   %include "kernel/init/memory.asm"
-  %include "kernel/init/acpi.asm"

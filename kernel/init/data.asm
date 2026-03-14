@@ -18,11 +18,11 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-kernel_init_string_video_welcome db "welcome cik", STATIC_ASCII_NEW_LINE
-kernel_init_string_video_welcome_end:
+kernel_init_video_string_welcome db "welcome cik", STATIC_ASCII_NEW_LINE
+kernel_init_video_string_welcome_end:
 
-kernel_init_string_error_memory db "Error: memory map error"
-kernel_init_string_error_memory_end:
+kernel_init_memory_string_error db "Error: memory map error"
+kernel_init_memory_string_error_end:
 
 kernel_init_string_error_acpi db "Error: ACPI table not found"
 kernel_init_string_error_acpi_end:

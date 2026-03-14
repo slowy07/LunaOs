@@ -18,32 +18,10 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-%include "config.asm"
-%include "kernel/config.asm"
 
-[BITS 32]
-
-[ORG KERNEL_BASE_address]
-
-init:
-  %include "kernel/init.asm"
-
-clean:
-
-kernel:
-  jmp $
-
-  %include "kernel/macro/close.asm"
-  %include "kernel/macro/apic.asm"
-  
-  ; kernel root
-  %include "kernel/panic.asm"
-  %include "kernel/page.asm"
-  %include "kernel/memory.asm"
-  %include "kernel/video.asm"
-  %include "kernel/apic.asm"
-  %include "kernel/io_apic.asm"
-
-  ; library
-  %include "library/page_align_up.asm"
-  %include "library/page_from_size.asm"
+%MACRO macro_apic_id_get 0
+  mov rax, qword [kernel_apic_base_address]
+  mov dword [rax + KERNEL_APIC_TP_register], STATIC_EMPTY
+  mov eax, dword [rax + KERNEL_APIC_ID_register]
+  shr eax, 24
+%ENDMACRO

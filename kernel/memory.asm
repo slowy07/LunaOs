@@ -29,8 +29,19 @@ kernel_memory_map_address_end dq STATIC_EMPTY
 
 kernel_memory_lock_semaphore db STATIC_FALSE
 
+kernel_memory_alloc_page:
+  push rcx
+
+  mov ecx, 0x01
+  call kernel_memory_alloc
+
+  pop rcx
+
+  ret
+
 kernel_memory_alloc:
   push rax
+  push rbx
   push rdx
   push rsi
   push rbp
@@ -109,6 +120,7 @@ kernel_memory_alloc:
   mov byte [kernel_memory_lock_semaphore], STATIC_FALSE
 
   pop rcx
+  pop rbp
   pop rsi
   pop rdx
   pop rbx

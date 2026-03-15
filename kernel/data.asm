@@ -18,33 +18,22 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-kernel_init_video_string_welcome db "welcome cik", STATIC_ASCII_NEW_LINE
-kernel_init_video_string_welcome_end:
+align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+kernel_gdt_header dw KERNEL_PAGE_SIZE_byte
+                  dq STATIC_EMPTY
 
-kernel_init_memory_string_error db "Error: memory map error"
-kernel_init_memory_string_error_end:
+align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+kernel_gdt_tss_bsp_selector dw STATIC_EMPTY
+kernel_gdt_tss_cpu_selector dw STATIC_EMPTY
 
-kernel_init_string_error_memory_low db "Error: no enough memory"
-kernel_init_string_error_memory_low_end:
+align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+kernel_gdt_tss_table:
+  dd STATIC_EMPTY
+  dq KERNEL_STACK_pointer
+  times 92 db STATIC_EMPTY
+kernel_gdt_tss_table_end:
 
-kernel_init_string_error_acpi db "Error: ACPI table not found"
-kernel_init_string_error_acpi_end:
-
-kernel_init_string_error_acpi_2 db "Error: no support for acpi v2 version"
-kernel_init_string_error_acpi_2_end:
-
-kernel_init_string_error_acpi_corrupted db "Error: APIC table not found"
-kernel_init_string_error_acpi_corrupted_end:
-
-kernel_init_string_error_apic db "Error: APIC table not found"
-kernel_init_string_error_apic_end:
-
-kernel_init_string_error_ioapic db "Error: I / O APIC table not found"
-kernel_init_string_error_ioapic_end:
-
-kernel_init_apic_semaphore db STATIC_FALSE
-kernel_init_ioapic_semaphore db STATIC_FALSE
-kernel_init_smp_semaphore db STATIC_FALSE
-kernel_init_ap_count db STATIC_EMPTY
-
-kernel_init_apic_id_highest db STATIC_EMPTY
+align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+kernel_idt_header:
+  dw KERNEL_PAGE_SIZE_byte
+  dq STATIC_EMPTY

@@ -43,6 +43,7 @@ kernel:
   %include "kernel/video.asm"
   %include "kernel/apic.asm"
   %include "kernel/io_apic.asm"
+  %include "kernel/data.asm"
 
   ; library
   %include "library/page_align_up.asm"

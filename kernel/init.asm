@@ -32,3 +32,4 @@ kernel_init_long_mode:
   %include "kernel/init/page.asm"
   %include "kernel/init/gdt.asm"
   %include "kernel/init/idt.asm"
+  %include "kernel/init/rtc.asm"

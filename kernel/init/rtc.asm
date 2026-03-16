@@ -18,38 +18,34 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-%include "config.asm"
-%include "kernel/config.asm"
+kernel_init_rtc:
+  mov al, DRIVER_RTC_PORT_STATUS_REGISTER_A
+  out DRIVER_RTC_PORT_command, al
+  in al, DRIVER_RTC_PORT_data
 
-[BITS 32]
+  test al, DRIVER_RTC_PORT_STATUS_REGISTER_A_update_in_progress
+  jne kernel_init_rtc
 
-[ORG KERNEL_BASE_address]
+  mov al, DRIVER_RTC_PORT_STATUS_REGISTER_A
+  out DRIVER_RTC_PORT_command, al
+  mov al, DRIVER_RTC_PORT_STATUS_REGISTER_A_rate | DRIVER_RTC_PORT_STATUS_REGISTER_A_divider
+  out DRIVER_RTC_PORT_data, al
 
-init:
-  %include "kernel/init.asm"
+  mov al, DRIVER_RTC_PORT_STATUS_REGISTER_A
+  out DRIVER_RTC_PORT_command, al
+  mov al, DRIVER_RTC_PORT_STATUS_REGISTER_B_24_hour_mode | DRIVER_RTC_PORT_STATUS_REGISTER_B_binary_mode | DRIVER_RTC_PORT_STATUS_REGISTER_B_periodic_interrupt
+  out DRIVER_RTC_PORT_data, al
 
-clean:
+  mov al, DRIVER_RTC_PORT_STATUS_REGISTER_C
+  out DRIVER_RTC_PORT_command, al
 
-kernel:
-  jmp $
-
-  %include "kernel/macro/close.asm"
-  %include "kernel/macro/apic.asm"
+  in al, DRIVER_RTC_PORT_data
   
-  ; kernel root
-  %include "kernel/panic.asm"
-  %include "kernel/page.asm"
-  %include "kernel/memory.asm"
-  %include "kernel/video.asm"
-  %include "kernel/apic.asm"
-  %include "kernel/io_apic.asm"
-  %include "kernel/data.asm"
-  %include "kernel/idt.asm"
-  %include "kernel/task.asm"
-  
-  ; driver
-  %include "kernel/driver/rtc.asm"
+  mov eax, KERNEL_IDT_IRQ_offset + DRIVER_RTC_IRQ_number
+  mov bx, KERNEL_IDT_TYPE_irq
+  mov rdi, driver_rtc
+  call kernel_idt_mount
 
-  ; library
-  %include "library/page_align_up.asm"
-  %include "library/page_from_size.asm"
+  mov eax, KERNEL_IDT_IRQ_offset + DRIVER_RTC_IRQ_number
+  mov ebx, DRIVER_RTC_IO_APIC_register
+  call kernel_io_apic_connect

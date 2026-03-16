@@ -18,19 +18,40 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-%include "kernel/init/long_mode.asm"
-%include "kernel/init/panic.asm"
-%include "kernel/init/data.asm"
-%include "kernel/init/multiboot.asm"
+kernel_init_task:
+  movzx ecx, byte [kernel_init_apic_id_highest]
+  inc cx
 
-[BITS 64]
+  shl ecx, STATIC_MULTIPLE_BY_8_shift
 
-kernel_init_long_mode:
-  %include "kernel/init/video.asm"
-  %include "kernel/init/memory.asm"
-  %include "kernel/init/acpi.asm"
-  %include "kernel/init/page.asm"
-  %include "kernel/init/gdt.asm"
-  %include "kernel/init/idt.asm"
-  %include "kernel/init/rtc.asm"
-  %include "kernel/init/task.asm"
+  call library_page_from_size
+
+  call kernel_memory_alloc
+  jc kernel_init_panic_low_memory
+
+  mov qword [kernel_task_active_list], rdi
+
+  mov rsi, rdi
+
+  call kernel_memory_alloc_page
+  jc kernel_init_panic_low_memory
+
+  call kernel_page_drain
+
+  mov qword [kernel_task_address], rdi
+
+  mov qword [rdi + STATIC_STRUCTURE_BLOCK.link], rdi
+
+  call kernel_apic_id_get
+
+  shl rax, STATIC_MULTIPLE_BY_8_shift
+  mov qword [rsi + rax], rdi
+
+  mov ebx, KERNEL_TASK_FLAG_active | KERNEL_TASK_FLAG_daemon | KERNEL_TASK_FLAG_secured | KERNEL_TASK_FLAG_processing
+  mov r11, qword [kernel_page_pml4_address]
+  call kernel_task_add
+
+  mov rax, KERNEL_APIC_IRQ_number
+  mov bx, KERNEL_IDT_TYPE_irq
+  mov rdi, kernel_task
+  call kernel_idt_mount

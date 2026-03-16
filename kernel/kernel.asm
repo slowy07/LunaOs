@@ -44,6 +44,8 @@ kernel:
   %include "kernel/apic.asm"
   %include "kernel/io_apic.asm"
   %include "kernel/data.asm"
+  %include "kernel/idt.asm"
+  %include "kernel/task.asm"
 
   ; library
   %include "library/page_align_up.asm"

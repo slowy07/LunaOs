@@ -1,0 +1,48 @@
+LIBRARY: PAGE FROM SIZE
+File: library/page_from_size.asm
+Author: arfy slowy
+
+FUNCTION: library_page_from_size
+
+PURPOSE
+Calculate the number of pages needed to hold a given size in bytes.
+
+INPUT
+  Stack (pushed by caller): Size in bytes (qword)
+
+OUTPUT
+  RCX: Number of pages needed
+
+ALGORITHM
+  1. Get size from stack
+  2. AND with page mask to get offset within page
+  3. If offset is 0, size is exactly page-aligned
+  4. Otherwise, add one page for the remainder
+  5. Divide by page size (shift right by 12)
+
+PAGE SIZE SHIFT
+  STATIC_DIVIDE_BY_PAGE_shift = 12
+  (since page size is 4096 = 2^12)
+
+EXAMPLE
+  Input: 4096 bytes (1 page)
+  Offset: 0
+  Result: 1 page
+  
+  Input: 4097 bytes (1 byte past page)
+  Offset: 1
+  Add page: 4096 + 1 = 4097
+  Result: 1 page (4097 / 4096 = 1 with remainder)
+  
+  Input: 8192 bytes (2 pages)
+  Offset: 0
+  Result: 2 pages
+  
+  Input: 8193 bytes
+  Offset: 1
+  Add page: 8192 + 4096 = 12288
+  Result: 3 pages
+
+NOTE
+This is a helper function for page allocation.
+Used to calculate how many pages to allocate for a given size.

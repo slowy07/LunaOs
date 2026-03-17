@@ -1,0 +1,127 @@
+File: kernel/init/memory.asm
+Author: arfy slowy
+Date: 2026
+License: MIT
+This module parses the Multiboot memory map provided by the bootloader and
+initializes the kernel memory management system. It scans the memory map to
+find the first usable memory region and initializes the memory bitmap.
+
+KERNEL_INIT_MEMORY_MULTIBOOT_HEADER:
+  Offset   Size   Field        Description
+  0x00     4      .flags       Multiboot flags
+  0x28     4      .mmap_length Memory map length
+  0x2C     4      .mmap_addr   Memory map address
+
+KERNEL_INIT_MEMORY_MULTIBOOT_STRUCTURE_MEMORY_MAP:
+  Offset   Size   Field        Description
+  0x00     4      .size        Entry size (minus this field)
+  0x04     8      .address     Start address
+  0x0C     8      .limit       End address
+  0x14     4      .type        Type (1 = available)
+
+Memory Types:
+  +-------+---------------------------+
+  | Type  | Description               |
+  +-------+---------------------------+
+  | 1     | Available (RAM)           |
+  | 2     | Reserved                  |
+  | 3     | ACPI reclaimable          |
+  | 4     | NVS (non-volatile)        |
+  | 5     | Bad RAM                   |
+  +-------+---------------------------+
+
+
+FUNCTION: kernel_init_memory
+
+Purpose: Parse memory map and initialize memory management
+
+Flow Diagram:
+
++------------------------+
+| Start kernel_init_    |
+| memory                |
++----------+-------------+
+           |
+           v
++------------------------+
+| Check memory_map flag |
+| in multiboot header    |
++----------+-------------+
+           |
+           +--NOT SET--> kernel_panic
+           |
+           SET
+           |
+           v
++------------------------+
+| Get memory map length  |
+| and address from EBX   |
++----------+-------------+
+           |
+           v
++------------------------+
+| Search for usable region|--> Starting at KERNEL_BASE_address
++----------+-------------+
+           |
+           v
++------------------------+
+| Is address >= BASE?    |
++----------+-------------+
+           |
+           +--NO--> Continue search
+           |
+           YES --> .found
+           |
+           v
++------------------------+
+| Calculate page count   |
+| from limit             |
++----------+-------------+
+           |
+           v
++------------------------+
+| Allocate bitmap memory |--> library_page_from_size
+| Drain pages            |
++----------+-------------+
+           |
+           v
++------------------------+
+| Initialize bitmap with |
+| 0xFF (mark all free)  |
++----------+-------------+
+           |
+           v
++------------------------+
+| Store bitmap end addr  |
++----------+-------------+
+           |
+           v
++------------------------+
+| Align up bitmap end   |
+| Allocate pages for    |
+| kernel memory         |
++----------+-------------+
+           |
+           v
++------------------------+
+| Return                 |
++------------------------+
+
+Algorithm:
+  1. Checks if multiboot_info has memory map (flag bit 6)
+  2. Iterates through memory map entries
+  3. Finds first entry with address >= KERNEL_BASE_address
+  4. Calculates number of usable pages
+  5. Allocates bitmap to track page usage
+  6. Initializes bitmap (all 0xFF = all pages free)
+  7. Stores end of bitmap for later use
+
+Error Handling:
+  - Jumps to kernel_panic if memory map flag not set
+  - Jumps to kernel_panic if no valid memory region found
+
+Dependencies:
+  - library_page_from_size    : Calculate pages needed
+  - kernel_page_drain_few     : Clear temporary mappings
+  - kernel_page_drain        : Clear all temporary mappings
+  - kernel_memory_alloc       : Allocate kernel memory

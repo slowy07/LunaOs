@@ -18,6 +18,10 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+; NOTE: 
+; Documentation
+; kernel/init/docs/acpi.txt
+
 ACPI_MADT_ENTRY_lapic equ 0x00
 ACPI_MADT_ENTRY_ioapic equ 0x01
 ACPI_MADT_ENTRY_iso equ 0x02

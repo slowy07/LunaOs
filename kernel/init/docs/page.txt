@@ -1,0 +1,140 @@
+File: kernel/init/page.asm
+Author: arfy slowy
+Date: 2026
+License: MIT
+
+This module initializes the virtual memory system by:
+1. Allocating and configuring the PML4 (Page Map Level 4) table
+2. Mapping kernel code/data into virtual address space
+3. Mapping kernel stack
+4. Mapping video memory (with cache disabled)
+5. Mapping APIC and IO-APIC registers
+6. Enabling paging by loading CR3 and setting up the stack
+
+FUNCTION: kernel_init_page
+Purpose: Initialize paging and set up virtual memory mappings
+
+Flow Diagram:
+
++------------------------+
+| Start kernel_init_page|
++----------+-------------+
+           |
+           v
++------------------------+
+| Allocate page for PML4 | --> kernel_memory_alloc_page
++----------+-------------+
+           |
+           +--FAIL--> kernel_init_panic_low_memory
+           |
+           SUCCESS
+           |
+           v
++------------------------+
+| Drain page mappings    | --> kernel_page_drain
++----------+-------------+
+           |
+           v
++------------------------+
+| Store PML4 address     |
+| Increment page count    |
++----------+-------------+
+           |
+           v
++------------------------+
+| Map kernel physical    | --> kernel_page_map_physical
+| memory (identity map)  | Flags: Available | Write
++----------+-------------+
+           |
+           +--FAIL--> kernel_init_panic_low_memory
+           |
+           v
++------------------------+
+| Map kernel stack       | --> kernel_page_map_logical
+| (virtual address)      | Size: KERNEL_STACK_SIZE
++----------+-------------+
+           |
+           +--FAIL--> kernel_init_panic_low_memory
+           |
+           v
++------------------------+
+| Map video memory       | --> kernel_page_map_physical
+| (identity map)         | Flags: Write-through | Cache disable
++----------+-------------+
+           |
+           +--FAIL--> kernel_init_panic_low_memory
+           |
+           v
++------------------------+
+| Map local APIC         | --> kernel_page_map_physical
+| registers              | Flags: Available | Write
++----------+-------------+
+           |
+           +--FAIL--> kernel_init_panic_low_memory
+           |
+           v
++------------------------+
+| Map IO-APIC registers | --> kernel_page_map_physical
++----------+-------------+
+           |
+           +--FAIL--> kernel_init_panic_low_memory
+           |
+           v
++------------------------+
+| Load CR3 with PML4     | --> mov cr3, rax
++----------+-------------+
+           |
+           v
++------------------------+
+| Set up kernel stack    | --> mov rsp, KERNEL_STACK_pointer
++----------+-------------+
+           |
+           v
++------------------------+
+| Return                 |
++------------------------+
+
+Memory Mappings Created:
+
+1. Kernel Physical Memory:
+   - Virtual: 0xFFFFFFFF80000000 (KERNEL_BASE_address)
+   - Physical: 0x0000000000000000
+   - Size: kernel_page_total_count pages
+   - Flags: Available, Write
+
+2. Kernel Stack:
+   - Virtual: KERNEL_STACK_address
+   - Size: KERNEL_STACK_SIZE_byte
+   - Flags: Available, Write
+
+3. Video Memory:
+   - Virtual: KERNEL_VIDEO_BASE_address
+   - Physical: KERNEL_VIDEO_BASE_address
+   - Size: KERNEL_VIDEO_SIZE_byte
+   - Flags: Write-through, Cache Disable
+
+4. Local APIC:
+   - Virtual: kernel_apic_base_address
+   - Size: kernel_apic_size
+   - Flags: Available, Write
+
+5. IO-APIC:
+   - Virtual: kernel_io_apic_base_address
+   - Size: 1 page (4KB)
+   - Flags: Available, Write
+
+Page Flags:
+  - KERNEL_PAGE_FLAG_available    : Usable memory
+  - KERNEL_PAGE_FLAG_write        : Writable
+  - KERNEL_PAGE_FLAG_write_through: Write-through caching
+  - KERNEL_PAGE_FLAG_cache_disable: Disable caching
+
+Dependencies:
+  - kernel_memory_alloc_page  : Allocate page tables
+  - kernel_page_drain        : Clear temporary mappings
+  - kernel_page_map_physical : Identity map physical memory
+  - kernel_page_map_logical : Map virtual address
+  - library_page_from_size   : Calculate page count
+
+Error Handling:
+  - All allocation failures jump to kernel_init_panic_low_memory

@@ -1,0 +1,104 @@
+INITIALIZATION CHAIN
+File: kernel/init.asm
+Author: arfy slowy
+
+OVERVIEW
+Main 64-bit initialization module that includes all init components in the correct order. This is the first code that runs after switching to 64-bit long mode.
+
+[BITS 64]
+
+INCLUDED MODULES (in order)
+
+1. kernel/init/video.asm
+   Initialize video output and display welcome message
+   Calls: kernel_video_dump, kernel_video_string
+
+2. kernel/init/memory.asm
+   Parse Multiboot memory map and initialize memory manager
+   Uses: Multiboot info structure from bootloader
+   Output: kernel_memory_map_address, page bitmap
+
+3. kernel/init/acpi.asm
+   Initialize ACPI and enumerate CPUs
+   Finds: RSDP, RSDT, MADT
+   Output: kernel_apic_base_address, kernel_apic_count, IO-APIC info
+
+4. kernel/init/page.asm
+   Set up paging and virtual memory mappings
+   Allocates: PML4 table
+   Maps: kernel, stack, video memory, APIC registers
+
+5. kernel/init/gdt.asm
+   Initialize Global Descriptor Table
+   Sets up: null, CS, DS, TSS descriptors
+   Loads: GDT and task register
+
+6. kernel/init/idt.asm
+   Initialize Interrupt Descriptor Table
+   Sets up: exception handlers (0-31), spurious handler
+   Loads: IDT via LIDT, enables interrupts (sti)
+
+7. kernel/init/rtc.asm
+   Initialize Real Time Clock
+   Configures: 1024Hz periodic interrupts
+   Connects: IRQ 8 to IO-APIC
+
+8. kernel/init/task.asm
+   Initialize tasking system
+   Creates: first kernel task
+   Mounts: timer interrupt handler (IRQ 0)
+
+INITIALIZATION FLOW
+
++------------------------+
+| long_mode entry point |
++--------+----------------+
+            |
+            v
++------------------------+
+| Video init             |
++--------+----------------+
+            |
+            v
++------------------------+
+| Memory init            |
++--------+----------------+
+            |
+            v
++------------------------+
+| ACPI init              |
++--------+----------------+
+            |
+            v
++------------------------+
+| Page init              |
++--------+----------------+
+            |
+            v
++------------------------+
+| GDT init              |
++--------+----------------+
+            |
+            v
++------------------------+
+| IDT init              |
++--------+----------------+
+            |
+            v
++------------------------+
+| RTC init              |
++--------+----------------+
+            |
+            v
++------------------------+
+| Task init             |
++--------+----------------+
+            |
+            v
++------------------------+
+| End of init           |
+| (jump to kernel)      |
++------------------------+
+
+ERROR HANDLING
+Each init module checks for errors and calls kernel_init_panic_* on failure.

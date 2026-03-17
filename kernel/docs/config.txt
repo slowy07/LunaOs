@@ -1,0 +1,22 @@
+KERNEL CONFIGURATION
+File: kernel/config.asm
+Author: arfy slowy
+
+OVERVIEW
+This file defines core kernel configuration constants including kernel name, version, architecture, and memory layout addresses.
+
+KERNEL METADATA
+  KERNEL_name        = "Luna"
+  KERNEL_version     = "1"
+  KERNEL_revision    = "0"
+  KERNEL_architecture = "x86_64"
+
+MEMORY ADDRESSES
+  KERNEL_BASE_address      = 0x0000000000100000 (1MB)
+  KERNEL_STACK_address      = Virtual address at top of 128TB virtual space
+  KERNEL_STACK_pointer      = KERNEL_STACK_address - 1 page
+  KERNEL_STACK_SIZE_byte   = 2 * KERNEL_PAGE_SIZE_byte (8KB)
+
+NOTES
+The kernel is linked to load at 1MB (0x100000).
+Stack grows downward from the top of the virtual address space.

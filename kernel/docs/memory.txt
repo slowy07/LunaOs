@@ -1,0 +1,111 @@
+MEMORY MANAGEMENT
+File: kernel/memory.asm
+Author: arfy slowy
+
+OVERVIEW
+Provides memory allocation using a bitmap-based page allocator. Manages physical memory via a bitmap where each bit represents one page.
+
+CONSTANTS
+  KERNEL_MEMORY_HIGH_mask        = 0xFFFF000000000000
+  KERNEL_MEMORY_HIGH_REAL_address = 0xFFFF800000000000
+  KERNEL_MEMORY_HIGH_VIRTUAL_address = Canonical form for upper half
+
+  KERNEL_MEMORY_MAP_SIZE_page = 1 (unit for bitmap allocation)
+
+VARIABLES
+  kernel_memory_map_address     = Start of page bitmap
+  kernel_memory_map_address_end = End of bitmap
+  kernel_memory_lock_semaphore  = Memory allocator lock (0 = unlocked)
+
+FUNCTIONS
+
+kernel_memory_alloc_page
+  Purpose: Allocate single page
+  Input: None
+  Output: RDI = allocated page address
+  Calls kernel_memory_alloc with count=1
+
+kernel_memory_alloc
+  Purpose: Allocate N contiguous pages
+  Input: RCX = number of pages
+  Output: RDI = virtual address of allocated memory, Carry on error
+  Algorithm:
+    1. Scan bitmap for contiguous free pages
+    2. Mark pages as used (clear bits)
+    3. Return physical address + KERNEL_BASE_address
+  Uses test-and-set via BTS/BTR instructions for thread safety
+
+kernel_memory_lock
+  Purpose: Acquire memory allocator lock
+  Uses atomic test-and-set (macro_close)
+
+ALGORITHM: kernel_memory_alloc
+  Uses bitmap where:
+    0 = page is allocated/used
+    1 = page is free
+  
+  Search algorithm:
+    1. Start with page 1 (page 0 is reserved)
+    2. Find first free page (bit = 1)
+    3. Count consecutive free pages
+    4. If enough contiguous pages found, allocate
+    5. Otherwise continue searching
+
+  Allocation:
+    1. For each page to allocate:
+       - BTR instruction to atomically clear bit
+       - Decrement free count or reserved count
+    2. Calculate virtual address: page_num * 4096 + KERNEL_BASE
+
+FLOW: kernel_memory_alloc
+  +------------------------+
+  | Start                  |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Save registers         |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | RAX = 0xFF (search    |
+  | from beginning)       |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Search bitmap for      |
+  | contiguous free pages  |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Found enough?         |
+  +--------+----------------+
+            |
+            +--NO--> Continue search
+            |
+            YES
+            |
+            v
+  +------------------------+
+  | Allocate: clear bits   |
+  | using BTR instruction  |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Calculate virtual addr |
+  | (page * 4096 + BASE)  |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Release lock           |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Return                 |
+  +------------------------+

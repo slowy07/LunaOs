@@ -1,0 +1,148 @@
+File: kernel/init/gdt.asm
+Author: arfy slowy
+Date: 2026
+License: MIT
+This module initializes the Global Descriptor Table (GDT), which defines
+segment selectors for:
+- Null descriptor (required)
+- Code segment (Ring 0)
+- Data segment (Ring 0)
+- Code segment (Ring 3 - user mode)
+- Data segment (Ring 3 - user mode)
+- TSS (Task State Segment) for each CPU
+
+STRUCTURES
+KERNEL_STRUCTURE_GDT_HEADER:
+  Offset   Size   Field     Description
+  0x00     2      limit     GDT size limit (16-bit)
+  0x02     8      address   Linear address of GDT (64-bit)
+
+KERNEL_STRUCTURE_GDT:
+  Offset   Size   Field        Description
+  0x00     8      .null       Null descriptor (must be 0)
+  0x08     8      .cs_ring0   Code segment, Ring 0
+  0x10     8      .ds_ring0   Data segment, Ring 0
+  0x18     8      .cs_ring3   Code segment, Ring 3
+  0x20     8      .ds_ring3   Data segment, Ring 3
+  0x28     8      .tss        TSS descriptor (per-CPU)
+
+FUNCTION: kernel_init_gdt
+Purpose: Initialize and load the Global Descriptor Table
+
+Flow Diagram:
+
++------------------------+
+| Start kernel_init_gdt  |
++----------+-------------+
+           |
+           v
++------------------------+
+| Allocate page for GDT | --> kernel_memory_alloc_page
++----------+-------------+
+           |
+           +--FAIL--> kernel_init_panic_low_memory
+           |
+           v
++------------------------+
+| Drain page mappings    | --> kernel_page_drain
++----------+-------------+
+           |
+           v
++------------------------+
+| Store GDT base address |
+| in header              |
++----------+-------------+
+           |
+           v
++------------------------+
+| Write null descriptor  | --> 0x0000000000000000
++----------+-------------+
+           |
+           v
++------------------------+
+| Write CS Ring 0        | --> 0x00989A0000000000
+| (64-bit code segment)  |
++----------+-------------+
+           |
+           v
++------------------------+
+| Write DS Ring 0        | --> 0x0092920000000000
+| (64-bit data segment)  |
++----------+-------------+
+           |
+           v
++------------------------+
+| Write CS Ring 3        | --> 0x00F89A0000000000
+| (user code segment)   |
++----------+-------------+
+           |
+           v
++------------------------+
+| Write DS Ring 3        | --> 0x00F8920000000000
+| (user data segment)   |
++----------+-------------+
+           |
+           v
++------------------------+
+| Get APIC count &       |
+| iterate through CPUs  |
++----------+-------------+
+           |
+           v
++------------------------+
+| For each CPU:         |
+| + Calculate TSS offset |
+| + Write TSS descriptor |
+| + Store selector       |
++----------+-------------+
+           |
+           v
++------------------------+
+| Load GDT via LGDT     | --> lgdt [kernel_gdt_header]
++----------+-------------+
+           |
+           v
++------------------------+
+| Load Task Register     | --> ltr [kernel_gdt_tss_bsp_selector]
++----------+-------------+
+           |
+           v
++------------------------+
+| Return                 |
++------------------------+
+
+
+Segment Descriptor Format (64-bit):
+  Bits    Field
+  -----   -----
+  47-43   Type (1000 = execute/read for CS, 0010 = read/write for DS)
+  42      S (descriptor type: 1 = system/code/data)
+  41-40   DPL (Descriptor Privilege Level)
+  40      P (Present)
+  39-35   AVL (Available for OS use)
+  34      L (64-bit mode)
+  33      D/B (Default operation size)
+  32      G (Granularity)
+
+GDT Entries:
+  +--------+-------------+--------+------+-----+--------+------------------+
+  | Offset | Selector    | Type   | DPL  | P   | L      | Purpose          |
+  +--------+-------------+--------+------+-----+--------+------------------+
+  | 0x00   | 0x0000      | null   | -    | -   | -      | Required null    |
+  | 0x08   | 0x0008      | CS     | 00   | 1   | 1      | Kernel code      |
+  | 0x10   | 0x0010      | DS     | 00   | 1   | 1      | Kernel data      |
+  | 0x18   | 0x0018      | CS     | 11   | 1   | 1      | User code        |
+  | 0x20   | 0x0020      | DS     | 11   | 1   | 1      | User data        |
+  | 0x28+  | 0x0028+N*8  | TSS    | 00   | 1   | 0      | Task state (CPU) |
+  +--------+-------------+--------+------+-----+--------+------------------+
+
+TSS (Task State Segment):
+  - One TSS per CPU for hardware task switching
+  - Stores: RSP0, RSP1, RSP2, IST (Interrupt Stack Table)
+  - BSP (Bootstrap Processor) TSS selector stored in kernel_gdt_tss_bsp_selector
+
+Dependencies:
+  - kernel_memory_alloc_page : Allocate GDT memory
+  - kernel_page_drain       : Clear page mappings
+  - kernel_apic_count       : Number of CPUs
+  - kernel_apic_id_table    : APIC IDs per CPU

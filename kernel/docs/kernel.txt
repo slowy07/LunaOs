@@ -1,0 +1,65 @@
+KERNEL MAIN
+File: kernel/kernel.asm
+Author: arfy slowy
+
+OVERVIEW
+The main kernel file that ties together all components. This is the entry point after bootloader transfers control.
+
+STRUCTURE
+
+[ORG KERNEL_BASE_address] = 0x100000 (1MB)
+
+32-bit entry point:
+  init:
+    Includes kernel/init.asm (main init chain)
+
+64-bit kernel:
+  kernel:
+    Infinite loop (halt)
+  
+  Then includes all subsystems:
+    - config: Kernel configuration
+    - panic: Error handler
+    - page: Page management
+    - memory: Memory allocation
+    - video: VGA output
+    - apic: Local APIC
+    - io_apic: IO-APIC
+    - data: Data structures
+    - idt: Interrupt handling
+    - task: Task scheduling
+    - rtc: RTC driver
+
+EXECUTION FLOW
+
+1. Bootloader loads kernel at 0x100000
+2. Bootloader validates Multiboot header
+3. Jumps to init (32-bit)
+4. Init calls long_mode.asm to enable 64-bit
+5. After enabling paging, continues with other init modules
+6. Init completes, jumps to kernel: (halt loop)
+
+LOAD ORDER
+
+Configuration:
+  config.asm
+  kernel/config.asm
+
+Init (32-bit):
+  kernel/init.asm -> includes all kernel/init/*.asm
+
+Kernel (64-bit):
+  panic.asm
+  page.asm
+  memory.asm
+  video.asm
+  apic.asm
+  io_apic.asm
+  data.asm
+  idt.asm
+  task.asm
+  driver/rtc.asm
+
+Libraries:
+  library/page_align_up.asm
+  library/page_from_size.asm

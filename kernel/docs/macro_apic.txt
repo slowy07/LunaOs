@@ -1,0 +1,29 @@
+MACRO: APIC ID
+File: kernel/macro/apic.asm
+Author: arfy slowy
+
+MACRO: macro_apic_id_get
+
+PURPOSE
+Get the Local APIC ID of the current CPU.
+
+USAGE
+  macro_apic_id_get
+
+OUTPUT
+  RAX = APIC ID (8-bit value in bits 24-31)
+
+IMPLEMENTATION
+  1. Load kernel_apic_base_address into RAX
+  2. Write 0 to Task Priority Register (TPR) to enable all interrupts
+  3. Read APIC ID register
+  4. Shift right by 24 to extract APIC ID
+
+APIC ID REGISTER
+  Location: offset 0x20 from APIC base
+  Format: Bits 24-31 contain the APIC ID
+  Other bits: Reserved or used for other purposes
+
+NOTE
+This is a macro, not a function. It expands inline.
+Uses kernel_apic_base_address global variable.

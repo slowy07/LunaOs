@@ -1,0 +1,38 @@
+File: kernel/init/data.asm
+Author: arfy slowy
+Date: 2026
+License: MIT
+
+This module contains static data definitions including:
+- Error message strings
+- Initialization semaphore variables
+- APIC-related counters
+
+Welcome Message:
+  Variable                           | Value
+  kernel_init_video_string_welcome   | "welcome cik" + newline
+
+Error Messages:
+  Variable                              | Message
+  | kernel_init_string_error_memory_low| "Error: no enough memory"
+  | kernel_init_string_error_acpi      | "Error: ACPI table not found"
+  | kernel_init_string_error_acpi_2    | "Error: no support for acpi v2 version"
+  | kernel_init_string_error_acpi_     | "Error: APIC table not found"
+  | kernel_init_string_error_apic      | "Error: APIC table not found"
+  | kernel_init_string_error_ioapic    | "Error: I / O APIC table not found" 
+VARIABLES
+Semaphores (Mutex Locks):
+  | Variable              | Type     | Purpose           
+  | kernel_init_apic_semaphore | byte  | Lock for APIC operations
+  | kernel_init_ioapic_semaphore| byte | Lock for IO-APIC operations
+  | kernel_init_smp_semaphore   | byte | Lock for SMP operations
+
+Counters:
+  | Variable              | Type     | Purpose
+  | kernel_init_ap_count  | byte     | Number of Application Processors (APs))
+  | kernel_init_apic_id_highest | byte | Highest APIC ID detected
+
+Constants Used:
+  - STATIC_FALSE        : 0 (unlocked/disabled)
+  - STATIC_TRUE         : 1 (locked/enabled)
+  - STATIC_EMPTY        : 0

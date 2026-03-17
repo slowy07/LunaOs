@@ -18,6 +18,10 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+; NOTE: 
+; Documentation
+; kernel/driver/driver_docs.txt
+
 DRIVER_RTC_IRQ_number equ 0x08
 DRIVER_RTC_IO_APIC_register equ KERNEL_IO_APIC_iowin + (DRIVER_RTC_IRQ_number * 0x02)
 

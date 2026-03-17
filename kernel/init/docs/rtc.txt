@@ -1,0 +1,102 @@
+File: kernel/init/rtc.asm
+Author: arfy slowy
+Date: 2026
+License: MIT
+This module initializes the Real Time Clock (RTC) hardware, configuring it to
+generate periodic interrupts at 1024Hz and setting up the IDT entry for RTC
+interrupt handling.
+
+FUNCTION: kernel_init_rtc
+
+Purpose: Initialize RTC hardware and connect to interrupt system
+
+Flow Diagram:
+
++------------------------+
+| Start kernel_init_rtc |
++----------+-------------+
+           |
+           v
++------------------------+
+| Read Status Register A| --> Port 0x70/0x71
++----------+-------------+
+           |
+           v
++------------------------+
+| Check UIP (Update In   |
+| Progress) bit          |
++----------+-------------+
+           |
+           +--YES--> Wait (loop)
+           |
+           NO
+           |
+           v
++------------------------+
+| Write Rate & Divider   | --> Config for 1024Hz
+| to Status Register A   |
++----------+-------------+
+           |
+           v
++------------------------+
+| Configure Status       | --> 24-hour mode
+| Register B             | --> Binary mode
+|                        | --> Periodic interrupt enable
++----------+-------------+
+           |
+           v
++------------------------+
+| Read Status Register C | --> Clear pending interrupts
+| (dummy read)           |
++----------+-------------+
+           |
+           v
++------------------------+
+| Calculate IRQ vector:  |
+| KERNEL_IDT_IRQ_offset  | --> 0x20 + 0x08 = 0x28
+| + DRIVER_RTC_IRQ_number|
++----------+-------------+
+           |
+           v
++------------------------+
+| Mount driver_rtc ISR   | --> kernel_idt_mount
+| in IDT (type: IRQ)     |
++----------+-------------+
+           |
+           v
++------------------------+
+| Connect IRQ 8 to       |
+| IO-APIC                | --> kernel_io_apic_connect
++----------+-------------+
+           |
+           v
++------------------------+
+| Return                 |
++------------------------+
+
+Hardware Configuration:
+  - Interrupt Rate: 1024 Hz (configurable via rate bits)
+  - Time Format: 24-hour, binary (not BCD)
+  - Interrupt Mode: Periodic interrupts enabled
+
+I/O Ports:
+  - Command Port: 0x70 (CMOS address register)
+  - Data Port: 0x71 (CMOS data register)
+
+Status Register A (0x0A):
+  - Rate: 0x06 (1024 Hz)
+  - Divider: 0x20 (select 32.768KHz clock)
+
+Status Register B (0x0B):
+  - 24-hour mode: 0x02
+  - Binary mode: 0x04
+  - Periodic interrupt: 0x40
+
+IRQ Configuration:
+  - IRQ Number: 8
+  - IDT Vector: 0x28 (IRQ base 0x20 + IRQ 8)
+  - IO-APIC Register: KERNEL_IO_APIC_iowin + (8 * 2)
+
+Dependencies:
+  - kernel_idt_mount        : Register ISR in IDT
+  - kernel_io_apic_connect  : Connect IRQ to IO-APIC

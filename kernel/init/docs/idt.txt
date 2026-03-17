@@ -1,0 +1,106 @@
+File: kernel/init/idt.asm
+Author: arfy slowy
+Date: 2026
+License: MIT
+This module initializes the Interrupt Descriptor Table (IDT), allocating
+memory for the table, setting up default exception handlers, mounting a
+spurious interrupt handler, and loading the IDT via the LIDT instruction.
+
+KERNEL_STRUCTURE_IDT_HEADER:
+  Offset   Size   Field     Description
+  ------   ----   -----     -----------
+  0x00     2      limit     IDT size limit (16-bit)
+  0x02     8      address   Linear address of IDT (64-bit)
+
+FUNCTION: kernel_init_idt
+Purpose: Initialize and load the Interrupt Descriptor Table
+
+Flow Diagram:
+
++------------------------+
+| Start kernel_init_idt |
++----------+-------------+
+           |
+           v
++------------------------+
+| Allocate page for IDT | --> kernel_memory_alloc_page
++----------+-------------+
+           |
+           +--FAIL--> kernel_init_panic_low_memory
+           |
+           SUCCESS
+           |
+           v
++------------------------+
+| Drain page mappings    | --> kernel_page_drain
++----------+-------------+
+           |
+           v
++------------------------+
+| Store IDT base address |
+| in header              |
++----------+-------------+
+           |
+           v
++------------------------+
+| Install 32 exception   |
+| handlers (0-31)        | --> kernel_idt_exception_default
+| Type: Exception        |
++----------+-------------+
+           |
+           v
++------------------------+
+| Install spurious IRQ   |
+| handler (vector 255)   | --> kernel_idt_spurious_interrupt
+| Type: IRQ              |
++----------+-------------+
+           |
+           v
++------------------------+
+| Load IDT via LIDT      | --> lidt [kernel_idt_header]
++----------+-------------+
+           |
+           v
++------------------------+
+| Enable interrupts      | --> sti
++----------+-------------+
+           |
+           v
++------------------------+
+| Return                 |
++------------------------+
+
+IDT Setup:
+  - Total Entries: Up to 256 (IDT size = 256 * 16 bytes = 4096 bytes)
+  - Exception Handlers: Vectors 0-31 (32 entries)
+  - IRQ Handlers: Vectors 32-255
+  - Spurious Handler: Vector 255 (catches unhandled interrupts)
+
+Exception Vectors (0-31):
+  - 0:   Divide Error
+  - 1:   Debug
+  - 2:   NMI
+  - 3:   Breakpoint
+  - 4:   Overflow
+  - 5:   Bound Range Exceeded
+  - 6:   Invalid Opcode
+  - 7:   Device Not Available
+  - 8:   Double Fault
+  - 9:   Coprocessor Segment Overrun
+  - 10:  Invalid TSS
+  - 11:  Segment Not Present
+  - 12:  Stack-Segment Fault
+  - 13:  General Protection Fault
+  - 14:  Page Fault
+  - 15:  (Reserved)
+  - 16:  x87 FPU Floating-Point Error
+  - 17:  Alignment Check
+  - 18:  Machine Check
+  - 19:  SIMD Floating-Point Error
+  - 20-31: (Reserved)
+
+Dependencies:
+  - kernel_memory_alloc_page : Allocate IDT memory
+  - kernel_page_drain       : Clear page mappings
+  - kernel_idt_update       : Install multiple entries
+  - kernel_idt_mount        : Install single entry

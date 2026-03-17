@@ -32,5 +32,3 @@ kernel_init_idt:
   call kernel_idt_mount
 
   lidt [kernel_idt_header]
-
-  sti

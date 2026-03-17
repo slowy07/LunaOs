@@ -1,0 +1,53 @@
+File: kernel/init/video.asm
+Author: arfy slowy
+Date: 2026
+License: MIT
+This module initializes the video/display subsystem by dumping video memory
+and printing a welcome message to the screen.
+Purpose: Initialize video output and display welcome message
+
+Flow Diagram:
+
++------------------------+
+| Start kernel_init_video|
++----------+-------------+
+           |
+           v
++------------------------+
+| Dump video memory      | --> kernel_video_dump
+| (clear screen)         |
++----------+-------------+
+           |
+           v
++------------------------+
+| Calculate string length| --> welcome_end - welcome
++----------+-------------+
+           |
+           v
++------------------------+
+| Load string address    |
+| into RSI               |
++----------+-------------+
+           |
+           v
++------------------------+
+| Print string to screen | --> kernel_video_string
++----------+-------------+
+           |
+           v
++------------------------+
+| Return                 |
++------------------------+
+
+Output:
+  - Welcome message: "welcome cik" followed by newline
+  - Displayed on VGA text mode video memory
+
+Dependencies:
+  - kernel_video_dump   : Clear/initialize video buffer
+  - kernel_video_string  : Print null-terminated string
+
+Video Memory:
+  - Base address: KERNEL_VIDEO_BASE_address (typically 0xB8000)
+  - VGA text mode: 80x25, 16 colors
+  - Each character: 2 bytes (character + attribute)

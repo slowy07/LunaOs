@@ -1,0 +1,101 @@
+VIDEO OUTPUT
+File: kernel/video.asm
+Author: arfy slowy
+
+OVERVIEW
+Provides VGA text mode video output functions for the kernel. Writes to the classic VGA text buffer at 0xB8000.
+
+CONSTANTS
+  KERNEL_VIDEO_BASE_address   = 0x000B8000 (VGA text buffer)
+  KERNEL_VIDEO_BASE_limit    = BASE + SIZE
+  KERNEL_VIDEO_WIDTH_char    = 80 (columns)
+  KERNEL_VIDEO_HEIGHT_char   = 25 (rows)
+  KERNEL_VIDEO_CHAR_SIZE_byte = 2 (char + attribute)
+  KERNEL_VIDEO_LINE_SIZE_byte = 80 * 2 = 160
+  KERNEL_VIDEO_SIZE_byte     = 80 * 25 * 2 = 4000
+
+VGA TEXT ATTRIBUTES
+  High nibble: Background color
+  Low nibble:  Foreground color
+  Color codes:
+    0 = black, 1 = blue, 2 = green, 3 = cyan
+    4 = red,   5 = magenta, 6 = brown, 7 = gray
+    8 = dark gray, 9 = bright blue, A = bright green
+    B = bright cyan, C = bright red, D = bright magenta
+    E = bright brown, F = white
+
+VARIABLES
+  kernel_video_pointer       = Current write position (virtual address)
+  kernel_video_cursor        = (column, row) as DWORDs
+
+FUNCTIONS
+
+kernel_video_dump
+  Purpose: Clear screen (fill with spaces)
+  Fills video memory with 0x0720 (space + light gray on black)
+  Uses REP STOSQ for fast memory fill
+
+kernel_video_cursor_set
+  Purpose: Update hardware cursor position
+  Uses VGA CRT controller ports 0x3D4/0x3D5
+  Input: Uses kernel_video_cursor (column, row)
+
+kernel_video_string
+  Purpose: Print null-terminated string
+  Input: RSI = string address, RCX = length
+  Output: Updates video pointer and cursor
+  Handles: regular chars, newline, backspace
+
+kernel_video_char
+  Purpose: Print single character
+  Input: AL = character, AH = attribute (0x07 default)
+  Handles:
+    - Regular characters: write to video memory
+    - Newline: move to next line
+    - Backspace: move cursor back
+  Auto-scrolls when reaching bottom of screen
+
+kernel_video_scroll
+  Purpose: Scroll screen up one line when full
+  Moves all lines up by one, clears bottom line
+
+FLOW: kernel_video_string
+  +------------------------+
+  | Start                  |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Save registers         |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Get current position   |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Loop: print each char  |
+  | Call kernel_video_char |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Update cursor position |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Set hardware cursor    |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Restore registers     |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Return                 |
+  +------------------------+

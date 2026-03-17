@@ -1,0 +1,46 @@
+File: kernel/init/multiboot.asm
+Author: arfy slowy
+Date: 2026
+License: MITThis module defines the Multiboot header, which allows the kernel to be booted
+by Multiboot-compliant bootloaders (e.g., GRUB, QEMU). The Multiboot standard
+provides a standardized way for bootloaders to pass information to the OS.
+Header Fields:
+
+  | Field            | Value            | Description
+  | magic            | 0x1BADB002       | Multiboot magic number
+  | flags            | 0x00010007       | Requested features (see below)
+  | checksum         | Calculated       | -(magic + flags)
+  | header_addr      | Address of header| Load address
+  | load_addr        | Address of init  | Binary load address
+  | load_end_addr   | 0                | Not used
+  | bss_end_addr    | 0                | Not used
+  | entry_addr      | Address of init  | Kernel entry point
+
+Flag Bits:
+  | Bit              | Description
+  | 0 (align)        | Align modules on 4KB boundaries
+  | 1 (memory_map)   | Provide memory map
+  | 16 (header)      | Must load header within loadable region
+
+Checksum Calculation:
+  checksum = -(magic + flags)
+           = -(0x1BADB002 + 0x00010007)
+           = -(0x1BADB009)
+           = 0xE452BFF6 (as 32-bit signed)
+
+MEMORY LAYOUT
+
+| Symbol           | Address            | Description
+| header           | 0x00100000         | Multiboot header (4KB aligned)
+| header_end       | 0x00100028         | End of header
+| init             | (linker address)   | Kernel entry point
+
+The bootloader reads the Multiboot header at the beginning of the kernel image
+(before the first 8192 bytes). It then:
+  1. Validates magic number (0x1BADB002)
+  2. Checks checksum
+  3. Sets up initial GDT (if needed)
+  4. Enables protected mode
+  5. Jumps to entry point with:
+     - EAX = Multiboot magic (0x2BADB002)
+     - EBX = Pointer to multiboot_info structure

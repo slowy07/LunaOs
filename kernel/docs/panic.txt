@@ -1,0 +1,34 @@
+PANIC HANDLER
+File: kernel/panic.asm
+Author: arfy slowy
+
+OVERVIEW
+Simple panic handler that displays an error message on the VGA screen and halts the CPU.
+
+FUNCTION
+
+kernel_panic
+  Purpose: Display fatal error and halt
+  Input: RSI = error string, ECX = string length, AH = attribute
+  Output: None (never returns)
+  Flow:
+    1. Set attribute to AH (default 0x0C = bright red on black)
+    2. Set EDI to video memory base (0xB8000)
+    3. Loop: load character from string, write to video
+    4. Infinite loop (halt)
+
+ATTRIBUTE 0x0C
+  Background: 000 (black)
+  Foreground: 100 (red)
+  Result: Bright red text on black background
+
+NOTES
+This is the simplest possible panic handler - it just prints the error and halts.
+No attempt is made to save registers or provide debugging information.
+The system is completely halted after displaying the message.
+
+This should be replaced with a more sophisticated handler that:
+- Saves CPU state
+- Logs to disk/network
+- Provides crash dump
+- Offers recovery options

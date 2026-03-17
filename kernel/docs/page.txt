@@ -1,0 +1,129 @@
+PAGE MANAGEMENT
+File: kernel/page.asm
+Author: arfy slowy
+
+OVERVIEW
+Provides comprehensive page table management including:
+- Page table allocation
+- Physical memory mapping
+- Virtual memory mapping
+- Page frame allocation/deallocation
+
+PAGE FLAGS
+  KERNEL_PAGE_FLAG_available     = 0x01 (Present bit)
+  KERNEL_PAGE_FLAG_write        = 0x02 (Writable bit)
+  KERNEL_PAGE_FLAG_user         = 0x04 (User accessible)
+  KERNEL_PAGE_FLAG_write_through = 0x08 (Write-through caching)
+  KERNEL_PAGE_FLAG_cache_disable = 0x10 (Cache disabled)
+  KERNEL_PAGE_FLAG_length       = 0x80 (1GB page / 2MB page)
+
+PAGE TABLE SIZES
+  KERNEL_PAGE_RECORDS_amount = 512 (entries per table)
+  KERNEL_PAGE_PML1_SIZE_byte = 512 * 4096 = 2MB
+  KERNEL_PAGE_PML2_SIZE_byte = 512 * 2MB = 1GB
+  KERNEL_PAGE_PML3_SIZE_byte = 512 * 1GB = 512GB
+  KERNEL_PAGE_PML4_SIZE_byte = 512 * 512GB = 256TB
+
+VARIABLES
+  kernel_page_pml4_address     = CR3 value (root page table)
+  kernel_page_total_count      = Total pages available
+  kernel_page_free_count      = Free pages
+  kernel_page_reserved_count   = Reserved pages
+  kernel_page_paged_count      = Pages used for page tables
+
+FUNCTIONS
+
+kernel_page_drain
+  Purpose: Clear/drain page mappings from a page
+  Input: RCX = size in bytes
+  Flow: Zeroes memory using REP STOSQ
+
+kernel_page_drain_few
+  Purpose: Clear multiple pages
+  Input: RCX = number of pages
+  Calls kernel_page_drain with size = pages * 4096
+
+kernel_page_map_physical
+  Purpose: Identity map physical memory (virtual = physical)
+  Input: RAX = physical address, BX = flags, RCX = size in bytes
+  Flow:
+    1. Call kernel_page_prepare to set up page tables
+    2. For each page: write PTE with physical address + flags
+    3. Increment physical address by 4096
+
+kernel_page_map_logical
+  Purpose: Map virtual address to physical memory
+  Input: RAX = virtual address, BX = flags, RCX = size in bytes
+  Flow:
+    1. Call kernel_page_prepare
+    2. For each page:
+       - If PTE exists, use it
+       - Otherwise allocate new page and create mapping
+    3. Returns with RDI pointing to PTE array
+
+kernel_page_prepare
+  Purpose: Create page table hierarchy for address
+  Input: RAX = address, BX = flags
+  Output: RDI = pointer to PML1 entry for address
+  Flow:
+    1. Calculate PML4 index, check/create entry
+    2. Calculate PDPT index, check/create entry
+    3. Calculate PD index, check/create entry
+    4. Calculate PML1 index, return pointer
+  Uses lazy allocation - only creates tables as needed
+
+kernel_page_pml1
+  Purpose: Extend PML1 table or create new PD entry
+  Called when running out of PML1 entries
+
+kernel_page_merge
+  Purpose: Merge page tables (for memory defragmentation)
+
+kernel_page_secure
+  Purpose: Reserve pages (mark as non-free)
+  Input: RCX = number of pages to reserve
+
+FLOW: kernel_page_map_physical
+  +------------------------+
+  | Start                  |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Save all registers     |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Call page_prepare     |
+  +--------+----------------+
+            |
+            +--FAIL--> Return with carry
+            |
+            SUCCESS
+            |
+            v
+  +------------------------+
+  | Apply flags to PTE    |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Loop: write PTEs      |
+  | for each page         |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Clear carry (success) |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Restore registers     |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Return                 |
+  +------------------------+

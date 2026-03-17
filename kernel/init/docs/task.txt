@@ -1,0 +1,115 @@
+File: kernel/init/task.asm
+Author: arfy slowy
+Date: 2026
+License: MIT
+This module initializes the kernel tasking system, creating the initial task
+structure and setting up IRQ handling for the timer interrupt. It creates the
+BSP (Bootstrap Processor) task and mounts the task interrupt handler.
+
+FUNCTION: kernel_init_task
+Purpose: Initialize the tasking system and create the first kernel task
+
+Flow Diagram:
+
++------------------------+
+| Start kernel_init_task|
++----------+-------------+
+           |
+           v
++------------------------+
+| Get highest APIC ID    | --> kernel_init_apic_id_highest + 1
++----------+-------------+
+           |
+           v
++------------------------+
+| Shift left by 8        | --> Multiply by 256
++----------+-------------+
+           |
+           v
++------------------------+
+| Allocate page for      |
+| task list structure    |
++----------+-------------+
+           |
+           v
++------------------------+
+| Allocate page for      |
+| task address           |
++----------+-------------+
+           |
+           v
++------------------------+
+| Drain page mappings    | --> kernel_page_drain
++----------+-------------+
+           |
+           v
++------------------------+
+| Set kernel_task_active |
+| _list to allocated block|
++----------+-------------+
+           |
+           v
++------------------------+
+| Create circular link   | --> [task_addr].link = task_addr
++----------+-------------+
+           |
+           v
++------------------------+
+| Get current APIC ID    | --> kernel_apic_id_get
++----------+-------------+
+           |
+           v
++------------------------+
+| Shift left by 8        |
+| Store task at index     |
++----------+-------------+
+           |
+           v
++------------------------+
+| Set task flags:        |
+| ACTIVE | DAEMON |       |
+| SECURED | PROCESSING    |
++----------+-------------+
+           |
+           v
++------------------------+
+| Get PML4 address       |
++----------+-------------+
+           |
+           v
++------------------------+
+| Add task to system     | --> kernel_task_add
++----------+-------------+
+           |
+           v
++------------------------+
+| Mount timer IRQ handler| --> KERNEL_APIC_IRQ_number (IRQ 0)
+| to IDT                 |
++----------+-------------+
+           |
+           v
++------------------------+
+| Return                 |
++------------------------+
+
+Key Constants:
+  - KERNEL_TASK_FLAG_active    : Task is active
+  - KERNEL_TASK_FLAG_daemon   : Background task
+  - KERNEL_TASK_FLAG_secured  : Privileged task
+  - KERNEL_TASK_FLAG_processing: Currently running
+
+Key Variables:
+  - kernel_task_active_list   : Head of task链表
+  - kernel_task_address       : Current task pointer
+  - kernel_init_apic_id_highest: Highest APIC ID detected
+
+Dependencies:
+  - kernel_memory_alloc       : Memory allocation
+  - kernel_memory_alloc_page  : Page allocation
+  - kernel_page_drain         : Clear page mappings
+  - kernel_apic_id_get        : Get local APIC ID
+  - kernel_task_add          : Add task to scheduler
+  - kernel_idt_mount         : Mount ISR in IDT
+
+Error Handling:
+  - Jumps to kernel_init_panic_low_memory on allocation failure

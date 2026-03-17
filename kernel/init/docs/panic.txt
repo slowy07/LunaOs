@@ -1,0 +1,50 @@
+File: kernel/init/panic.asm
+Author: arfy slowy
+Date: 2026
+License: MITThis module provides panic error handlers that display fatal error messages
+and halt the system. It serves as the error handling entry point for various
+initialization failures.
+
+
+FUNCTIONS
+1. kernel_init_panic_low_memory
+   -----------------------------
+   Purpose: Handle low memory error during initialization
+   
+   Flow:
+   
+   +------------------------------------+
+   | Start kernel_init_panic_low_memory |
+   +------------------+-----------------+
+                      |
+                      v
+   +------------------------------------+
+   | Calculate string length:           |
+   | kernel_init_string_error_memory_   |
+   | low_end - kernel_init_string_       |
+   | error_memory_low                    |
+   +------------------+-----------------+
+                      |
+                      v
+   +------------------------------------+
+   | Load string address into RSI       |
+   +------------------+-----------------+
+                      |
+                      v
+   +------------------------------------+
+   | Jump to kernel_panic               |
+   +------------------------------------+
+
+   Error Message: "Error: no enough memory"
+
+
+The following error strings are defined in data.asm and used by panic handlers:
+
+| Variable                           | Message
+| kernel_init_string_error_memory_low| "Error: no enough memory"
+| kernel_init_string_error_acpi      | "Error: ACPI table not found"
+| kernel_init_string_error_acpi_2    | "Error: no support for acpi v2 version"
+| kernel_init_string_error_acpi_    | "Error: APIC table not found"
+
+| kernel_init_string_error_apic      | "Error: APIC table not found"
+| kernel_init_string_error_ioapic     | "Error: I / O APIC table not found"

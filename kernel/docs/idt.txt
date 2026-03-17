@@ -1,0 +1,84 @@
+KERNEL IDT MANAGEMENT
+File: kernel/idt.asm
+Author: arfy slowy
+
+OVERVIEW
+Provides IDT (Interrupt Descriptor Table) management functions for registering interrupt handlers and exception handlers.
+
+CONSTANTS
+  KERNEL_IDT_IRQ_offset    = 0x20 (IRQ base vector)
+  KERNEL_IDT_TYPE_exception = 0x8E00 (Present, DPL=0, 32-bit interrupt gate)
+  KERNEL_IDT_TYPE_irq      = 0x8F00 (Present, DPL=0, 32-bit interrupt gate)
+  KERNEL_IDT_TYPE_isr      = 0xEF00 (Present, DPL=3, 32-bit interrupt gate)
+
+FUNCTIONS
+
+kernel_idt_mount
+  Purpose: Register a single ISR in the IDT
+  Input: RAX = handler address, BX = type, EDI = vector
+  Flow:
+    1. Shift EDI left by 4 (multiply by 16, entry size)
+    2. Add base address of IDT
+    3. Call kernel_idt_update with count=1
+
+kernel_idt_update
+  Purpose: Write one or more IDT entries
+  Input: RAX = handler address, BX = type, RCX = count, RDI = IDT entry offset
+  Flow:
+    1. Store low 16 bits of handler (offset low)
+    2. Store code segment selector (CS ring0)
+    3. Store type and offset high
+    4. Repeat for count entries
+
+kernel_idt_exception_default
+  Purpose: Default exception handler (breakpoint + iret)
+  Used for all unhandled exceptions 0-31
+
+kernel_idt_spurious_interrupt
+  Purpose: Handle spurious interrupts (empty handler)
+  Simply returns via iretq
+
+kernel_idt_interrupt_software
+  Purpose: Software interrupt handler
+  Sets carry flag in eflags before returning
+
+FLOW: kernel_idt_mount
+  +------------------------+
+  | Start                  |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Save registers         |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Swap RAX and RDI       |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Calculate entry offset | (vector * 16)
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Add IDT base address   |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Call kernel_idt_update |
+  | with count=1           |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Restore registers     |
+  +--------+----------------+
+            |
+            v
+  +------------------------+
+  | Return                 |
+  +------------------------+

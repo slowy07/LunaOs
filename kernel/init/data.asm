@@ -18,6 +18,10 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+; NOTE: 
+; Documentation
+; kernel/init/docs/data.txt
+
 kernel_init_video_string_welcome db "welcome cik", STATIC_ASCII_NEW_LINE
 kernel_init_video_string_welcome_end:
 

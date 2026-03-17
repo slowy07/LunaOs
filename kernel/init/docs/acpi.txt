@@ -198,10 +198,15 @@ Checksum Validation:
   - Result must be 0 (mod 256)
 
 MADT Entry Processing:
-  - Type 0 (LAPIC): Add to APIC ID table if enabled
-  - Type 1 (IO-APIC): Store base address if GSB == 0
+  - Type 0 (LAPIC): Jump to .madt_apic, add to APIC ID table if enabled
+  - Type 1 (IO-APIC): Jump to .madt_ioapic, store base address if GSB == 0
   - Type 2 (ISO): Skip for now
   - Type 9 (x2APIC): Skip for now
+
+BUG FIX:
+  IO-APIC entries (type 0x01) were incorrectly jumping to .madt_apic 
+  instead of .madt_ioapic. This caused IO-APIC to never be parsed, 
+  resulting in "I/O APIC table not found" panic.
 
 Output Variables:
   - kernel_apic_base_address: Local APIC MMIO base

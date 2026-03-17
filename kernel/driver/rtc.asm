@@ -64,9 +64,7 @@ driver_rtc_semaphore db STATIC_FALSE
 driver_rtc_microtime db STATIC_EMPTY
 driver_rtc_time db STATIC_EMPTY
 
-driver_rtc:
-  xchg bx, bx
-  
+driver_rtc: 
   push rax
 
   inc qword [driver_rtc_microtime]

@@ -44,7 +44,7 @@ kernel_init_memory:
 
 .search:
   cmp qword [ebx + KERNEL_INIT_MEMORY_MULTIBOOT_STRUCTURE_MEMORY_MAP.address], KERNEL_BASE_address
-  je .found
+  jae .found
 
   add ebx, KERNEL_INIT_MEMORY_MULTIBOOT_STRUCTURE_MEMORY_MAP.SIZE
   
@@ -59,12 +59,16 @@ kernel_init_memory:
   mov rcx, qword [rbx + KERNEL_INIT_MEMORY_MULTIBOOT_STRUCTURE_MEMORY_MAP.limit]
   shr rcx, STATIC_DIVIDE_BY_PAGE_shift
   
+  mov qword [kernel_page_total_count], rcx
+  
   push rcx
 
   call library_page_from_size
   call kernel_page_drain_few
   
   pop rcx
+
+  mov qword [kernel_page_free_count], rcx
 
   mov al, STATIC_MAX_unsigned
   rep stosb

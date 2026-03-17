@@ -225,9 +225,6 @@ kernel_init_acpi:
   je .madt_apic
 
   cmp byte [rsi + ACPI_STRUCTURE_MADT_entry.type], ACPI_MADT_ENTRY_ioapic
-  je .madt_apic
-
-  cmp byte [rsi + ACPI_STRUCTURE_MADT_entry.type], ACPI_MADT_ENTRY_ioapic
   je .madt_ioapic
 
 .madt_next_entry:

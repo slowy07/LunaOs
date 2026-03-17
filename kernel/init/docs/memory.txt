@@ -77,32 +77,42 @@ Flow Diagram:
 | Calculate page count   |
 | from limit             |
 +----------+-------------+
-           |
-           v
+            |
+            v
++------------------------+
+| Store total page count  | (kernel_page_total_count)
++----------+-------------+
+            |
+            v
 +------------------------+
 | Allocate bitmap memory |--> library_page_from_size
 | Drain pages            |
 +----------+-------------+
-           |
-           v
+            |
+            v
++------------------------+
+| Store free page count  | (kernel_page_free_count)
++----------+-------------+
+            |
+            v
 +------------------------+
 | Initialize bitmap with |
 | 0xFF (mark all free)  |
 +----------+-------------+
-           |
-           v
+            |
+            v
 +------------------------+
 | Store bitmap end addr  |
 +----------+-------------+
-           |
-           v
+            |
+            v
 +------------------------+
 | Align up bitmap end   |
 | Allocate pages for    |
 | kernel memory         |
 +----------+-------------+
-           |
-           v
+            |
+            v
 +------------------------+
 | Return                 |
 +------------------------+
@@ -110,11 +120,20 @@ Flow Diagram:
 Algorithm:
   1. Checks if multiboot_info has memory map (flag bit 6)
   2. Iterates through memory map entries
-  3. Finds first entry with address >= KERNEL_BASE_address
-  4. Calculates number of usable pages
-  5. Allocates bitmap to track page usage
-  6. Initializes bitmap (all 0xFF = all pages free)
-  7. Stores end of bitmap for later use
+  3. Finds first entry with address >= KERNEL_BASE_address (was ==, fixed to >=)
+  4. Calculates number of usable pages from limit
+  5. Stores kernel_page_total_count
+  6. Allocates bitmap to track page usage
+  7. Stores kernel_page_free_count (same as total initially)
+  8. Initializes bitmap (all 0xFF = all pages free)
+  9. Stores end of bitmap for later use
+  10. Calculates pages used for bitmap, allocates them
+
+BUG FIXES:
+  1. Changed `je` to `jae` - was only matching exact address, now matches 
+     any address >= KERNEL_BASE_address
+  2. Added kernel_page_total_count initialization - was never set
+  3. Added kernel_page_free_count initialization - was never set
 
 Error Handling:
   - Jumps to kernel_panic if memory map flag not set

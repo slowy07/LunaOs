@@ -95,3 +95,10 @@ kernel_init_gdt:
 
   ltr word [kernel_gdt_tss_bsp_selector]
   
+  mov fs, ax
+  mov gs, ax
+
+  mov ax, KERNEL_STRUCTURE_GDT.ds_ring0
+  mov ds, ax
+  mov es, ax
+  mov ss, ax

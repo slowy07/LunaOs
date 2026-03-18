@@ -26,6 +26,16 @@ kernel_init_idt:
   mov ecx, 32
   call kernel_idt_update
 
+  mov rax, kernel_idt_interrupt_hardware
+  mov bx, KERNEL_IDT_TYPE_irq
+  mov ecx, 16
+  call kernel_idt_update
+
+  mov rax, kernel_idt_interrupt_software
+  mov bx, KERNEL_IDT_TYPE_isr
+  mov ecx, 208
+  call kernel_idt_update
+
   mov rax, 255
   mov bx, KERNEL_IDT_TYPE_irq
   mov rdi, kernel_idt_spurious_interrupt

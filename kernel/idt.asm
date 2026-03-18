@@ -49,11 +49,21 @@ kernel_idt_exception_default:
   
   nop
 
-  iret
+  iretq
 
-kernel_idt_spurious_interrupt:
+kernel_idt_interrupt_hardware:
+  push rdi
+
+  mov rdi, qword [kernel_apic_base_address]
+  mov dword [rdi + KERNEL_APIC_EOI_register], STATIC_EMPTY
+  
+  pop rdi
+
   iretq
 
 kernel_idt_interrupt_software:
   or word [rsp + KERNEL_STRUCTURE_TASK_IRETQ.eflags], KERNEL_TASK_EFLAGS_cf
+  iretq
+
+kernel_idt_spurious_interrupt:
   iretq

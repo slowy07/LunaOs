@@ -56,7 +56,7 @@ kernel_idt_interrupt_hardware:
 
   mov rdi, qword [kernel_apic_base_address]
   mov dword [rdi + KERNEL_APIC_EOI_register], STATIC_EMPTY
-  
+
   pop rdi
 
   iretq

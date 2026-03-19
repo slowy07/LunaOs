@@ -1,0 +1,267 @@
+PS/2 CONTROLLER DRIVER
+File: kernel/driver/ps2.asm
+
+OVERVIEW
+Provides driver support for PS/2 keyboard and mouse devices. The PS/2 controller
+is the standard interface for these devices on x86 systems.
+
+HARDWARE INTERFACE
+
+I/O Ports:
++------------------------------+------------+--------------------------------+
+| Port                         | Access     | Description                    |
++------------------------------+------------+--------------------------------+
+| 0x064 (STATUS/COMMAND)      | Read/Write | Status register (read)         |
+|                              |            | Command register (write)       |
+| 0x060 (DATA)                | Read/Write | Data port                      |
++------------------------------+------------+--------------------------------+
+
+Status Register Bits:
++------+--------------------------------------------+
+| Bit  | Description                                |
++------+--------------------------------------------+
+| 0    | Output buffer full (read)                 |
+| 1    | Input buffer full (write)                 |
+| 2    | System flag (self-test passed)            |
+| 3    | Command/data (0=data, 1=command)          |
+| 5    | Second port output buffer full            |
+| 6    | Timeout error                            |
+| 7    | Parity error                             |
++------+--------------------------------------------+
+
+INTERRUPTS
+
+IRQ Assignments:
++------------------+--------------+--------------------------------+
+| Device           | IRQ Number   | IO-APIC Register              |
++------------------+--------------+--------------------------------+
+| Keyboard         | 0x01         | 0x20 + (1 * 2) = 0x22        |
+| Mouse            | 0x0C         | 0x20 + (12 * 2) = 0x34      |
++------------------+--------------+--------------------------------+
+
+PS/2 CONTROLLER COMMANDS
+
+Command Register (0x64):
++------------------+------------------------------------------------+
+| Command          | Description                                    |
++------------------+------------------------------------------------+
+| 0x20             | Read configuration byte                        |
+| 0x60             | Write configuration byte                      |
+| 0xA7             | Disable second port                           |
+| 0xA8             | Enable second port                            |
+| 0xA9             | Test second port                              |
+| 0xAA             | Test controller                               |
+| 0xAB             | Test first port                              |
+| 0xAD             | Disable first port                           |
+| 0xAE             | Enable first port                            |
+| 0xD0             | Read controller output port                   |
+| 0xD4             | Write to second port                          |
++------------------+------------------------------------------------+
+
+DEVICE COMMANDS (via 0x60)
+
++------------------+------------------------------------------------+
+| Command          | Description                                    |
++------------------+------------------------------------------------+
+| 0xF2             | Get device ID                                 |
+| 0xF3             | Set sample rate                               |
+| 0xF4             | Enable scanning                               |
+| 0xF5             | Disable scanning                              |
+| 0xF6             | Set default values                            |
+| 0xFF             | Reset device                                  |
++------------------+------------------------------------------------+
+
+DEVICE RESPONSES
+
++------------------+------------------------------------------------+
+| Response         | Description                                    |
++------------------+------------------------------------------------+
+| 0xAA             | Self test passed                              |
+| 0xFA             | Command acknowledged                          |
+| 0xFC             | Error                                         |
+| 0xFE             | Resend request                               |
++------------------+------------------------------------------------+
+
+KEYBOARD SCAN CODES
+
+Standard Scan Codes (Set 2):
++--------------------------+--------------------------+
+| Key                      | Make Code                |
++--------------------------+--------------------------+
+| ESC                      | 0x01                     |
+| 1-9, 0                  | 0x02-0x0A                |
+| -, =                    | 0x0B, 0x0C               |
+| Backspace                | 0x0E                     |
+| Tab                      | 0x0F                     |
+| Q-Z                      | 0x10-0x1D                |
+| A-Z                      | 0x1E-0x2C                |
+| [                        | 0x1A                     |
+| ]                        | 0x1B                     |
+| Enter                    | 0x1C                     |
+| Left Ctrl                | 0x1D                     |
+| A-Z                      | 0x1E-0x2C                |
+| ;, '                    | 0x27, 0x28               |
+| `                        | 0x29                     |
+| Left Shift               | 0x2A                     |
+| \                        | 0x2B                     |
+| Z-M                      | 0x2C-0x39                |
+| , . /                    | 0x3A-0x3C                |
+| Right Shift              | 0x36                     |
+| * (Keypad)               | 0x37                     |
+| Right Alt                | 0x38                     |
+| Space                    | 0x39                     |
+| Caps Lock                | 0x3A                     |
+| F1-F12                   | 0x3B-0x44                |
+| Num Lock                 | 0x45                     |
+| Scroll Lock              | 0x46                     |
++--------------------------+--------------------------+
+
+Special Prefix Codes:
++------------------+------------------------------------------------+
+| Prefix           | Description                                    |
++------------------+------------------------------------------------+
+| 0xE0             | Extended key sequence                          |
+| 0xE1             | Pause key sequence (14 bytes)                 |
++------------------+------------------------------------------------+
+
+Key Release:
+  Release = Make Code + 0x80
+  Example: A release = 0x1E + 0x80 = 0x9E
+
+KEYBOARD VARIABLES
+
+Semaphores:
++----------------------------------+------------------------------------+
+| Variable                         | Purpose                            |
++----------------------------------+------------------------------------+
+| driver_ps2_keyboard_ctrl_semaphore | Control key state                 |
+| driver_ps2_keyboard_shift_left_semaphore | Left shift pressed           |
+| driver_ps2_keyboard_shift_right_semaphore| Right shift pressed          |
+| driver_ps2_keyboard_alt_semaphore | Alt key pressed                   |
+| driver_ps2_keyboard_capslock_semaphore | Caps lock toggle state         |
++----------------------------------+------------------------------------+
+
+State Variables:
++----------------------------------+------------------------------------+
+| Variable                         | Purpose                            |
++----------------------------------+------------------------------------+
+| driver_ps2_keyboard_sequence    | Stores prefix byte (0xE0/0xE1)    |
+| driver_ps2_keyboard_cache       | Ring buffer for key events (4 keys)|
++----------------------------------+------------------------------------+
+
+Keyboard Matrices:
+  driver_ps2_keyboard_matrix_low  : Normal key mappings
+  driver_ps2_keyboard_matrix_high : Shift key mappings
+
+KEYBOARD FLOW DIAGRAM
+
++---------------------------+
+| Keyboard Interrupt (IRQ1) |
++--------+------------------+
+          |
+          v
++---------------------------+
+| Read scan code from port  |
+| 0x60                      |
++--------+------------------+
+          |
+          v
++---------------------------+
+| Is it prefix (0xE0/0xE1)? |
++--------+------------------+
+          |
+    +-----+-----+
+   YES         NO
+    |           |
+    v           v
++----------+  +---------------------------+
+| Store    |  | Look up in matrix        |
+| prefix   |  +--------+------------------+
++----------+           |
+          |           v
+          |  +---------------------------+
+          |  | Key release? (>= 0x80)   |
+          |  +--------+------------------+
+          |           |
+          |     +-----+-----+
+          |    YES          NO
+          |     |           |
+          |     v           v
+          |  +-------+  +-------+
+          |  | Add   |  | Add   |
+          |  | 0x80  |  | 0x00  |
+          |  +-------+  +-------+
+          |     |           |
+          |     v           v
+          |  +---------------------------+
+          |  | Check shift/capslock     |
+          |  | Toggle matrix if needed  |
+          |  +--------+------------------+
+          |           |
+          v           v
++---------------------------+
+| Save to keyboard cache    |
+| (ring buffer shift)      |
++--------+------------------+
+          |
+          v
++---------------------------+
+| Send EOI to APIC          |
++---------------------------+
+
+FUNCTIONS
+
+driver_ps2_keyboard
+  Keyboard interrupt handler (IRQ 1)
+
+driver_ps2_keyboard_shift
+  Handles shift and capslock state changes
+
+driver_ps2_keyboard_save
+  Saves key to keyboard cache ring buffer
+
+driver_ps2_keyboard_matrix_change
+  Switches between normal/shift keyboard matrix
+
+driver_ps2_keyboard_read
+  Reads a key from the keyboard cache
+
+driver_ps2_check_write
+  Waits for input buffer to be empty
+
+driver_ps2_check_read
+  Waits for output buffer to be full
+
+driver_ps2_send_command
+  Sends command to PS/2 controller
+
+driver_ps2_send_command_receive_answer
+  Sends command and receives response
+
+driver_ps2_receive_answer
+  Receives response from PS/2 device
+
+driver_ps2_send_answer_or_ask_device
+  Sends data to PS/2 device
+
+driver_ps2_check_dummy_answer_or_dump
+  Clears any pending data in output buffer
+
+KEYBOARD CACHE
+
+The keyboard uses a 4-entry ring buffer to store recent key events.
+
+Structure (64-bit):
+  Bits 0-15   : Oldest key
+  Bits 16-31  : Second key
+  Bits 32-47  : Third key
+  Bits 48-63  : Fourth key (newest)
+
+Reading:
+  driver_ps2_keyboard_read extracts the oldest key from the cache
+  Cache is then shifted left (newest moves to oldest position)
+
+NOTES
+  - Standard PS/2 keyboard uses scan code set 2
+  - Mouse support is present but not fully implemented
+  - Both ports can be used, but this driver uses only port 1 (keyboard)

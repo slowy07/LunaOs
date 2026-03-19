@@ -49,6 +49,7 @@ kernel:
   
   ; driver
   %include "kernel/driver/rtc.asm"
+  %include "kernel/driver/ps2.asm"
 
   ; library
   %include "library/page_align_up.asm"

@@ -18,27 +18,12 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-%include "kernel/init/long_mode.asm"
-%include "kernel/init/panic.asm"
-%include "kernel/init/data.asm"
-%include "kernel/init/multiboot.asm"
+kernel_init_ps2:
+  mov eax, KERNEL_IDT_IRQ_offset + DRIVER_PS2_KEYBOARD_IRQ_number
+  mov bx, KERNEL_IDT_TYPE_irq
+  mov rdi, driver_ps2_keyboard
+  call kernel_idt_mount
 
-[BITS 64]
-  %include "kernel/init/apic.asm"
-
-kernel_init_long_mode:
-  %include "kernel/init/video.asm"
-  %include "kernel/init/memory.asm"
-  %include "kernel/init/acpi.asm"
-  %include "kernel/init/page.asm"
-  %include "kernel/init/gdt.asm"
-  %include "kernel/init/idt.asm"
-  %include "kernel/init/rtc.asm"
-  %include "kernel/init/ps2.asm"
-  %include "kernel/init/task.asm"
-
-  call kernel_init_apic
-
-  mov dword [rsi + KERNEL_APIC_TICR_register], DRIVER_RTC_Hz
-
-  mov dword [rsi + KERNEL_APIC_EOI_register], STATIC_EMPTY
+  mov eax, KERNEL_IDT_IRQ_offset + DRIVER_PS2_KEYBOARD_IRQ_number
+  mov ebx, DRIVER_PS2_KEYBOARD_IO_APIC_register
+  call kernel_io_apic_connect

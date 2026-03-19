@@ -1,226 +1,79 @@
+ACPI INITIALIZATION
 File: kernel/init/acpi.asm
 Author: arfy slowy
 Date: 2026
 License: MIT
 
-This module initializes ACPI (Advanced Configuration and Power Interface) by:
-1. Finding and validating the RSDP (Root System Description Pointer)
-2. Parsing the RSDT (Root System Description Table)
-3. Finding the MADT (Multiple APIC Description Table)
-4. Enumerating LAPICs (Local APICs) and IO-APICs
-5. Building the APIC ID table for SMP support
+OVERVIEW
+Initializes ACPI hardware, finds RSDP, parses RSDT/MADT tables, and enumerates
+LAPICs and IO-APICs for SMP support.
 
-STRUCTURES
-ACPI_STRUCTURE_RSDP:
-  Offset   Size   Field          Description
-  0x00     8      .signature     "RSD PTR " (must match)
-  0x08     1      .checksum      Byte checksum
-  0x09     6      .oem_id        OEM identifier
-  0x0F     1      .revision      ACPI version (0 = 1.0, 2+ = 2.0+)
-  0x10     4      .rsdt_address  Physical address of RSDT
+FLOW DIAGRAM: MADT Entry Processing
 
-ACPI_STRUCTURE_RSDT:
-  Offset   Size   Field          Description
-  0x00     4      .signature     "RSDT" (must match)
-  0x04     4      .length        Table length
-  0x08     1      .revision      Revision
-  0x09     1      .checksum      Byte checksum
-  0x0A     6      .oem_id        OEM ID
-  0x10     8      .oem_table_id  OEM table ID
-  0x18     4      .oem_revision  OEM revision
-  0x1C     4      .creator_id    Creator ID
-  0x20     4      .creator_rev   Creator revision
++-------------------------+
+| .madt_loop              |
++--------+-----------------+
+          |
+          v
++-------------------------+
+| Read entry type         |
++--------+-----------------+
+          |
+          v
++-------------------------+
+| Type == 0x00 (LAPIC)?   |
++--------+-----------------+
+          |
+    +-----+-----+
+    |YES          |NO
+    v             v
++-------------------------+-------------------------+
+| .madt_apic             | Type == 0x01 (IO-APIC)?|
++--------+-----------------+--------+----------------+
+          |                        |
+          |                        +-----+-----+
+          |                        |YES          |NO
+          |                        v             v
+          |              +-------------------------+-------------+
+          |              | .madt_ioapic           | Skip entry  |
+          |              +--------+-----------------+-------------+
+          |                        |                        |
+          v                        v                        v
++-------------------------+.madt_next_entry<----------------+
+| Check enabled flag      |
+| Increment AP count      |
+| Store APIC ID           |
+| Update highest ID       |
++-------------------------+
+          |
+          v
++------------------+
+| .madt_next_entry|
++------------------+
+          |
+          v
++------------------+
+| More entries?    |
++-----------------+
+          |
+    +-----+-----+
+    |YES        |NO
+    v           v
+    |     +---------------------+
+    |     | End of MADT parsing|
+    +-----+---------------------+
+          |
+          v
+   +-------------+
+   | Continue    |
+   | RSDT search |
+   +-------------+
 
-ACPI_STRUCTURE_MADT:
-  Offset   Size   Field          Description
-  0x00     4      .signature     "APIC"
-  0x04     4      .length        Table length
-  0x08     1      .revision      Revision
-  0x09     1      .checksum      Byte checksum
-  0x0C     4      .apic_address  Local APIC physical address
-  0x10     4      .flags         Flags
 
-MADT Entry Types:
-  +-------+---------------------------+
-  | Type  | Description               |
-  +-------+---------------------------+
-  | 0x00  | Processor LAPIC           |
-  | 0x01  | IO-APIC                   |
-  | 0x02  | Interrupt Source Override |
-  | 0x09  | x2APIC                    |
-  +-------+---------------------------+
-
-
-FUNCTION: kernel_init_acpi
-Purpose: Initialize ACPI and enumerate APICs
-
-Flow Diagram:
-
-+------------------------+
-| Start kernel_init_acpi|
-+----------+-------------+
-           |
-           v
-+------------------------+
-| Save all registers     |
-| (push rax,rbx,rcx,     |
-| rdx,rsi,rdi,r8)        |
-+----------+-------------+
-           |
-           v
-+------------------------+
-| Search for RSDP       | --> EBX = "RSD PTR "
-| in BIOS area          | Scan 0x040E * 64KB = 1MB
-+----------+-------------+
-           |
-           v
-+------------------------+
-| Found RSDP?           |
-+----------+-------------+
-           |
-           +--NO--> Search continues
-           |
-           YES
-           |
-           v
-+------------------------+
-| Validate RSDP checksum|
-+----------+-------------+
-           |
-           +--FAIL--> Continue search
-           |
-           PASS
-           |
-           v
-+------------------------+
-| Check ACPI version     |
-+----------+-------------+
-           |
-           v
-+------------------------+
-| ACPI v1?               |
-+----------+-------------+
-           |
-           +--NO (v2)--> Error: no v2 support
-           |
-           YES (v1)
-           |
-           v
-+------------------------+
-| Get RSDT address       |
-+----------+-------------+
-           |
-           v
-+------------------------+
-| Validate RSDT signature|
-| ("RSDT")               |
-+----------+-------------+
-           |
-           +--FAIL--> kernel_panic
-           |
-           PASS
-           |
-           v
-+------------------------+
-| Iterate RSDT entries   |
-| Search for MADT ("APIC")|
-+----------+-------------+
-           |
-           v
-+------------------------+
-| Found MADT?            |
-+----------+-------------+
-           |
-           +--NO--> Continue search
-           |
-           YES
-           |
-           v
-+------------------------+
-| Store LAPIC base addr  |
-| Store APIC size        |
-+----------+-------------+
-           |
-           v
-+------------------------+
-| Parse MADT entries:    |
-| - LAPIC (type 0)       |
-| - IO-APIC (type 1)     |
-+----------+-------------+
-           |
-           v
-+------------------------+
-| For each LAPIC:        |
-| - Check enabled flag   |
-| - Increment AP count   |
-| - Store APIC ID        |
-| - Update highest ID    |
-+----------+-------------+
-           |
-           v
-+------------------------+
-| For IO-APIC:           |
-| - Check GSB != 0       |
-| - Store IO-APIC addr   |
-| - Set semaphore        |
-+----------+-------------+
-           |
-           v
-+------------------------+
-| Validate results:      |
-| - AP count > 0?        |
-| - IO-APIC found?       |
-+----------+-------------+
-           |
-           +--FAIL--> kernel_panic
-           |
-           PASS
-           |
-           v
-+------------------------+
-| Restore registers      |
-+----------+-------------+
-           |
-           v
-+------------------------+
-| Return                 |
-+------------------------+
-
-RSDP Search Algorithm:
-  1. Start at physical address 0x000E0000 (BIOS ROM start)
-  2. Scan every 16 bytes (signature alignment)
-  3. Search up to 0x000FFFFF (1MB mark)
-  4. Look for "RSD PTR " signature
-  5. Validate checksum
-
-Checksum Validation:
-  - Sum all bytes in structure
-  - Result must be 0 (mod 256)
-
-MADT Entry Processing:
-  - Type 0 (LAPIC): Jump to .madt_apic, add to APIC ID table if enabled
-  - Type 1 (IO-APIC): Jump to .madt_ioapic, store base address if GSB == 0
-  - Type 2 (ISO): Skip for now
-  - Type 9 (x2APIC): Skip for now
-
-BUG FIX:
-  IO-APIC entries (type 0x01) were incorrectly jumping to .madt_apic 
-  instead of .madt_ioapic. This caused IO-APIC to never be parsed, 
-  resulting in "I/O APIC table not found" panic.
-
-Output Variables:
-  - kernel_apic_base_address: Local APIC MMIO base
-  - kernel_apic_size: APIC register space size
-  - kernel_apic_count: Number of detected CPUs
-  - kernel_apic_id_table: Array of APIC IDs
-  - kernel_init_apic_id_highest: Highest APIC ID
-  - kernel_io_apic_base_address: IO-APIC MMIO base
-  - kernel_init_ioapic_semaphore: Set if IO-APIC found
-
-Error Handling:
-  - Jumps to kernel_panic if RSDP not found
-  - Jumps to kernel_panic if checksum fails
-  - Jumps to kernel_panic if ACPI v2 not supported
-  - Jumps to kernel_panic if MADT not found
-  - Jumps to kernel_panic if no LAPICs enabled
-  - Jumps to kernel_panic if IO-APIC not found
+KEY VARIABLES
+  kernel_apic_base_address       : Local APIC MMIO base
+  kernel_apic_count             : Number of CPUs detected
+  kernel_apic_id_table          : Array of APIC IDs
+  kernel_init_apic_id_highest   : Highest APIC ID
+  kernel_io_apic_base_address   : IO-APIC MMIO base
+  kernel_init_ioapic_semaphore  : Set when IO-APIC found

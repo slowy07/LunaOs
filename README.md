@@ -55,6 +55,7 @@ Documentation is organized in the following structure:
 
 ### Driver Documentation (`kernel/driver/`)
 - `driver_docs.txt` - RTC driver documentation
+- `ps2.txt` - PS/2 keyboard/mouse driver
 
 ### Library Documentation (`library/docs/`)
 - `page_align_up.txt` - Page alignment utility
@@ -88,6 +89,7 @@ kernel/kernel.asm
         +---> kernel/idt.asm
         +---> kernel/task.asm
         +---> kernel/driver/rtc.asm
+        +---> kernel/driver/ps2.asm
 ```
 
 ## Key Systems
@@ -97,3 +99,4 @@ kernel/kernel.asm
 - **Tasking**: Round-robin scheduler with IRQ0 timer
 - **APIC**: Local APIC for timer, IO-APIC for device interrupts
 - **RTC**: 1024Hz periodic interrupts for task scheduling
+- **PS/2**: Keyboard driver with scan code translation

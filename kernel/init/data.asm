@@ -22,8 +22,11 @@
 ; Documentation
 ; kernel/init/docs/data.txt
 
-kernel_init_video_string_welcome db "welcome cik", STATIC_ASCII_NEW_LINE
-kernel_init_video_string_welcome_end:
+kernel_init_string_video_welcome db "LunaOS v0.1.0", STATIC_ASCII_NEW_LINE
+kernel_init_string_video_welcome_end:
+
+kernel_init_string_error_memory db "Error: init memory map got error"
+kernel_init_string_error_memory_end:
 
 kernel_init_memory_string_error db "Error: memory map error"
 kernel_init_memory_string_error_end:

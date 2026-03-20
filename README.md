@@ -92,6 +92,318 @@ kernel/kernel.asm
         +---> kernel/driver/ps2.asm
 ```
 
+## Process Flow Diagrams
+
+### Boot Process Flow
+
+```
++------------------+
+|   BIOS/UEFI     |
++------------------+
+        |
+        v
++------------------+
+|    Bootloader    |
+|   (GRUB/QEMU)   |
++------------------+
+        |
+        v
++------------------+
+| kernel/kernel.asm|
+|   (32-bit mode)  |
++------------------+
+        |
+        v
++------------------+
+| Long Mode Setup  |
+| kernel/init/     |
+|  long_mode.asm   |
++------------------+
+        |
+        v
++------------------+
+|  64-bit Mode     |
+|  Kernel Init     |
++------------------+
+```
+
+### Kernel Initialization Sequence
+
+```
++-------------------------+
+|   kernel_init_long_mode |
++-------------------------+
+            |
+            v
++-------------------------+     +-------------------------+
+|   video.asm             | --> |   Display Init          |
++-------------------------+     +-------------------------+
+            |
+            v
++-------------------------+     +-------------------------+
+|   memory.asm            | --> |   Physical Memory Map   |
++-------------------------+     +-------------------------+
+            |
+            v
++-------------------------+     +-------------------------+
+|   acpi.asm              | --> |   ACPI Table Parsing    |
++-------------------------+     +-------------------------+
+            |
+            v
++-------------------------+     +-------------------------+
+|   page.asm              | --> |   Virtual Memory Setup  |
++-------------------------+     +-------------------------+
+            |
+            v
++-------------------------+     +-------------------------+
+|   gdt.asm               | --> |   Segment Descriptors   |
++-------------------------+     +-------------------------+
+            |
+            v
++-------------------------+     +-------------------------+
+|   idt.asm               | --> |   Interrupt Vectors     |
++-------------------------+     +-------------------------+
+            |
+            v
++-------------------------+     +-------------------------+
+|   rtc.asm               | --> |   Timer Setup (1024Hz)  |
++-------------------------+     +-------------------------+
+            |
+            v
++-------------------------+     +-------------------------+
+|   ps2.asm               | --> |   Keyboard/Mouse Init   |
++-------------------------+     +-------------------------+
+            |
+            v
++-------------------------+     +-------------------------+
+|   task.asm              | --> |   Scheduler Init        |
++-------------------------+     +-------------------------+
+            |
+            v
++-------------------------+
+|   kernel_init_apic      |
+|   Enable Timer          |
++-------------------------+
+```
+
+### Task Scheduler Flow (Round-Robin)
+
+```
++-------------------+
+|   RTC Interrupt   |
+|    (1024 Hz)      |
++-------------------+
+        |
+        v
++-------------------+
+| kernel_task()     |
+| Save Current Task |
+|   State (RSP,CR3) |
++-------------------+
+        |
+        v
++-------------------+
+| Find Next Secured |
+|     Task (FLAG)   |
++-------------------+
+        |
+        v
+    +-------+-------+
+    |  Found Task?  |
+    +-------+-------+
+        |           |
+       Yes          No
+        |           |
+        v           v
++----------------+  +-----------------+
+| Switch Context |  | Search Next     |
+| (RSP,CR3,FXR) |  | Block in Queue  |
++----------------+  +-----------------+
+        |                  |
+        v                  v
++----------------+  +-----------------+
+| Load New Task  |  | Allocate Block  |
+| Restore State  |  | if Needed       |
++----------------+  +-----------------+
+        |                  |
+        +--------+---------+
+                 |
+                 v
+        +-----------------+
+        |   iretq         |
+        | Resume Task     |
+        +-----------------+
+```
+
+### Memory Management Flow
+
+```
++-------------------------+
+| kernel_memory_alloc()   |
++-------------------------+
+            |
+            v
++-------------------------+
+| Search Bitmap for       |
+| Free Pages (bt qword)   |
++-------------------------+
+            |
+            v
++-------------------------+
+| Find Contiguous Block   |
+| of Required Size        |
++-------------------------+
+            |
+            v
+    +-------------------+
+    |  Block Found?     |
+    +-------------------+
+        |           |
+       Yes          No
+        |           |
+        v           v
++----------------+  +-----------------+
+| Lock Pages     |  | Return Error    |
+| (btr bitmap)   |  | (stc flag)      |
++----------------+  +-----------------+
+        |
+        v
++-------------------------+
+| Return Physical Address |
+| (page_index << 12 +     |
+|  KERNEL_BASE_address)   |
++-------------------------+
+```
+
+### Virtual Memory (Paging) Flow
+
+```
++-------------------------+
+| kernel_page_map_logical |
+|   or _map_physical      |
++-------------------------+
+            |
+            v
++-------------------------+
+| kernel_page_prepare()   |
+| Calculate PML4/PML3/    |
+| PML2/PML1 indices       |
++-------------------------+
+            |
+            v
+    +-------------------+
+    |  PML4 Entry       |
+    |  Exists?          |
+    +-------------------+
+        |           |
+       Yes          No
+        |           |
+        v           v
++----------------+  +-----------------+
+| Use Existing   |  | Alloc & Init    |
+| PML4 Entry     |  | New PML3 Page   |
++----------------+  +-----------------+
+        |
+        v
+    +-------------------+
+    |  PML3 Entry       |
+    |  Exists?          |
+    +-------------------+
+        |           |
+       Yes          No
+        |           |
+        v           v
++----------------+  +-----------------+
+| Use Existing   |  | Alloc & Init    |
+| PML3 Entry     |  | New PML2 Page   |
++----------------+  +-----------------+
+        |
+        v
+    +-------------------+
+    |  PML2 Entry       |
+    |  Exists?          |
+    +-------------------+
+        |           |
+       Yes          No
+        |           |
+        v           v
++----------------+  +-----------------+
+| Use Existing   |  | Alloc & Init    |
+| PML2 Entry     |  | New PML1 Page   |
++----------------+  +-----------------+
+        |
+        v
++-------------------------+
+| Fill PML1 Entry with    |
+| Physical Page Address   |
++-------------------------+
+```
+
+### Interrupt Handling Flow
+
+```
++-------------------------+
+| CPU Exception/Interrupt |
+| (IDT Vector Fired)      |
++-------------------------+
+            |
+            v
++-------------------------+
+| Push Registers onto     |
+| Interrupt Stack         |
++-------------------------+
+            |
+            v
+    +-------------------+
+    |  Interrupt Type?  |
+    +-------------------+
+        |       |       |
+        v       v       v
+    Exception   IRQ    Software
+        |       |       |
+        v       v       v
++----------+ +-----+ +--------+
+| Exception| |Send | |Set CF  |
+| Handler  | |EOI  | |Flag    |
+| (panic)  | |to   | |in      |
+|          | |APIC | |EFLAGS  |
++----------+ +-----+ +--------+
+        |       |       |
+        v       v       v
++-------------------------+
+|     iretq               |
+| Restore & Return        |
++-------------------------+
+```
+
+### Task Structure Layout
+
+```
++-----------------------------------+
+|         KERNEL_STRUCTURE_TASK     |
++-----------------------------------+
+|  cr3      (8 bytes) - Page Table  |
++-----------------------------------+
+|  rsp      (8 bytes) - Stack Ptr   |
++-----------------------------------+
+|  pid      (8 bytes) - Process ID  |
++-----------------------------------+
+|  cpu      (8 bytes) - CPU Core    |
++-----------------------------------+
+|  time     (8 bytes) - Creation    |
++-----------------------------------+
+|  flags    (2 bytes) - Task Flags  |
++-----------------------------------+
+
+Task Flags:
+  bit 0: active     - Task is running
+  bit 1: closed     - Task terminated
+  bit 2: daemon     - Background task
+  bit 3: processing - Currently executing
+  bit 4: secured    - Task slot locked
+  bit 5: thread     - Thread (no own page table)
+```
+
 ## Key Systems
 
 - **Paging**: 4-level page tables (PML4->PDPT->PD->PT), 4KB/2MB pages

@@ -54,3 +54,5 @@ kernel:
   ; library
   %include "library/page_align_up.asm"
   %include "library/page_from_size.asm"
+
+kernel_end:

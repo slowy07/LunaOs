@@ -7,8 +7,11 @@ Contains global data structures for GDT, TSS, and IDT headers used by the kernel
 
 GDT HEADER
   kernel_gdt_header:
-    - limit: 2 bytes (size of GDT)
-    - address: 8 bytes (linear address)
+    - limit: 2 bytes (set to KERNEL_PAGE_SIZE_byte = 4096)
+    - address: 8 bytes (linear address, filled by init)
+  
+  Note: Limit is set to full page size, not actual GDT size.
+        This allows room for future expansion.
   
   Alignment: 8 bytes (QWORD)
 
@@ -18,16 +21,19 @@ TSS (Task State Segment)
   
   TSS Table (kernel_gdt_tss_table):
     - 4 bytes: Reserved (0)
-    - 8 bytes: RSP0 (stack pointer for ring 0)
-    - 92 bytes: Reserved/interrupt stack table
+    - 8 bytes: RSP0 = KERNEL_STACK_pointer (stack for ring 0 interrupts)
+    - 92 bytes: Reserved/interrupt stack table (all zeros)
     
   Size: 104 bytes total
   Alignment: 8 bytes (QWORD)
 
 IDT HEADER
   kernel_idt_header:
-    - limit: 2 bytes (size of IDT)
-    - address: 8 bytes (linear address)
+    - limit: 2 bytes (set to KERNEL_PAGE_SIZE_byte = 4096)
+    - address: 8 bytes (linear address, filled by init)
+  
+  Note: Limit is set to full page size, not actual IDT size.
+        This allows room for future expansion.
   
   Alignment: 8 bytes (QWORD)
 
@@ -36,3 +42,4 @@ These structures are initialized during boot:
 - GDT is set up in kernel/init/gdt.asm
 - IDT is set up in kernel/init/idt.asm
 - TSS provides stack switching for interrupts
+- Address fields (dq STATIC_EMPTY) are filled at runtime

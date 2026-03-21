@@ -1,0 +1,122 @@
+TASK SCHEDULER
+File: kernel/task.asm
+Author: arfy slowy
+
+OVERVIEW
+Implements a round-robin task scheduler for multitasking. Tasks are scheduled
+based on RTC timer interrupts (1024Hz). The scheduler saves/restores full
+CPU state including FPU/MMX/SSE registers.
+
+VARIABLES
+  kernel_task_address        = qword (pointer to first task page)
+  kernel_task_active_list    = qword (array of active tasks per CPU)
+  kernel_task_pid_semaphore  = byte (lock for PID allocation)
+  kernel_task_pid            = qword (next PID to assign)
+
+EFLAGS CONSTANTS
+  KERNEL_TASK_EFLAGS_if       = 0x200 (Interrupt Flag)
+  KERNEL_TASK_EFLAGS_zf       = 0x40 (Zero Flag)
+  KERNEL_TASK_EFLAGS_cf       = 0x1 (Carry Flag)
+  KERNEL_TASK_EFLAGS_df       = 0x400 (Direction Flag)
+  KERNEL_TASK_EFLAGS_default  = KERNEL_TASK_EFLAGS_if
+
+TASK FLAGS
+  Bit  Name       Description
+  0    active     Task is scheduled and running
+  1    closed     Task has terminated
+  2    daemon     Background task (not killed on exit)
+  3    processing Currently being scheduled (lock)
+  4    secured    Task slot is allocated (in use)
+  5    thread     Thread (shares page table with parent)
+
+STACK
+  KERNEL_TASK_STACK_address = Top of task stack region
+  KERNEL_TASK_STACK_size    = 4096 bytes (1 page)
+
+DATA STRUCTURES
+
+KERNEL_STRUCTURE_TASK (42 bytes):
+  Offset  Size  Field   Description
+  0x00    8     cr3     Page table base address (CR3 register)
+  0x08    8     rsp     Stack pointer at time of context switch
+  0x10    8     pid     Process ID
+  0x18    8     cpu     CPU this task is running on (0 = not running)
+  0x20    8     time    Creation timestamp (microtime)
+  0x28    2     flags   Task state flags (see above)
+
+KERNEL_STRUCTURE_TASK_IRETQ (40 bytes):
+  Used for initial task setup (iretq frame)
+  Offset  Size  Field   Description
+  0x00    8     rip     Entry point address
+  0x08    8     cs      Code segment selector
+  0x10    8     eflags  Initial EFLAGS (KERNEL_TASK_EFLAGS_default)
+  0x18    8     rsp     Initial stack pointer
+  0x20    8     ds      Data segment selector
+
+FUNCTIONS
+
+kernel_task
+  Purpose: Task scheduler interrupt handler (called on timer IRQ)
+  Flow:
+    1. Save all general purpose registers
+    2. Save FPU/MMX state with FXSAVE64
+    3. Save current task's RSP and CR3
+    4. Clear processing flag for current task
+    5. Search for next task with secured+active flags
+    6. Set processing flag atomically (LOCK BTS)
+    7. Restore new task's RSP and CR3
+    8. Restore FPU/MMX state with FXRSTOR64
+    9. Reload APIC timer (TICR = DRIVER_RTC_Hz)
+    10. Send EOI to APIC
+    11. IRETQ to resume new task
+
+kernel_task_add
+  Purpose: Add a new task to the scheduler
+  Input: R11 = CR3 (page table), BX = initial flags
+  Output: CF set on error, RDI = task structure address
+  Flow:
+    1. Call kernel_task_queue to find free slot
+    2. Set task's CR3 and initial RSP
+    3. Allocate unique PID via kernel_task_pid_get
+    4. Set creation time from driver_rtc_microtime
+    5. Apply initial flags
+
+kernel_task_queue
+  Purpose: Find or allocate a free task slot
+  Output: RDI = pointer to free task structure, CF set on error
+  Flow:
+    1. Search existing task pages for unsecured slot
+    2. Use LOCK BTS to atomically claim slot
+    3. If no slot found, allocate new page and link it
+    4. Returns pointer to claimed task structure
+
+kernel_task_pid_get
+  Purpose: Get next available PID
+  Output: RCX = unique PID
+  Flow:
+    1. Acquire PID semaphore
+    2. Increment global PID counter
+    3. Check if PID already in use via kernel_task_pid_check
+    4. If in use, try next PID
+    5. Release semaphore and return PID
+
+kernel_task_pid_check
+  Purpose: Check if a PID is already in use
+  Input: ECX = PID to check
+  Output: CF clear if available, CF set if in use or closed
+  Flow:
+    1. Search all task pages for matching PID
+    2. If found, check if task is closed
+    3. Return carry flag based on status
+
+SCHEDULING ALGORITHM
+  Round-robin with fixed time slice (1/1024 second)
+  Tasks are selected in order from the task list
+  Only tasks with both 'secured' and 'active' flags are scheduled
+  'processing' flag prevents scheduling same task twice
+
+NOTES
+- Full CPU state saved/restored (GPR + FPU/MMX/SSE)
+- Task structures stored in linked pages (can grow dynamically)
+- Each CPU has its own active task pointer in kernel_task_active_list
+- Timer reloaded on every context switch to maintain 1024Hz rate

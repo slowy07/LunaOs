@@ -77,9 +77,17 @@ Global Variables:
   | Variable              | Type   | Description                          |
   +-----------------------+--------+--------------------------------------+
   | driver_rtc_semaphore  | byte   | Lock for thread-safe access         |
-  | driver_rtc_microtime  | qword  | Interrupt counter (time base)       |
-  | driver_rtc_time       | struct | Cached time values                  |
+  | driver_rtc_microtime  | byte*  | Interrupt counter (time base)       |
+  | driver_rtc_time       | byte*  | Cached time values                  |
   +-----------------------+--------+--------------------------------------+
+
+  * NOTE: Both driver_rtc_microtime and driver_rtc_time are declared as
+    single bytes (db STATIC_EMPTY) but are accessed as larger structures:
+    - driver_rtc_microtime: inc qword [driver_rtc_microtime]
+    - driver_rtc_time: accessed via offsets up to +6 (7 bytes total)
+    
+    This may cause memory corruption and should be fixed by declaring them
+    as appropriate structures (qword for microtime, 7-byte buffer for time).
 
 FUNCTIONS
 

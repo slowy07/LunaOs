@@ -22,17 +22,24 @@ kernel_io_apic_connect
   Input: EAX = IRQ vector, EBX = IO-APIC register offset
   Output: None
   
-  The IO-APIC uses two I/O ports:
-    - 0xFEC00000 + 0x00: Register select (ioregsel)
-    - 0xFEC00000 + 0x10: I/O window (iowin)
+  The IO-APIC uses memory-mapped I/O:
+    - Base address stored in kernel_io_apic_base_address
+    - Discovered during ACPI initialization (kernel/init/acpi.asm)
+    - Not a fixed address - varies by platform
+  
+  Register Layout (relative to base):
+    +0x00: ioregsel (Register select)
+    +0x10: iowin (I/O window)
   
   Flow:
-    1. Add low offset to EBX
-    2. Write register number to ioregsel
-    3. Write low 32 bits of value to iowin
-    4. Add high offset
-    5. Write register number again
-    6. Write high 32 bits of value to iowin
+    1. Load IO-APIC base address from kernel_io_apic_base_address
+    2. Add KERNEL_IO_APIC_iowin_low (0x00) to EBX
+    3. Write register number to ioregsel
+    4. Write low 32 bits of value (EAX) to iowin
+    5. Add offset for high dword (0x01) to EBX
+    6. Write register number to ioregsel
+    7. Shift RAX right by 32 to get high dword
+    8. Write high 32 bits to iowin
 
 IO-APIC REDIRECTION ENTRY FORMAT
   Bits:

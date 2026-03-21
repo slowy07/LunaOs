@@ -15,20 +15,31 @@ STRUCTURE
 
 64-bit kernel:
   kernel:
-    Infinite loop (halt)
+    Infinite loop (jmp $)
   
-  Then includes all subsystems:
-    - config: Kernel configuration
-    - panic: Error handler
-    - page: Page management
-    - memory: Memory allocation
-    - video: VGA output
-    - apic: Local APIC
-    - io_apic: IO-APIC
-    - data: Data structures
-    - idt: Interrupt handling
-    - task: Task scheduling
-    - rtc: RTC driver
+  Then includes all subsystems in order:
+    Macros:
+      - kernel/macro/close.asm: Semaphore lock macro
+      - kernel/macro/apic.asm: APIC ID macro
+    
+    Kernel core:
+      - kernel/panic.asm: Error/panic handler
+      - kernel/page.asm: Page table management
+      - kernel/memory.asm: Physical memory allocation
+      - kernel/video.asm: VGA text output
+      - kernel/apic.asm: Local APIC support
+      - kernel/io_apic.asm: IO-APIC support
+      - kernel/data.asm: Data structures (GDT, TSS, IDT headers)
+      - kernel/idt.asm: Interrupt handling
+      - kernel/task.asm: Task scheduler
+    
+    Drivers:
+      - kernel/driver/rtc.asm: Real-time clock driver
+      - kernel/driver/ps2.asm: PS/2 keyboard/mouse driver
+    
+    Libraries:
+      - library/page_align_up.asm: Page alignment utility
+      - library/page_from_size.asm: Size to page conversion
 
 EXECUTION FLOW
 
@@ -42,23 +53,30 @@ EXECUTION FLOW
 LOAD ORDER
 
 Configuration:
-  config.asm
-  kernel/config.asm
+  config.asm                    (global config)
+  kernel/config.asm             (kernel config)
 
 Init (32-bit):
-  kernel/init.asm -> includes all kernel/init/*.asm
+  kernel/init.asm               (includes all kernel/init/*.asm)
 
-Kernel (64-bit):
-  panic.asm
-  page.asm
-  memory.asm
-  video.asm
-  apic.asm
-  io_apic.asm
-  data.asm
-  idt.asm
-  task.asm
-  driver/rtc.asm
+Macros:
+  kernel/macro/close.asm        (semaphore lock)
+  kernel/macro/apic.asm         (APIC ID)
+
+Kernel Core (64-bit):
+  kernel/panic.asm
+  kernel/page.asm
+  kernel/memory.asm
+  kernel/video.asm
+  kernel/apic.asm
+  kernel/io_apic.asm
+  kernel/data.asm
+  kernel/idt.asm
+  kernel/task.asm
+
+Drivers:
+  kernel/driver/rtc.asm
+  kernel/driver/ps2.asm
 
 Libraries:
   library/page_align_up.asm

@@ -32,8 +32,13 @@ FUNCTIONS
 
 kernel_video_dump
   Purpose: Clear screen (fill with spaces)
-  Fills video memory with 0x0720 (space + light gray on black)
-  Uses REP STOSQ for fast memory fill
+  Flow:
+    1. Fill RAX with 0x0720072007200720 (spaces with attribute)
+    2. Set RCX = KERNEL_VIDEO_LINE_SIZE_byte * KERNEL_VIDEO_WIDTH_char
+       WARNING: This calculates 160 * 80 = 12800, but video memory
+       is only 4000 bytes (80 * 25 * 2). This may overwrite memory
+       beyond video buffer.
+    3. Fill from KERNEL_VIDEO_BASE_address with REP STOSQ
 
 kernel_video_cursor_set
   Purpose: Update hardware cursor position
@@ -53,11 +58,13 @@ kernel_video_char
     - Regular characters: write to video memory
     - Newline: move to next line
     - Backspace: move cursor back
-  Auto-scrolls when reaching bottom of screen
+  Auto-scrolls when reaching bottom of screen (calls kernel_video_scroll)
 
 kernel_video_scroll
   Purpose: Scroll screen up one line when full
-  Moves all lines up by one, clears bottom line
+  Status: NOT IMPLEMENTED (label exists at line 215, no code)
+  Note: kernel_video_char calls this function but it does nothing
+  Current behavior: Screen will not scroll, cursor may go off-screen
 
 FLOW: kernel_video_string
   +------------------------+

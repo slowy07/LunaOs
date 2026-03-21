@@ -26,13 +26,14 @@ KERNEL_IDT_TYPE_isr equ 0xEF00
 kernel_idt_mount:
   push rax
   push rbx
+  push rcx
   push rdi
-  
+
   xchg rax, rdi
 
   shl rdi, STATIC_MULTIPLE_BY_16_shift
   add rdi, qword [kernel_idt_header + KERNEL_STRUCTURE_IDT_HEADER.address]
-  
+
   mov rcx, 1
   call kernel_idt_update
 
@@ -65,15 +66,12 @@ kernel_idt_update:
   shr rax, STATIC_MOVE_HIGH_TO_EAX_shift
   stosd
 
-  xor eax, eax
-
   pop rax
 
   dec rcx
   jnz .next
 
   pop rcx
-
   ret
 
 kernel_idt_exception_default:
@@ -95,6 +93,7 @@ kernel_idt_interrupt_hardware:
 
 kernel_idt_interrupt_software:
   or word [rsp + KERNEL_STRUCTURE_TASK_IRETQ.eflags], KERNEL_TASK_EFLAGS_cf
+
   iretq
 
 kernel_idt_spurious_interrupt:

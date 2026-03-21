@@ -41,8 +41,8 @@ KERNEL_TASK_STACK_SIZE_byte equ KERNEL_PAGE_SIZE_byte
 struc KERNEL_STRUCTURE_TASK
   .cr3 resb 8
   .rsp resb 8
-  .pid resb 8
   .cpu resb 8
+  .pid resb 8
   .time resb 8
   .flags resb 2
   .SIZE:
@@ -75,14 +75,14 @@ kernel_task:
   push r13
   push r14
   push r15
-  
+
   cld
 
   mov rbx, rax
   shl rbx, STATIC_MULTIPLE_BY_8_shift
-  
+
   mov rsi, qword [kernel_task_active_list]
-  mov rdi, qword [rsi + rax]
+  mov rdi, qword [rsi + rbx]
 
   mov rbp, KERNEL_STACK_pointer
   FXSAVE64 [rbp]
@@ -95,9 +95,8 @@ kernel_task:
   mov qword [rdi + KERNEL_STRUCTURE_TASK.cr3], rax
 
   mov qword [rdi + KERNEL_STRUCTURE_TASK.cpu], STATIC_EMPTY
-  
-  mov word [rdi + KERNEL_STRUCTURE_TASK.flags], ~KERNEL_TASK_FLAG_processing
 
+  and word [rdi + KERNEL_STRUCTURE_TASK.flags], ~KERNEL_TASK_FLAG_processing
   movzx eax, di
   and ax, ~KERNEL_PAGE_mask
   mov rcx, KERNEL_STRUCTURE_TASK.SIZE
@@ -115,7 +114,7 @@ kernel_task:
 .block:
   and di, KERNEL_PAGE_mask
   mov rdi, qword [rdi + STATIC_STRUCTURE_BLOCK.link]
-  
+
 .ap_entry:
   mov ecx, STATIC_STRUCTURE_BLOCK.link / KERNEL_STRUCTURE_TASK.SIZE
 
@@ -130,6 +129,15 @@ kernel_task:
 .check:
   test word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_secured
   jz .next
+
+  lock bts word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_processing_bit
+  jc .next
+
+  test word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_active
+  jnz .active
+
+  and word [rdi + KERNEL_STRUCTURE_TASK.flags], ~KERNEL_TASK_FLAG_processing
+  jmp .next
 
 .active:
   mov qword [rdi + KERNEL_STRUCTURE_TASK.cpu], rax
@@ -153,6 +161,7 @@ kernel_task:
   pop r8
   pop rbp
   pop rsi
+  pop rsi
   pop rdx
   pop rcx
   pop rbx
@@ -160,7 +169,7 @@ kernel_task:
 .leave:
   mov rdi, qword [kernel_apic_base_address]
   mov dword [rdi + KERNEL_APIC_TICR_register], DRIVER_RTC_Hz
-  
+
   mov dword [rdi + KERNEL_APIC_EOI_register], STATIC_EMPTY
 
   pop rdi
@@ -177,7 +186,7 @@ kernel_task_add:
   jc .end
 
   push rdi
-
+  
   mov qword [rdi + KERNEL_STRUCTURE_TASK.cr3], r11
 
   mov rax, KERNEL_STACK_pointer - (STATIC_QWORD_SIZE_byte * 0x14)
@@ -185,7 +194,7 @@ kernel_task_add:
 
   pop rdi
 
-  call kernel_task_pid
+  call kernel_task_pid_get
 
   mov qword [rdi + KERNEL_STRUCTURE_TASK.pid], rcx
 
@@ -215,7 +224,7 @@ kernel_task_queue:
 
 .restart:
   mov rcx, STATIC_STRUCTURE_BLOCK.link / KERNEL_STRUCTURE_TASK.SIZE
-
+  
 .next:
   lock bts word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_secured_bit
   jnc .found
@@ -231,7 +240,7 @@ kernel_task_queue:
   mov rdi, qword [rdi + STATIC_STRUCTURE_BLOCK.link]
 
   cmp rdi, qword [kernel_task_address]
-  jmp .restart
+  jne .restart
 
   call kernel_memory_alloc_page
   jc .error
@@ -240,11 +249,12 @@ kernel_task_queue:
   mov qword [rsi + STATIC_STRUCTURE_BLOCK.link], rdi
 
   mov rsi, qword [kernel_task_address]
-  mov qword [rdi + STATIC_STRUCTURE_BLOCK.link], rsi
+  mov qword [rsi + STATIC_STRUCTURE_BLOCK.link], rsi
+
+  jmp .found
 
 .error:
   add rsp, STATIC_QWORD_SIZE_byte
-
   stc
 
   jmp .end
@@ -271,7 +281,6 @@ kernel_task_pid_get:
   jnc .next
 
   mov byte [kernel_task_pid_semaphore], STATIC_FALSE
-
   ret
 
 kernel_task_pid_check:
@@ -313,4 +322,3 @@ kernel_task_pid_check:
   pop rax
 
   ret
-  

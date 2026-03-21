@@ -212,40 +212,100 @@ KEYBOARD FLOW DIAGRAM
 FUNCTIONS
 
 driver_ps2_keyboard
-  Keyboard interrupt handler (IRQ 1)
+  Purpose: Keyboard interrupt handler (IRQ 1)
+  Flow:
+    1. Read scan code from port 0x60
+    2. Check if it's a sequence prefix (0xE0 or 0xE1)
+    3. If prefix, store and return (wait for next byte)
+    4. If sequence active, combine prefix + scan code
+    5. Look up in current matrix (low or high)
+    6. Handle key release (>= 0x80)
+    7. Call driver_ps2_keyboard_shift to handle shift/capslock
+    8. Call driver_ps2_keyboard_save to add to cache
+    9. Send EOI to APIC
+  Notes:
+    - Prefix 0xE0 stored, next byte combined with AH=0xE0
+    - Release code = make code + 0x80
 
 driver_ps2_keyboard_shift
-  Handles shift and capslock state changes
+  Purpose: Handle shift and capslock state changes
+  Input: AX = translated key code
+  Flow:
+    - Checks for shift left/right press/release
+    - Checks for capslock press/release
+    - On capslock release, clears semaphore (not toggled)
+    - Calls driver_ps2_keyboard_matrix_change when state changes
 
 driver_ps2_keyboard_save
-  Saves key to keyboard cache ring buffer
+  Purpose: Save key to keyboard cache ring buffer
+  Input: AX = key code
+  Flow:
+    1. Shift cache left by 16 bits (make room)
+    2. Store new key in lowest 16 bits
+  Notes:
+    - Cache is 64-bit, holds 4 x 16-bit keys
+    - Oldest key at bits 48-63, newest at bits 0-15
 
 driver_ps2_keyboard_matrix_change
-  Switches between normal/shift keyboard matrix
+  Purpose: Toggle between normal/shift keyboard matrix
+  Flow:
+    1. Swap driver_ps2_keyboard_matrix pointer
+    2. If it was low, switch to high
+    3. If it was high, switch to low
+  Notes:
+    - Called when shift/capslock state changes
 
 driver_ps2_keyboard_read
-  Reads a key from the keyboard cache
+  Purpose: Read a key from the keyboard cache
+  Output: AX = key code (0 if cache empty), ZF set if empty
+  Flow:
+    1. Read key from bits 32-47 (oldest position)
+    2. Shift cache left by 16 bits
+    3. Test if AX is zero (empty slot)
 
 driver_ps2_check_write
-  Waits for input buffer to be empty
+  Purpose: Wait for input buffer to be empty
+  Flow: Loop reading status port until bit 1 is clear
 
 driver_ps2_check_read
-  Waits for output buffer to be full
+  Purpose: Wait for output buffer to be full
+  Flow: Loop reading status port until bit 0 is set
 
 driver_ps2_send_command
-  Sends command to PS/2 controller
+  Purpose: Send command to PS/2 controller
+  Input: AL = command byte
+  Flow:
+    1. Wait for input buffer empty
+    2. Write command to port 0x64
 
 driver_ps2_send_command_receive_answer
-  Sends command and receives response
+  Purpose: Send command and receive response
+  Input: AL = command byte
+  Output: AL = response byte
+  Flow:
+    1. Send command via driver_ps2_send_command
+    2. Read response via driver_ps2_receive_answer
 
 driver_ps2_receive_answer
-  Receives response from PS/2 device
+  Purpose: Receive response from PS/2 device
+  Output: AL = response byte
+  Flow:
+    1. Wait for output buffer full
+    2. Read data from port 0x60
 
 driver_ps2_send_answer_or_ask_device
-  Sends data to PS/2 device
+  Purpose: Send data/command to PS/2 device
+  Input: AL = data byte
+  Flow:
+    1. Wait for input buffer empty
+    2. Write data to port 0x60
 
 driver_ps2_check_dummy_answer_or_dump
-  Clears any pending data in output buffer
+  Purpose: Clear any pending data in output buffer
+  Flow:
+    1. Loop: check status port bit 0
+    2. If data available, read and discard
+    3. Continue until buffer empty
 
 KEYBOARD CACHE
 

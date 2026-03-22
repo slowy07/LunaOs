@@ -28,8 +28,6 @@
 init:
   %include "kernel/init.asm"
 
-clean:
-
 kernel:
   jmp $
 

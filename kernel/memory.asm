@@ -132,3 +132,52 @@ kernel_memory_lock:
   macro_close kernel_memory_lock_semaphore, 0
 
   ret
+
+kernel_memory_release_page:
+  push rax
+  push rcx
+  push rdx
+  push rsi
+  push rdi
+
+  mov rsi, qword [kernel_memory_map_address]
+
+  mov rax, rdi
+  sub rax, KERNEL_BASE_address
+  shr rax, KERNEL_PAGE_SIZE_shift
+
+  mov rcx, 64
+  xor rdx, rdx
+  div rcx
+
+  shl rax, STATIC_MULTIPLE_BY_8_shift
+  add rsi, rax
+
+  bts qword [rsi], rdx
+
+  inc qword [kernel_page_free_count]
+
+  pop rdi
+  pop rsi
+  pop rdx
+  pop rcx
+  pop rax
+
+  ret
+
+kernel_memory_release:
+  push rcx
+  push rdi
+
+.loop:
+  call kernel_memory_release_page
+  
+  add rdi, KERNEL_PAGE_SIZE_byte
+
+  dec rcx
+  jnz .loop
+
+  pop rdi
+  pop rcx
+
+  ret

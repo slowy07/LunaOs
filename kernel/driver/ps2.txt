@@ -65,7 +65,7 @@ DEVICE COMMANDS (via 0x60)
 +------------------+------------------------------------------------+
 | 0xF2             | Get device ID                                 |
 | 0xF3             | Set sample rate                               |
-| 0xF4             | Enable scanning                               |
+| 0xF4             | Enable packets                                |
 | 0xF5             | Disable scanning                              |
 | 0xF6             | Set default values                            |
 | 0xFF             | Reset device                                  |
@@ -89,8 +89,9 @@ Standard Scan Codes (Set 2):
 | Key                      | Make Code                |
 +--------------------------+--------------------------+
 | ESC                      | 0x01                     |
-| 1-9, 0                  | 0x02-0x0A                |
-| -, =                    | 0x0B, 0x0C               |
+| 1-9                     | 0x02-0x0A                |
+| 0                        | 0x0B                     |
+| -, =                    | 0x0C, 0x0D               |
 | Backspace                | 0x0E                     |
 | Tab                      | 0x0F                     |
 | Q-Z                      | 0x10-0x1D                |

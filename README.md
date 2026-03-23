@@ -55,7 +55,7 @@ Documentation is organized in the following structure:
 
 ### Driver Documentation (`kernel/driver/`)
 - `driver_docs.txt` - RTC driver documentation
-- `ps2.txt` - PS/2 keyboard/mouse driver
+- `ps2.txt` - PS/2 keyboard/mouse driver (includes interrupt flow diagram, scan code tables, and I/O port specifications)
 
 ### Library Documentation (`library/docs/`)
 - `page_align_up.txt` - Page alignment utility

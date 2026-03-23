@@ -21,18 +21,18 @@
 DRIVER_PS2_KEYBOARD_IRQ_number equ 0x01
 DRIVER_PS2_KEYBOARD_IO_APIC_register equ KERNEL_IO_APIC_iowin + (DRIVER_PS2_KEYBOARD_IRQ_number * 0x02)
 
-DRIVER_PS2_MOUSE_IRQ_number equ 0x0C
+DRIVER_PS2_MOUSE_IRQ_number equ 0x0C2
 DRIVER_PS2_MOUSE_IO_APIC_register equ KERNEL_IO_APIC_iowin + (DRIVER_PS2_MOUSE_IRQ_number * 0x02)
 
-DRIVER_PS2_PORT_COMMAND_OR_STATUS equ 0x064
+DRIVER_PS2_PORT_COMMAND_OR_STATUS equ 0x64
 DRIVER_PS2_PORT_DATA equ 0x60
 
 DRIVER_PS2_DEVICE_ID_GET equ 0xF2
 DRIVER_PS2_DEVICE_SET_SAMPLE_RATE equ 0xF3
-DRIVER_PS2_DEVICE_PACKETS_ENALBE equ 0xF4
+DRIVER_PS2_DEVICE_PACKETS_ENABLE equ 0xF4
 DRIVER_PS2_DEVICE_PACKETS_DISABLE equ 0xF5
 DRIVER_PS2_DEVICE_SET_DEFAULT equ 0xF6
-DRIVER_PS2_DEVICE_RESET equ 0xFF
+DRIVER_PS2_DEVICE_RESET  equ 0xFF
 
 DRIVER_PS2_DEVICE_MOUSE_TYPE_STANDARD equ 0x00
 DRIVER_PS2_DEVICE_MOUSE_TYPE_WHEEL equ 0x03
@@ -70,12 +70,12 @@ DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND equ 0xD4
 
 DRIVER_PS2_ANSWER_SELF_TEST_SUCCESS equ 0xAA
 DRIVER_PS2_ANSWER_COMMAND_ACKNOWLEDGED equ 0xFA
-DRIVER_PS2_ANSWER_FAIL equ 0xFC
+DRIVER_PS2_ANSWER_FAIL  equ 0xFC
 DRIVER_PS2_ANSWER_COMMAND_RESEND equ 0xFE
 
 DRIVER_PS2_CONTROLLER_CONFIGURATION_BIT_FIRST_PORT_INTERRUPT equ 0
 DRIVER_PS2_CONTROLLER_CONFIGURATION_BIT_SECOND_PORT_INTERRUPT equ 1
-DRIVER_PS2_CONTROLLER_CONFIGURATION_BIT_SYSTEM_FLAG equ 2
+DRIVER_PS2_CONTROLLER_CONFIGURATION_BIT_SYSTEM_FLAG  equ 2
 DRIVER_PS2_CONTROLLER_CONFIGURATION_BIT_FIRST_PORT_CLOCK equ 4
 DRIVER_PS2_CONTROLLER_CONFIGURATION_BIT_SECOND_PORT_CLOCK equ 5
 DRIVER_PS2_CONTROLLER_CONFIGURATION_BIT_FIRST_PORT_TRANSLATION equ 6
@@ -193,178 +193,183 @@ driver_ps2_keyboard_cache dw STATIC_EMPTY, STATIC_EMPTY, STATIC_EMPTY, STATIC_EM
 align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 driver_ps2_keyboard_matrix dq driver_ps2_keyboard_matrix_low
 driver_ps2_keyboard_matrix_low dw STATIC_EMPTY
-                               dw DRIVER_PS2_KEYBOARD_PRESS_ESC
-                               db "1", 0x00
-                               db "2", 0x00
-                               db "3", 0x00
-                               db "4", 0x00
-                               db "5", 0x00
-                               db "6", 0x00
-                               db "7", 0x00
-                               db "8", 0x00
-                               db "9", 0x00
-                               db "-", 0x00
-                               db "=", 0x00
-                               dw DRIVER_PS2_KEYBOARD_PRESS_BACKSPACE
-                               dw DRIVER_PS2_KEYBOARD_PRESS_TAB
-                               db "q", 0x00
-                               db "w", 0x00
-                               db "e", 0x00
-                               db "r", 0x00
-                               db "t", 0x00
-                               db "y", 0x00
-                               db "u", 0x00
-                               db "i", 0x00
-                               db "o", 0x00
-                               db "p", 0x00
-                               db "[", 0x00
-                               db "]", 0x00
-                               dw DRIVER_PS2_KEYBOARD_PRESS_ENTER
-                               dw DRIVER_PS2_KEYBOARD_PRESS_CTRL_LEFT
-                               db "a", 0x00
-                               db "s", 0x00
-                               db "d", 0x00
-                               db "f", 0x00
-                               db "g", 0x00
-                               db "h", 0x00
-                               db "j", 0x00
-                               db "k", 0x00
-                               db "l", 0x00
-                               db ";", 0x00
-                               db "'", 0x00
-                               db "`", 0x00
-                               dw DRIVER_PS2_KEYBOARD_PRESS_SHIFT_LEFT
-                               db "\", 0x00
-                               db "z", 0x00
-                               db "x", 0x00
-                               db "c", 0x00
-                               db "v", 0x00
-                               db "b", 0x00
-                               db "n", 0x00
-                               db "m", 0x00
-                               db ",", 0x00
-                               db ".", 0x00
-                               db "/", 0x00
-                               dw DRIVER_PS2_KEYBOARD_PRESS_SHIFT_RIGHT
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_MULTIPLY
-                               dw DRIVER_PS2_KEYBOARD_PRESS_ALT_LEFT
-                               dw " ", 0x00
-                               dw DRIVER_PS2_KEYBOARD_PRESS_CAPSLOCK
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F1
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F2
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F3
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F4
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F5
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F6
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F7
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F8
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F9
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F10
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK
-                               dw DRIVER_PS2_KEYBOARD_PRESS_SCROLL_LOCK
-                               dw STATIC_EMPTY
-                               dw STATIC_EMPTY
-                               dw STATIC_EMPTY
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_MINUS
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_4
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_5
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_6
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_PLUS
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_1
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_2
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_3
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_0
-                               dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_DOT
-                               dw STATIC_EMPTY
-                               dw STATIC_EMPTY
-                               dw STATIC_EMPTY
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F11
-                               dw DRIVER_PS2_KEYBOARD_PRESS_F12
+  dw DRIVER_PS2_KEYBOARD_PRESS_ESC
+  db "1",	0x00
+  db "2",	0x00
+  db "3",	0x00
+  db "4",	0x00
+  db "5",	0x00
+  db "6",	0x00
+  db "7",	0x00
+  db "8",	0x00
+  db "9",	0x00
+  db "0",	0x00
+  db "-",	0x00
+  db "=",	0x00
+  dw DRIVER_PS2_KEYBOARD_PRESS_BACKSPACE
+  dw DRIVER_PS2_KEYBOARD_PRESS_TAB
+  db "q",	0x00
+  db "w",	0x00
+  db "e",	0x00
+  db "r",	0x00
+  db "t",	0x00
+  db "y",	0x00
+  db "u",	0x00
+  db "i",	0x00
+  db "o",	0x00
+  db "p",	0x00
+  db "[",	0x00
+  db "]",	0x00
+  dw DRIVER_PS2_KEYBOARD_PRESS_ENTER
+  dw DRIVER_PS2_KEYBOARD_PRESS_CTRL_LEFT
+  db "a",	0x00
+  db "s",	0x00
+  db "d",	0x00
+  db "f",	0x00
+  db "g",	0x00
+  db "h",	0x00
+  db "j",	0x00
+  db "k",	0x00
+  db "l",	0x00
+  db ";",	0x00
+  db "'",	0x00
+  db "`",	0x00
+  dw DRIVER_PS2_KEYBOARD_PRESS_SHIFT_LEFT
+  db "\",	0x00
+  db "z",	0x00
+  db "x",	0x00
+  db "c",	0x00
+  db "v",	0x00
+  db "b",	0x00
+  db "n",	0x00
+  db "m",	0x00
+  db ",",	0x00
+  db ".",	0x00
+  db "/",	0x00
+  dw DRIVER_PS2_KEYBOARD_PRESS_SHIFT_RIGHT
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_MULTIPLY
+  dw DRIVER_PS2_KEYBOARD_PRESS_ALT_LEFT
+  dw " ",	0x00
+  dw DRIVER_PS2_KEYBOARD_PRESS_CAPSLOCK
+  dw DRIVER_PS2_KEYBOARD_PRESS_F1
+  dw DRIVER_PS2_KEYBOARD_PRESS_F2
+  dw DRIVER_PS2_KEYBOARD_PRESS_F3
+  dw DRIVER_PS2_KEYBOARD_PRESS_F4
+  dw DRIVER_PS2_KEYBOARD_PRESS_F5
+  dw DRIVER_PS2_KEYBOARD_PRESS_F6
+  dw DRIVER_PS2_KEYBOARD_PRESS_F7
+  dw DRIVER_PS2_KEYBOARD_PRESS_F8
+  dw DRIVER_PS2_KEYBOARD_PRESS_F9
+  dw DRIVER_PS2_KEYBOARD_PRESS_F10
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK
+  dw DRIVER_PS2_KEYBOARD_PRESS_SCROLL_LOCK
+  dw STATIC_EMPTY
+  dw STATIC_EMPTY
+  dw STATIC_EMPTY
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_MINUS
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_4
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_5
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_6
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_PLUS
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_1
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_2
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_3
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_0
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_DOT
+  dw STATIC_EMPTY
+  dw STATIC_EMPTY
+  dw STATIC_EMPTY
+  dw DRIVER_PS2_KEYBOARD_PRESS_F11
+  dw DRIVER_PS2_KEYBOARD_PRESS_F12
 driver_ps2_keyboard_matrix_high dw STATIC_EMPTY
-                                dw DRIVER_PS2_KEYBOARD_PRESS_ESC
-                                db "!", 0x00
-                                db "@", 0x00
-                                db "#", 0x00
-                                db "$", 0x00
-                                db "%", 0x00
-                                db "^", 0x00
-                                db "&", 0x00
-                                db "*", 0x00
-                                db "(", 0x00
-                                db ")", 0x00
-                                db "_", 0x00
-                                db "+", 0x00
-                                dw DRIVER_PS2_KEYBOARD_PRESS_BACKSPACE
-                                dw DRIVER_PS2_KEYBOARD_PRESS_TAB
-                                db "Q", 0x00
-                                db "W", 0x00
-                                db "E", 0x00
-                                db "R", 0x00
-                                db "T", 0x00
-                                db "Y", 0x00
-                                db "U", 0x00
-                                db "I", 0x00
-                                db "O", 0x00
-                                db "P", 0x00
-                                db "{", 0x00
-                                db "}", 0x00
-                                dw DRIVER_PS2_KEYBOARD_PRESS_ENTER
-                                dw DRIVER_PS2_KEYBOARD_PRESS_CTRL_LEFT
-                                db "A", 0x00
-                                db "S", 0x00
-                                db "D", 0x00
-                                db "F", 0x00
-                                db "G", 0x00
-                                db "H", 0x00
-                                db "J", 0x00
-                                db "K", 0x00
-                                db "L", 0x00
-                                db ":", 0x00
-                                db '"', 0x00
-                                db "~", 0x00
-                                dw DRIVER_PS2_KEYBOARD_PRESS_SHIFT_LEFT
-                                db "|", 0x00
-                                db "Z", 0x00
-                                db "X", 0x00
-                                db "C", 0x00
-                                db "V", 0x00
-                                db "B", 0x00
-                                db "N", 0x00
-                                db "M", 0x00
-                                db "<", 0x00
-                                db ">", 0x00
-                                db "?", 0x00
-                                dw DRIVER_PS2_KEYBOARD_PRESS_SHIFT_RIGHT
-                                dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_MULTIPLY
-                                dw DRIVER_PS2_KEYBOARD_PRESS_ALT_LEFT
-                                dw STATIC_EMPTY
-                                dw DRIVER_PS2_KEYBOARD_PRESS_CAPSLOCK
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F1
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F2
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F3
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F4
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F5
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F6
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F7
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F8
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F9
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F10
-                                dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK
-                                dw STATIC_EMPTY
-                                dw STATIC_EMPTY
-                                dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_MINUS
-                                dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_4
-                                dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_5
-                                dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_6
-                                dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_PLUS
-                                dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_1
-                                dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_2
-                                dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_3
-                                dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_0
-                                dw STATIC_EMPTY
-                                dw STATIC_EMPTY
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F11
-                                dw DRIVER_PS2_KEYBOARD_PRESS_F12
+  dw DRIVER_PS2_KEYBOARD_PRESS_ESC
+  db "!",	0x00
+  db "@",	0x00
+  db "#",	0x00
+  db "$",	0x00
+  db "%",	0x00
+  db "^",	0x00
+  db "&",	0x00
+  db "*",	0x00
+  db "(",	0x00
+  db ")",	0x00
+  db "_",	0x00
+  db "+",	0x00
+  dw DRIVER_PS2_KEYBOARD_PRESS_BACKSPACE
+  dw DRIVER_PS2_KEYBOARD_PRESS_TAB
+  db "Q",	0x00
+  db "W",	0x00
+  db "E",	0x00
+  db "R",	0x00
+  db "T",	0x00
+  db "Y",	0x00
+  db "U",	0x00
+  db "I",	0x00
+  db "O",	0x00
+  db "P",	0x00
+  db "{",	0x00
+  db "}",	0x00
+  dw DRIVER_PS2_KEYBOARD_PRESS_ENTER
+  dw DRIVER_PS2_KEYBOARD_PRESS_CTRL_LEFT
+  db "A",	0x00
+  db "S",	0x00
+  db "D",	0x00
+  db "F",	0x00
+  db "G",	0x00
+  db "H",	0x00
+  db "J",	0x00
+  db "K",	0x00
+  db "L",	0x00
+  db ":",	0x00
+  db '"',	0x00
+  db "~",	0x00
+  dw DRIVER_PS2_KEYBOARD_PRESS_SHIFT_LEFT
+  db "|",	0x00
+  db "Z",	0x00
+  db "X",	0x00
+  db "C",	0x00
+  db "V",	0x00
+  db "B",	0x00
+  db "N",	0x00
+  db "M",	0x00
+  db "<",	0x00
+  db ">",	0x00
+  db "?",	0x00
+  dw DRIVER_PS2_KEYBOARD_PRESS_SHIFT_RIGHT
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_MULTIPLY
+  dw DRIVER_PS2_KEYBOARD_PRESS_ALT_LEFT
+  dw STATIC_EMPTY
+  dw DRIVER_PS2_KEYBOARD_PRESS_CAPSLOCK
+  dw DRIVER_PS2_KEYBOARD_PRESS_F1
+  dw DRIVER_PS2_KEYBOARD_PRESS_F2
+  dw DRIVER_PS2_KEYBOARD_PRESS_F3
+  dw DRIVER_PS2_KEYBOARD_PRESS_F4
+  dw DRIVER_PS2_KEYBOARD_PRESS_F5
+  dw DRIVER_PS2_KEYBOARD_PRESS_F6
+  dw DRIVER_PS2_KEYBOARD_PRESS_F7
+  dw DRIVER_PS2_KEYBOARD_PRESS_F8
+  dw DRIVER_PS2_KEYBOARD_PRESS_F9
+  dw DRIVER_PS2_KEYBOARD_PRESS_F10
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK
+  dw DRIVER_PS2_KEYBOARD_PRESS_SCROLL_LOCK
+  dw STATIC_EMPTY
+  dw STATIC_EMPTY
+  dw STATIC_EMPTY
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_MINUS
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_4
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_5
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_6
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_PLUS
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_1
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_2
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_3
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_0
+  dw DRIVER_PS2_KEYBOARD_PRESS_NUMLOCK_DOT
+  dw STATIC_EMPTY
+  dw STATIC_EMPTY
+  dw STATIC_EMPTY
+  dw DRIVER_PS2_KEYBOARD_PRESS_F11
+  dw DRIVER_PS2_KEYBOARD_PRESS_F12
 
 driver_ps2_keyboard_ctrl_semaphore db STATIC_FALSE
 driver_ps2_keyboard_shift_left_semaphore db STATIC_FALSE
@@ -378,17 +383,20 @@ driver_ps2_keyboard:
 
   xor eax, eax
   in al, DRIVER_PS2_PORT_DATA
-  
+
   cmp al, DRIVER_PS2_KEYBOARD_sequence
+  je .sequence
+
+  cmp al, DRIVER_PS2_KEYBOARD_sequence_alternative
   je .sequence
 
   cmp byte [driver_ps2_keyboard_sequence], STATIC_EMPTY
   je .no_sequence
 
   mov ah, byte [driver_ps2_keyboard_sequence]
-  
+
   mov byte [driver_ps2_keyboard_sequence], STATIC_EMPTY
-  
+
   jmp .save
 
 .sequence:
@@ -398,14 +406,14 @@ driver_ps2_keyboard:
 
 .no_sequence:
   mov rsi, qword [driver_ps2_keyboard_matrix]
-  
+
   cmp al, DRIVER_PS2_KEYBOARD_key_release
   jb .inside
 
   sub al, DRIVER_PS2_KEYBOARD_key_release
-  
+
   mov ax, word [rsi + rax * STATIC_WORD_SIZE_byte]
-  
+
   add al, DRIVER_PS2_KEYBOARD_key_release
 
   jmp .save
@@ -421,7 +429,7 @@ driver_ps2_keyboard:
 .end:
   mov rax, qword [kernel_apic_base_address]
   mov dword [rax + KERNEL_APIC_EOI_register], STATIC_EMPTY
-  
+
   pop rsi
   pop rax
 
@@ -464,7 +472,7 @@ driver_ps2_keyboard_shift:
   je .end
 
   mov byte [driver_ps2_keyboard_shift_right_semaphore], STATIC_TRUE
-  
+
   jmp .change
 
 .release_left:
@@ -513,7 +521,7 @@ driver_ps2_keyboard_matrix_change:
 driver_ps2_keyboard_read:
   mov ax, word [driver_ps2_keyboard_cache + STATIC_DWORD_SIZE_byte + STATIC_WORD_SIZE_byte]
   shl qword [driver_ps2_keyboard_cache], STATIC_MOVE_AX_TO_HIGH_shift
-  
+
   test ax, ax
 
   ret
@@ -552,7 +560,7 @@ driver_ps2_check_write:
   jnz .loop
 
   pop rax
-
+ 
   ret
 
 driver_ps2_receive_answer:
@@ -578,7 +586,7 @@ driver_ps2_send_command:
   call driver_ps2_check_write
 
   out DRIVER_PS2_PORT_COMMAND_OR_STATUS, al
-  
+
   ret
 
 driver_ps2_send_answer_or_ask_device:

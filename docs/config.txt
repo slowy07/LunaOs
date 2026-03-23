@@ -29,8 +29,8 @@ SHIFT CONSTANTS (move bits)
   STATIC_MOVE_EAX_TO_HIGH_shift = 32
 
 SIZE CONSTANTS
-  STATIC_BYTE_mask     = 0xFF
-  STATIC_BY_SIZE_byte  = 1
+  STATIC_BYTE_mask      = 0xFF
+  STATIC_BYTE_SIZE_byte = 1
   STATIC_WORD_SIZE_byte = 2
   STATIC_DWORD_SIZE_byte = 4
   STATIC_QWORD_SIZE_byte = 8
@@ -50,20 +50,69 @@ ASCII CONSTANTS
   STATIC_ASCII_ENTER      = 0x000D
   STATIC_ASCII_ESCAPE     = 0x001B
   STATIC_ASCII_SPACE      = 0x0020
+  STATIC_ASCII_MINUS      = 0x002D
+  STATIC_ASCII_DOT        = 0x002E
+  STATIC_ASCII_SLASH      = 0x002F
+  STATIC_ASCII_DIGIT_0    = 0x0030
+  STATIC_ASCII_DIGIT_9    = 0x0039
+  STATIC_ASCII_COLON      = 0x003A
+  STATIC_ASCII_BACKSLASH  = 0x005C
+  STATIC_ASCII_TILDE      = 0x007E
   STATIC_ASCII_DELETE     = 0x007F
+  STATIC_ASCII_SEQUENCE_length = 6
 
 BOOLEAN CONSTANTS
   STATIC_TRUE  = 0x00
   STATIC_FALSE = 0x01
   STATIC_EMPTY = 0x00
+  STATIC_RESERVED = STATIC_EMPTY
 
 MISC CONSTANTS
   STATIC_NOTHING         = 0x90 (NOP instruction)
   STATIC_MAX_unsigned   = -1 (0xFFFFFFFFFFFFFFFF)
-  STATIC_NUMBER_SYSTEM_binary      = 2
-  STATIC_NUMBER_SYSTEM_octal       = 8
-  STATIC_NUMBER_SYSTEM_decimal     = 10
-  STATIC_NUMBER_SYSTEM_hexadecimal = 16
+  STATIC_NUMBER_SYSTEM_binary      = 0x02
+  STATIC_NUMBER_SYSTEM_octal       = 0x08
+  STATIC_NUMBER_SYSTEM_decimal     = 0x0A
+  STATIC_NUMBER_SYSTEM_hexadecimal = 0x10
+
+COLOR CONSTANTS (VGA text mode attributes)
+  ASCII Colors (escape sequences for future terminal):
+    STATIC_COLOR_ASCII_DEFAULT = STATIC_COLOR_ASCII_GREEN
+    STATIC_COLOR_ASCII_BLACK   = "\e[30m"
+    STATIC_COLOR_ASCII_BLUE    = "\e[34m"
+    STATIC_COLOR_ASCII_GREEN   = "\e[32m"
+    STATIC_COLOR_ASCII_CYAN    = "\e[36m"
+    STATIC_COLOR_ASCII_RED     = "\e[31m"
+    STATIC_COLOR_ASCII_MAGENTA = "\e[35m"
+    STATIC_COLOR_ASCII_BROWN   = "\e[33m"
+    STATIC_COLOR_ASCII_GRAY_LIGHT = "\e[37m"
+    STATIC_COLOR_ASCII_GRAY    = "\e[90m"
+    STATIC_COLOR_ASCII_BLUE_LIGHT = "\e[94m"
+    STATIC_COLOR_ASCII_GREEN_LIGHT = "\e[92m"
+    STATIC_COLOR_ASCII_CYAN_LIGHT = "\e[96m"
+    STATIC_COLOR_ASCII_RED_LIGHT = "\e[91m"
+    STATIC_COLOR_ASCII_MAGENTA_LIGHT = "\e[95m"
+    STATIC_COLOR_ASCII_YELLOW  = "\e[93m"
+    STATIC_COLOR_ASCII_WHITE   = "\e[39m"
+
+  VGA Colors (numeric values):
+    STATIC_COLOR_default      = STATIC_COLOR_green (2)
+    STATIC_COLOR_black        = 0
+    STATIC_COLOR_blue         = 1
+    STATIC_COLOR_green        = 2
+    STATIC_COLOR_cyan         = 3
+    STATIC_COLOR_red          = 4
+    STATIC_COLOR_magenta      = 5
+    STATIC_COLOR_brown        = 6
+    STATIC_COLOR_gray_light   = 7
+    STATIC_COLOR_gray         = 8
+    STATIC_COLOR_blue_light   = 9
+    STATIC_COLOR_green_light  = 10
+    STATIC_COLOR_cyan_light   = 11
+    STATIC_COLOR_red_light    = 12
+    STATIC_COLOR_magenta_light = 13
+    STATIC_COLOR_yellow       = 14
+    STATIC_COLOR_white        = 15
 
 STRUCTURE: STATIC_STRUCTURE_BLOCK
   Used for linked list nodes in memory allocation

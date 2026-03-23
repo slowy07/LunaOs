@@ -18,46 +18,20 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-%include "config.asm"
-%include "kernel/config.asm"
-
-[BITS 32]
-
-[ORG KERNEL_BASE_address]
-
-init:
-  %include "kernel/init.asm"
-
-kernel:
-  mov ecx, kernel_string_welcome_end - kernel_string_welcome
-  mov rsi, kernel_string_welcome
+service_shell:
+  mov ecx, service_shell_string_prompt_end - service_shell_string_prompt
+  mov rsi, service_shell_string_prompt
   call kernel_video_string
 
-  jmp service_shell
+.read_key:
+  call driver_ps2_keyboard_read
+  jz .read_key
 
-  %include "kernel/macro/close.asm"
-  %include "kernel/macro/apic.asm"
-  
-  ; kernel root
-  %include "kernel/panic.asm"
-  %include "kernel/page.asm"
-  %include "kernel/memory.asm"
-  %include "kernel/video.asm"
-  %include "kernel/apic.asm"
-  %include "kernel/io_apic.asm"
-  %include "kernel/data.asm"
-  %include "kernel/idt.asm"
-  %include "kernel/task.asm"
-  
-  ; driver
-  %include "kernel/driver/rtc.asm"
-  %include "kernel/driver/ps2.asm"
+  cmp ax, STATIC_ASCII_TILDE
+  ja .read_key
 
-  ; service
-  %include "kernel/service/shell.asm"
+  mov ecx, 0x01
 
-  ; library
-  %include "library/page_align_up.asm"
-  %include "library/page_from_size.asm"
+  jmp .read_key
 
-kernel_end:
+  %include "kernel/service/shell/data.asm"

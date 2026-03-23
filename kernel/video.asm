@@ -36,6 +36,8 @@ kernel_video_pointer dq KERNEL_VIDEO_BASE_address
 kernel_video_cursor dd STATIC_EMPTY
                     dd STATIC_EMPTY
 
+kernel_video_char_color_and_background db 0x07
+
 kernel_video_dump:
   push rax
   push rcx
@@ -91,18 +93,12 @@ kernel_video_string:
   push rcx
   push rdx
   push rsi
-  push rdi
-
-  mov rdi, qword [kernel_video_pointer]
-
+  
   test rcx, rcx
   jz .end
 
-  mov ah, 0x07
-
-  mov ebx, dword [kernel_video_cursor]
-  mov edx, dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]
-
+  mov ah, byte [kernel_video_char_color_and_background]
+ 
 .loop:
   lodsb
 
@@ -120,14 +116,6 @@ kernel_video_string:
   jnz .loop
 
 .end:
-  mov qword [kernel_video_pointer], rdi
-
-  mov dword [kernel_video_cursor], ebx
-  mov dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte], edx
-
-  call kernel_video_cursor_set
-
-  pop rdi
   pop rsi
   pop rdx
   pop rcx
@@ -138,7 +126,17 @@ kernel_video_string:
 
 kernel_video_char:
   push rax
+  push rbx
   push rcx
+  push rdx
+  push rdi
+
+  mov ah, byte [kernel_video_char_color_and_background]
+  
+  mov ebx, dword [kernel_video_cursor]
+  mov edx, dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]
+
+  mov rdi, qword [kernel_video_pointer]
 
 .loop:
   cmp al, STATIC_ASCII_NEW_LINE
@@ -168,7 +166,17 @@ kernel_video_char:
   dec rcx
   jnz .loop
 
+  mov dword [kernel_video_cursor], ebx
+  mov dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte], edx
+
+  mov qword [kernel_video_pointer], rdi
+
+  call kernel_video_cursor_set
+
+  pop rdi
+  pop rdx
   pop rcx
+  pop rbx
   pop rax
 
   ret
@@ -189,8 +197,6 @@ kernel_video_char:
   jmp .continue
 
 .backspace:
-  xchg bx, bx
-
   test ebx, ebx
   jz .begin
 
@@ -212,4 +218,76 @@ kernel_video_char:
   mov word [rdi], 0x0720
   jmp .continue
 
+kernel_video_number:
+  push rax
+  push rdx
+  push rbp
+  push r8
+  push r9
+
+  cmp bl, 2
+  jb .error
+  cmp bl, 36
+  ja .error
+
+  mov r8, rdx
+  sub r8, 0x30
+
+  xor rdx, rdx
+
+  mov rbp, rsp
+
+.loop:
+  div rbx
+
+  push rdx
+  dec rcx
+
+  xor rdx, rdx
+
+  test rax, rax
+  jnz .loop
+
+  cmp rcx, STATIC_EMPTY
+  jle .print
+
+.prefix:
+  push r8
+
+  dec rcx
+  jnz .prefix
+
+.print:
+  mov ecx, 0x01
+
+  cmp rsp, rbp
+  je .end
+
+  pop rax
+
+  add rax, 0x30
+
+  cmp al, 0x3A
+  jb .no
+
+  add al, 0x07
+
+.no:
+  call kernel_video_char
+
+  jmp .print
+
+.error:
+  stc
+
+.end:
+  pop r9
+  pop r8
+  pop rbp
+  pop rdx
+  pop rax
+
+  ret
+
 kernel_video_scroll:
+  jmp $

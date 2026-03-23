@@ -18,46 +18,6 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-%include "config.asm"
-%include "kernel/config.asm"
-
-[BITS 32]
-
-[ORG KERNEL_BASE_address]
-
-init:
-  %include "kernel/init.asm"
-
-kernel:
-  mov ecx, kernel_string_welcome_end - kernel_string_welcome
-  mov rsi, kernel_string_welcome
-  call kernel_video_string
-
-  jmp service_shell
-
-  %include "kernel/macro/close.asm"
-  %include "kernel/macro/apic.asm"
-  
-  ; kernel root
-  %include "kernel/panic.asm"
-  %include "kernel/page.asm"
-  %include "kernel/memory.asm"
-  %include "kernel/video.asm"
-  %include "kernel/apic.asm"
-  %include "kernel/io_apic.asm"
-  %include "kernel/data.asm"
-  %include "kernel/idt.asm"
-  %include "kernel/task.asm"
-  
-  ; driver
-  %include "kernel/driver/rtc.asm"
-  %include "kernel/driver/ps2.asm"
-
-  ; service
-  %include "kernel/service/shell.asm"
-
-  ; library
-  %include "library/page_align_up.asm"
-  %include "library/page_from_size.asm"
-
-kernel_end:
+service_shell_string_prompt_with_new_line db STATIC_ASCII_NEW_LINE
+service_shell_string_prompt db STATIC_COLOR_ASCII_GREEN_LIGHT, ">> ", STATIC_COLOR_ASCII_DEFAULT
+service_shell_string_prompt_end:

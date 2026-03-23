@@ -22,25 +22,25 @@
 ; Documentation
 ; kernel/init/docs/data.txt
 
-kernel_init_string_video_welcome db "LunaOS v0.1.0", STATIC_ASCII_NEW_LINE
-kernel_init_string_video_welcome_end:
-
 kernel_init_string_error_memory db "Error: init memory map got error"
 kernel_init_string_error_memory_end:
-
-kernel_init_memory_string_error db "Error: memory map error"
-kernel_init_memory_string_error_end:
 
 kernel_init_string_error_memory_low db "Error: no enough memory"
 kernel_init_string_error_memory_low_end:
 
+kernel_init_string_acpi_search db "Info: searching RSDP table"
+kernel_init_string_acpi_search_end:
+
+kernel_init_string_acpi_search_found db "Info: found", STATIC_ASCII_NEW_LINE
+kernel_init_string_acpi_search_found_end:
+
+kernel_init_string_acpi_version_2 db "Info: ACPI version 2.0", STATIC_ASCII_NEW_LINE
+kernel_init_string_acpi_version_2_end:
+
 kernel_init_string_error_acpi db "Error: ACPI table not found"
 kernel_init_string_error_acpi_end:
 
-kernel_init_string_error_acpi_2 db "Error: no support for acpi v2 version"
-kernel_init_string_error_acpi_2_end:
-
-kernel_init_string_error_acpi_corrupted db "Error: APIC table not found"
+kernel_init_string_error_acpi_corrupted db "Error: ACPI table corrupted" 
 kernel_init_string_error_acpi_corrupted_end:
 
 kernel_init_string_error_apic db "Error: APIC table not found"

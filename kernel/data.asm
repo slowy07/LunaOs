@@ -37,3 +37,9 @@ align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 kernel_idt_header:
   dw KERNEL_PAGE_SIZE_byte
   dq STATIC_EMPTY
+
+kernel_string_welcome db "LunaOS v0.1.0", STATIC_ASCII_NEW_LINE
+kernel_string_welcome_end:
+
+kernel_string_space db STATIC_ASCII_SPACE
+kernel_string_new_line db STATIC_ASCII_NEW_LINE

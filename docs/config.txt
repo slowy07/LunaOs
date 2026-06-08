@@ -13,7 +13,10 @@ PAGE CONSTANTS
 SHIFT CONSTANTS (multiply by powers of 2)
   STATIC_MULTIPLE_BY_2_shift      = 1 (x2)
   STATIC_MULTIPLE_BY_8_shift      = 3 (x8)
+  STATIC_MULTIPLE_BY_QWORD_shift  = 3 (x8, alias)
   STATIC_MULTIPLE_BY_16_shift     = 4 (x16)
+  STATIC_MULTIPLE_BY_32_shift     = 5 (x32)
+  STATIC_MULTIPLE_BY_64_shift     = 6 (x64)
   STATIC_MULTIPLE_BY_PAGE_shift  = 12 (x4096)
   
   STATIC_DIVIDE_BY_2_shift        = 1 (/2)

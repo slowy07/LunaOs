@@ -7,15 +7,16 @@ struc KERNEL_IPC_STRUCTURE_LIST
  .ttl resb 8
  .pid_source resb 8
  .pid_destination resb 8
+ .data:
  .size resb 8
  .pointer resb 8
- .data resb 32
+ .other resb 32
  .SIZE:
 endstruc
 
 kernel_ipc_semaphore db STATIC_FALSE
 kernel_ipc_base_address dq STATIC_EMPTY
-kernel_ipc_entry_count dw STATIC_EMPTY
+kernel_ipc_entry_count dq STATIC_EMPTY
 
 kernel_ipc_insert:
  push rax
@@ -24,58 +25,58 @@ kernel_ipc_insert:
  push rdi
  push rcx
 
- macro_close kernel_ipc_semaphore, 0
-
  call kernel_task_active
  mov rdx, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
 
- mov rdi, qword [kernel_ipc_base_address]
+ macro_close kernel_ipc_semaphore, 0
+
+.wait:
+ cmp qword [kernel_ipc_entry_count], KERNEL_IPC_ENTRY_limit
+ je .wait
 
 .reload:
- mov ecx, KERNEL_IPC_ENTRY_limit
-
-.search:
  mov rax, qword [driver_rtc_microtime]
- cmp qword [rdi + KERNEL_IPC_STRUCTURE_LIST.ttl], rax
- jb .found
 
- cmp qword [rdi + KERNEL_IPC_STRUCTURE_LIST.ttl], STATIC_EMPTY
- je .found
+ mov rcx, KERNEL_IPC_ENTRY_limit
+ mov rdi, qword [kernel_ipc_base_address]
+
+.loop:
+ cmp rax, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.ttl]
 
  add rdi, KERNEL_IPC_STRUCTURE_LIST.SIZE
 
  dec rcx
- jnz .search
-
- and di, KERNEL_PAGE_mask
- mov rdi, qword [rdi + STATIC_STRUCTURE_BLOCK.link]
-
- jmp .reload
+ jz .reload
+ jmp .loop
 
 .found:
- add rax, KERNEL_IPC_TTL_default
- mov qword [rdi + KERNEL_IPC_STRUCTURE_LIST.ttl], rax
-
  mov qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pid_source], rdx
 
  mov qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pid_destination], rbx
 
  mov rcx, qword [rsp]
  test rcx, rcx
- jz .only_data
+ jz .load
 
  mov qword [rdi + KERNEL_IPC_STRUCTURE_LIST.size], rcx
  mov qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pointer], rsi
 
  jmp .end
 
-.only_data:
+.load:
+ push rdi
+
  mov ecx, KERNEL_IPC_STRUCTURE_LIST.SIZE - KERNEL_IPC_STRUCTURE_LIST.data
  add rdi, KERNEL_IPC_STRUCTURE_LIST.data
  rep movsb
 
+ pop rdi
+
 .end:
  inc qword [kernel_ipc_entry_count]
+
+ add rax, KERNEL_IPC_TTL_default
+ mov qword [rdi + KERNEL_IPC_STRUCTURE_LIST.ttl], rax
 
  mov byte [kernel_ipc_semaphore], STATIC_FALSE
 
@@ -98,20 +99,24 @@ kernel_ipc_receive:
  call kernel_task_active
  mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
 
+ mov rcx, KERNEL_IPC_ENTRY_limit
+
  mov rsi, qword [kernel_ipc_base_address]
 
-.reload:
- mov ecx, KERNEL_IPC_ENTRY_limit
+ mov rdi, qword [driver_rtc_microtime]
 
-.search:
+.loop:
  cmp qword [rsi + KERNEL_IPC_STRUCTURE_LIST.pid_destination], rax
  je .found
+
+ cmp rdi, qword [rsi + KERNEL_IPC_STRUCTURE_LIST.ttl]
+ jbe .found
 
 .next:
  add rsi, KERNEL_IPC_STRUCTURE_LIST.SIZE
 
  dec rcx
- jnz .search
+ jnz .loop
 
 
  stc
@@ -119,28 +124,14 @@ kernel_ipc_receive:
  jmp .error
 
 .found:
- mov rax, qword [driver_rtc_microtime]
- cmp qword [rsi + KERNEL_IPC_STRUCTURE_LIST.ttl], rax
- jb .next
-
- macro_close kernel_ipc_semaphore, 0
-
- push rsi
-
  mov ecx, KERNEL_IPC_STRUCTURE_LIST.SIZE
- mov rdi, qword [rsp + STATIC_QWORD_SIZE_byte]
+ mov rdi, qword [rsp]
  rep movsb
 
- pop rsi
-
- mov rbx, qword [rsi + KERNEL_IPC_STRUCTURE_LIST.pid_source]
-
- mov qword [rsi + KERNEL_IPC_STRUCTURE_LIST.ttl], STATIC_EMPTY
-
+ mov qword [rsi - KERNEL_IPC_STRUCTURE_LIST.SIZE], STATIC_EMPTY
+ 
  dec qword [kernel_ipc_entry_count]
-
- mov byte [kernel_ipc_semaphore], STATIC_FALSE
-
+ 
  clc
 
 .error:

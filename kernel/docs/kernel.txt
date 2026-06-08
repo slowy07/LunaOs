@@ -73,10 +73,17 @@ Kernel Core (64-bit):
   kernel/data.asm
   kernel/idt.asm
   kernel/task.asm
+  kernel/thread.asm
 
 Drivers:
   kernel/driver/rtc.asm
   kernel/driver/ps2.asm
+
+Services:
+  kernel/service/shell.asm
+  kernel/service/http.asm
+  kernel/service/tx.asm
+  kernel/service/network.asm
 
 Libraries:
   library/page_align_up.asm

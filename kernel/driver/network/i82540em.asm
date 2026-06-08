@@ -305,9 +305,12 @@ driver_nic_i82540em_irq:
  jne .receive_end
 
 .receive:
+ mov rbx, qword [service_network_pid]
+ test rbx, rbx
+ jc .receive_end
+
  call driver_nic_i82540em_rx_release
 
- mov rbx, qword [service_network_pid]
  mov ecx, KERNEL_PAGE_SIZE_byte
  call kernel_ipc_insert
 

@@ -166,8 +166,24 @@ service_network_port_table dq STATIC_EMPTY
 
 service_network_stack_address dq STATIC_EMPTY
 
+service_network_ipc_message:
+ times KERNEL_IPC_STRUCTURE_LIST.SIZE db STATIC_EMPTY
+
 service_network:
  xor ebp, ebp
+
+ call kernel_task_active
+ mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
+
+ mov qword [service_network_pid], rax
+
+.loop:
+ mov rdi, service_network_ipc_message
+ call kernel_ipc_receive
+ jc .loop
+
+ mov rcx, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.size]
+ mov rcx, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pointer]
 
  cmp word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.type], SERVICE_NETWORK_FRAME_ETHERNET_TYPE_arp
  je service_network_arp
@@ -175,18 +191,40 @@ service_network:
  cmp word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.type], SERVICE_NETWORK_FRAME_ETHERNET_TYPE_ip
  je service_network_ip
 
-
 .end:
  test rsi, rsi
- jz .empty
+ jz .loop
 
  mov rdi, rsi
  call kernel_memory_release_page
 
-.empty:
- jmp kernel_task_kill_me
+ jmp .loop
 
  macro_debug "service_network"
+
+service_network_transfer:
+ push rbx
+ push rcx
+ push rsi
+
+ mov rbx, qword [service_tx_pid]
+ test rbx, rax
+ jz .error
+
+ mov rcx, rax
+ mov rsi, rdi
+ call kernel_ipc_insert
+ jnc .end
+
+.error:
+ stc
+
+ .end:
+  pop rsi
+  pop rcx
+  pop rbx
+
+  ret
 
 service_network_tcp_port_send:
  push rax
@@ -217,7 +255,7 @@ service_network_tcp_port_send:
 
  mov rax, rcx
  add rax, SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE
- call service_tx_add
+ call service_network_transfer
 
 .end:
  pop rdi
@@ -232,8 +270,9 @@ service_network_ip:
  cmp byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.protocol], SERVICE_NETWORK_FRAME_IP_PROTOCOL_ICMP
  je service_network_icmp
 
- cmp byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.protocol], SERVICE_NETWORK_FRAME_IP_PROTOCOL_TCP
- je service_network_tcp
+ ; NOTE: currently test service_network_transfer
+ ; cmp byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.protocol], SERVICE_NETWORK_FRAME_IP_PROTOCOL_TCP
+ ; je service_network_tcp
 
 .end:
  jmp service_network.end
@@ -394,7 +433,7 @@ service_network_tcp_fin:
  call service_network_tcp_wrap
 
  mov ax, SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.SIZE + STATIC_DWORD_SIZE_byte
- call service_tx_add
+ call service_network_transfer
 
  jmp .end
 
@@ -415,6 +454,8 @@ service_network_tcp_fin:
 service_network_tcp_ack:
  push rsi
  push rdi
+
+ xchg bx, bx
 
  test word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags_request], SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
  jz .end
@@ -564,7 +605,7 @@ service_network_tcp_syn:
  call service_network_tcp_wrap
 
  mov ax, SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.SIZE + STATIC_DWORD_SIZE_byte
- call service_tx_add
+ call service_network_transfer
 
  jmp .end
 
@@ -841,7 +882,7 @@ service_network_arp:
  call service_network_ethernet_wrap
 
  mov eax, SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_ARP.SIZE
- call service_tx_add
+ call service_network_transfer
 
 .error:
  pop rdi
@@ -910,7 +951,7 @@ service_network_icmp:
  call service_network_ethernet_wrap
 
  mov eax, SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.SIZE
- call service_tx_add
+ call service_network_transfer
 
 .end:
  pop rsi

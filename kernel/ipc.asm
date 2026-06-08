@@ -91,9 +91,9 @@ kernel_ipc_insert:
 
 kernel_ipc_receive:
  push rax
- push rdi
- push rsi
  push rcx
+ push rsi
+ push rdi
 
  call kernel_task_active
  mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
@@ -123,35 +123,30 @@ kernel_ipc_receive:
  cmp qword [rsi + KERNEL_IPC_STRUCTURE_LIST.ttl], rax
  jb .next
 
- cmp qword [rsi + KERNEL_IPC_STRUCTURE_LIST.size], STATIC_EMPTY
- je .only_data
+ macro_close kernel_ipc_semaphore, 0
 
- mov rax, qword [rsi + KERNEL_IPC_STRUCTURE_LIST.size]
- mov qword [rsp], rax
- mov rax, qword [rsi + KERNEL_IPC_STRUCTURE_LIST.pointer]
- mov qword [rsp + STATIC_QWORD_SIZE_byte], rax
-
- jmp .end
-
-.only_data:
  push rsi
 
  mov ecx, KERNEL_IPC_STRUCTURE_LIST.SIZE
+ mov rdi, qword [rsp + STATIC_QWORD_SIZE_byte]
  rep movsb
 
  pop rsi
 
-.end:
+ mov rbx, qword [rsi + KERNEL_IPC_STRUCTURE_LIST.pid_source]
+
  mov qword [rsi + KERNEL_IPC_STRUCTURE_LIST.ttl], STATIC_EMPTY
 
  dec qword [kernel_ipc_entry_count]
 
+ mov byte [kernel_ipc_semaphore], STATIC_FALSE
+
  clc
 
 .error:
- pop rcx
- pop rsi
  pop rdi
+ pop rsi
+ pop rcx
  pop rax
 
  ret

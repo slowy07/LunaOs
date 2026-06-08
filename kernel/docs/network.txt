@@ -5,8 +5,10 @@ Author: arfy slowy
 OVERVIEW
 Implements a basic IPv4/TCP/UDP/ICMP/ARP network stack as a service task.
 Runs as an independent task in the service list (kernel_init_services_list).
-Communicates with the NIC driver via IPC (kernel_ipc_insert). After processing
-each packet, self-terminates via kernel_task_kill_me.
+Communicates with the NIC driver and TX service entirely via IPC
+(kernel_ipc_insert / kernel_ipc_receive). Loops continuously: receives
+IPC messages from the NIC driver, processes each packet, forwards to TX
+service for transmission via IPC.
 
 CONSTANTS
 SERVICE_NETWORK_RECEIVE_PUSH_WAIT_limit = 3 max spin iterations on receive
@@ -49,43 +51,56 @@ SERVICE_NETWORK_STRUCTURE_TCP_STACK (48 bytes): per-connection state
 SERVICE_NETWORK_STRUCTURE_PORT (32 bytes): per-port receive buffer
 
 GLOBAL VARIABLES
-service_network_pid          - PID of the network service (set at spawn)
+service_network_pid          - PID of this service (self-registered at start)
 service_network_rx_count     - received packet counter
 service_network_tx_count     - transmitted packet counter
 service_network_port_table   - pointer to port table page
 service_network_stack_address - pointer to TCP connection table
+service_network_ipc_message  - KERNEL_IPC_STRUCTURE_LIST.SIZE buffer for IPC receive
 
 PROCEDURES
 
 service_network:
-  Main entry point. Called by init as a service task.
-  Examines Ethernet type and routes to service_network_arp or
-  service_network_ip. Ends with kernel_task_kill_me.
+  Main loop. Registers PID via kernel_task_active, then loops:
+  1. Receive IPC message via kernel_ipc_receive into service_network_ipc_message
+  2. Extract packet pointer from IPC message
+  3. Dispatch to ARP or IP handler based on Ethernet type
+  4. Release packet page and repeat
+
+service_network_transfer:
+  Sends a packet to the TX service via IPC.
+  Input:  EAX = packet length, RDI = packet data address
+  Uses service_tx_pid as the destination PID for kernel_ipc_insert.
+  Replaces direct calls to service_tx_add (now removed).
 
 service_network_ip:
-  IP dispatcher. Routes based on protocol field to service_network_icmp or
-  service_network_tcp.
+  IP dispatcher. Routes based on protocol field to service_network_icmp.
+  TCP dispatch temporarily disabled (testing service_network_transfer).
 
 service_network_arp:
   Handles ARP requests. Responds with ARP reply containing own MAC address.
-  Skips non-Ethernet/IPv4/mismatched target IP.
+  Skips non-Ethernet/IPv4/mismatched target IP. Forwards via
+  service_network_transfer.
 
 service_network_icmp:
-  Handles ICMP echo requests (ping). Constructs and queues ICMP echo reply.
+  Handles ICMP echo requests (ping). Constructs and queues ICMP echo reply
+  via service_network_transfer.
 
 service_network_tcp:
   TCP state machine dispatcher. Routes to SYN/ACK/FIN/PSH-ACK handlers.
   Validates port number (< 512) and port table entry.
 
 service_network_tcp_syn:
-  Handles incoming SYN. Allocates TCP connection slot, stores remote MAC/IP/ports,
-  generates initial sequence number, sends SYN-ACK.
+  Handles incoming SYN. Allocates TCP connection slot, stores remote
+  MAC/IP/ports, generates initial sequence number, sends SYN-ACK via
+  service_network_transfer.
 
 service_network_tcp_ack:
   Handles pure ACK. Clears pending ACK flag, checks for FIN+ACK completion.
 
 service_network_tcp_fin:
-  Handles FIN. Updates sequence numbers, sends ACK+FIN, notifies connection end.
+  Handles FIN. Updates sequence numbers, sends ACK+FIN via
+  service_network_transfer, notifies connection end.
 
 service_network_tcp_psh_ack:
   Handles PSH+ACK (data push). Copies payload data into port buffer,
@@ -100,7 +115,7 @@ service_network_tcp_find:
 service_network_tcp_port_send:
   Sends data on an existing TCP connection.
   Allocates a page, builds TCP segment with PSH+ACK flags, wraps in
-  IP/Ethernet, queues via service_tx_add.
+  IP/Ethernet, queues via service_network_transfer.
 
 service_network_tcp_wrap:
   Builds TCP segment from connection state. Fills ports, seq, ack, flags,
@@ -134,8 +149,8 @@ service_network_checksum_part:
   Partial checksum accumulator (for pseudo-header chaining).
 
 NOTES
-- NIC driver sends received packets to the network service via kernel_ipc_insert
-  using service_network_pid as the destination PID.
-- After processing one packet, the service kills itself (kernel_task_kill_me).
-  The init scheduler re-spawns it when new IPC messages arrive.
+- NIC driver forwards received packets to this service via kernel_ipc_insert
+  using service_network_pid as the target.
+- This service forwards outgoing packets to the TX service via
+  service_network_transfer (kernel_ipc_insert using service_tx_pid).
 - Port table entries are keyed by CR3 (task address space) for isolation.

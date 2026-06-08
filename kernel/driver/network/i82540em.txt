@@ -79,9 +79,9 @@ driver_nic_i82540em_setup:
 
 driver_nic_i82540em_irq:
   Interrupt handler. Reads ICR to determine cause:
-  - RXT0 or SRPD: Receive packet. Allocates new buffer, sends the packet
-    page to the network service via kernel_ipc_insert (target PID from
-    service_network_pid).
+  - RXT0 or SRPD: Receive packet. Checks that service_network_pid is
+    non-zero, allocates new buffer, sends the packet page to the network
+    service via kernel_ipc_insert (target PID from service_network_pid).
   - TXQE: Sets tx_queue_empty_semaphore (TX ready for new packet).
   - RXO: Overrun (debug breakpoint).
   Filters non-matching MAC unless promiscuous mode is enabled.

@@ -3,12 +3,11 @@ File: kernel/service/tx.asm
 Author: arfy slowy
 
 OVERVIEW
-Background service that drains a transmit cache queue, sending packets
-via driver_nic_i82540em_transfer. Other services enqueue packets via
-service_tx_add.
-
-CONSTANTS
-SERVICE_TX_CACHE_SIZE_page = 1 (one page for the cache queue)
+Receives IPC messages containing packets to transmit. Checks the sender
+PID: if the message comes from the network service (service_network_pid),
+transmits the packet via driver_nic_i82540em_transfer; otherwise, frees
+the page without transmitting. Runs as a standalone service task with its
+own PID registered in service_tx_pid.
 
 STRUCTURES
 SERVICE_TX_STRUCTURE_CACHE (16 bytes):
@@ -17,34 +16,27 @@ SERVICE_TX_STRUCTURE_CACHE (16 bytes):
   0x08    8     address (packet data pointer)
 
 GLOBAL VARIABLES
-service_tx_pid             - PID of the TX service (registered at init)
-service_tx_semaphore       - Spinlock for cache access
-service_tx_cache_address   - Pointer to allocated cache page
-service_tx_cache_pointer   - Index of next free slot (descending)
+service_tx_pid            - PID of the TX service (self-registered at start)
+service_tx_ipc_message    - KERNEL_IPC_STRUCTURE_LIST.SIZE buffer for IPC receive
 
 PROCEDURES
 
 service_tx:
   Main loop:
-  1. Allocate one page for cache, drain page tables
-  2. Register own PID via kernel_task_active + service_tx_pid
-  3. Wait for data: loop until semaphore signaled or non-empty entry
-  4. Send packet via driver_nic_i82540em_transfer
-  5. Release the transmitted page
-  6. Shift remaining cache entries left
-  7. Increment pointer and repeat
-
-service_tx_add:
-  Enqueues a packet for transmission.
-  Input:  EAX = packet length, RDI = packet data address
-  Output: CF set if cache full
-  Locks semaphore, stores size/address in next cache slot,
-  decrements pointer, unlocks.
+  1. Register PID via kernel_task_active, store in service_tx_pid
+  2. Loop: receive IPC message via kernel_ipc_receive into
+     service_tx_ipc_message
+  3. If no size, skip (empty message)
+  4. Check pid_source: if from service_network_pid, call
+     driver_nic_i82540em_transfer
+  5. Otherwise, free the packet page via kernel_memory_release
+  6. Repeat
 
 NOTES
-- Cache is a fixed-size page with descending pointer (stack-like)
-- Maximum entries = page_size / 16 - 1
-- Each entry holds size + pointer; the actual packet data page is
-  freed after transmission
-- PID is stored after cache allocation so other services/drivers can
-  reference service_tx_pid for IPC if needed
+- Replaced the old cache-based design (service_tx_cache_*,
+  service_tx_semaphore, service_tx_add) with pure IPC.
+- The old cache queue with descending pointer was removed entirely.
+- service_tx_pid is used by service_network_transfer to send packets
+  for transmission.
+- Allocated pages are freed after transmit via library_page_from_size
+  + kernel_memory_release.

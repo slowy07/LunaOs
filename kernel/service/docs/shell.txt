@@ -1,0 +1,25 @@
+SHELL SERVICE
+File: kernel/service/shell.asm
+Author: arfy slowy
+
+OVERVIEW
+Text-based interactive shell. Displays a prompt, reads user input,
+trims whitespace, extracts the first word, and dispatches to the
+prompt handler.
+
+CONSTANTS (from shell/config.asm)
+SERVICE_SHELL_CACHE_SIZE_byte = KERNEL_VIDEO_WIDTH_char - prompt_len - 1
+
+PROCEDURES
+
+service_shell:
+  1. Draw prompt string (with or without leading newline based on cursor)
+  2. Clear EBX (word buffer index)
+  3. Read input via library_input with SERVICE_SHELL_CACHE_SIZE_byte limit
+  4. Trim input, extract first word
+  5. Jump to service_shell_prompt
+
+INCLUDES (included inline)
+  shell/config.asm  - Cache size constant
+  shell/data.asm    - Prompt strings, command strings
+  shell/prompt.asm  - Command dispatch logic

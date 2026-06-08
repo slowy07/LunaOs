@@ -1,0 +1,33 @@
+MACRO: DEBUG
+File: kernel/macro/debug.asm
+Author: arfy slowy
+
+MACRO: macro_debug
+
+PURPOSE
+Insert a debug marker string into the code binary. Only compiled when
+DEBUG is defined, otherwise expands to nothing.
+
+USAGE
+  macro_debug "name"
+
+PARAMETERS
+  %1: String label for the marker
+
+IMPLEMENTATION
+  If DEBUG defined:
+    1. Jump over the data (jmp %%skip)
+    2. Embed bytes: db "^ ", %1
+    3. %%skip: execution continues
+  If DEBUG not defined:
+    Expands to nothing
+
+EXAMPLE
+  macro_debug "kernel_task"
+
+REGISTERS
+  Altered: None (jump is unconditional, no register changes)
+
+NOTE
+This is a macro, not a function. It expands inline.
+Used at the end of functions to tag them in the binary for debugging.

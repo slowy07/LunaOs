@@ -1,0 +1,10 @@
+SHELL PROMPT (placeholder)
+File: kernel/service/shell/prompt.asm
+Author: arfy slowy
+
+PROCEDURE
+
+service_shell_prompt:
+  Currently a stub that unconditionally jumps back to service_shell.
+  Designed to parse the command word (in EBX) and dispatch to command
+  handlers in future versions.

@@ -1,0 +1,63 @@
+PCI BUS DRIVER
+File: kernel/driver/pci.asm
+Author: arfy slowy
+
+OVERVIEW
+Provides PCI configuration space access via the standard PCI I/O ports
+(0xCF8 command, 0xCFC data). Supports device discovery by vendor/device
+ID and by class/subclass code.
+
+REGISTERS
+DRIVER_PCI_REGISTER_vendor_and_device   = 0x00
+DRIVER_PCI_REGISTER_status_and_command  = 0x04
+DRIVER_PCI_REGISTER_class_and_subclass  = 0x08
+DRIVER_PCI_REGISTER_bar0                = 0x10
+DRIVER_PCI_REGISTER_bar1                = 0x14
+DRIVER_PCI_REGISTER_irq                 = 0x3C
+
+FLAGS
+DRIVER_PCI_REGISTER_FLAG_64_bit         = 00000010b
+
+CLASS/SUBCLASS
+DRIVER_PCI_CLASS_SUBCLASS_network       = 0x0200
+
+PROCEDURES
+
+driver_pci_find_vendor_and_device:
+  Scans PCI bus for a device matching vendor+device ID.
+  Input:  Stack = dword vendor+device combo (0xVVDDEEEE)
+  Output: CF set if not found
+          Stack[1] = device function (EDX)
+          Stack[2] = slot (ECX)
+          Stack[3] = bus (EBX)
+  Scans bus 0-255, slot 0-31, function 0-7.
+
+driver_pci_find_class_and_subclass:
+  Scans PCI bus for a device matching class+subclass code.
+  Input:  Stack = word class+subclass (0xCCSS)
+  Output: CF set if not found
+          Stack[1] = device function (EDX)
+          Stack[2] = slot (ECX)
+          Stack[3] = bus (EBX)
+
+driver_pci_read:
+  Reads a 32-bit value from PCI config space.
+  Input:  EAX = register offset, BL = bus, CL = slot, DL = function
+  Output: EAX = 32-bit value read
+  Builds PCI config address with enable bit (0x80000000).
+
+driver_pci_write:
+  Writes a 32-bit value to PCI config space.
+  Input:  EAX = value to write, BL = bus, CL = slot, DL = function
+          Stack = register offset
+  Builds PCI config address with enable bit (0x80000000).
+
+NOTES
+- Uses I/O ports 0xCF8 (address) and 0xCFC (data)
+- Config address format:
+    Bit 31    = Enable (1)
+    Bits 23-16 = Bus
+    Bits 15-11 = Slot/Device
+    Bits 10-8  = Function
+    Bits 7-2   = Register offset
+    Bits 1-0   = 00 (dword aligned)

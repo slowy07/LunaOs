@@ -1,11 +1,3 @@
-SERVICE_TX_CACHE_SIZE_page equ 1
-
-struc SERVICE_TX_STRUCTURE_CACHE
- .size resb 8
- .address resb 8
- .SIZE:
-endstruc
-
 service_tx_pid dq STATIC_EMPTY
 
 service_tx_ipc_message:
@@ -26,6 +18,8 @@ service_tx:
  
  test rcx, rcx
  jz .loop
+
+ jmp .send
 
  mov rbx, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pid_source]
  cmp rbx, qword [service_network_pid]

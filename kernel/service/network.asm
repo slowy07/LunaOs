@@ -99,6 +99,7 @@ struc SERVICE_NETWORK_STRUCTURE_FRAME_ICMP
  .code resb 0x01
  .checksum resb 0x02
  .reserved resb 0x04
+ .data resb 0x20
  .SIZE:
 endstruc
 
@@ -895,10 +896,18 @@ service_network_arp:
  macro_debug "service_network_arp"
 
 service_network_icmp:
+ push rax
+ push rbx
+ push rcx
  push rsi
+ push rdi
 
  cmp byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.type], SERVICE_NETWORK_FRAME_ICMP_TYPE_REQUEST
  jne .end
+
+ movzx ebx, byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.version_and_ihl]
+ and bl, SERVICE_NETWORK_FRAME_IP_HEADER_LENGTH_mask
+ shl bl, STATIC_MULTIPLE_BY_4_shift
 
  call kernel_memory_alloc_page
  jc .end
@@ -921,6 +930,17 @@ service_network_icmp:
  mov dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.reserved], eax
 
  mov word [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.checksum], STATIC_EMPTY
+
+ push rsi
+ push rdi
+
+ mov ecx, SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.SIZE - SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.data
+ add rsi, SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.data
+ add rdi, SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.data
+ rep movsb
+
+ pop rdi
+ pop rsi
 
  xor eax, eax
  mov ecx, SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.SIZE >> STATIC_DIVIDE_BY_2_shift
@@ -954,7 +974,11 @@ service_network_icmp:
  call service_network_transfer
 
 .end:
+ pop rdi
  pop rsi
+ pop rcx
+ pop rbx
+ pop rax
 
  jmp service_network_ip.end
 

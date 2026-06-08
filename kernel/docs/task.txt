@@ -7,7 +7,7 @@ Implements a round-robin task scheduler for multitasking. Tasks are scheduled
 based on RTC timer interrupts (1024Hz). The scheduler saves/restores full
 CPU state including FPU/MMX/SSE registers.
 
-VARIABLES
+VARIABLES (defined after structure definitions in source)
   kernel_task_address        = qword (pointer to first task page)
   kernel_task_active_list    = qword (array of active tasks per CPU)
   kernel_task_pid_semaphore  = byte (lock for PID allocation)

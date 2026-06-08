@@ -1,5 +1,5 @@
 NETWORK SERVICE
-File: kernel/network.asm
+File: kernel/service/network.asm
 Author: arfy slowy
 
 OVERVIEW
@@ -15,10 +15,18 @@ SERVICE_NETWORK_RECEIVE_PUSH_WAIT_limit = 3 max spin iterations on receive
 SERVICE_NETWORK_MAC_mask = 0x0000FFFFFFFFFFFF
 SERVICE_NETWORK_STACK_SIZE_page = 1 page for TCP connection table
 SERVICE_NETWORK_PORT_SIZE_page = 1 page for port table (up to 512 ports)
+SERVICE_NETWORK_PORT_FLAG_empty, received, send - port state flags
+SERVICE_NETWORK_STACK_FLAG_busy - TCP connection busy marker
 
 ETHERNET TYPES
 SERVICE_NETWORK_FRAME_ETHERNET_TYPE_arp = 0x0608
 SERVICE_NETWORK_FRAME_ETHERNET_TYPE_ip  = 0x0008
+
+ARP CONSTANTS
+SERVICE_NETWORK_FRAME_ARP_HTYPE_ethernet = 0x0100
+SERVICE_NETWORK_FRAME_ARP_PTYPE_ipv4 = 0x0008
+SERVICE_NETWORK_FRAME_ARP_OPCODE_request = 0x0100
+SERVICE_NETWORK_FRAME_ARP_OPCODE_answer = 0x0200
 
 IP PROTOCOLS
 SERVICE_NETWORK_FRAME_IP_PROTOCOL_ICMP = 0x01
@@ -43,7 +51,7 @@ SERVICE_NETWORK_STRUCTURE_MAC (6 bytes)
 SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET (14 bytes): target, source, type
 SERVICE_NETWORK_STRUCTURE_FRAME_ARP (28 bytes)
 SERVICE_NETWORK_STRUCTURE_FRAME_IP (20 bytes): version, length, addresses, etc.
-SERVICE_NETWORK_STRUCTURE_FRAME_ICMP (8 bytes): type, code, checksum, reserved
+SERVICE_NETWORK_STRUCTURE_FRAME_ICMP (8+32=40 bytes): type, code, checksum, reserved, data
 SERVICE_NETWORK_STRUCTURE_FRAME_UDP (8 bytes): ports, length, checksum
 SERVICE_NETWORK_STRUCTURE_FRAME_TCP (20 bytes): ports, seq, ack, flags, etc.
 SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER (12 bytes): for checksum
@@ -74,8 +82,7 @@ service_network_transfer:
   Replaces direct calls to service_tx_add (now removed).
 
 service_network_ip:
-  IP dispatcher. Routes based on protocol field to service_network_icmp.
-  TCP dispatch temporarily disabled (testing service_network_transfer).
+  IP dispatcher. Routes based on protocol field to ICMP/TCP handlers.
 
 service_network_arp:
   Handles ARP requests. Responds with ARP reply containing own MAC address.
@@ -83,8 +90,9 @@ service_network_arp:
   service_network_transfer.
 
 service_network_icmp:
-  Handles ICMP echo requests (ping). Constructs and queues ICMP echo reply
-  via service_network_transfer.
+  Handles ICMP echo requests (ping). Computes IP header length, copies ICMP
+  data payload from request to reply (32 bytes), computes checksums, and
+  queues ICMP echo reply via service_network_transfer.
 
 service_network_tcp:
   TCP state machine dispatcher. Routes to SYN/ACK/FIN/PSH-ACK handlers.

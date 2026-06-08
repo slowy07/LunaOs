@@ -27,11 +27,11 @@ kernel_init_long_mode:
 
  %include "kernel/init/ps2.asm"
 
+ %include "kernel/init/ipc.asm"
+
  %include "kernel/init/network.asm"
 
  %include "kernel/init/task.asm"
-
- %include "kernel/init/ipc.asm"
 
  %include "kernel/init/services.asm"
 

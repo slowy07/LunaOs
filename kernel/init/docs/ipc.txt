@@ -4,6 +4,8 @@ Author: arfy slowy
 
 OVERVIEW
 Allocates the initial IPC message pool page during kernel boot.
+Runs after PS/2 init and before network/task init, so that the
+IPC subsystem is available for service task communication.
 
 PROCEDURE
 

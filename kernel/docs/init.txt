@@ -62,12 +62,17 @@ STRUCTURE
      Configures: 1024Hz periodic interrupts
      Connects: IRQ 8 to IO-APIC
 
-  13. kernel/init/ps2.asm
-     Initialize PS/2 keyboard controller
-     Configures: scan code set, interrupt enable
-     Note: Does NOT connect to IO-APIC (missing in code)
+   13. kernel/init/ps2.asm
+      Initialize PS/2 keyboard controller
+      Configures: scan code set, interrupt enable
+      Note: Does NOT connect to IO-APIC (missing in code)
 
-  14. kernel/init/task.asm
+   14. kernel/init/ipc.asm
+      Initialize IPC message pool
+      Allocates: IPC pool page
+      Must run before network and task init
+
+   15. kernel/init/task.asm
      Initialize tasking system
      Creates: first kernel task
      Mounts: timer interrupt handler (IRQ 0)
@@ -144,12 +149,17 @@ INITIALIZATION FLOW
               |
               v
   +-------------------------+
-  | ps2.asm                 |
-  +-----------+-------------+
-              |
-              v
-  +-------------------------+
-  | task.asm                |
+   | ps2.asm                 |
+   +-----------+-------------+
+               |
+               v
+   +-------------------------+
+   | ipc.asm                 |
+   +-----------+-------------+
+               |
+               v
+   +-------------------------+
+   | task.asm                |
   +-----------+-------------+
               |
               v

@@ -5,6 +5,7 @@ Author: arfy slowy
 OVERVIEW
 Message-based IPC mechanism for communication between tasks.
 Each message has a TTL (time-to-live) and is routed by destination PID.
+The pool uses a linked-list of pages for linear growth.
 
 STRUCTURES
 KERNEL_IPC_STRUCTURE_LIST (80 bytes per entry):
@@ -32,18 +33,20 @@ kernel_ipc_insert:
   Inserts a message into the IPC pool.
   Input:  RBX = destination PID, RSI = data pointer (if RCX > 0)
           RCX = data size (0 for inline copy), stack = data for inline
-  Output: CF = clean (success)
+  Output: CF = clean (success), jump to .error if RBX = 0
   Notes:  Acquires semaphore via macro_close.
           Searches for an expired or empty slot.
           If pool is full, follows linked list to next page.
           For inline data (RCX=0), copies into .data field.
 
 kernel_ipc_receive:
-  Retrieves a message addressed to the current task.
-  Input:  none (uses active task PID)
+  Retrieves a message addressed to the current task by copying the
+  full KERNEL_IPC_STRUCTURE_LIST into a caller-provided buffer.
+  Input:  RDI = pointer to caller's STRUCTURE_LIST buffer
   Output: CF = clean if found, set if no message
-          RSI = pointer to data, RCX = data size (if pointer)
-          Stack receives pointer + size for pointer-based data
+          Caller's buffer populated with the IPC entry data
+          RBX = pid_source of the found message
+          Semaphore acquired and released internally
   Notes:  Skips expired messages (TTL check).
-          For pointer-based data, returns pointer and size on stack.
-          For inline data, copies data to caller's stack.
+          Returns the source PID in RBX so the receiver can identify
+          the sender.

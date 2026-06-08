@@ -17,6 +17,7 @@ SERVICE_TX_STRUCTURE_CACHE (16 bytes):
   0x08    8     address (packet data pointer)
 
 GLOBAL VARIABLES
+service_tx_pid             - PID of the TX service (registered at init)
 service_tx_semaphore       - Spinlock for cache access
 service_tx_cache_address   - Pointer to allocated cache page
 service_tx_cache_pointer   - Index of next free slot (descending)
@@ -26,11 +27,12 @@ PROCEDURES
 service_tx:
   Main loop:
   1. Allocate one page for cache, drain page tables
-  2. Wait for data: loop until semaphore signaled or non-empty entry
-  3. Send packet via driver_nic_i82540em_transfer
-  4. Release the transmitted page
-  5. Shift remaining cache entries left
-  6. Increment pointer and repeat
+  2. Register own PID via kernel_task_active + service_tx_pid
+  3. Wait for data: loop until semaphore signaled or non-empty entry
+  4. Send packet via driver_nic_i82540em_transfer
+  5. Release the transmitted page
+  6. Shift remaining cache entries left
+  7. Increment pointer and repeat
 
 service_tx_add:
   Enqueues a packet for transmission.
@@ -44,3 +46,5 @@ NOTES
 - Maximum entries = page_size / 16 - 1
 - Each entry holds size + pointer; the actual packet data page is
   freed after transmission
+- PID is stored after cache allocation so other services/drivers can
+  reference service_tx_pid for IPC if needed

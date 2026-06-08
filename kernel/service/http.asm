@@ -9,10 +9,10 @@
 
 service_http:
  mov cx, 80
- call kernel_network_tcp_port_assign
+ call service_network_tcp_port_assign
 
 .loop:
- call kernel_network_tcp_port_receive
+ call service_network_tcp_port_receive
  jc .loop
 
  push rsi
@@ -32,12 +32,12 @@ service_http:
  mov rsi, service_http_404
 
 .answer:
- call kernel_network_tcp_port_send
+ call service_network_tcp_port_send
 
  pop rdi
  call kernel_memory_release_page
 
- jmp .loop
+ jmp $
 
 service_http_get_root db "GET / "
 service_http_get_root_end:

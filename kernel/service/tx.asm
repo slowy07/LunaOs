@@ -1,15 +1,16 @@
 SERVICE_TX_CACHE_SIZE_page equ 1
 
-service_tx_semaphore db STATIC_TRUE
-
-service_tx_cache_address dq STATIC_EMPTY
-service_tx_cache_pointer dq ((SERVICE_TX_CACHE_SIZE_page << STATIC_MULTIPLE_BY_PAGE_shift) / SERVICE_TX_STRUCTURE_CACHE.SIZE) - 0x01
-
 struc SERVICE_TX_STRUCTURE_CACHE
  .size resb 8
  .address resb 8
  .SIZE:
 endstruc
+
+service_tx_pid dq STATIC_EMPTY
+service_tx_semaphore db STATIC_TRUE
+
+service_tx_cache_address dq STATIC_EMPTY
+service_tx_cache_pointer dq ((SERVICE_TX_CACHE_SIZE_page << STATIC_MULTIPLE_BY_PAGE_shift) / SERVICE_TX_STRUCTURE_CACHE.SIZE) - 0x01
 
 service_tx:
  mov rcx, SERVICE_TX_CACHE_SIZE_page
@@ -19,6 +20,11 @@ service_tx:
  call kernel_page_drain_few
 
  mov qword [service_tx_cache_address], rdi
+
+ call kernel_task_active
+ mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
+
+ mov qword [service_tx_pid], rax
 
 .reload:
  mov byte [service_tx_semaphore], STATIC_FALSE

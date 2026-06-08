@@ -1,0 +1,26 @@
+SHELL DATA
+File: kernel/service/shell/data.asm
+Author: arfy slowy
+
+OVERVIEW
+String constants and cache buffer used by the shell service.
+
+DATA
+service_shell_string_prompt_with_new_line:
+  Leading newline before prompt
+
+service_shell_string_prompt:
+  Red color escape sequence ($STATIC_COLOR_ASCII_RED_LIGHT)
+
+service_shell_string_prompt_type:
+  "# " prompt characters
+
+service_shell_string_prompt_type_end:
+  Default color reset
+
+service_shell_cache:
+  TIMES SERVICE_SHELL_CACHE_SIZE_byte db STATIC_EMPTY
+  Input buffer for user keyboard input.
+
+service_shell_command_clean:
+  "clean" command string (reserved for future use)

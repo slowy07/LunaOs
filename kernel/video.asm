@@ -1,23 +1,3 @@
-; Copyright (c) 2026 arfy slowy
-;
-; Permission is hereby granted, free of charge, to any person obtaining a copy
-; of this software and associated documentation files (the "Software"), to deal
-; in the Software without restriction, including without limitation the rights
-; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-; copies of the Software, and to permit persons to whom the Software is
-; furnished to do so, subject to the following conditions:
-;
-; The above copyright notice and this permission notice shall be included in all
-; copies or substantial portions of the Software.
-;
-; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-; SOFTWARE.
-
 KERNEL_VIDEO_BASE_address equ 0x000B8000
 KERNEL_VIDEO_BASE_limit equ KERNEL_VIDEO_BASE_address + KERNEL_VIDEO_SIZE_byte
 KERNEL_VIDEO_WIDTH_char equ 80
@@ -33,261 +13,486 @@ kernel_video_line_size_byte dq KERNEL_VIDEO_LINE_SIZE_byte
 kernel_video_size_byte dq KERNEL_VIDEO_LINE_SIZE_byte * KERNEL_VIDEO_HEIGHT_char
 
 kernel_video_pointer dq KERNEL_VIDEO_BASE_address
-kernel_video_cursor dd STATIC_EMPTY
-                    dd STATIC_EMPTY
+kernel_video_cursor:
+ .x: dd STATIC_EMPTY
+ .y: dd STATIC_EMPTY
 
-kernel_video_char_color_and_background db 0x07
+kernel_video_char_color_and_background db STATIC_COLOR_gray_light
+
+kernel_video_color_sequence_default db STATIC_COLOR_ASCII_DEFAULT
+kernel_video_color_sequence_black db STATIC_COLOR_ASCII_BLACK
+kernel_video_color_sequence_blue db STATIC_COLOR_ASCII_BLUE
+kernel_video_color_sequence_green db STATIC_COLOR_ASCII_GREEN
+kernel_video_color_sequence_cyan db STATIC_COLOR_ASCII_CYAN
+kernel_video_color_sequence_red db STATIC_COLOR_ASCII_RED
+kernel_video_color_sequence_magenta db STATIC_COLOR_ASCII_MAGENTA
+kernel_video_color_sequence_brown db STATIC_COLOR_ASCII_BROWN
+kernel_video_color_sequence_gray_light db STATIC_COLOR_ASCII_GRAY_LIGHT
+kernel_video_color_sequence_gray db STATIC_COLOR_ASCII_GRAY
+kernel_video_color_sequence_blue_light db STATIC_COLOR_ASCII_BLUE_LIGHT
+kernel_video_color_sequence_green_light db STATIC_COLOR_ASCII_GREEN_LIGHT
+kernel_video_color_sequence_cyan_light db STATIC_COLOR_ASCII_CYAN_LIGHT
+kernel_video_color_sequence_red_light db STATIC_COLOR_ASCII_RED_LIGHT
+kernel_video_color_sequence_magenta_light db STATIC_COLOR_ASCII_MAGENTA_LIGHT
+kernel_video_color_sequence_yellow db STATIC_COLOR_ASCII_YELLOW
+kernel_video_color_sequence_white db STATIC_COLOR_ASCII_WHITE
 
 kernel_video_dump:
-  push rax
-  push rcx
-  push rdi
+ push rax
+ push rcx
+ push rdi
 
-  mov rax, 0x0720072007200720
-  mov ecx, (KERNEL_VIDEO_LINE_SIZE_byte * KERNEL_VIDEO_WIDTH_char)
-  mov rdi, KERNEL_VIDEO_BASE_address
-  rep stosq
+ mov ax, 0x0720
+ mov ecx, KERNEL_VIDEO_WIDTH_char * KERNEL_VIDEO_HEIGHT_char
+ mov rdi, KERNEL_VIDEO_BASE_address
+ rep stosw
 
-  pop rdi
-  pop rcx
-  pop rax
+ mov qword [kernel_video_pointer], KERNEL_VIDEO_BASE_address
 
-  ret
+ mov qword [kernel_video_cursor], STATIC_EMPTY
+
+ call kernel_video_cursor_set
+
+ pop rdi
+ pop rcx
+ pop rax
+
+ ret
 
 kernel_video_cursor_set:
-  push rax
-  push rcx
-  push rdx
+ push rax
+ push rcx
+ push rdx
 
-  mov eax, KERNEL_VIDEO_WIDTH_char
-  mul dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]
-  add eax, dword [kernel_video_cursor]
+ mov eax, KERNEL_VIDEO_WIDTH_char
+ mul dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]
+ add eax, dword [kernel_video_cursor]
 
-  mov cx, ax
+ mov cx, ax
 
-  mov al, 0x0F
-  mov dx, 0x03D4
-  out dx, al
+ mov al, 0x0F
+ mov dx, 0x03D4
+ out dx, al
 
-  inc dx
-  mov al, cl
-  out dx, al
+ inc dx
+ mov al, cl
+ out dx, al
 
-  mov al, 0x0E
-  dec dx
-  out dx, al
+ mov al, 0x0E
+ dec dx
+ out dx, al
 
-  inc dx
-  mov al, ch
-  out dx, al
+ inc dx
+ mov al, ch
+ out dx, al
 
-  pop rdx
-  pop rcx
-  pop rax
+ pop rdx
+ pop rcx
+ pop rax
 
-  ret
+ ret
 
 kernel_video_string:
-  push rax
-  push rbx
-  push rcx
-  push rdx
-  push rsi
-  
-  test rcx, rcx
-  jz .end
+ push rax
+ push rbx
+ push rcx
+ push rdx
+ push rsi
 
-  mov ah, byte [kernel_video_char_color_and_background]
- 
-.loop:
-  lodsb
+ test rcx, rcx
+ jz .end
 
-  test al, al
-  jz .end
-
-  push rcx
-
-  mov ecx, 1
-  call kernel_video_char
-
-  pop rcx
-
-  dec rcx
-  jnz .loop
-
-.end:
-  pop rsi
-  pop rdx
-  pop rcx
-  pop rbx
-  pop rax
-
-  ret
-
-kernel_video_char:
-  push rax
-  push rbx
-  push rcx
-  push rdx
-  push rdi
-
-  mov ah, byte [kernel_video_char_color_and_background]
-  
-  mov ebx, dword [kernel_video_cursor]
-  mov edx, dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]
-
-  mov rdi, qword [kernel_video_pointer]
+ mov ah, byte [kernel_video_char_color_and_background]
 
 .loop:
-  cmp al, STATIC_ASCII_NEW_LINE
-  je .new_line
+ lodsb
 
-  cmp al, STATIC_ASCII_BACKSPACE
-  je .backspace
+ test al, al
+ jz .end
 
-  stosw
+ cmp al, STATIC_ASCII_BACKSLASH
+ jne .no
 
-  inc ebx
+ cmp rcx, STATIC_ASCII_SEQUENCE_length
+ jb .fail
 
-  cmp ebx, KERNEL_VIDEO_WIDTH_char
-  jb .continue
+ push rdi
+ push rsi
+ push rcx
 
-  sub ebx, KERNEL_VIDEO_WIDTH_char
-  inc edx
+ dec rsi
 
-  cmp edx, KERNEL_VIDEO_HEIGHT_char
-  jb .continue
+ mov ecx, STATIC_ASCII_SEQUENCE_length
 
-  dec edx
+.default:
+ mov rdi, kernel_video_color_sequence_default
+ call library_string_compare
+ jc .black
 
-  call kernel_video_scroll
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_default
 
-.continue:
-  dec rcx
-  jnz .loop
+ jmp .done
 
-  mov dword [kernel_video_cursor], ebx
-  mov dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte], edx
+.black:
+ mov rdi, kernel_video_color_sequence_black
+ call library_string_compare
+ jc .blue
 
-  mov qword [kernel_video_pointer], rdi
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_black
 
-  call kernel_video_cursor_set
+ jmp .done
 
-  pop rdi
-  pop rdx
-  pop rcx
-  pop rbx
-  pop rax
+.blue:
+ mov rdi, kernel_video_color_sequence_blue
+ call library_string_compare
+ jc .green
 
-  ret
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_blue
 
-.new_line:
-  push rax
+ jmp .done
 
-  mov eax, ebx
-  shl eax, STATIC_MULTIPLE_BY_2_shift
-  sub rdi, rax
-  xor ebx, ebx
+.green:
+ mov rdi, kernel_video_color_sequence_green
+ call library_string_compare
+ jc .cyan
 
-  inc edx
-  add rdi, KERNEL_VIDEO_LINE_SIZE_byte
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_green
 
-  pop rax
+ jmp .done
 
-  jmp .continue
+.cyan:
+ mov rdi, kernel_video_color_sequence_cyan
+ call library_string_compare
+ jc .red
 
-.backspace:
-  test ebx, ebx
-  jz .begin
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_cyan
 
-  dec ebx
+ jmp .done
 
-  jmp .clear
+.red:
+ mov rdi, kernel_video_color_sequence_red
+ call library_string_compare
+ jc .magenta
 
-.begin:
-  test edx, edx
-  jz .clear
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_red
 
-  dec edx
+ jmp .done
 
-  mov ebx, KERNEL_VIDEO_WIDTH_char - 0x01
+.magenta:
+ mov rdi, kernel_video_color_sequence_magenta
+ call library_string_compare
+ jc .brown
 
-.clear:
-  sub rdi, KERNEL_VIDEO_CHAR_SIZE_byte
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_magenta
 
-  mov word [rdi], 0x0720
-  jmp .continue
+ jmp .done
 
-kernel_video_number:
-  push rax
-  push rdx
-  push rbp
-  push r8
-  push r9
+.brown:
+ mov rdi, kernel_video_color_sequence_brown
+ call library_string_compare
+ jc .gray_light
 
-  cmp bl, 2
-  jb .error
-  cmp bl, 36
-  ja .error
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_brown
 
-  mov r8, rdx
-  sub r8, 0x30
+ jmp .done
 
-  xor rdx, rdx
+.gray_light:
+ mov rdi, kernel_video_color_sequence_gray_light
+ call library_string_compare
+ jc .gray
 
-  mov rbp, rsp
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_gray_light
 
-.loop:
-  div rbx
+ jmp .done
 
-  push rdx
-  dec rcx
+.gray:
+ mov rdi, kernel_video_color_sequence_gray
+ call library_string_compare
+ jc .blue_light
 
-  xor rdx, rdx
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_gray
 
-  test rax, rax
-  jnz .loop
+ jmp .done
 
-  cmp rcx, STATIC_EMPTY
-  jle .print
+.blue_light:
+ mov rdi, kernel_video_color_sequence_blue_light
+ call library_string_compare
+ jc .green_light
 
-.prefix:
-  push r8
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_blue_light
 
-  dec rcx
-  jnz .prefix
+ jmp .done
 
-.print:
-  mov ecx, 0x01
+.green_light:
+ mov rdi, kernel_video_color_sequence_green_light
+ call library_string_compare
+ jc .cyan_light
 
-  cmp rsp, rbp
-  je .end
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_green_light
 
-  pop rax
+ jmp .done
 
-  add rax, 0x30
+.cyan_light:
+ mov rdi, kernel_video_color_sequence_cyan_light
+ call library_string_compare
+ jc .red_light
 
-  cmp al, 0x3A
-  jb .no
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_cyan_light
 
-  add al, 0x07
+ jmp .done
+
+.red_light:
+ mov rdi, kernel_video_color_sequence_red_light
+ call library_string_compare
+ jc .magenta_light
+
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_red_light
+
+ jmp .done
+
+.magenta_light:
+ mov rdi, kernel_video_color_sequence_magenta_light
+ call library_string_compare
+ jc .yellow
+
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_magenta_light
+
+ jmp .done
+
+.yellow:
+ mov rdi, kernel_video_color_sequence_yellow
+ call library_string_compare
+ jc .white
+
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_yellow
+
+ jmp .done
+
+.white:
+ mov rdi, kernel_video_color_sequence_white
+ call library_string_compare
+ jc .fail
+
+ mov byte [kernel_video_char_color_and_background], STATIC_COLOR_white
+
+.done:
+ sub qword [rsp], STATIC_ASCII_SEQUENCE_length - 0x01
+ add qword [rsp + STATIC_QWORD_SIZE_byte], STATIC_ASCII_SEQUENCE_length - 0x01
+
+.fail:
+ pop rcx
+ pop rsi
+ pop rdi
+
+ jnc .continue
 
 .no:
-  call kernel_video_char
+ push rcx
 
-  jmp .print
+ mov ecx, 1
+ call kernel_video_char
 
-.error:
-  stc
+ pop rcx
+
+.continue:
+ dec rcx
+ jnz .loop
 
 .end:
-  pop r9
-  pop r8
-  pop rbp
-  pop rdx
-  pop rax
+ pop rsi
+ pop rdx
+ pop rcx
+ pop rbx
+ pop rax
 
-  ret
+ ret
+
+kernel_video_char:
+ push rax
+ push rbx
+ push rcx
+ push rdx
+ push rdi
+
+ mov ah, byte [kernel_video_char_color_and_background]
+
+ mov ebx, dword [kernel_video_cursor]
+ mov edx, dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]
+
+ mov rdi, qword [kernel_video_pointer]
+
+.loop:
+ cmp al, STATIC_ASCII_NEW_LINE
+ je .new_line
+
+ cmp al, STATIC_ASCII_BACKSPACE
+ je .backspace
+
+ stosw
+
+ inc ebx
+
+ cmp ebx, KERNEL_VIDEO_WIDTH_char
+ jb .continue
+
+ sub ebx, KERNEL_VIDEO_WIDTH_char
+ inc edx
+
+.row:
+ cmp edx, KERNEL_VIDEO_HEIGHT_char
+ jb .continue
+
+ dec edx
+
+ sub rdi, KERNEL_VIDEO_LINE_SIZE_byte
+
+ call kernel_video_scroll
+
+.continue:
+ dec rcx
+ jnz .loop
+
+ mov dword [kernel_video_cursor], ebx
+ mov dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte], edx
+
+ mov qword [kernel_video_pointer], rdi
+
+ call kernel_video_cursor_set
+
+ pop rdi
+ pop rdx
+ pop rcx
+ pop rbx
+ pop rax
+
+ ret
+
+.new_line:
+ push rax
+
+ mov eax, ebx
+ shl eax, STATIC_MULTIPLE_BY_2_shift
+ sub rdi, rax
+ xor ebx, ebx
+
+ inc edx
+ add rdi, KERNEL_VIDEO_LINE_SIZE_byte
+
+ pop rax
+
+ jmp .row
+
+.backspace:
+ test ebx, ebx
+ jz .begin
+
+ dec ebx
+
+ jmp .clear
+
+.begin:
+ test edx, edx
+ jz .clear
+
+ dec edx
+
+ mov ebx, KERNEL_VIDEO_WIDTH_char - 0x01
+
+.clear:
+ sub rdi, KERNEL_VIDEO_CHAR_SIZE_byte
+
+ mov word [rdi], 0x0720
+
+ jmp .continue
+
+kernel_video_number:
+ push rax
+ push rdx
+ push rbp
+ push r8
+ push r9
+
+ cmp bl, 2
+ jb .error
+ cmp bl, 36
+ ja .error
+
+ mov r8, rdx
+ sub r8, 0x30
+
+ xor rdx, rdx
+
+ mov rbp, rsp
+
+.loop:
+ div rbx
+
+ push rdx
+ dec rcx
+
+ xor rdx, rdx
+
+ test rax, rax
+ jnz .loop
+
+ cmp rcx, STATIC_EMPTY
+ jle .print
+
+.prefix:
+ push r8
+
+ dec rcx
+ jnz .prefix
+
+.print:
+ mov ecx, 0x01
+
+ cmp rsp, rbp
+ je .end
+
+ pop rax
+
+ add rax, 0x30
+
+ cmp al, 0x3A
+ jb .no
+
+ add al, 0x07
+
+.no:
+ call kernel_video_char
+
+ jmp .print
+
+.error:
+ stc
+
+.end:
+ pop r9
+ pop r8
+ pop rbp
+ pop rdx
+ pop rax
+
+ ret
 
 kernel_video_scroll:
-  jmp $
+ push rcx
+ push rsi
+ push rdi
+
+ mov ecx, (KERNEL_VIDEO_SIZE_byte - KERNEL_VIDEO_LINE_SIZE_byte) >> STATIC_DIVIDE_BY_2_shift
+ mov rdi, KERNEL_VIDEO_BASE_address
+ mov rsi, KERNEL_VIDEO_BASE_address + KERNEL_VIDEO_LINE_SIZE_byte
+ rep movsw
+
+ mov al, STATIC_ASCII_SPACE
+ mov ah, STATIC_COLOR_default
+ mov ecx, KERNEL_VIDEO_LINE_SIZE_byte >> STATIC_DIVIDE_BY_2_shift
+ rep stosw
+
+ pop rdi
+ pop rsi
+ pop rcx
+
+ ret

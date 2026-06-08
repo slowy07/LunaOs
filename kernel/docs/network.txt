@@ -1,0 +1,125 @@
+NETWORK STACK
+File: kernel/network.asm
+Author: arfy slowy
+
+OVERVIEW
+Implements a basic IPv4/TCP/UDP/ICMP/ARP network stack with port-based
+receive/send IPC for userspace tasks. Interfaces with the NIC driver via
+service_tx_add for transmission and kernel_network (called from driver) for
+reception.
+
+CONSTANTS
+KERNEL_NETWORK_RECEIVE_PUSH_WAIT_limit = max spin iterations on receive
+KERNEL_NETWORK_STACK_SIZE_page = 1 page for TCP connection table
+KERNEL_NETWORK_PORT_SIZE_page = 1 page for port table (up to 512 ports)
+
+ETHERNET TYPES
+KERNEL_NETWORK_FRAME_ETHERNET_TYPE_arp = 0x0608
+KERNEL_NETWORK_FRAME_ETHERNET_TYPE_ip  = 0x0008
+
+IP PROTOCOLS
+KERNEL_NETWORK_FRAME_IP_PROTOCOL_ICMP = 0x01
+KERNEL_NETWORK_FRAME_IP_PROTOCOL_TCP  = 0x06
+KERNEL_NETWORK_FRAME_IP_PROTOCOL_UDP  = 0x11
+
+TCP FLAGS
+KERNEL_NETWORK_FRAME_TCP_FLAGS_fin = 0x0001
+KERNEL_NETWORK_FRAME_TCP_FLAGS_syn = 0x0002
+KERNEL_NETWORK_FRAME_TCP_FLAGS_rst = 0x0004
+KERNEL_NETWORK_FRAME_TCP_FLAGS_psh = 0x0008
+KERNEL_NETWORK_FRAME_TCP_FLAGS_ack = 0x0010
+KERNEL_NETWORK_FRAME_TCP_FLAGS_urg = 0x0020
+
+ICMP TYPES
+KERNEL_NETWORK_FRAME_ICMP_TYPE_REQUEST = 0x08
+KERNEL_NETWORK_FRAME_ICMP_TYPE_REPLY   = 0x00
+
+STRUCTURES
+KERNEL_NETWORK_STRUCTURE_MAC (6 bytes)
+KERNEL_NETWORK_STRUCTURE_FRAME_ETHERNET (14 bytes): target, source, type
+KERNEL_NETWORK_STRUCTURE_FRAME_ARP (28 bytes)
+KERNEL_NETWORK_STRUCTURE_FRAME_IP (20 bytes): version, length, addresses, etc.
+KERNEL_NETWORK_STRUCTURE_FRAME_ICMP (8 bytes): type, code, checksum, reserved
+KERNEL_NETWORK_STRUCTURE_FRAME_UDP (8 bytes): ports, length, checksum
+KERNEL_NETWORK_STRUCTURE_FRAME_TCP (20 bytes): ports, seq, ack, flags, etc.
+KERNEL_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER (12 bytes): for checksum
+KERNEL_NETWORK_STRUCTURE_TCP_STACK (48 bytes): per-connection state
+KERNEL_NETWORK_STRUCTURE_PORT (32 bytes): per-port receive buffer
+
+GLOBAL VARIABLES
+kernel_network_rx_count   - received packet counter
+kernel_network_tx_count   - transmitted packet counter
+kernel_network_port_table - pointer to port table page
+kernel_network_stack_address - pointer to TCP connection table
+
+PROCEDURES
+
+kernel_network:
+  Main packet dispatcher. Called from NIC driver with received packet in RSI.
+  Examines Ethernet type and routes to kernel_network_arp or kernel_network_ip.
+
+kernel_network_ip:
+  IP dispatcher. Routes based on protocol field to kernel_network_icmp or
+  kernel_network_tcp.
+
+kernel_network_arp:
+  Handles ARP requests. Responds with ARP reply containing own MAC address.
+  Skips non-Ethernet/IPv4/mismatched target IP.
+
+kernel_network_icmp:
+  Handles ICMP echo requests (ping). Constructs and queues ICMP echo reply.
+
+kernel_network_tcp:
+  TCP state machine dispatcher. Routes to SYN/ACK/FIN/PSH-ACK handlers.
+  Validates port number (< 512) and port table entry.
+
+kernel_network_tcp_syn:
+  Handles incoming SYN. Allocates TCP connection slot, stores remote MAC/IP/ports,
+  generates initial sequence number, sends SYN-ACK.
+
+kernel_network_tcp_ack:
+  Handles pure ACK. Clears pending ACK flag, checks for FIN+ACK completion.
+
+kernel_network_tcp_fin:
+  Handles FIN. Updates sequence numbers, sends ACK+FIN, notifies connection end.
+
+kernel_network_tcp_psh_ack:
+  Handles PSH+ACK (data push). Copies payload data into port buffer,
+  sets received flag for target task, waits if buffer is busy.
+
+kernel_network_tcp_find:
+  Searches TCP connection table for matching MAC/IP/port pair.
+  Returns connection structure pointer and IP header length.
+  Input: RSI = Ethernet frame
+  Output: CF set if not found, RDI = connection, RBX = IP header length
+
+kernel_network_tcp_wrap:
+  Builds TCP segment from connection state. Fills ports, seq, ack, flags,
+  window, computes checksum via pseudo-header, calls IP wrapper.
+
+kernel_network_ip_wrap:
+  Builds IP header from connection state. Sets version, length, ID, TTL,
+  protocol, computes checksum, calls Ethernet wrapper.
+
+kernel_network_tcp_pseudo_header:
+  Computes TCP pseudo-header checksum contribution.
+
+kernel_network_tcp_port_assign:
+  Registers a port for the current task (CR3 stored).
+  Input: CX = port number (< 512)
+  Output: CF set if port >= 512
+
+kernel_network_tcp_port_receive:
+  Checks port for received data. Returns data pointer/size if available.
+  Input: CX = port number
+  Output: CF set if no data, RBX = connection, RCX = size, RSI = pointer
+
+kernel_network_ethernet_wrap:
+  Wraps a frame with Ethernet header (target MAC, source MAC, type).
+
+kernel_network_checksum:
+  Standard internet checksum (ones' complement).
+  Accumulates 16-bit words, folds carry, returns complement.
+
+kernel_network_checksum_part:
+  Partial checksum accumulator (for pseudo-header chaining).

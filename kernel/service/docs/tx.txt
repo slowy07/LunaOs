@@ -1,0 +1,46 @@
+TRANSMIT SERVICE
+File: kernel/service/tx.asm
+Author: arfy slowy
+
+OVERVIEW
+Background service that drains a transmit cache queue, sending packets
+via driver_nic_i82540em_transfer. Other services enqueue packets via
+service_tx_add.
+
+CONSTANTS
+SERVICE_TX_CACHE_SIZE_page = 1 (one page for the cache queue)
+
+STRUCTURES
+SERVICE_TX_STRUCTURE_CACHE (16 bytes):
+  Offset  Size  Field
+  0x00    8     size   (packet length)
+  0x08    8     address (packet data pointer)
+
+GLOBAL VARIABLES
+service_tx_semaphore       - Spinlock for cache access
+service_tx_cache_address   - Pointer to allocated cache page
+service_tx_cache_pointer   - Index of next free slot (descending)
+
+PROCEDURES
+
+service_tx:
+  Main loop:
+  1. Allocate one page for cache, drain page tables
+  2. Wait for data: loop until semaphore signaled or non-empty entry
+  3. Send packet via driver_nic_i82540em_transfer
+  4. Release the transmitted page
+  5. Shift remaining cache entries left
+  6. Increment pointer and repeat
+
+service_tx_add:
+  Enqueues a packet for transmission.
+  Input:  EAX = packet length, RDI = packet data address
+  Output: CF set if cache full
+  Locks semaphore, stores size/address in next cache slot,
+  decrements pointer, unlocks.
+
+NOTES
+- Cache is a fixed-size page with descending pointer (stack-like)
+- Maximum entries = page_size / 16 - 1
+- Each entry holds size + pointer; the actual packet data page is
+  freed after transmission

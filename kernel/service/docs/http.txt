@@ -1,0 +1,37 @@
+HTTP SERVICE
+File: kernel/service/http.asm
+Author: arfy slowy
+
+OVERVIEW
+Minimal HTTP/1.0 web server. Listens on port 80, responds to "GET /"
+requests with a 200 OK HTML page, returns 404 for other paths.
+
+CONSTANTS
+SERVICE_HTTP_version  = "0"
+SERVICE_HTTP_revision = "8"
+
+MACROS
+service_http_macro_foot:
+  Emits HTML footer with version info and CSS styling.
+
+PROCEDURES
+
+service_http:
+  Main service loop:
+  1. Assign port 80 via kernel_network_tcp_port_assign
+  2. Loop: wait for receive via kernel_network_tcp_port_receive
+  3. Compare request to "GET / "
+  4. If match, send 200 OK response
+  5. If no match, send 404 Not Found
+  6. Release received page via kernel_memory_release_page
+  7. Repeat
+
+DATA
+service_http_get_root:    "GET / " (comparison string)
+service_http_200_default: HTTP/1.0 200 OK + HTML body
+service_http_404:         HTTP/1.0 404 Not Found + HTML body
+
+NOTES
+- Single-threaded, handles one request at a time
+- HTML includes inline CSS with green/red/white color scheme
+- All responses include LunaOS version footer via macro

@@ -1,0 +1,103 @@
+INTEL 82540EM GIGABIT ETHERNET DRIVER
+File: kernel/driver/network/i82540em.asm
+Author: arfy slowy
+
+OVERVIEW
+Driver for Intel 82540EM Gigabit Ethernet Controller (PCI vendor/device
+0x100E8086). Provides packet reception and transmission via MMIO registers,
+descriptor rings, and interrupts.
+
+CONSTANTS
+DRIVER_NIC_I82540EM_VENDOR_AND_DEVICE = 0x100E8086
+
+REGISTER BLOCKS
+  CTRL (0x0000):    Device control (reset, speed, link, etc.)
+  STATUS (0x0008):  Device status
+  EERD (0x0014):    EEPROM read (for MAC address)
+  ICR (0x00C0):     Interrupt cause read
+  IMS (0x00D0):     Interrupt mask set
+  IMC (0x00D8):     Interrupt mask clear
+  RCTL (0x0100):    Receive control (enable, broadcast, multicast, etc.)
+  TCTL (0x0400):    Transmit control (enable, pad, collision, etc.)
+  TIPG (0x0410):    Transmit inter-packet gap
+  RDBAL (0x2800):   RX descriptor ring base address low
+  RDBAH (0x2804):   RX descriptor ring base address high
+  RDLEN (0x2808):   RX descriptor ring length
+  RDH (0x2810):     RX descriptor head
+  RDT (0x2818):     RX descriptor tail
+  TDBAL (0x3800):   TX descriptor ring base address low
+  TDBAH (0x3804):   TX descriptor ring base address high
+  TDLEN (0x3808):   TX descriptor ring length
+  TDH (0x3810):     TX descriptor head
+  TDT (0x3818):     TX descriptor tail
+  RA (0x5400):      Receive address filter
+
+INTERRUPT CAUSES
+  DRIVER_NIC_I82540EM_ICR_TXDW = 0  (TX descriptor write back)
+  DRIVER_NIC_I82540EM_ICR_TXQE = 1  (TX queue empty)
+  DRIVER_NIC_I82540EM_ICR_RXO  = 6  (RX overrun)
+  DRIVER_NIC_I82540EM_ICR_RXT0 = 7  (RX timer interrupt)
+  DRIVER_NIC_I82540EM_ICR_SRPD = 16 (small packet received)
+
+TX DESCRIPTOR FLAGS
+  DRIVER_NIC_I82540EM_TDESC_STATUS_DD  = bit 32 (descriptor done)
+  DRIVER_NIC_I82540EM_TDESC_CMD_RS     = bit 27 (report status)
+  DRIVER_NIC_I82540EM_TDESC_CMD_IFCS   = bit 25 (insert FCS/CRC)
+  DRIVER_NIC_I82540EM_TDESC_CMD_EOP    = bit 24 (end of packet)
+
+GLOBAL VARIABLES
+driver_nic_i82540em_mmio_base_address     - MMIO base from PCI BAR
+driver_nic_i82540em_irq_number            - IRQ line from PCI
+driver_nic_i82540em_rx_base_address       - RX descriptor ring page
+driver_nic_i82540em_tx_base_address       - TX descriptor ring page
+driver_nic_i82540em_mac_address           - MAC address from EEPROM
+driver_nic_i82540em_tx_queue_empty_semaphore - TX queue lock
+driver_nic_i82540em_ipv4_address          - Static IP (192.168.0.64)
+driver_nic_i82540em_ipv4_mask             - Subnet mask (255.255.255.0)
+driver_nic_i82540em_ipv4_gateway          - Default gateway (192.168.0.1)
+
+STRUCTURES
+DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry: 16 bytes
+  Offset  Size  Field
+  0x00    8     base_address (physical address of packet buffer)
+  0x08    2     length
+  0x0A    2     checksum
+  0x0C    1     status
+  0x0D    1     errors
+  0x0E    2     special
+
+PROCEDURES
+
+driver_nic_i82540em:
+  Initialization entry point. Reads PCI BAR for MMIO base, loads MAC
+  address from EEPROM, masks all interrupts, calls setup.
+
+driver_nic_i82540em_setup:
+  Configures RX/TX descriptor rings, allocates packet buffer memory,
+  sets RCTL/TCTL/TIPG control registers, enables link (CTRL.SLU),
+  mounts IRQ in IDT, connects IO-APIC, enables desired interrupt sources.
+
+driver_nic_i82540em_irq:
+  Interrupt handler. Reads ICR to determine cause:
+  - RXT0 or SRPD: Receive packet. Allocates new buffer, spawns
+    kernel_network thread to process the frame.
+  - TXQE: Sets tx_queue_empty_semaphore (TX ready for new packet).
+  - RXO: Overrun (debug breakpoint).
+  Filters non-matching MAC unless promiscuous mode is enabled.
+  Sends EOI at end.
+
+driver_nic_i82540em_transfer:
+  Transmits a packet via the TX descriptor ring.
+  Input:  EAX = packet length, RDI = packet data address
+  Waits for TX queue to be empty, writes descriptor, sets TDT to
+  trigger transmission, polls for DD (descriptor done) status.
+
+driver_nic_i82540em_rx_release:
+  Replaces the current RX descriptor buffer with a newly allocated page
+  so the NIC can continue receiving. Called after processing each frame.
+
+NOTES
+- Single TX descriptor slot (not a ring) - serializes transmissions
+- RX uses a single-descriptor ring with RDLEN_default = 0x80 (128 bytes)
+- Interrupts are level-triggered via IO-APIC
+- MAC address read from EEPROM words at addresses 0-2

@@ -1,27 +1,3 @@
-; Copyright (c) 2026 arfy slowy
-;
-; Permission is hereby granted, free of charge, to any person obtaining a copy
-; of this software and associated documentation files (the "Software"), to deal
-; in the Software without restriction, including without limitation the rights
-; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-; copies of the Software, and to permit persons to whom the Software is
-; furnished to do so, subject to the following conditions:
-;
-; The above copyright notice and this permission notice shall be included in all
-; copies or substantial portions of the Software.
-;
-; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-; SOFTWARE.
-
-; NOTE: 
-; Documentation
-; kernel/driver/driver_docs.txt
-
 DRIVER_RTC_IRQ_number equ 0x08
 DRIVER_RTC_IO_APIC_register equ KERNEL_IO_APIC_iowin + (DRIVER_RTC_IRQ_number * 0x02)
 
@@ -51,48 +27,56 @@ DRIVER_RTC_PORT_STATUS_REGISTER_C equ 0x0C
 DRIVER_RTC_Hz equ 1024
 
 struc DRIVER_RTC_STRUCTURE_TIME
-  .second resb 1
-  .minute resb 1
-  .hour resb 1
-  .day resb 1
-  .month resb 1
-  .year resb 1
-  .day_of_week resb 1
+ .second resb 1
+ .minute resb 1
+ .hour resb 1
+ .day resb 1
+ .month resb 1
+ .year resb 1
+ .day_of_week resb 1
 endstruc
 
 driver_rtc_semaphore db STATIC_FALSE
-driver_rtc_microtime db STATIC_EMPTY
-driver_rtc_time db STATIC_EMPTY
 
-driver_rtc: 
-  push rax
+driver_rtc_microtime dq STATIC_EMPTY
 
-  inc qword [driver_rtc_microtime]
+driver_rtc_time dq STATIC_EMPTY
 
-  in al, DRIVER_RTC_PORT_data
+driver_rtc:
+ push rax
 
-  mov rax, qword [kernel_apic_base_address]
-  mov dword [rax + KERNEL_APIC_EOI_register], STATIC_EMPTY
+ inc qword [driver_rtc_microtime]
 
-  pop rax
+ in al, DRIVER_RTC_PORT_data
 
-  iretq
+ mov rax, qword [kernel_apic_base_address]
+ mov dword [rax + KERNEL_APIC_EOI_register], STATIC_EMPTY
+
+ pop rax
+
+ iretq
 
 driver_rtc_get_date_and_time:
-  push rax
+ push rax
 
-  mov al, DRIVER_RTC_PORT_second
-  out DRIVER_RTC_PORT_command, al
-  in al, DRIVER_RTC_PORT_data
+ mov al, DRIVER_RTC_PORT_second
+ out DRIVER_RTC_PORT_command, al
+ in al, DRIVER_RTC_PORT_data
 
-  mov byte [driver_rtc_time + DRIVER_RTC_STRUCTURE_TIME.second], al
+ mov byte [driver_rtc_time + DRIVER_RTC_STRUCTURE_TIME.second], al
 
-  mov al, DRIVER_RTC_PORT_minute
-  out DRIVER_RTC_PORT_command, al
-  in al, DRIVER_RTC_PORT_data
+ mov al, DRIVER_RTC_PORT_minute
+ out DRIVER_RTC_PORT_command, al
+ in al, DRIVER_RTC_PORT_data
 
-  mov byte [driver_rtc_time + DRIVER_RTC_STRUCTURE_TIME.hour], al
+ mov byte [driver_rtc_time + DRIVER_RTC_STRUCTURE_TIME.minute], al
 
-  pop rax
+ mov al, DRIVER_RTC_PORT_hour
+ out DRIVER_RTC_PORT_command, al
+ in al, DRIVER_RTC_PORT_data
 
-  ret
+ mov byte [driver_rtc_time + DRIVER_RTC_STRUCTURE_TIME.hour], al
+
+ pop rax
+
+ ret

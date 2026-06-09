@@ -42,6 +42,18 @@ STRING CONSTANTS
   kernel_string_new_line - ASCII new line (0x0A)
   kernel_string_dot    - ASCII dot (0x2E)
 
+DEBUG STRING CONSTANTS (used when %ifdef DEBUG is active)
+  kernel_debug_string_irq          - "IRQ"
+  kernel_debug_string_tx_empty     - "TX empty\n"
+  kernel_debug_string_rx           - "RX"
+  kernel_debug_string_ipc_insert   - "IPC+|"
+  kernel_debug_string_ipc_remove   - "IPC-|"
+  kernel_debug_string_network      - "Network|"
+  kernel_debug_string_ip           - "IPv4|"
+  kernel_debug_string_arp          - "ARP|"
+  kernel_debug_string_icmp         - "ICMP|"
+  Each constant is followed by a corresponding _end label for length calculation.
+
 NOTES
 These structures are initialized during boot:
 - GDT is set up in kernel/init/gdt.asm

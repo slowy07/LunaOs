@@ -39,6 +39,7 @@ kernel_ipc_insert:
           Searches for expired slot by comparing ttl to driver_rtc_microtime.
           TTL is set after data is written (not before).
           Inline data copied into .data field, pointer used if RCX > 0.
+          Includes %ifdef DEBUG block displaying "IPC+|" string.
 
 kernel_ipc_receive:
   Retrieves a message addressed to the current task by copying the
@@ -51,3 +52,4 @@ kernel_ipc_receive:
           Sets the found entry to STATIC_EMPTY (clears ttl) rather than
           maintaining a linked-list free pool.
           Decrements kernel_ipc_entry_count on success.
+          Includes %ifdef DEBUG block displaying "IPC-|" string.

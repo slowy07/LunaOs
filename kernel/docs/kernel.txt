@@ -86,5 +86,11 @@ Services:
   kernel/service/network.asm
 
 Libraries:
-  library/page_align_up.asm
-  library/page_from_size.asm
+  library/page_align_up.asm          - Page alignment
+  library/page_from_size.asm         - Size to page conversion
+  library/string_compare.asm         - String comparison
+  library/string_cut.asm             - Cut string at delimiter
+  library/string_digits.asm          - Validate digit characters
+  library/string_to_integer.asm      - Convert string to integer
+  library/string_trim.asm            - Trim whitespace
+  library/string_word_next.asm       - Extract next word

@@ -1,10 +1,38 @@
-SHELL PROMPT (placeholder)
+SHELL PROMPT
 File: kernel/service/shell/prompt.asm
 Author: arfy slowy
 
-PROCEDURE
+OVERVIEW
+Command dispatch handler for the shell. Parses the first word of user
+input and executes the corresponding command. Supports helper functions
+for command argument processing.
+
+PROCEDURES
+
+service_shell_prompt_clean:
+  Strips the command word from the input buffer and trims remaining
+  whitespace, leaving only the arguments for subsequent parsing.
+  Input:  RSI = input buffer, RBX = command length, R8 = total length
+  Output: RSI adjusted past command, R8 = remaining length
 
 service_shell_prompt:
-  Currently a stub that unconditionally jumps back to service_shell.
-  Designed to parse the command word (in EBX) and dispatch to command
-  handlers in future versions.
+  Main command dispatcher. Compares the first word against known commands:
+
+  clear - Scrolls the screen by (cursor_y + 1) lines, resets cursor
+          to top-left, then returns to service_shell.
+
+  ip    - With no arguments: displays current IPv4 address
+          (driver_nic_i82540em_ipv4_address) in dotted-decimal.
+          With "set <addr>" argument: parses dotted-decimal IPv4
+          address, validates each octet (0-255), byte-swaps and
+          stores to driver_nic_i82540em_ipv4_address.
+          On format error: displays "wrong ipv4 address" message.
+          On unknown subcommand: displays the subcommand + "what?".
+
+  Unknown commands: displays the command word followed by "what?".
+
+COMMAND STRINGS (from shell/data.asm)
+  service_shell_command_clean     = "clear"
+  service_shell_command_ip        = "ip"
+  service_shell_command_ip_set    = "set"
+  service_shell_command_unknown   = "what?"

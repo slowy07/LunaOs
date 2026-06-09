@@ -25,11 +25,12 @@ SHIFT CONSTANTS (multiply by powers of 2)
   STATIC_DIVIDE_BY_PAGE_shift     = 12 (/4096)
 
 SHIFT CONSTANTS (move bits)
-  STATIC_MOVE_HIGH_TO_AL_shift    = 8
-  STATIC_MOVE_HIGH_TO_AX_shift   = 16
-  STATIC_MOVE_HIGH_TO_EAX_shift  = 32
+  STATIC_MOVE_AL_TO_HIGH_shift   = 8
   STATIC_MOVE_AX_TO_HIGH_shift   = 16
   STATIC_MOVE_EAX_TO_HIGH_shift = 32
+  STATIC_MOVE_HIGH_TO_AL_shift   = 8
+  STATIC_MOVE_HIGH_TO_AX_shift   = 16
+  STATIC_MOVE_HIGH_TO_EAX_shift  = 32
 
 SIZE CONSTANTS
   STATIC_BYTE_mask      = 0xFF

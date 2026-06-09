@@ -22,5 +22,11 @@ service_shell_cache:
   TIMES SERVICE_SHELL_CACHE_SIZE_byte db STATIC_EMPTY
   Input buffer for user keyboard input.
 
-service_shell_command_clean:
-  "clean" command string (reserved for future use)
+COMMAND STRINGS
+service_shell_command_clean         = "clear"
+service_shell_command_ip            = "ip"
+service_shell_command_ip_set        = "set"
+service_shell_command_unknown       = "what?"
+
+ERROR STRINGS
+service_shell_string_error_ipv4_format = "\nwrong ipv4 address"

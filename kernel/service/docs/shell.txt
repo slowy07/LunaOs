@@ -16,8 +16,9 @@ service_shell:
   1. Draw prompt string (with or without leading newline based on cursor)
   2. Clear EBX (word buffer index)
   3. Read input via library_input with SERVICE_SHELL_CACHE_SIZE_byte limit
-  4. Trim input, extract first word
-  5. Jump to service_shell_prompt
+  4. Trim input, extract first word into EBX
+  5. Jump to service_shell_prompt for command dispatch
+  6. service_shell_prompt returns by jumping back to service_shell
 
 INCLUDES (included inline)
   shell/config.asm  - Cache size constant

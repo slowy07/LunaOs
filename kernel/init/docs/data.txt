@@ -32,6 +32,18 @@ Counters:
   | kernel_init_ap_count  | byte     | Number of Application Processors (APs))
   | kernel_init_apic_id_highest | byte | Highest APIC ID detected
 
+Service List:
+  kernel_init_services_list:
+    dq service_tresher  - Task reaper (cleans up closed tasks)
+    dq service_tx       - Packet transmission service
+    dq service_network  - Network stack (IPv4/TCP/UDP/ICMP/ARP)
+    dq service_http     - HTTP server (port 80)
+    dq service_shell    - Interactive shell
+    dq STATIC_EMPTY     - Terminator
+
+  Services are started sequentially during init. Each registers its
+  own PID via kernel_task_active on first execution.
+
 Constants Used:
   - STATIC_FALSE        : 0 (unlocked/disabled)
   - STATIC_TRUE         : 1 (locked/enabled)

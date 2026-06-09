@@ -62,8 +62,6 @@ library_input:
 
  inc rcx
 
- dec rsi
-
  jmp .print
 
 .key_enter:

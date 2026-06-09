@@ -68,6 +68,8 @@ kernel_video_cursor_set:
  mul dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]
  add eax, dword [kernel_video_cursor]
 
+ push rax
+
  mov cx, ax
 
  mov al, 0x0F
@@ -85,6 +87,12 @@ kernel_video_cursor_set:
  inc dx
  mov al, ch
  out dx, al
+
+ pop rax
+
+ shl rax, STATIC_MULTIPLE_BY_2_shift
+ add rax, KERNEL_VIDEO_BASE_address
+ mov qword [kernel_video_pointer], rax
 
  pop rdx
  pop rcx

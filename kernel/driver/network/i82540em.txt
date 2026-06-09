@@ -86,7 +86,6 @@ driver_nic_i82540em_irq:
   Restructured from previous version: removed TXQE handling, removed
   promiscuous mode/MAC address filtering, removed SRPD/RXO/TXDW handlers.
   Saves/restores RBX, RDX in addition to RAX, RCX, RSI.
-  Includes %ifdef DEBUG block that displays "IRQ" and "RX" strings.
   Sends EOI at end.
 
 driver_nic_i82540em_transfer:
@@ -109,6 +108,5 @@ NOTES
 - Received packets are forwarded to the network service task via IPC
   (kernel_ipc_insert), not by spawning threads directly.
 - Promiscuous mode defaults to FALSE (was TRUE in earlier version).
-- Includes %ifdef DEBUG instrumentation in IRQ handler ("IRQ", "RX").
 - RX descriptor length and base_address are read from the descriptor entry
   directly by the IRQ handler (passed to rx_release as params).

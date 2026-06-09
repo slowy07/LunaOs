@@ -20,7 +20,7 @@ KERNEL_IPC_STRUCTURE_LIST (72 bytes per entry):
 CONSTANTS
 KERNEL_IPC_SIZE_page_default = 1 (one 4KB page for the message pool)
 KERNEL_IPC_ENTRY_limit = entries per page (4096 / 80)
-KERNEL_IPC_TTL_default = ~10ms (RTC_Hz / 100)
+KERNEL_IPC_TTL_default = ~100ms (RTC_Hz / 10)
 
 GLOBAL VARIABLES
 kernel_ipc_semaphore    - spinlock for concurrent access
@@ -39,7 +39,8 @@ kernel_ipc_insert:
           Searches for expired slot by comparing ttl to driver_rtc_microtime.
           TTL is set after data is written (not before).
           Inline data copied into .data field, pointer used if RCX > 0.
-          Includes %ifdef DEBUG block displaying "IPC+|" string.
+          When scanning reaches end of pool without finding a slot, jumps
+          back to .loop to retry (instead of following linked-list pages).
 
 kernel_ipc_receive:
   Retrieves a message addressed to the current task by copying the
@@ -48,8 +49,8 @@ kernel_ipc_receive:
   Output: CF = clean if found, set if no message
           Caller's buffer populated with the IPC entry data
   Notes:  Does not use semaphore (relies on single-consumer design).
+          Early-exits with CF set if kernel_ipc_entry_count is STATIC_EMPTY.
           Skips non-matching pid_destination and expired messages (TTL check).
           Sets the found entry to STATIC_EMPTY (clears ttl) rather than
           maintaining a linked-list free pool.
           Decrements kernel_ipc_entry_count on success.
-          Includes %ifdef DEBUG block displaying "IPC-|" string.

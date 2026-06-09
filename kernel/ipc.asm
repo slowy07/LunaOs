@@ -1,7 +1,7 @@
 KERNEL_IPC_SIZE_page_default equ 1
 KERNEL_IPC_ENTRY_limit equ (KERNEL_IPC_SIZE_page_default << KERNEL_PAGE_SIZE_shift) / KERNEL_IPC_STRUCTURE_LIST.SIZE
 
-KERNEL_IPC_TTL_default equ DRIVER_RTC_Hz / 100
+KERNEL_IPC_TTL_default equ DRIVER_RTC_Hz / 10
 
 struc KERNEL_IPC_STRUCTURE_LIST
  .ttl resb 8
@@ -46,8 +46,9 @@ kernel_ipc_insert:
  add rdi, KERNEL_IPC_STRUCTURE_LIST.SIZE
 
  dec rcx
- jz .reload
- jmp .loop
+ jz .loop
+
+ jmp .reload
 
 .found:
  mov qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pid_source], rdx
@@ -55,17 +56,6 @@ kernel_ipc_insert:
  mov qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pid_destination], rbx
 
  mov rcx, qword [rsp]
-
-%ifdef DEBUG
- push rcx
- push rsi
- mov ecx, kernel_debug_string_ipc_insert_end - kernel_debug_string_ipc_insert
- mov rsi, kernel_debug_string_ipc_insert
- call kernel_video_string
- 
- pop rsi
- pop rcx
-%endif
 
  test rcx, rcx
  jz .load
@@ -108,6 +98,9 @@ kernel_ipc_receive:
  push rsi
  push rdi
 
+ cmp qword [kernel_ipc_entry_count], STATIC_EMPTY
+ je .empty
+
  call kernel_task_active
  mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
 
@@ -130,7 +123,7 @@ kernel_ipc_receive:
  dec rcx
  jnz .loop
 
-
+.empty:
  stc
 
  jmp .error
@@ -139,17 +132,6 @@ kernel_ipc_receive:
  mov ecx, KERNEL_IPC_STRUCTURE_LIST.SIZE
  mov rdi, qword [rsp]
  rep movsb
-
-%ifdef DEBUG
- push rcx
- push rsi
- mov ecx, kernel_debug_string_ipc_remove_end - kernel_debug_string_ipc_remove
- mov rsi, kernel_debug_string_ipc_remove
- call kernel_video_string
-
- pop rsi
- pop rcx
-%endif
 
  mov qword [rsi - KERNEL_IPC_STRUCTURE_LIST.SIZE], STATIC_EMPTY
  

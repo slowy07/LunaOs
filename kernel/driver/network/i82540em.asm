@@ -207,29 +207,9 @@ driver_nic_i82540em_irq:
 
  mov rsi, qword [driver_nic_i82540em_mmio_base_address]
  mov eax, dword [rsi + DRVIER_NIC_I82540EM_ICR_register]
- 
-%ifdef DEBUG
- push rcx
- push rsi
- mov ecx, kernel_debug_string_irq_end - kernel_debug_string_irq
- mov rsi, kernel_debug_string_irq
- call kernel_video_string
- pop rsi
- pop rcx
-%endif
 
  bt eax, DRIVER_NIC_I82540EM_ICR_register_flag_RXT0
  jnc .received
-
-%ifdef DEBUG
- push rcx
- push rsi
- mov ecx, kernel_debug_string_rx_end - kernel_debug_string_rx
- mov rsi, kernel_debug_string_rx
- call kernel_video_string
- pop rsi
- pop rcx
-%endif
 
  mov rbx, qword [service_network_pid]
  test rbx, rbx

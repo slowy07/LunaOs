@@ -55,6 +55,18 @@ kernel_ipc_insert:
  mov qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pid_destination], rbx
 
  mov rcx, qword [rsp]
+
+%ifdef DEBUG
+ push rcx
+ push rsi
+ mov ecx, kernel_debug_string_ipc_insert_end - kernel_debug_string_ipc_insert
+ mov rsi, kernel_debug_string_ipc_insert
+ call kernel_video_string
+ 
+ pop rsi
+ pop rcx
+%endif
+
  test rcx, rcx
  jz .load
 
@@ -127,6 +139,17 @@ kernel_ipc_receive:
  mov ecx, KERNEL_IPC_STRUCTURE_LIST.SIZE
  mov rdi, qword [rsp]
  rep movsb
+
+%ifdef DEBUG
+ push rcx
+ push rsi
+ mov ecx, kernel_debug_string_ipc_remove_end - kernel_debug_string_ipc_remove
+ mov rsi, kernel_debug_string_ipc_remove
+ call kernel_video_string
+
+ pop rsi
+ pop rcx
+%endif
 
  mov qword [rsi - KERNEL_IPC_STRUCTURE_LIST.SIZE], STATIC_EMPTY
  

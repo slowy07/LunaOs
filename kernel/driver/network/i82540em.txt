@@ -51,8 +51,9 @@ driver_nic_i82540em_tx_base_address       - TX descriptor ring page
 driver_nic_i82540em_mac_address           - MAC address from EEPROM
 driver_nic_i82540em_tx_queue_empty_semaphore - TX queue lock
 driver_nic_i82540em_promiscious_mode_semaphore - promiscuous mode (default FALSE)
-driver_nic_i82540em_ipv4_address          - Static IP (10.0.0.64)
+driver_nic_i82540em_ipv4_address          - Static IP (192.168.0.64)
 driver_nic_i82540em_ipv4_mask             - Subnet mask (255.255.255.0)
+driver_nic_i82540em_ipv4_gateway          - Default gateway (192.168.0.1)
 
 STRUCTURES
 DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry: 16 bytes
@@ -78,12 +79,14 @@ driver_nic_i82540em_setup:
 
 driver_nic_i82540em_irq:
   Interrupt handler. Reads ICR register to determine cause:
-  - TXQE: Sets tx_queue_empty_semaphore (TX ready for new packet).
-  - RXT0: Receive packet. Checks promiscuous mode or matching MAC,
-    allocates new buffer, sends the packet page to the network
-    service via kernel_ipc_insert (target PID from service_network_pid).
-  Simplified from previous version: removed SRPD, RXO, TXDW handlers.
+  - RXT0: Receive packet. Reads length and base_address from the RX
+    descriptor entry directly, calls driver_nic_i82540em_rx_release,
+    then sends the packet to the network service via kernel_ipc_insert.
+  Sets RDH to 0x00 and RDT to 0x01 at the end of processing.
+  Restructured from previous version: removed TXQE handling, removed
+  promiscuous mode/MAC address filtering, removed SRPD/RXO/TXDW handlers.
   Saves/restores RBX, RDX in addition to RAX, RCX, RSI.
+  Includes %ifdef DEBUG block that displays "IRQ" and "RX" strings.
   Sends EOI at end.
 
 driver_nic_i82540em_transfer:
@@ -95,6 +98,8 @@ driver_nic_i82540em_transfer:
 driver_nic_i82540em_rx_release:
   Replaces the current RX descriptor buffer with a newly allocated page
   so the NIC can continue receiving. Called after processing each frame.
+  Input: RCX = length, RSI = current buffer base address (passed from
+  caller rather than read internally).
 
 NOTES
 - Single TX descriptor slot (not a ring) - serializes transmissions
@@ -103,4 +108,7 @@ NOTES
 - MAC address read from EEPROM words at addresses 0-2
 - Received packets are forwarded to the network service task via IPC
   (kernel_ipc_insert), not by spawning threads directly.
-- Promiscuous mode defaults to FALSE (was TRUE in previous version).
+- Promiscuous mode defaults to FALSE (was TRUE in earlier version).
+- Includes %ifdef DEBUG instrumentation in IRQ handler ("IRQ", "RX").
+- RX descriptor length and base_address are read from the descriptor entry
+  directly by the IRQ handler (passed to rx_release as params).

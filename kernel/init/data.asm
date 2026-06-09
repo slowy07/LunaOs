@@ -25,8 +25,10 @@ kernel_init_ap_count db STATIC_EMPTY
 kernel_init_apic_id_highest db STATIC_EMPTY
 
 kernel_init_services_list:
- dq service_network
  dq service_tresher
  dq service_tx
+ dq service_network
+ dq service_http
+ dq service_shell
 
  dq STATIC_EMPTY

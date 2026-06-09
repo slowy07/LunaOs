@@ -1,0 +1,17 @@
+STRING TO INTEGER
+File: library/string_to_integer.asm
+Author: arfy slowy
+
+OVERVIEW
+Converts an ASCII decimal string to an integer by iterating from
+right to left, multiplying each digit's place value by powers of 10.
+
+PROCEDURE
+
+library_string_to_integer:
+  Input:  RSI = string pointer
+          RCX = number of digits to convert
+  Output: R8/QWORD on stack[0] = resulting integer value
+  Notes:  Processes digits right-to-left using place value.
+          Assumes input has already been validated as digits.
+          Does NOT check for overflow.

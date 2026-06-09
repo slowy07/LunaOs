@@ -44,6 +44,9 @@ kernel_video_cursor_set
   Purpose: Update hardware cursor position
   Uses VGA CRT controller ports 0x3D4/0x3D5
   Input: Uses kernel_video_cursor (column, row)
+  Side effect: Also recalculates kernel_video_pointer from cursor
+  position (video_base + (row * line_size + col) * char_size),
+  ensuring the write pointer stays in sync with the cursor.
 
 kernel_video_string
   Purpose: Print null-terminated string

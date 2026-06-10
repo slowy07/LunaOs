@@ -4,7 +4,7 @@ library_string_cut:
 
 .loop:
  cmp byte [rsi], STATIC_ASCII_TERMINATOR
- jz .end
+ je .end
 
  cmp byte [rsi], al
  je .end
@@ -19,5 +19,5 @@ library_string_cut:
 
  pop rcx
  pop rsi
- 
+
  ret

@@ -1,4 +1,4 @@
- %include "luna/config.asm"
+%include "luna/config.asm"
 
 [BITS 16]
 
@@ -26,13 +26,73 @@ luna:
  sti
 
 
+ call luna_line_a20_check
+ jz .unlocked
+
  mov ax, 0x2401
  int 0x15
+
+ call luna_line_a20_check
+ jz .unlocked
 
  in al, 0x92
  or al, 2
  out 0x92, al
 
+ call luna_line_a20_check
+ jz .unlocked
+
+ in al, 0xEE
+
+ call luna_line_a20_check
+ jz .unlocked
+
+
+ cli
+
+ call luna_ps2_keyboard_in
+
+ mov al, 0xAD
+ out 0x64, al
+
+ call luna_ps2_keyboard_in
+
+ mov al, 0xD0
+ out 0x64, al
+
+ call luna_ps2_keyboard_out
+
+ in al, 0x60
+
+ push ax
+
+ call luna_ps2_keyboard_in
+
+ mov al, 0xD1
+ out 0x64, al
+
+ call luna_ps2_keyboard_in
+
+ pop ax
+
+ or al, 2
+ out 0x60, al
+
+ call luna_ps2_keyboard_in
+
+ mov al, 0xAE
+ out 0x64, al
+
+ call luna_ps2_keyboard_in
+
+ sti
+
+ mov si, STATIC_LUNA_ERROR_a20
+
+ call luna_line_a20_check
+ jnz luna_panic
+
+.unlocked:
  mov ax, 0x0003
  int 0x10
 
@@ -40,7 +100,7 @@ luna:
  mov si, luna_table_disk_address_packet
  int 0x13
 
- mov si, STATIC_LUNA_ERROR_device
+ mov si, STATIC_LUNA_ERROR_disk
 
  jc luna_panic
 
@@ -70,20 +130,54 @@ luna:
  out DRIVER_PIC_PORT_SLAVE_data, al
  out DRIVER_PIC_PORT_MASTER_data, al
 
+
+ mov ax, 0x4F00
+ mov si, STATIC_LUNA_ERROR_video
+ mov di, STATIC_LUNA_video_vga_info_block
+ int 0x10
+
+ test ax, 0x4F00
+ jnz luna_panic
+
+ mov esi, dword [di + STATIC_LUNA_VIDEO_STRUCTURE_VGA_INFO_BLOCK.video_mode_ptr]
+
+.loop:
+ cmp word [esi], 0xFFFF
+ je .error
+
+ mov ax, 0x4F01
+ mov cx, word [esi]
+ mov di, STATIC_LUNA_video_mode_info_block
+ int 0x10
+
+ cmp word [di + STATIC_LUNA_VIDEO_STRUCTURE_MODE_INFO_BLOCK.x_resolution], STATIC_LUNA_VIDEO_WIDTH_pixel
+ jne .next
+
+ cmp word [di + STATIC_LUNA_VIDEO_STRUCTURE_MODE_INFO_BLOCK.y_resolution], STATIC_LUNA_VIDEO_HEIGHT_pixel
+ jne .next
+
+ cmp byte [di + STATIC_LUNA_VIDEO_STRUCTURE_MODE_INFO_BLOCK.bits_per_pixel], STATIC_LUNA_VIDEO_DEPTH_bit
+ je .found
+
+.next:
+ add esi, STATIC_WORD_SIZE_byte
+
+ jmp .loop
+
+.error:
+ mov si, STATIC_LUNA_ERROR_video
+ jmp luna_panic
+
+.found:
+ mov ax, 0x4F02
+ mov bx, word [esi]
+ or bx, STATIC_LUNA_VIDEO_MODE_linear | STATIC_LUNA_VIDEO_MODE_clean
+ int 0x10
+
+ test ah, ah
+ jnz .error
+
  cli
-
-%if STATIC_LUNA_bit_mode = 16
- mov ax, STATIC_LUNA_kernel_address
- mov ds, ax
- mov es, ax
-
- sti
-
- mov ebx, STATIC_LUNA_memory_map
-
- jmp STATIC_LUNA_kernel_address:0x0000
-%endif
-
 
  lgdt [luna_header_gdt_32bit]
 
@@ -101,6 +195,36 @@ luna_panic:
 
  jmp $
 
+luna_line_a20_check:
+ push ds
+
+ mov ax, 0xFFFF
+ mov ds, ax
+
+ mov ebx, dword [ds:STATIC_LUNA_address + 0x10]
+
+ pop ds
+
+ test ebx, dword [ds:STATIC_LUNA_address]
+
+ ret
+
+luna_ps2_keyboard_in:
+ in al, 0x64
+ test al, 2
+
+ jnz luna_ps2_keyboard_in
+
+ ret
+
+luna_ps2_keyboard_out:
+ in al, 0x64
+ test al, 1
+
+ jz luna_ps2_keyboard_out
+
+ ret
+
 [BITS 32]
 
 luna_protected_mode:
@@ -115,76 +239,26 @@ luna_protected_mode:
 
  mov edi, STATIC_LUNA_multiboot_header
 
- mov dword [edi + STATIC_MULTIBOOT_header.flags], STATIC_MULTIBOOT_HEADER_FLAG_memory_map
+ mov dword [edi + STATIC_MULTIBOOT_header.flags], STATIC_MULTIBOOT_HEADER_FLAG_memory_map | STATIC_MULTIBOOT_HEADER_FLAG_video
 
  mov dword [edi + STATIC_MULTIBOOT_header.mmap_length], ecx
  mov dword [edi + STATIC_MULTIBOOT_header.mmap_addr], STATIC_LUNA_memory_map
+
+ mov eax, dword [STATIC_LUNA_video_mode_info_block + STATIC_LUNA_VIDEO_STRUCTURE_MODE_INFO_BLOCK.physical_base_address]
+ mov dword [edi + STATIC_MULTIBOOT_header.framebuffer_addr], eax
+ mov dword [edi + STATIC_MULTIBOOT_header.framebuffer_width], STATIC_LUNA_VIDEO_WIDTH_pixel
+ mov dword [edi + STATIC_MULTIBOOT_header.framebuffer_height], STATIC_LUNA_VIDEO_HEIGHT_pixel
+ mov byte [edi + STATIC_MULTIBOOT_header.framebuffer_bpp], STATIC_LUNA_VIDEO_DEPTH_bit
+ mov byte [edi + STATIC_MULTIBOOT_header.framebuffer_type], STATIC_EMPTY
 
  mov esi, STATIC_LUNA_kernel_address << STATIC_SEGMENT_to_pointer
  mov edi, STATIC_LUNA_kernel_address << STATIC_SEGMENT_to_pointer << STATIC_SEGMENT_to_pointer
  mov ecx, (file_kernel_end - file_kernel) / 0x04
  rep movsd
 
-%if STATIC_LUNA_bit_mode = 32
  mov ebx, STATIC_LUNA_multiboot_header
 
  jmp STATIC_LUNA_kernel_address << STATIC_SEGMENT_to_pointer << STATIC_SEGMENT_to_pointer
-%endif
-
-
- xor eax, eax
- mov ecx, (STATIC_PAGE_SIZE_4KiB_byte * 0x06) / 0x04
- mov edi, STATIC_PML4_TABLE_address
- rep stosd
-
- mov dword [STATIC_PML4_TABLE_address], STATIC_PML4_TABLE_address + STATIC_PAGE_SIZE_4KiB_byte + STATIC_PAGE_FLAG_default
-
- mov dword [STATIC_PML4_TABLE_address + STATIC_PAGE_SIZE_4KiB_byte], STATIC_PML4_TABLE_address + (STATIC_PAGE_SIZE_4KiB_byte * 0x02) + STATIC_PAGE_FLAG_default
- mov dword [STATIC_PML4_TABLE_address + STATIC_PAGE_SIZE_4KiB_byte + 0x08], STATIC_PML4_TABLE_address + (STATIC_PAGE_SIZE_4KiB_byte * 0x03) + STATIC_PAGE_FLAG_default
- mov dword [STATIC_PML4_TABLE_address + STATIC_PAGE_SIZE_4KiB_byte + 0x10], STATIC_PML4_TABLE_address + (STATIC_PAGE_SIZE_4KiB_byte * 0x04) + STATIC_PAGE_FLAG_default
- mov dword [STATIC_PML4_TABLE_address + STATIC_PAGE_SIZE_4KiB_byte + 0x18], STATIC_PML4_TABLE_address + (STATIC_PAGE_SIZE_4KiB_byte * 0x05) + STATIC_PAGE_FLAG_default
-
- mov eax, STATIC_PAGE_FLAG_default + STATIC_PAGE_FLAG_2MiB_size
- mov ecx, 512 * 0x04
- mov edi, STATIC_PML4_TABLE_address + (STATIC_PAGE_SIZE_4KiB_byte * 0x02)
-
-.next:
- stosd
-
- add edi, 0x04
-
- add eax, STATIC_PAGE_SIZE_2MiB_byte
-
- dec ecx
- jnz .next
-
- lgdt [luna_header_gdt_64bit]
-
- mov eax, 1010100000b
- mov cr4, eax
-
- mov eax, STATIC_PML4_TABLE_address
- mov cr3, eax
-
- mov ecx, 0xC0000080
- rdmsr
- or eax, 100000000b
- wrmsr
-
- mov eax, cr0
- or eax, 0x80000001
- mov cr0, eax
-
- jmp 0x0008:luna_long_mode
-
-[BITS 64]
-
-luna_long_mode:
- mov ebx, STATIC_LUNA_multiboot_header
-
- jmp STATIC_LUNA_kernel_address << STATIC_SEGMENT_to_pointer << STATIC_SEGMENT_to_pointer
-
- ret
 
 align 0x04
 luna_table_disk_address_packet:
@@ -195,7 +269,7 @@ luna_table_disk_address_packet:
  dw STATIC_LUNA_kernel_address
  dq 0x0000000000000001
 
-align 0x04
+align 0x10
 luna_table_gdt_32bit:
  dq STATIC_EMPTY
  dq 0000000011001111100110000000000000000000000000001111111111111111b
@@ -205,17 +279,6 @@ luna_table_gdt_32bit_end:
 luna_header_gdt_32bit:
  dw luna_table_gdt_32bit_end - luna_table_gdt_32bit - 0x01
  dd luna_table_gdt_32bit
-
-align 0x08
-luna_table_gdt_64bit:
- dq STATIC_EMPTY
- dq 0000000000100000100110000000000000000000000000000000000000000000b
- dq 0000000000100000100100100000000000000000000000000000000000000000b
-luna_table_gdt_64bit_end:
-
-luna_header_gdt_64bit:
- dw luna_table_gdt_64bit_end - luna_table_gdt_64bit - 0x01
- dd luna_table_gdt_64bit
 
 times 510 - ($ - $$) db STATIC_EMPTY
  dw STATIC_LUNA_magic

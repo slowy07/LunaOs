@@ -10,8 +10,7 @@ init:
 
 align KERNEL_PAGE_SIZE_byte, db STATIC_NOTHING
 kernel:
-
- jmp service_http
+ jmp $
 
  %include "kernel/macro/close.asm"
  %include "kernel/macro/apic.asm"
@@ -27,6 +26,7 @@ kernel:
  %include "kernel/idt.asm"
  %include "kernel/task.asm"
  %include "kernel/thread.asm"
+ %include "kernel/font/setfonts.asm"
  %include "kernel/driver/rtc.asm"
  %include "kernel/driver/ps2.asm"
  %include "kernel/driver/pci.asm"

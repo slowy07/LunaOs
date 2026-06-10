@@ -10,12 +10,12 @@ service_tx:
  mov qword [service_tx_pid], rax
 
 .loop:
- mov rdi, service_tx_pid
+ mov rdi, service_tx_ipc_message
  call kernel_ipc_receive
  jc .loop
 
  mov rcx, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.size]
- 
+
  test rcx, rcx
  jz .loop
 
@@ -35,7 +35,7 @@ service_tx:
  mov rax, rcx
  mov rdi, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pointer]
  call driver_nic_i82540em_transfer
- 
+
  call library_page_from_size
  call kernel_memory_release
 

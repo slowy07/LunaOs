@@ -10,7 +10,7 @@ struc KERNEL_IPC_STRUCTURE_LIST
  .data:
  .size resb 8
  .pointer resb 8
- .other resb 32
+ .other resb 24
  .SIZE:
 endstruc
 
@@ -38,10 +38,12 @@ kernel_ipc_insert:
  mov rax, qword [driver_rtc_microtime]
 
  mov rcx, KERNEL_IPC_ENTRY_limit
+
  mov rdi, qword [kernel_ipc_base_address]
 
 .loop:
  cmp rax, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.ttl]
+ ja .found
 
  add rdi, KERNEL_IPC_STRUCTURE_LIST.SIZE
 
@@ -61,6 +63,7 @@ kernel_ipc_insert:
  jz .load
 
  mov qword [rdi + KERNEL_IPC_STRUCTURE_LIST.size], rcx
+
  mov qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pointer], rsi
 
  jmp .end
@@ -112,7 +115,7 @@ kernel_ipc_receive:
 
 .loop:
  cmp qword [rsi + KERNEL_IPC_STRUCTURE_LIST.pid_destination], rax
- je .found
+ jne .next
 
  cmp rdi, qword [rsi + KERNEL_IPC_STRUCTURE_LIST.ttl]
  jbe .found
@@ -122,6 +125,7 @@ kernel_ipc_receive:
 
  dec rcx
  jnz .loop
+
 
 .empty:
  stc
@@ -134,9 +138,9 @@ kernel_ipc_receive:
  rep movsb
 
  mov qword [rsi - KERNEL_IPC_STRUCTURE_LIST.SIZE], STATIC_EMPTY
- 
+
  dec qword [kernel_ipc_entry_count]
- 
+
  clc
 
 .error:

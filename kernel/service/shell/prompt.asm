@@ -15,11 +15,9 @@ service_shell_prompt:
 
  cmp rbx, service_shell_command_clean_end - service_shell_command_clean
  jne .clean_omit
-
  mov ecx, ebx
  mov rdi, service_shell_command_clean
  call library_string_compare
-
  jc .clean_omit
 
  mov ecx, dword [kernel_video_cursor.y]
@@ -31,26 +29,28 @@ service_shell_prompt:
  dec ecx
  jnz .clean
 
- mov dword [kernel_video_cursor.x], KERNEL_VIDEO_HEIGHT_char - 0x01
- mov dword [kernel_video_cursor.y], STATIC_EMPTY
+ mov dword [kernel_video_cursor.x], STATIC_EMPTY
+ mov dword [kernel_video_cursor.y], (KERNEL_VIDEO_HEIGHT_pixel / KERNEL_FONT_HEIGHT_pixel) - 0x01
  call kernel_video_cursor_set
- 
+
+
  jmp .end
 
 .clean_omit:
  cmp rbx, service_shell_command_ip_end - service_shell_command_ip
  jne .ip_omit
-
  mov ecx, ebx
  mov rdi, service_shell_command_ip
  call library_string_compare
- je .ip_omit
+ jc .ip_omit
+
+ call service_shell_prompt_clean
+ jc .ip_properties
 
  call library_string_word_next
 
  cmp ebx, service_shell_command_ip_set_end - service_shell_command_ip_set
  jne .ip_unknown
-
  mov ecx, ebx
  mov rdi, service_shell_command_ip_set
  call library_string_compare
@@ -67,7 +67,7 @@ service_shell_prompt:
  mov dl, 4
 
  xor r8d, r8d
- 
+
  mov rdi, rsi
  add rdi, rbx
 
@@ -115,6 +115,7 @@ service_shell_prompt:
  mov eax, STATIC_ASCII_NEW_LINE
  mov cl, 1
  call kernel_video_char
+
 
  mov bl, STATIC_NUMBER_SYSTEM_decimal
 

@@ -31,7 +31,7 @@ DRIVER_NIC_I82540EM_FCAL equ 0x0028
 DRIVER_NIC_I82540EM_FCAH equ 0x002C
 DRIVER_NIC_I82540EM_FCT equ 0x0030
 DRIVER_NIC_I82540EM_VET equ 0x0038
-DRVIER_NIC_I82540EM_ICR_register equ 0x00C0
+DRIVER_NIC_I82540EM_ICR_register equ 0x00C0
 DRIVER_NIC_I82540EM_ICR_register_flag_TXQE equ 1
 DRIVER_NIC_I82540EM_ICR_register_flag_RXT0 equ 7
 DRIVER_NIC_I82540EM_ITR equ 0x00C4
@@ -163,11 +163,10 @@ DRIVER_NIC_I82540EM_TSPMT equ 0x3830
 DRIVER_NIC_I82540EM_RXCSUM equ 0x5000
 DRIVER_NIC_I82540EM_MTA equ 0x5200
 DRIVER_NIC_I82540EM_RA equ 0x5400
-
 DRIVER_NIC_I82540EM_IP4AT_ADDR0 equ 0x5840
-DRVIER_NIC_I82540EM_IP4AT_ADDR1 equ 0x5848
-DRVIER_NIC_I82540EM_IP4AT_ADDR2 equ 0x5850
-DRVIER_NIC_I82540EM_IP4AT_ADDR3 equ 0x5858
+DRIVER_NIC_I82540EM_IP4AT_ADDR1 equ 0x5848
+DRIVER_NIC_I82540EM_IP4AT_ADDR2 equ 0x5850
+DRIVER_NIC_I82540EM_IP4AT_ADDR3 equ 0x5858
 
 struc DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry
  .base_address resb 8
@@ -187,11 +186,9 @@ driver_nic_i82540em_mac_address dq STATIC_EMPTY
 driver_nic_i82540em_tx_queue_empty_semaphore db STATIC_TRUE
 driver_nic_i82540em_promiscious_mode_semaphore db STATIC_FALSE
 
-; NOTE: commented to check race condition
-driver_nic_i82540em_ipv4_address db 192, 168, 0, 64
-; driver_nic_i82540em_ipv4_address db 192, 168, 0, 64
+driver_nic_i82540em_ipv4_address db 10, 0, 0, 64
 driver_nic_i82540em_ipv4_mask db 255, 255, 255, 0
-driver_nic_i82540em_ipv4_gateway db 192, 168, 0, 1
+driver_nic_i82540em_ipv4_gateway db 10, 0, 0, 1
 driver_nic_i82540em_vlan dw STATIC_EMPTY
 
 driver_nic_i82540em_rx_count dq STATIC_EMPTY
@@ -206,8 +203,16 @@ driver_nic_i82540em_irq:
  pushf
 
  mov rsi, qword [driver_nic_i82540em_mmio_base_address]
- mov eax, dword [rsi + DRVIER_NIC_I82540EM_ICR_register]
+ mov eax, dword [rsi + DRIVER_NIC_I82540EM_ICR_register]
 
+ bt eax, DRIVER_NIC_I82540EM_ICR_register_flag_TXQE
+ jnc .no_txqe
+
+ mov byte [driver_nic_i82540em_tx_queue_empty_semaphore], STATIC_TRUE
+
+ jmp .end
+
+.no_txqe:
  bt eax, DRIVER_NIC_I82540EM_ICR_register_flag_RXT0
  jnc .received
 
@@ -218,9 +223,9 @@ driver_nic_i82540em_irq:
  mov rsi, qword [driver_nic_i82540em_rx_base_address]
  movzx ecx, word [rsi + DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry.length]
  mov rsi, qword [rsi + DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry.base_address]
- 
+
  call driver_nic_i82540em_rx_release
- 
+
  call kernel_ipc_insert
 
 .received:
@@ -259,7 +264,6 @@ driver_nic_i82540em_rx_release:
  pop rax
 
  ret
-
 
 driver_nic_i82540em_transfer:
  push rsi
@@ -353,7 +357,7 @@ driver_nic_i82540em:
 
  mov dword [rsi + DRIVER_NIC_I82540EM_IMC], STATIC_MAX_unsigned
 
- mov eax, dword [rsi + DRVIER_NIC_I82540EM_ICR_register]
+ mov eax, dword [rsi + DRIVER_NIC_I82540EM_ICR_register]
 
  call driver_nic_i82540em_setup
 
@@ -384,9 +388,6 @@ driver_nic_i82540em_setup:
  mov dword [rsi + DRIVER_NIC_I82540EM_RDH], 0x00
  mov dword [rsi + DRIVER_NIC_I82540EM_RDT], 0x01
 
- mov ecx, DRIVER_NIC_I82540EM_RDLEN_default
- call library_page_from_size
- call kernel_memory_alloc
  call kernel_memory_alloc_page
 
  mov rax, qword [driver_nic_i82540em_rx_base_address]

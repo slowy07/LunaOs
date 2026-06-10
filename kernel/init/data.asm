@@ -28,7 +28,6 @@ kernel_init_services_list:
  dq service_tresher
  dq service_tx
  dq service_network
- dq service_http
  dq service_shell
 
  dq STATIC_EMPTY

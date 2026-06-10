@@ -7,7 +7,7 @@ service_shell_string_prompt_end:
 service_shell_cache:
  times SERVICE_SHELL_CACHE_SIZE_byte db STATIC_EMPTY
 
-service_shell_command_clean db "clean"
+service_shell_command_clean db "clear"
 service_shell_command_clean_end:
 service_shell_command_ip db "ip"
 service_shell_command_ip_end:

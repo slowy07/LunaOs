@@ -19,7 +19,7 @@ kernel_init_page:
  call kernel_page_map_logical
  jc kernel_init_panic_low_memory
 
- mov rax, KERNEL_VIDEO_BASE_address
+ mov rax, qword [kernel_video_base_address]
  or bx, KERNEL_PAGE_FLAG_write_through | KERNEL_PAGE_FLAG_cache_disable
  mov ecx, KERNEL_VIDEO_SIZE_byte
  call library_page_from_size

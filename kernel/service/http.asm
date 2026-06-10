@@ -12,10 +12,6 @@ service_http:
  call service_network_tcp_port_assign
 
 .loop:
- call service_network_tcp_port_receive
- jc .loop
-
- push rsi
 
  mov ecx, service_http_get_root_end - service_http_get_root
  mov rdi, service_http_get_root
@@ -33,9 +29,6 @@ service_http:
 
 .answer:
  call service_network_tcp_port_send
-
- pop rdi
- call kernel_memory_release_page
 
  jmp $
 

@@ -1,6 +1,7 @@
 library_string_to_integer:
  push rbx
  push rcx
+ push rdx
  push rsi
  push r8
  push rax
@@ -28,5 +29,8 @@ library_string_to_integer:
  pop rax
  pop r8
  pop rsi
+ pop rdx
  pop rcx
  pop rbx
+
+ ret

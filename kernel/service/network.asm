@@ -1,5 +1,3 @@
-SERVICE_NETWORK_RECEIVE_PUSH_WAIT_limit equ 3
-
 SERVICE_NETWORK_MAC_mask equ 0x0000FFFFFFFFFFFF
 
 SERVICE_NETWORK_PORT_SIZE_page equ 0x01
@@ -160,6 +158,7 @@ struc SERVICE_NETWORK_STRUCTURE_PORT
 endstruc
 
 service_network_pid dq STATIC_EMPTY
+
 service_network_rx_count dq STATIC_EMPTY
 service_network_tx_count dq STATIC_EMPTY
 
@@ -184,7 +183,7 @@ service_network:
  jc .loop
 
  mov rcx, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.size]
- mov rcx, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pointer]
+ mov rsi, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pointer]
 
  cmp word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.type], SERVICE_NETWORK_FRAME_ETHERNET_TYPE_arp
  je service_network_arp
@@ -192,7 +191,7 @@ service_network:
  cmp word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.type], SERVICE_NETWORK_FRAME_ETHERNET_TYPE_ip
  je service_network_ip
 
- xchg bx, bx
+ xchg bx,bx
 
 .end:
  test rsi, rsi
@@ -211,7 +210,7 @@ service_network_transfer:
  push rsi
 
  mov rbx, qword [service_tx_pid]
- test rbx, rax
+ test rbx, rbx
  jz .error
 
  mov rcx, rax
@@ -222,12 +221,12 @@ service_network_transfer:
 .error:
  stc
 
- .end:
-  pop rsi
-  pop rcx
-  pop rbx
+.end:
+ pop rsi
+ pop rcx
+ pop rbx
 
-  ret
+ ret
 
 service_network_tcp_port_send:
  push rax
@@ -270,13 +269,11 @@ service_network_tcp_port_send:
  ret
 
 service_network_ip:
-
  cmp byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.protocol], SERVICE_NETWORK_FRAME_IP_PROTOCOL_ICMP
  je service_network_icmp
 
- ; NOTE: currently test service_network_transfer
- ; cmp byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.protocol], SERVICE_NETWORK_FRAME_IP_PROTOCOL_TCP
- ; je service_network_tcp
+ cmp byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.protocol], SERVICE_NETWORK_FRAME_IP_PROTOCOL_TCP
+ je service_network_tcp
 
 .end:
  jmp service_network.end
@@ -357,16 +354,6 @@ service_network_tcp_psh_ack:
  mov rsi, qword [service_network_port_table]
  add rsi, rax
 
- mov cl, SERVICE_NETWORK_RECEIVE_PUSH_WAIT_limit
-
-.wait:
- bts word [rsi + SERVICE_NETWORK_STRUCTURE_PORT.cr3_and_flags], SERVICE_NETWORK_PORT_FLAG_BIT_empty
- jnc .empty
-
- hlt
-
- dec cl
- jnz .wait
 
 
  add rsp, STATIC_QWORD_SIZE_byte
@@ -459,7 +446,7 @@ service_network_tcp_ack:
  push rsi
  push rdi
 
- xchg bx, bx
+ xchg bx,bx
 
  test word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags_request], SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
  jz .end
@@ -769,7 +756,8 @@ service_network_tcp_port_assign:
  and ecx, STATIC_WORD_mask
  shl cx, STATIC_MULTIPLE_BY_32_shift
 
- mov rax, cr3
+ call kernel_task_active
+ mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
 
  mov rdi, qword [service_network_port_table]
  mov qword [rdi + rcx], rax
@@ -787,51 +775,6 @@ service_network_tcp_port_assign:
  ret
 
  macro_debug "service_network_tcp_port_assign"
-
-service_network_tcp_port_receive:
- push rax
- push rcx
- push rsi
-
- and ecx, STATIC_WORD_mask
- shl cx, STATIC_MULTIPLE_BY_32_shift
-
- mov rsi, qword [service_network_port_table]
- add rsi, rcx
-
- mov rax, cr3
-
- mov rcx, qword [rsi + SERVICE_NETWORK_STRUCTURE_PORT.cr3_and_flags]
- and cx, KERNEL_PAGE_mask
- cmp rcx, rax
- jne .error
-
- test word [rsi + SERVICE_NETWORK_STRUCTURE_PORT.cr3_and_flags], SERVICE_NETWORK_PORT_FLAG_empty | SERVICE_NETWORK_PORT_FLAG_received
- jz .error
-
- and word [rsi + SERVICE_NETWORK_STRUCTURE_PORT.cr3_and_flags], ~SERVICE_NETWORK_PORT_FLAG_BIT_received
-
- mov rbx, qword [rsi + SERVICE_NETWORK_STRUCTURE_PORT.tcp_connection]
-
- mov rcx, qword [rsi + SERVICE_NETWORK_STRUCTURE_PORT.size]
- mov qword [rsp + STATIC_QWORD_SIZE_byte], rcx
-
- mov rsi, qword [rsi + SERVICE_NETWORK_STRUCTURE_PORT.address]
- mov qword [rsp], rsi
-
- jmp .end
-
-.error:
- stc
-
-.end:
- pop rsi
- pop rcx
- pop rax
-
- ret
-
- macro_debug "service_network_tcp_port_receive"
 
 service_network_arp:
  push rax

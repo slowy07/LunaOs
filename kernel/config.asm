@@ -1,9 +1,9 @@
 %define DEBUG
 
+
 %define KERNEL_name "luna"
 %define KERNEL_version "0"
-; following commit
-%define KERNEL_revision "30"
+%define KERNEL_revision "1165"
 %define KERNEL_architecture "x86_64"
 
 KERNEL_BASE_address equ 0x0000000000100000

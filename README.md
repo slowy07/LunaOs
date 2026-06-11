@@ -37,7 +37,7 @@ luna.raw
 ## Documentation
 
 ### Root
-- `docs/config.txt` — Global constants (page sizes, shifts, colors, ASCII)
+- `docs/config.txt`  Global constants (page sizes, shifts, colors, ASCII)
 
 ### Kernel (`kernel/docs/`)
 | File | Description |
@@ -117,6 +117,9 @@ kernel/kernel.asm (32-bit)
         |
         +---> kernel/init/ (32-bit -> 64-bit transition)
         |         |
+        |         +-- smp.asm           SMP boot (AP wake)
+        |         +-- ap.asm           Application Processor init
+        |         +-- boot.asm         16-bit real mode trampoline
         |         +-- long_mode.asm
         |         +-- video.asm
         |         +-- memory.asm
@@ -191,7 +194,31 @@ kernel/kernel.asm (32-bit)
 
 ```
 +------------------------------+
-|   kernel_init_long_mode      |
+|   init.asm entry (32-bit)    |
++------------------------------+
+              |
+              v
++------------------------------+
+|   SMP check                  |
+|   BSP ? continue : ap.asm   |
++------------------------------+
+              |
+              v
++------------------------------+
+|   long_mode.asm -> 64-bit    |
+|   (GDT, paging, long mode)  |
++------------------------------+
+              |
+              v
++------------------------------+
+|   panic.asm / data.asm       |
+|   multiboot.asm              |
+|   + apic.asm (early detect)  |
++------------------------------+
+              |
+              v
++------------------------------+
+|   kernel_init                |
 +------------------------------+
               |
               v
@@ -246,6 +273,19 @@ kernel/kernel.asm (32-bit)
 +------------------------------+
 |   task.asm -> Scheduler init |
 |   (idle task, shell task)    |
++------------------------------+
+              |
+              v
++------------------------------+
+|   services.asm               |
+|   (shell, HTTP, network)     |
++------------------------------+
+              |
+              v
++------------------------------+
+|   smp.asm -> AP boot         |
+|   (copy boot trampoline,     |
+|    wake application CPUs)    |
 +------------------------------+
               |
               v
@@ -517,6 +557,7 @@ Task Flags:
 | **ACPI** | RSDP v1/v2 detection, RSDT (32-bit) and XSDT (64-bit) support, MADT parsing for LAPIC/IO-APIC enumeration |
 | **Scheduling** | Round-robin scheduler driven by RTC at 1024 Hz, per-task flags (active, closed, daemon, processing, secured, thread) |
 | **APIC** | Local APIC for timer interrupts, IO-APIC for device interrupt routing |
+| **SMP** | Multi-processor boot via 16-bit real mode trampoline (`boot.asm`), AP wake through IPI, per-CPU GDT TSS entries |
 | **Drivers** | PS/2 keyboard/mouse, RTC, PCI enumeration, Intel 82540EM Gigabit Ethernet |
 | **IPC** | Inter-process communication primitives |
 | **Services** | Interactive shell (clear, ip commands), HTTP client, network transmit, tresher |
@@ -525,22 +566,22 @@ Task Flags:
 
 | System | OSDev Wiki |
 |--------|-----------|
-| **x86-64 Long Mode** | [wiki.osdev.org/x86-64](https://wiki.osdev.org/x86-64) — 64-bit mode init, CPU modes |
-| **Multiboot** | [wiki.osdev.org/Multiboot](https://wiki.osdev.org/Multiboot) — Bootloader protocol, framebuffer info |
-| **LFB Framebuffer** | [wiki.osdev.org/Drawing_In_a_Linear_Framebuffer](https://wiki.osdev.org/Drawing_In_a_Linear_Framebuffer) — Pixel-based video output |
-| **VGA Fonts** | [wiki.osdev.org/VGA_Fonts](https://wiki.osdev.org/VGA_Fonts) — Bitmap font rendering in graphics mode |
-| **ACPI** | [wiki.osdev.org/ACPI](https://wiki.osdev.org/ACPI) — RSDP, RSDT, XSDT, MADT table parsing |
-| **APIC / IO-APIC** | [wiki.osdev.org/APIC](https://wiki.osdev.org/APIC) — Local APIC, IO-APIC, LVT, interrupt routing |
-| **APIC Timer** | [wiki.osdev.org/APIC_timer](https://wiki.osdev.org/APIC_timer) — One-shot and periodic timer modes |
-| **Paging (x86-64)** | [wiki.osdev.org/Paging](https://wiki.osdev.org/Paging) — 4-level paging, PML4, PDPT, PD, PT |
-| **Page Frame Allocation** | [wiki.osdev.org/Page_Frame_Allocation](https://wiki.osdev.org/Page_Frame_Allocation) — Bitmap-based physical allocator |
-| **GDT** | [wiki.osdev.org/GDT_Tutorial](https://wiki.osdev.org/GDT_Tutorial) — Global Descriptor Table setup |
-| **IDT** | [wiki.osdev.org/IDT](https://wiki.osdev.org/IDT) — Interrupt Descriptor Table, gates, vectors |
-| **RTC / CMOS** | [wiki.osdev.org/RTC](https://wiki.osdev.org/RTC) — Real-time clock periodic interrupt (1024 Hz) |
-| **PS/2 Keyboard** | [wiki.osdev.org/PS/2_Keyboard](https://wiki.osdev.org/PS/2_Keyboard) — Scan codes, port communication |
-| **PCI** | [wiki.osdev.org/PCI](https://wiki.osdev.org/PCI) — PCI bus enumeration, configuration space |
-| **Intel 8254x (NIC)** | [wiki.osdev.org/Intel_8254x](https://wiki.osdev.org/Intel_8254x) — Gigabit Ethernet driver interface |
-| **Round-Robin Scheduler** | [wiki.osdev.org/Scheduling_Algorithms](https://wiki.osdev.org/Scheduling_Algorithms) — Scheduling theory, context switching |
-| **Context Switching** | [wiki.osdev.org/Context_Switching](https://wiki.osdev.org/Context_Switching) — Save/restore state, TSS, IRETQ |
-| **SSE / SIMD** | [wiki.osdev.org/SSE](https://wiki.osdev.org/SSE) — Streaming SIMD Extensions, movdqa, movntdq, prefetchnta |
-| **IPC** | [wiki.osdev.org/Inter_Process_Communication](https://wiki.osdev.org/Inter_Process_Communication) — Message passing, shared memory |
+| **x86-64 Long Mode** | [wiki.osdev.org/x86-64](https://wiki.osdev.org/x86-64)  64-bit mode init, CPU modes |
+| **Multiboot** | [wiki.osdev.org/Multiboot](https://wiki.osdev.org/Multiboot)  Bootloader protocol, framebuffer info |
+| **LFB Framebuffer** | [wiki.osdev.org/Drawing_In_a_Linear_Framebuffer](https://wiki.osdev.org/Drawing_In_a_Linear_Framebuffer)  Pixel-based video output |
+| **VGA Fonts** | [wiki.osdev.org/VGA_Fonts](https://wiki.osdev.org/VGA_Fonts)  Bitmap font rendering in graphics mode |
+| **ACPI** | [wiki.osdev.org/ACPI](https://wiki.osdev.org/ACPI)  RSDP, RSDT, XSDT, MADT table parsing |
+| **APIC / IO-APIC** | [wiki.osdev.org/APIC](https://wiki.osdev.org/APIC)  Local APIC, IO-APIC, LVT, interrupt routing |
+| **APIC Timer** | [wiki.osdev.org/APIC_timer](https://wiki.osdev.org/APIC_timer)  One-shot and periodic timer modes |
+| **Paging (x86-64)** | [wiki.osdev.org/Paging](https://wiki.osdev.org/Paging)  4-level paging, PML4, PDPT, PD, PT |
+| **Page Frame Allocation** | [wiki.osdev.org/Page_Frame_Allocation](https://wiki.osdev.org/Page_Frame_Allocation)  Bitmap-based physical allocator |
+| **GDT** | [wiki.osdev.org/GDT_Tutorial](https://wiki.osdev.org/GDT_Tutorial)  Global Descriptor Table setup |
+| **IDT** | [wiki.osdev.org/IDT](https://wiki.osdev.org/IDT)  Interrupt Descriptor Table, gates, vectors |
+| **RTC / CMOS** | [wiki.osdev.org/RTC](https://wiki.osdev.org/RTC)  Real-time clock periodic interrupt (1024 Hz) |
+| **PS/2 Keyboard** | [wiki.osdev.org/PS/2_Keyboard](https://wiki.osdev.org/PS/2_Keyboard)  Scan codes, port communication |
+| **PCI** | [wiki.osdev.org/PCI](https://wiki.osdev.org/PCI)  PCI bus enumeration, configuration space |
+| **Intel 8254x (NIC)** | [wiki.osdev.org/Intel_8254x](https://wiki.osdev.org/Intel_8254x)  Gigabit Ethernet driver interface |
+| **Round-Robin Scheduler** | [wiki.osdev.org/Scheduling_Algorithms](https://wiki.osdev.org/Scheduling_Algorithms)  Scheduling theory, context switching |
+| **Context Switching** | [wiki.osdev.org/Context_Switching](https://wiki.osdev.org/Context_Switching)  Save/restore state, TSS, IRETQ |
+| **SSE / SIMD** | [wiki.osdev.org/SSE](https://wiki.osdev.org/SSE)  Streaming SIMD Extensions, movdqa, movntdq, prefetchnta |
+| **IPC** | [wiki.osdev.org/Inter_Process_Communication](https://wiki.osdev.org/Inter_Process_Communication)  Message passing, shared memory |

@@ -4,19 +4,19 @@ Author: arfy slowy
 
 OVERVIEW
 Provides LFB (Linear Frame Buffer) video output functions for the kernel.
-Renders text using a bitmap font onto a 1920x1080 pixel framebuffer at 32bpp.
+Renders text using a bitmap font onto a 640x400 pixel framebuffer at 32bpp.
 
 CONSTANTS
-  KERNEL_VIDEO_WIDTH_pixel        = 1920
-  KERNEL_VIDEO_HEIGHT_pixel       = 1080
+  KERNEL_VIDEO_WIDTH_pixel        = 640
+  KERNEL_VIDEO_HEIGHT_pixel       = 400
   KERNEL_VIDEO_DEPTH_shift        = 2 (4 bytes per pixel)
   KERNEL_VIDEO_DEPTH_byte         = 4
   KERNEL_VIDEO_DEPTH_bit          = 32
-  KERNEL_VIDEO_SIZE_byte          = 1920 * 1080 * 4
+  KERNEL_VIDEO_SIZE_byte          = 640 * 400 * 4
 
-  KERNEL_VIDEO_WIDTH_char         = 1920 / KERNEL_FONT_WIDTH_pixel
-  KERNEL_VIDEO_HEIGHT_char        = 1080 / KERNEL_FONT_HEIGHT_pixel
-  KERNEL_VIDEO_SCANLINE_CHAR_byte = 1920 * KERNEL_FONT_HEIGHT_pixel * 4
+  KERNEL_VIDEO_WIDTH_char         = 640 / KERNEL_FONT_WIDTH_pixel
+  KERNEL_VIDEO_HEIGHT_char        = 400 / KERNEL_FONT_HEIGHT_pixel
+  KERNEL_VIDEO_SCANLINE_CHAR_byte = 640 * KERNEL_FONT_HEIGHT_pixel * 4
 
 VARIABLES
   kernel_video_semaphore          = Mutex lock (0 = locked, 1 = free)
@@ -150,25 +150,25 @@ kernel_video_cursor_switch
 FLOW: kernel_video_char
   +------------------------+
   | Start                  |
-  +--------+----------------+
+  +--------+---------------+
            |
            v
   +------------------------+
   | Save registers         |
   | Disable cursor         |
   | Acquire semaphore      |
-  +--------+----------------+
+  +--------+---------------+
            |
            v
   +------------------------+
   | Load cursor (x, y)     |
   | from globals           |
-  +--------+----------------+
+  +--------+---------------+
            |
            v
   +------------------------+
   | Character type?        |
-  +--------+----------------+
+  +--------+---------------+
      |         |         |
   NEWLINE   BACKSPACE   REGULAR
      |         |         |
@@ -184,12 +184,12 @@ FLOW: kernel_video_char
   +------------------------+
   | Advance cursor         |
   | Handle line wrap       |
-  +--------+----------------+
+  +--------+---------------+
            |
            v
   +------------------------+
   | Past bottom?           |
-  +--------+----------------+
+  +--------+---------------+
            | YES
            v
   +------------------------+
@@ -201,7 +201,7 @@ FLOW: kernel_video_char
   | Store cursor (x, y)    |
   | Release semaphore      |
   | Enable cursor          |
-  +--------+----------------+
+  +--------+---------------+
            |
            v
   +------------------------+
@@ -211,12 +211,12 @@ FLOW: kernel_video_char
 FLOW: kernel_video_scroll
   +------------------------+
   | Start                  |
-  +--------+----------------+
+  +--------+---------------+
            |
            v
   +------------------------+
   | Disable cursor         |
-  +--------+----------------+
+  +--------+---------------+
            |
            v
   +------------------------+
@@ -224,19 +224,19 @@ FLOW: kernel_video_scroll
   |   src = base + scanline|
   |   dst = base,          |
   |   len = scanline*(h-1) |
-  +--------+----------------+
+  +--------+---------------+
            |
            v
   +------------------------+
   | Clear bottom row:      |
   | kernel_video_line_drain|
   | (row = HEIGHT_char - 1)|
-  +--------+----------------+
+  +--------+---------------+
            |
            v
   +------------------------+
   | Enable cursor          |
-  +--------+----------------+
+  +--------+---------------+
            |
            v
   +------------------------+

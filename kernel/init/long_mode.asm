@@ -52,7 +52,7 @@ KERNEL_INIT_LONG_MODE_PAGE_FLAG_default equ KERNEL_INIT_LONG_MODE_PAGE_FLAG_avai
  or eax, 0x80000001
  mov cr0, eax
 
- jmp 0x0008:kernel_init_long_mode
+ jmp 0x0008:kernel_init
 
 align 0x08
 kernel_init_table_gdt_64bit:

@@ -2,7 +2,7 @@ kernel_init_string_error_memory db "Init: Memory map, error."
 kernel_init_string_error_memory_end:
 kernel_init_string_error_memory_low db "Not enough memory."
 kernel_init_string_error_memory_low_end:
-kernel_init_string_acpi_search db "I am looking for an RSDP table, "
+kernel_init_string_acpi_search db "Checking for an RSDP / XSDP table, "
 kernel_init_string_acpi_search_end:
 kernel_init_string_acpi_search_found: db "found.", STATIC_ASCII_NEW_LINE
 kernel_init_string_acpi_search_found_end:

@@ -188,6 +188,14 @@ kernel/kernel.asm (32-bit)
 |  64-bit Mode     |
 |  Kernel Init     |
 +------------------+
+        |
+        v
++------------------+
+| SMP AP Boot      |
+| boot.asm ->      |
+| 16-bit -> 32-bit |
+| -> kernel entry  |
++------------------+
 ```
 
 ## Kernel Initialization Sequence
@@ -578,6 +586,10 @@ Task Flags:
 | **GDT** | [wiki.osdev.org/GDT_Tutorial](https://wiki.osdev.org/GDT_Tutorial)  Global Descriptor Table setup |
 | **IDT** | [wiki.osdev.org/IDT](https://wiki.osdev.org/IDT)  Interrupt Descriptor Table, gates, vectors |
 | **RTC / CMOS** | [wiki.osdev.org/RTC](https://wiki.osdev.org/RTC)  Real-time clock periodic interrupt (1024 Hz) |
+| **SMP** | [wiki.osdev.org/SMP](https://wiki.osdev.org/SMP)  Symmetric multiprocessing, AP boot sequence |
+| **IPI** | [wiki.osdev.org/IPI](https://wiki.osdev.org/IPI)  Inter-processor interrupts, APIC IPI delivery |
+| **Real Mode** | [wiki.osdev.org/Real_Mode](https://wiki.osdev.org/Real_Mode)  16-bit real mode addressing and BIOS |
+| **Protected Mode** | [wiki.osdev.org/Protected_Mode](https://wiki.osdev.org/Protected_Mode)  32-bit protected mode, GDT, segment protection |
 | **PS/2 Keyboard** | [wiki.osdev.org/PS/2_Keyboard](https://wiki.osdev.org/PS/2_Keyboard)  Scan codes, port communication |
 | **PCI** | [wiki.osdev.org/PCI](https://wiki.osdev.org/PCI)  PCI bus enumeration, configuration space |
 | **Intel 8254x (NIC)** | [wiki.osdev.org/Intel_8254x](https://wiki.osdev.org/Intel_8254x)  Gigabit Ethernet driver interface |

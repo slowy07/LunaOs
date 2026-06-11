@@ -14,7 +14,7 @@ kernel_video_base_address dq STATIC_EMPTY
 kernel_video_pointer dq STATIC_EMPTY
 kernel_video_width_pixel dq STATIC_EMPTY
 kernel_video_height_pixel dq STATIC_EMPTY
-kernel_video_scanline_char dq STATIC_EMPTY
+kernel_video_scanline_char dq KERNEL_VIDEO_SCANLINE_CHAR_byte
 
 kernel_video_color dd STATIC_COLOR_default
 kernel_video_color_background dd STATIC_COLOR_BACKGROUND_default

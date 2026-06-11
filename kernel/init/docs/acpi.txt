@@ -5,8 +5,76 @@ Date: 2026
 License: MIT
 
 OVERVIEW
-Initializes ACPI hardware, finds RSDP, parses RSDT/MADT tables, and enumerates
-LAPICs and IO-APICs for SMP support.
+Initializes ACPI hardware, finds RSDP, parses RSDT/XSDT/MADT tables, and
+enumerates LAPICs and IO-APICs for SMP support. Supports both 32-bit RSDT
+(ACPI 1.0) and 64-bit XSDT (ACPI 2.0+) via RSDP revision detection.
+
+FLOW DIAGRAM
+
++--------------------------+
+| kernel_init_acpi         |
++----------+---------------+
+           |
+           v
++--------------------------+
+| Search for "RSD PTR "    |
+| signature in EBDA region |
++----------+---------------+
+           |
+           v
++--------------------------+
+| Verify RSDP checksum     |
++----------+---------------+
+           |
+           v
++--------------------------+
+| RSDP revision == 0?      |
++----------+---------------+
+     |              |
+  YES(NO RSDT)    NO(XSDT)
+     |              |
+     v              v
++-------------+  +-------------+
+| Read RSDT   |  | Read XSDT   |
+| 32-bit addr |  | 64-bit addr |
++------+------+  +------+------+
+       |                |
+       +-------+--------+
+               |
+               v
++--------------------------+
+| Verify RSDT/XSDT         |
+| signature ("RSDT"/"XSDT")|
++----------+---------------+
+           |
+           v
++--------------------------+
+| xchg bx, bx (breakpoint) |
++----------+---------------+
+           |
+           v
++--------------------------+
+| Loop through entries:    |
+| If r8b == TRUE  -> RSDT  |
+|   (32-bit pointers)      |
+| If r8b == FALSE -> XSDT  |
+|   (64-bit pointers)      |
++----------+---------------+
+           |
+           v
++--------------------------+
+| Find "APIC" (MADT) entry |
++----------+---------------+
+           |
+           v
+    +------+------+
+    | MADT parsing |
+    +------+-------+
+           |
+           v
+    +------+------+
+    | Return       |
+    +-------------+
 
 FLOW DIAGRAM: MADT Entry Processing
 
@@ -30,15 +98,15 @@ FLOW DIAGRAM: MADT Entry Processing
 +-------------------------+-------------------------+
 | .madt_apic             | Type == 0x01 (IO-APIC)?|
 +--------+-----------------+--------+----------------+
-          |                        |
-          |                        +-----+-----+
-          |                        |YES          |NO
-          |                        v             v
+          |                         |
+          |                         +-----+-----+
+          |                         |YES          |NO
+          |                         v             v
           |              +-------------------------+-------------+
           |              | .madt_ioapic           | Skip entry  |
           |              +--------+-----------------+-------------+
-          |                        |                        |
-          v                        v                        v
+          |                         |                         |
+          v                         v                         v
 +-------------------------+.madt_next_entry<----------------+
 | Check enabled flag      |
 | Increment AP count      |
@@ -65,10 +133,8 @@ FLOW DIAGRAM: MADT Entry Processing
           |
           v
    +-------------+
-   | Continue    |
-   | RSDT search |
+   | Return      |
    +-------------+
-
 
 KEY VARIABLES
   kernel_apic_base_address       : Local APIC MMIO base
@@ -77,3 +143,11 @@ KEY VARIABLES
   kernel_init_apic_id_highest   : Highest APIC ID
   kernel_io_apic_base_address   : IO-APIC MMIO base
   kernel_init_ioapic_semaphore  : Set when IO-APIC found
+
+RSDP / RSDT / XSDT NOTES
+  - RSDP revision 0: ACPI 1.0, uses 32-bit RSDT address
+  - RSDP revision > 0: ACPI 2.0+, uses 64-bit XSDT address
+  - R8B used as flag: TRUE for RSDT (32-bit), FALSE for XSDT (64-bit)
+  - Entry pointers in RSDT are 32-bit; in XSDT they are 64-bit
+  - Both RSDT and XSDT use the ACPI_STRUCTURE_RSDT structure layout
+    (signature, length, then pointer array)

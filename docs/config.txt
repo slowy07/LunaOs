@@ -22,6 +22,7 @@ SHIFT CONSTANTS (multiply by powers of 2)
   STATIC_DIVIDE_BY_2_shift        = 1 (/2)
   STATIC_DIVIDE_BY_4_shift        = 2 (/4)
   STATIC_DIVIDE_BY_8_shift        = 3 (/8)
+  STATIC_DIVIDE_BY_DWORD_shift    = 2 (/4, alias of STATIC_DIVIDE_BY_4_shift)
   STATIC_DIVIDE_BY_PAGE_shift     = 12 (/4096)
   STATIC_DIVIDE_BY_256_shift      = 8 (/256)
 
@@ -102,8 +103,8 @@ COLOR CONSTANTS (VGA text mode attributes)
 
   VGA Colors (numeric values):
     STATIC_COLOR_background_default = STATIC_COLOR_black
-    STATIC_COLOR_default            = STATIC_COLOR_red_light (12)
-    STATIC_COLOR_black              = 0
+    STATIC_COLOR_default            = STATIC_COLOR_ASCII_GRAY_LIGHT (string escape)
+    STATIC_COLOR_black              = 0x00101010
     STATIC_COLOR_blue               = 1
     STATIC_COLOR_green              = 2
     STATIC_COLOR_cyan               = 3

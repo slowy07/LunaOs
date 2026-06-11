@@ -24,7 +24,7 @@ VARIABLES
   kernel_video_pointer            = Current write position in framebuffer
   kernel_video_width_pixel        = Cached width in pixels
   kernel_video_height_pixel       = Cached height in pixels
-  kernel_video_scanline_char      = Bytes per character row
+  kernel_video_scanline_char      = Bytes per character row (default: KERNEL_VIDEO_SCANLINE_CHAR_byte)
   kernel_video_color              = Current foreground color (DWORD)
   kernel_video_color_background   = Current background color (DWORD)
   kernel_video_cursor_lock        = Cursor disable nesting counter (0 = visible)

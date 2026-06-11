@@ -41,6 +41,7 @@ STRING CONSTANTS
   kernel_string_space  - ASCII space (0x20)
   kernel_string_new_line - ASCII new line (0x0A)
   kernel_string_dot    - ASCII dot (0x2E)
+  kernel_string_welcome - Blue color escape + "welcome cik!" (blue colored via STATIC_COLOR_ASCII_BLUE_LIGHT)
 
 DEBUG STRING CONSTANTS (used when %ifdef DEBUG is active)
   kernel_debug_string_irq          - "IRQ"

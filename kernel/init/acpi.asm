@@ -97,18 +97,13 @@ struc ACPI_STRUCTURE_MADT_NMI
 endstruc
 
 kernel_init_acpi:
- push rax
- push rbx
- push rcx
- push rdx
- push rsi
- push rdi
- push r8
 
  mov rbx, "RSD PTR "
 
  movzx esi, word [0x040E]
  shl esi, STATIC_MULTIPLE_BY_16_shift
+
+ mov r8b, STATIC_TRUE
 
 .rsdp_search:
  lodsq
@@ -149,17 +144,29 @@ kernel_init_acpi:
  sub rsi, ACPI_STRUCTURE_RSDP.checksum
 
  cmp byte [rsi + ACPI_STRUCTURE_RSDP.revision], 0x00
- jne .extended
+ je .standard
 
+ mov rdi, qword [rsi + ACPI_STRUCTURE_RSDP_20.xsdt_address]
+
+ mov r8b, STATIC_FALSE
+ 
+ jmp .xsdt
+
+.standard:
  mov edi, dword [rsi + ACPI_STRUCTURE_RSDP.rsdt_address]
 
+.xsdt:
  mov ecx, kernel_init_string_error_acpi_corrupted_end - kernel_init_string_error_acpi_corrupted
  mov rsi, kernel_init_string_error_acpi_corrupted
 
  cmp dword [rdi + ACPI_STRUCTURE_RSDT.signature], "RSDT"
+ je .found
+
+ cmp dword [rdi + ACPI_STRUCTURE_RSDT.signature], "XSDT"
  jne .error
 
-
+.found:
+ xchg bx, bx
  mov ecx, dword [rdi + ACPI_STRUCTURE_RSDT.length]
  sub ecx, ACPI_STRUCTURE_RSDT.SIZE
  shr ecx, STATIC_DIVIDE_BY_DWORD_shift
@@ -167,8 +174,17 @@ kernel_init_acpi:
  add rdi, ACPI_STRUCTURE_RSDT.SIZE
 
 .rsdt:
+ cmp r8b, STATIC_TRUE
+ je .rsdt_pointer
+
+ mov rsi, qword [rdi]
+
+ jmp .xsdt_pointer
+
+.rsdt_pointer:
  mov esi, dword [rdi]
 
+.xsdt_pointer:
  cmp dword [rsi + ACPI_STRUCTURE_MADT.signature], "APIC"
  je .madt
 

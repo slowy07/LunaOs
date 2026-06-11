@@ -166,11 +166,19 @@ kernel_init_acpi:
  jne .error
 
 .found:
- xchg bx, bx
  mov ecx, dword [rdi + ACPI_STRUCTURE_RSDT.length]
  sub ecx, ACPI_STRUCTURE_RSDT.SIZE
+ 
+ cmp r8b, STATIC_TRUE
+ je .rsdt_entry_size
+
+ shr ecx, STATIC_DIVIDE_BY_QWORD_shift
+ jmp .prepared
+
+.rsdt_entry_size:
  shr ecx, STATIC_DIVIDE_BY_DWORD_shift
 
+.prepared:
  add rdi, ACPI_STRUCTURE_RSDT.SIZE
 
 .rsdt:
@@ -189,6 +197,12 @@ kernel_init_acpi:
  je .madt
 
 .rsdt_continue:
+ cmp r8b, STATIC_TRUE
+ je .dword_address
+
+ add rdi, STATIC_DWORD_SIZE_byte
+
+.dword_address:
  add rdi, STATIC_DWORD_SIZE_byte
 
  dec ecx
@@ -277,14 +291,5 @@ kernel_init_acpi:
  mov byte [kernel_init_ioapic_semaphore], STATIC_TRUE
 
  jmp .madt_next_entry
-
-.extended:
- mov rax, qword [rsi + ACPI_STRUCTURE_RSDP_20.xsdt_address]
-
- mov ecx, kernel_init_string_acpi_version_2_end - kernel_init_string_acpi_version_2
- mov rsi, kernel_init_string_acpi_version_2
- call kernel_video_string
-
- jmp $
 
 .end:

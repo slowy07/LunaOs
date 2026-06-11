@@ -1,65 +1,111 @@
 # LunaOs
-Multitasking operating system written in assembly x86_64 (formerly aidenOS)
+
+Multitasking operating system written in x86-64 assembly (formerly aidenOS). Features LFB framebuffer video, bitmap-based memory allocator, 4-level paging, round-robin scheduler, ACPI (RSDT/XSDT) with SMP support, and a network-enabled interactive shell.
 
 ## Requirements
 
 - nasm
 - qemu
 
-## Running
+## Building & Running
 
-```
+```asm
 nasm -f bin kernel/kernel.asm -o build/kernel
 nasm -f bin luna/luna.asm -o build/luna.raw
+qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 -rtc base=localtime
 ```
 
-**Playing with qemu**
+## Project Structure
+
 ```
-qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 -rtc base=localtime
+luna.raw
+  |
+  +-- luna/           Bootsector and stage binaries
+  +-- kernel/         Core kernel
+  |     +-- kernel.asm       Entry point, includes chain
+  |     +-- init/            Boot-time initialization (32-bit -> 64-bit)
+  |     +-- service/         Kernel services (shell, HTTP, networking)
+  |     +-- driver/          Device drivers (RTC, PS/2, PCI, NIC)
+  |     +-- macro/           Assembly macros (copy, close, apic, debug)
+  |     +-- docs/            Kernel documentation
+  +-- library/        Shared utility routines
+  |     +-- docs/            Library documentation
+  +-- config.asm      Global constants
+  +-- docs/           Root documentation
 ```
 
 ## Documentation
 
-Documentation is organized in the following structure:
+### Root
+- `docs/config.txt` — Global constants (page sizes, shifts, colors, ASCII)
 
-### Root Documentation
-- `docs/config.txt` - Global configuration constants
+### Kernel (`kernel/docs/`)
+| File | Description |
+|------|-------------|
+| `kernel.txt` | Main kernel module |
+| `config.txt` | Kernel configuration constants |
+| `init.txt` | Initialization chain |
+| `data.txt` | GDT, TSS, IDT headers, string constants |
+| `video.txt` | LFB framebuffer video output |
+| `memory.txt` | Bitmap-based page allocator + SIMD copy |
+| `page.txt` | 4-level page tables and virtual memory |
+| `idt.txt` | Interrupt Descriptor Table management |
+| `task.txt` | Task scheduler |
+| `thread.txt` | Thread management |
+| `panic.txt` | Panic handler |
+| `apic.txt` | Local APIC |
+| `io_apic.txt` | IO-APIC |
+| `ipc.txt` | Inter-process communication |
+| `macro_close.txt` | Semaphore lock macro |
+| `macro_apic.txt` | APIC ID macro |
+| `macro_debug.txt` | Debug logging macro |
+| `macro_copy.txt` | SIMD 256-byte memory copy macro |
 
-### Kernel Documentation (`kernel/docs/`)
-- `config.txt` - Kernel configuration
-- `idt.txt` - Interrupt Descriptor Table management
-- `data.txt` - Data structures (GDT, TSS, IDT headers)
-- `page.txt` - Page management and virtual memory
-- `memory.txt` - Memory allocation system
-- `video.txt` - VGA video output
-- `panic.txt` - Panic handler
-- `io_apic.txt` - IO-APIC support
-- `kernel.txt` - Main kernel module
-- `init.txt` - Initialization chain
-- `macro_close.txt` - Semaphore lock macro
-- `macro_apic.txt` - APIC ID macro
+### Kernel Init (`kernel/init/docs/`)
+| File | Description |
+|------|-------------|
+| `long_mode.txt` | 32-bit to 64-bit transition |
+| `multiboot.txt` | Multiboot header |
+| `video.txt` | Framebuffer initialization |
+| `memory.txt` | Physical memory map setup |
+| `acpi.txt` | ACPI RSDP/RSDT/XSDT/MADT parsing |
+| `page.txt` | Virtual memory setup |
+| `gdt.txt` | GDT initialization |
+| `idt.txt` | IDT initialization |
+| `rtc.txt` | RTC timer setup (1024 Hz) |
+| `task.txt` | Scheduler startup |
+| `ipc.txt` | IPC initialization |
+| `panic.txt` | Panic handler setup |
+| `data.txt` | Data/strings initialization |
 
-### Kernel Init Documentation (`kernel/init/docs/`)
-- `task.txt` - Task initialization
-- `rtc.txt` - RTC initialization
-- `idt.txt` - IDT initialization
-- `page.txt` - Page initialization
-- `panic.txt` - Panic handler initialization
-- `gdt.txt` - GDT initialization
-- `data.txt` - Data/strings initialization
-- `video.txt` - Video initialization
-- `multiboot.txt` - Multiboot header
-- `memory.txt` - Memory initialization
-- `long_mode.txt` - Long mode (64-bit) transition
-- `acpi.txt` - ACPI initialization
+### Kernel Services (`kernel/service/docs/`)
+| File | Description |
+|------|-------------|
+| `shell.txt` | Interactive shell loop |
+| `prompt.txt` | Command dispatch (clear, ip, etc.) |
+| `data.txt` | Shell strings and cache buffer |
+| `config.txt` | Shell configuration |
+| `network.txt` | Network service |
+| `http.txt` | HTTP client service |
+| `tx.txt` | Network transmit service |
+| `tresher.txt` | Tresher service |
 
-### Driver Documentation (`kernel/driver/`)
-- `driver_docs.txt` - RTC driver documentation
-- `ps2.txt` - PS/2 keyboard/mouse driver (includes interrupt flow diagram, scan code tables, and I/O port specifications)
+### Drivers (`kernel/driver/`)
+| File | Description |
+|------|-------------|
+| `driver_docs.txt` | RTC driver |
+| `ps2.txt` | PS/2 keyboard/mouse (interrupt flow, scan codes, I/O ports) |
+| `pci.txt` | PCI enumeration |
+| `network/i82540em.txt` | Intel 82540EM Gigabit Ethernet |
 
-### Library Documentation (`library/docs/`)
-- `page_align_up.txt` - Page alignment utility
-- `page_from_size.txt` - Size to page conversion
+### Library (`library/docs/`)
+| File | Description |
+|------|-------------|
+| `page_align_up.txt` | Page alignment utility |
+| `page_from_size.txt` | Size to page count conversion |
+| `string_digits.txt` | String digit validation |
+| `string_cut.txt` | String trimming |
+| `string_to_integer.txt` | ASCII to integer conversion |
 
 ## Architecture Overview
 
@@ -67,10 +113,11 @@ Documentation is organized in the following structure:
 bootloader (GRUB/QEMU)
         |
         v
-kernel/kernel.asm
+kernel/kernel.asm (32-bit)
         |
-        +---> kernel/init.asm (32-bit -> 64-bit transition)
+        +---> kernel/init/ (32-bit -> 64-bit transition)
         |         |
+        |         +-- long_mode.asm
         |         +-- video.asm
         |         +-- memory.asm
         |         +-- acpi.asm
@@ -88,13 +135,26 @@ kernel/kernel.asm
         +---> kernel/io_apic.asm
         +---> kernel/idt.asm
         +---> kernel/task.asm
-        +---> kernel/driver/rtc.asm
-        +---> kernel/driver/ps2.asm
+        +---> kernel/ipc.asm
+        +---> kernel/macro/copy.asm
+        |
+        +---> kernel/driver/
+        |     +-- rtc.asm
+        |     +-- ps2.asm
+        |     +-- pci.asm
+        |     +-- network/i82540em.asm
+        |
+        +---> kernel/service/
+        |     +-- shell.asm (+ config, data, prompt)
+        |     +-- network.asm
+        |     +-- http.asm
+        |     +-- tx.asm
+        |     +-- tresher.asm
+        |
+        +---> library/ (shared routines)
 ```
 
-## Process Flow Diagrams
-
-### Boot Process Flow
+## Boot Process
 
 ```
 +------------------+
@@ -127,66 +187,77 @@ kernel/kernel.asm
 +------------------+
 ```
 
-### Kernel Initialization Sequence
+## Kernel Initialization Sequence
 
 ```
-+-------------------------+
-|   kernel_init_long_mode |
-+-------------------------+
-            |
-            v
-+-------------------------+     +-------------------------+
-|   video.asm             | --> |   Display Init          |
-+-------------------------+     +-------------------------+
-            |
-            v
-+-------------------------+     +-------------------------+
-|   memory.asm            | --> |   Physical Memory Map   |
-+-------------------------+     +-------------------------+
-            |
-            v
-+-------------------------+     +-------------------------+
-|   acpi.asm              | --> |   ACPI Table Parsing    |
-+-------------------------+     +-------------------------+
-            |
-            v
-+-------------------------+     +-------------------------+
-|   page.asm              | --> |   Virtual Memory Setup  |
-+-------------------------+     +-------------------------+
-            |
-            v
-+-------------------------+     +-------------------------+
-|   gdt.asm               | --> |   Segment Descriptors   |
-+-------------------------+     +-------------------------+
-            |
-            v
-+-------------------------+     +-------------------------+
-|   idt.asm               | --> |   Interrupt Vectors     |
-+-------------------------+     +-------------------------+
-            |
-            v
-+-------------------------+     +-------------------------+
-|   rtc.asm               | --> |   Timer Setup (1024Hz)  |
-+-------------------------+     +-------------------------+
-            |
-            v
-+-------------------------+     +-------------------------+
-|   ps2.asm               | --> |   Keyboard/Mouse Init   |
-+-------------------------+     +-------------------------+
-            |
-            v
-+-------------------------+     +-------------------------+
-|   task.asm              | --> |   Scheduler Init        |
-+-------------------------+     +-------------------------+
-            |
-            v
-+-------------------------+
-|   kernel_init_apic      |
-|   Enable Timer          |
-+-------------------------+
++------------------------------+
+|   kernel_init_long_mode      |
++------------------------------+
+              |
+              v
++------------------------------+
+|   video.asm  -> Framebuffer  |
+|   (read multiboot, clear)    |
++------------------------------+
+              |
+              v
++------------------------------+
+|   memory.asm -> Page bitmap  |
+|   (parse multiboot mem map)  |
++------------------------------+
+              |
+              v
++------------------------------+
+|   acpi.asm  -> RSDT / XSDT   |
+|   (MADT, LAPIC, IO-APIC)     |
++------------------------------+
+              |
+              v
++------------------------------+
+|   page.asm -> Page tables    |
+|   (PML4 -> PDPT -> PD -> PT) |
++------------------------------+
+              |
+              v
++------------------------------+
+|   gdt.asm  -> GDT reload     |
+|   (TSS for ring 0 stacks)    |
++------------------------------+
+              |
+              v
++------------------------------+
+|   idt.asm  -> IDT load       |
+|   (exception + IRQ vectors)  |
++------------------------------+
+              |
+              v
++------------------------------+
+|   rtc.asm  -> Timer 1024 Hz  |
+|   (periodic interrupt)       |
++------------------------------+
+              |
+              v
++------------------------------+
+|   ps2.asm  -> Kbd/Mouse init |
+|   (IRQ1/IRQ12)               |
++------------------------------+
+              |
+              v
++------------------------------+
+|   task.asm -> Scheduler init |
+|   (idle task, shell task)    |
++------------------------------+
+              |
+              v
++------------------------------+
+|   kernel_init_apic           |
+|   Enable timer IRQ via LAPIC |
++------------------------------+
 ```
 
-### Task Scheduler Flow (Round-Robin)
+## Process Flow Diagrams
+
+### Task Scheduler (Round-Robin)
 
 ```
 +-------------------+
@@ -217,7 +288,7 @@ kernel/kernel.asm
         v           v
 +----------------+  +-----------------+
 | Switch Context |  | Search Next     |
-| (RSP,CR3,FXR) |  | Block in Queue  |
+| (RSP,CR3,FXR)  |  | Block in Queue  |
 +----------------+  +-----------------+
         |                  |
         v                  v
@@ -235,23 +306,17 @@ kernel/kernel.asm
         +-----------------+
 ```
 
-### Memory Management Flow
+### Memory Allocation
 
 ```
 +-------------------------+
-| kernel_memory_alloc()   |
+| kernel_memory_alloc(N)  |
 +-------------------------+
             |
             v
 +-------------------------+
-| Search Bitmap for       |
-| Free Pages (bt qword)   |
-+-------------------------+
-            |
-            v
-+-------------------------+
-| Find Contiguous Block   |
-| of Required Size        |
+| Search bitmap for       |
+| contiguous free pages   |
 +-------------------------+
             |
             v
@@ -263,83 +328,121 @@ kernel/kernel.asm
         |           |
         v           v
 +----------------+  +-----------------+
-| Lock Pages     |  | Return Error    |
-| (btr bitmap)   |  | (stc flag)      |
+| BTR to mark    |  | Return error    |
+| pages as used  |  | (carry flag)    |
 +----------------+  +-----------------+
         |
         v
 +-------------------------+
-| Return Physical Address |
-| (page_index << 12 +     |
-|  KERNEL_BASE_address)   |
+| Return virtual address  |
+| page_index << 12 + BASE |
 +-------------------------+
 ```
 
-### Virtual Memory (Paging) Flow
+### SIMD Memory Copy
 
 ```
 +-------------------------+
-| kernel_page_map_logical |
-|   or _map_physical      |
+| kernel_memory_copy()    |
 +-------------------------+
             |
             v
 +-------------------------+
-| kernel_page_prepare()   |
-| Calculate PML4/PML3/    |
-| PML2/PML1 indices       |
+| RCX /= 256 (iterations) |
 +-------------------------+
             |
             v
-    +-------------------+
-    |  PML4 Entry       |
-    |  Exists?          |
-    +-------------------+
-        |           |
-       Yes          No
-        |           |
-        v           v
-+----------------+  +-----------------+
-| Use Existing   |  | Alloc & Init    |
-| PML4 Entry     |  | New PML3 Page   |
-+----------------+  +-----------------+
-        |
-        v
-    +-------------------+
-    |  PML3 Entry       |
-    |  Exists?          |
-    +-------------------+
-        |           |
-       Yes          No
-        |           |
-        v           v
-+----------------+  +-----------------+
-| Use Existing   |  | Alloc & Init    |
-| PML3 Entry     |  | New PML2 Page   |
-+----------------+  +-----------------+
-        |
-        v
-    +-------------------+
-    |  PML2 Entry       |
-    |  Exists?          |
-    +-------------------+
-        |           |
-       Yes          No
-        |           |
-        v           v
-+----------------+  +-----------------+
-| Use Existing   |  | Alloc & Init    |
-| PML2 Entry     |  | New PML1 Page   |
-+----------------+  +-----------------+
-        |
-        v
 +-------------------------+
-| Fill PML1 Entry with    |
-| Physical Page Address   |
+|   .loop:                |
+| prefetchnta [rsi+256..] |
+| movdqa 16 XMM regs      |
+| movntdq to [rdi]        |
++-------------------------+
+            |
+            v
++-------------------------+
+| RSI += 256, RDI += 256  |
+| DEC RCX, JNZ .loop      |
 +-------------------------+
 ```
 
-### Interrupt Handling Flow
+### Video: Character Output
+
+```
++-------------------------+
+| kernel_video_char(al)   |
++-------------------------+
+            |
+            v
++-------------------------+
+| Disable cursor (nest)   |
+| Acquire semaphore       |
++-------------------------+
+            |
+            v
+    +------+------+
+    | Char type?  |
+    +------+------+
+       |    |     |
+  NEWLINE |  BACKSPACE  REGULAR
+       |   |     |
+       v   v     v
+   Wrap  |  Move |  Clear cell
+   line  |  back |  Render glyph
+       |   |     |
+       +---+-----+
+            |
+            v
++-------------------------+
+| Advance cursor x        |
+| Wrap to next line if    |
+| past screen width       |
++-------------------------+
+            |
+            v
++-------------------------+
+| Past bottom row?        |
++-------------------------+
+            | YES
+            v
++-------------------------+
+| Scroll via              |
+| kernel_memory_copy +    |
+| kernel_video_line_drain |
++-------------------------+
+            |
+            v
++-------------------------+
+| Store cursor position   |
+| Release semaphore       |
+| Enable cursor           |
++-------------------------+
+```
+
+### Video: Screen Scrolling
+
+```
++-------------------------+
+| kernel_video_scroll()   |
++-------------------------+
+            |
+            v
++-------------------------+
+| kernel_memory_copy(     |
+|   src = base + scanline |
+|   dst = base,           |
+|   len = scanline*(h-1)  |
+| )                       |
++-------------------------+
+            |
+            v
++-------------------------+
+| kernel_video_line_drain |
+| (bottom row, background)|
++-------------------------+
+```
+
+### Interrupt Handling
 
 ```
 +-------------------------+
@@ -349,8 +452,8 @@ kernel/kernel.asm
             |
             v
 +-------------------------+
-| Push Registers onto     |
-| Interrupt Stack         |
+| Push registers onto     |
+| interrupt stack         |
 +-------------------------+
             |
             v
@@ -376,7 +479,7 @@ kernel/kernel.asm
 +-------------------------+
 ```
 
-### Task Structure Layout
+## Task Structure
 
 ```
 +-----------------------------------+
@@ -406,9 +509,38 @@ Task Flags:
 
 ## Key Systems
 
-- **Paging**: 4-level page tables (PML4->PDPT->PD->PT), 4KB/2MB pages
-- **Memory**: Bitmap-based page allocator
-- **Tasking**: Round-robin scheduler with IRQ0 timer
-- **APIC**: Local APIC for timer, IO-APIC for device interrupts
-- **RTC**: 1024Hz periodic interrupts for task scheduling
-- **PS/2**: Keyboard driver with scan code translation
+| System | Description |
+|--------|-------------|
+| **Video** | LFB framebuffer (640x400, 32bpp), bitmap font rendering, cursor with nesting lock, SIMD-accelerated scrolling via `kernel_memory_copy` |
+| **Paging** | 4-level page tables (PML4 → PDPT → PD → PT), 4 KB / 2 MB pages |
+| **Memory** | Bitmap-based physical page allocator, SIMD-accelerated memory copy (`macro_copy`, 256 B/iter, prefetchnta + movdqa + movntdq) |
+| **ACPI** | RSDP v1/v2 detection, RSDT (32-bit) and XSDT (64-bit) support, MADT parsing for LAPIC/IO-APIC enumeration |
+| **Scheduling** | Round-robin scheduler driven by RTC at 1024 Hz, per-task flags (active, closed, daemon, processing, secured, thread) |
+| **APIC** | Local APIC for timer interrupts, IO-APIC for device interrupt routing |
+| **Drivers** | PS/2 keyboard/mouse, RTC, PCI enumeration, Intel 82540EM Gigabit Ethernet |
+| **IPC** | Inter-process communication primitives |
+| **Services** | Interactive shell (clear, ip commands), HTTP client, network transmit, tresher |
+
+## References
+
+| System | OSDev Wiki |
+|--------|-----------|
+| **x86-64 Long Mode** | [wiki.osdev.org/x86-64](https://wiki.osdev.org/x86-64) — 64-bit mode init, CPU modes |
+| **Multiboot** | [wiki.osdev.org/Multiboot](https://wiki.osdev.org/Multiboot) — Bootloader protocol, framebuffer info |
+| **LFB Framebuffer** | [wiki.osdev.org/Drawing_In_a_Linear_Framebuffer](https://wiki.osdev.org/Drawing_In_a_Linear_Framebuffer) — Pixel-based video output |
+| **VGA Fonts** | [wiki.osdev.org/VGA_Fonts](https://wiki.osdev.org/VGA_Fonts) — Bitmap font rendering in graphics mode |
+| **ACPI** | [wiki.osdev.org/ACPI](https://wiki.osdev.org/ACPI) — RSDP, RSDT, XSDT, MADT table parsing |
+| **APIC / IO-APIC** | [wiki.osdev.org/APIC](https://wiki.osdev.org/APIC) — Local APIC, IO-APIC, LVT, interrupt routing |
+| **APIC Timer** | [wiki.osdev.org/APIC_timer](https://wiki.osdev.org/APIC_timer) — One-shot and periodic timer modes |
+| **Paging (x86-64)** | [wiki.osdev.org/Paging](https://wiki.osdev.org/Paging) — 4-level paging, PML4, PDPT, PD, PT |
+| **Page Frame Allocation** | [wiki.osdev.org/Page_Frame_Allocation](https://wiki.osdev.org/Page_Frame_Allocation) — Bitmap-based physical allocator |
+| **GDT** | [wiki.osdev.org/GDT_Tutorial](https://wiki.osdev.org/GDT_Tutorial) — Global Descriptor Table setup |
+| **IDT** | [wiki.osdev.org/IDT](https://wiki.osdev.org/IDT) — Interrupt Descriptor Table, gates, vectors |
+| **RTC / CMOS** | [wiki.osdev.org/RTC](https://wiki.osdev.org/RTC) — Real-time clock periodic interrupt (1024 Hz) |
+| **PS/2 Keyboard** | [wiki.osdev.org/PS/2_Keyboard](https://wiki.osdev.org/PS/2_Keyboard) — Scan codes, port communication |
+| **PCI** | [wiki.osdev.org/PCI](https://wiki.osdev.org/PCI) — PCI bus enumeration, configuration space |
+| **Intel 8254x (NIC)** | [wiki.osdev.org/Intel_8254x](https://wiki.osdev.org/Intel_8254x) — Gigabit Ethernet driver interface |
+| **Round-Robin Scheduler** | [wiki.osdev.org/Scheduling_Algorithms](https://wiki.osdev.org/Scheduling_Algorithms) — Scheduling theory, context switching |
+| **Context Switching** | [wiki.osdev.org/Context_Switching](https://wiki.osdev.org/Context_Switching) — Save/restore state, TSS, IRETQ |
+| **SSE / SIMD** | [wiki.osdev.org/SSE](https://wiki.osdev.org/SSE) — Streaming SIMD Extensions, movdqa, movntdq, prefetchnta |
+| **IPC** | [wiki.osdev.org/Inter_Process_Communication](https://wiki.osdev.org/Inter_Process_Communication) — Message passing, shared memory |

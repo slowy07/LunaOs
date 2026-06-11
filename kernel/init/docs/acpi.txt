@@ -49,16 +49,24 @@ FLOW DIAGRAM
            |
            v
 +--------------------------+
-| xchg bx, bx (breakpoint) |
+| Calculate entry count:   |
+| len = header.length      |
+| - STRUCTURE_RSDT.SIZE    |
+| If r8b == TRUE ->        |
+|   shr ecx, 2 (DWORD)     |
+| If r8b == FALSE ->       |
+|   shr ecx, 3 (QWORD)     |
 +----------+---------------+
            |
            v
 +--------------------------+
 | Loop through entries:    |
-| If r8b == TRUE  -> RSDT  |
-|   (32-bit pointers)      |
-| If r8b == FALSE -> XSDT  |
-|   (64-bit pointers)      |
+| r8b == TRUE  -> RSDT     |
+|   (32-bit pointers,      |
+|    advance by 4 bytes)   |
+| r8b == FALSE -> XSDT     |
+|   (64-bit pointers,      |
+|    advance by 8 bytes)   |
 +----------+---------------+
            |
            v
@@ -151,3 +159,11 @@ RSDP / RSDT / XSDT NOTES
   - Entry pointers in RSDT are 32-bit; in XSDT they are 64-bit
   - Both RSDT and XSDT use the ACPI_STRUCTURE_RSDT structure layout
     (signature, length, then pointer array)
+  - Entry count calculation:
+    - RSDT: (length - STRUCTURE_RSDT.SIZE) / 4 (DWORD entries)
+    - XSDT: (length - STRUCTURE_RSDT.SIZE) / 8 (QWORD entries)
+  - Address advancement per iteration:
+    - RSDT: add rdi, 4 (DWORD pointer)
+    - XSDT: add rdi, 8 (QWORD pointer, extra 4 bytes skipped)
+  - Old `.extended` path (halt with ACPI v2 message) removed; XSDT is now
+    fully parsed instead of halting

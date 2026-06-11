@@ -327,3 +327,25 @@ kernel_memory_release_foreign:
  ret
 
  macro_debug "kernel_memory_release_foreign"
+
+kernel_memory_copy:
+ push rcx
+ push rsi
+ push rdi
+
+ shr rcx, STATIC_DIVIDE_BY_256_shift
+
+.loop:
+ macro_copy
+
+ add rsi, 256
+ add rdi, 256
+
+ dec rcx
+ jnz .loop
+
+ pop rdi
+ pop rsi
+ pop rcx
+
+ ret

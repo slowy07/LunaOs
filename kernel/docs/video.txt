@@ -3,109 +3,242 @@ File: kernel/video.asm
 Author: arfy slowy
 
 OVERVIEW
-Provides VGA text mode video output functions for the kernel. Writes to the classic VGA text buffer at 0xB8000.
+Provides LFB (Linear Frame Buffer) video output functions for the kernel.
+Renders text using a bitmap font onto a 640x400 pixel framebuffer at 32bpp.
 
 CONSTANTS
-  KERNEL_VIDEO_BASE_address   = 0x000B8000 (VGA text buffer)
-  KERNEL_VIDEO_BASE_limit    = BASE + SIZE
-  KERNEL_VIDEO_WIDTH_char    = 80 (columns)
-  KERNEL_VIDEO_HEIGHT_char   = 25 (rows)
-  KERNEL_VIDEO_CHAR_SIZE_byte = 2 (char + attribute)
-  KERNEL_VIDEO_LINE_SIZE_byte = 80 * 2 = 160
-  KERNEL_VIDEO_SIZE_byte     = 80 * 25 * 2 = 4000
+  KERNEL_VIDEO_WIDTH_pixel        = 640
+  KERNEL_VIDEO_HEIGHT_pixel       = 400
+  KERNEL_VIDEO_DEPTH_shift        = 2 (4 bytes per pixel)
+  KERNEL_VIDEO_DEPTH_byte         = 4
+  KERNEL_VIDEO_DEPTH_bit          = 32
+  KERNEL_VIDEO_SIZE_byte          = 640 * 400 * 4
 
-VGA TEXT ATTRIBUTES
-  High nibble: Background color
-  Low nibble:  Foreground color
-  Color codes:
-    0 = black, 1 = blue, 2 = green, 3 = cyan
-    4 = red,   5 = magenta, 6 = brown, 7 = gray
-    8 = dark gray, 9 = bright blue, A = bright green
-    B = bright cyan, C = bright red, D = bright magenta
-    E = bright brown, F = white
+  KERNEL_VIDEO_WIDTH_char         = 640 / KERNEL_FONT_WIDTH_pixel
+  KERNEL_VIDEO_HEIGHT_char        = 400 / KERNEL_FONT_HEIGHT_pixel
+  KERNEL_VIDEO_SCANLINE_CHAR_byte = 640 * KERNEL_FONT_HEIGHT_pixel * 4
 
 VARIABLES
-  kernel_video_pointer       = Current write position (virtual address)
-  kernel_video_cursor        = (column, row) as DWORDs
+  kernel_video_semaphore          = Mutex lock (0 = locked, 1 = free)
+  kernel_video_base_address       = Framebuffer physical base address
+  kernel_video_pointer            = Current write position in framebuffer
+  kernel_video_width_pixel        = Cached width in pixels
+  kernel_video_height_pixel       = Cached height in pixels
+  kernel_video_scanline_char      = Bytes per character row
+  kernel_video_color              = Current foreground color (DWORD)
+  kernel_video_color_background   = Current background color (DWORD)
+  kernel_video_cursor_lock        = Cursor disable nesting counter (0 = visible)
+  kernel_video_cursor.x           = Cursor column (DWORD)
+  kernel_video_cursor.y           = Cursor row (DWORD)
 
 FUNCTIONS
 
-kernel_video_dump
-  Purpose: Clear screen (fill with spaces)
+kernel_video_drain
+  Purpose: Clear entire screen with background color
   Flow:
-    1. Fill RAX with 0x0720072007200720 (spaces with attribute)
-    2. Set RCX = KERNEL_VIDEO_LINE_SIZE_byte * KERNEL_VIDEO_WIDTH_char
-       WARNING: This calculates 160 * 80 = 12800, but video memory
-       is only 4000 bytes (80 * 25 * 2). This may overwrite memory
-       beyond video buffer.
-    3. Fill from KERNEL_VIDEO_BASE_address with REP STOSQ
+    1. Fill framebuffer with kernel_video_color_background using REP STOSD
+    2. Reset cursor to (0, 0)
+    3. Call kernel_video_cursor_set to recalculate pointer
+
+kernel_video_matrix
+  Purpose: Draw a font glyph at current framebuffer position
+  Input:  AL = character index (ASCII - SPACE), RDI = framebuffer address
+  Flow:
+    1. Calculate offset into kernel_font_matrix (glyph_height * index)
+    2. For each row: test bits from font bitmap, write foreground color
+       where bits are set, skip where clear
+    3. Advance RDI by one scanline per row
+
+kernel_video_char_clean
+  Purpose: Clear one character cell with background color
+  Input:  RDI = framebuffer address of character cell
+  Flow:
+    1. Fill character cell (FONT_WIDTH x FONT_HEIGHT) with
+       kernel_video_color_background using STOSD
 
 kernel_video_cursor_set
-  Purpose: Update hardware cursor position
-  Uses VGA CRT controller ports 0x3D4/0x3D5
-  Input: Uses kernel_video_cursor (column, row)
-  Side effect: Also recalculates kernel_video_pointer from cursor
-  position (video_base + (row * line_size + col) * char_size),
-  ensuring the write pointer stays in sync with the cursor.
+  Purpose: Recalculate kernel_video_pointer from cursor (x, y)
+  Input:  Uses kernel_video_cursor.x and kernel_video_cursor.y
+  Output: Updates kernel_video_pointer
+  Formula: pointer = base + (y * scanline_char) + (x * 4)
 
 kernel_video_string
-  Purpose: Print null-terminated string
-  Input: RSI = string address, RCX = length
-  Output: Updates video pointer and cursor
-  Handles: regular chars, newline, backspace
+  Purpose: Print string with ANSI color escape sequence support
+  Input:  RSI = string address, RCX = max length
+  Flow:
+    1. Disable cursor (hide during output)
+    2. Iterate through bytes: detect backslash-escaped color sequences
+       (e.g. \e[32m) and update kernel_video_color accordingly
+    3. Non-escape characters passed to kernel_video_char
+    4. Re-enable cursor when done
+  Notes:
+    - Recognizes 17 color sequences matching STATIC_COLOR_ASCII_*
+    - Invalid escape sequences are treated as regular characters
+    - Hides cursor during bulk output to reduce flicker
 
 kernel_video_char
-  Purpose: Print single character
-  Input: AL = character, AH = attribute (0x07 default)
+  Purpose: Print a single character at cursor position
+  Input:  AL = character, RCX = count (unused in single-char calls)
   Handles:
-    - Regular characters: write to video memory
-    - Newline: move to next line
-    - Backspace: move cursor back
-  Auto-scrolls when reaching bottom of screen (calls kernel_video_scroll)
+    - Regular characters: clear cell, render via kernel_video_matrix,
+      advance cursor x
+    - Newline (0x0A): wrap to next line, reset x to 0
+    - Backspace (0x08): decrement x (or previous line if at column 0),
+      clear character at new position
+  Flow:
+    1. Disable cursor, acquire semaphore
+    2. Load cursor (x, y) and pointer from globals
+    3. Process character with line wrapping
+    4. If cursor.y exceeds screen height, decrement y and scroll
+    5. Store updated cursor (x, y) and pointer back to globals
+    6. Release semaphore, re-enable cursor
+  Auto-scrolls when cursor reaches bottom of screen
+
+kernel_video_number
+  Purpose: Print a numeric value in any base (2-36)
+  Input:  RAX = value, RBX = base, RCX = minimum digits, RDX = digit prefix
+  Flow:
+    1. Disable cursor
+    2. Validate base (2-36), set carry on error
+    3. Divide RAX by RBX repeatedly, push remainders onto stack
+    4. Pad with prefix digits to meet minimum width
+    5. Pop and print each digit via kernel_video_char
+    6. Re-enable cursor
 
 kernel_video_scroll
-  Purpose: Scroll screen up one line when full
-  Status: NOT IMPLEMENTED (label exists at line 215, no code)
-  Note: kernel_video_char calls this function but it does nothing
-  Current behavior: Screen will not scroll, cursor may go off-screen
+  Purpose: Scroll screen up by one character row
+  Flow:
+    1. Disable cursor
+    2. Use kernel_memory_copy (SIMD) to shift all rows up by one
+       scanline: copy from row 1 to row 0, row 2 to row 1, etc.
+       Copy size = SCANLINE_CHAR_byte * (HEIGHT_char - 1)
+    3. Clear the bottom row via kernel_video_line_drain
+    4. Re-enable cursor
 
-FLOW: kernel_video_string
+kernel_video_line_drain
+  Purpose: Fill a character row with background color
+  Input:  RCX = row index (0-based)
+  Flow:
+    1. Disable cursor
+    2. Calculate framebuffer address for the row
+    3. Fill with STATIC_COLOR_BACKGROUND_default using REP STOSD
+    4. Re-enable cursor
+
+kernel_video_cursor_disable
+  Purpose: Hide the visual cursor (with nesting support)
+  Flow:
+    1. Increment cursor_lock (nesting counter)
+    2. If counter was 0, call kernel_video_cursor_switch to hide it
+  Notes: Nested calls are safe; cursor is only hidden on first call
+
+kernel_video_cursor_enable
+  Purpose: Restore the visual cursor (with nesting support)
+  Flow:
+    1. If counter is 0, do nothing
+    2. Decrement cursor_lock
+    3. If counter reaches 0, call kernel_video_cursor_switch to show it
+  Notes: Must be called once per disable; cursor reappears when
+         all nested locks are released
+
+kernel_video_cursor_switch
+  Purpose: Toggle cursor visibility at current pointer position
+  Flow:
+    1. Invert the first pixel of each row in the character cell
+       below the cursor (NOT operation + set alpha to max)
+    2. Operates on a FONT_HEIGHT tall strip at cursor pointer
+
+FLOW: kernel_video_char
   +------------------------+
   | Start                  |
   +--------+----------------+
-            |
-            v
+           |
+           v
   +------------------------+
   | Save registers         |
+  | Disable cursor         |
+  | Acquire semaphore      |
   +--------+----------------+
-            |
-            v
+           |
+           v
   +------------------------+
-  | Get current position   |
+  | Load cursor (x, y)     |
+  | from globals           |
   +--------+----------------+
-            |
-            v
+           |
+           v
   +------------------------+
-  | Loop: print each char  |
-  | Call kernel_video_char |
+  | Character type?        |
   +--------+----------------+
-            |
-            v
+     |         |         |
+  NEWLINE   BACKSPACE   REGULAR
+     |         |         |
+     v         v         v
+  +------+  +------+  +------+
+  | Wrap |  | Move |  | Draw |
+  | line |  | back |  | glyph|
+  +------+  +------+  +------+
+     |         |         |
+     +----+----+---------+
+           |
+           v
   +------------------------+
-  | Update cursor position |
+  | Advance cursor         |
+  | Handle line wrap       |
   +--------+----------------+
-            |
-            v
+           |
+           v
   +------------------------+
-  | Set hardware cursor    |
+  | Past bottom?           |
   +--------+----------------+
-            |
-            v
+           | YES
+           v
   +------------------------+
-  | Restore registers     |
+  | Decrement y, scroll    |
   +--------+----------------+
-            |
-            v
+           |
+           v
+  +------------------------+
+  | Store cursor (x, y)    |
+  | Release semaphore      |
+  | Enable cursor          |
+  +--------+----------------+
+           |
+           v
+  +------------------------+
+  | Return                 |
+  +------------------------+
+
+FLOW: kernel_video_scroll
+  +------------------------+
+  | Start                  |
+  +--------+----------------+
+           |
+           v
+  +------------------------+
+  | Disable cursor         |
+  +--------+----------------+
+           |
+           v
+  +------------------------+
+  | kernel_memory_copy(    |
+  |   src = base + scanline|
+  |   dst = base,          |
+  |   len = scanline*(h-1) |
+  +--------+----------------+
+           |
+           v
+  +------------------------+
+  | Clear bottom row:      |
+  | kernel_video_line_drain|
+  | (row = HEIGHT_char - 1)|
+  +--------+----------------+
+           |
+           v
+  +------------------------+
+  | Enable cursor          |
+  +--------+----------------+
+           |
+           v
   +------------------------+
   | Return                 |
   +------------------------+

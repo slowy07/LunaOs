@@ -26,7 +26,7 @@ COMMAND STRINGS
 service_shell_command_clean         = "clear"
 service_shell_command_ip            = "ip"
 service_shell_command_ip_set        = "set"
-service_shell_command_unknown       = "what?"
+service_shell_command_unknown       = "\nwhat this command ?"
 
 ERROR STRINGS
 service_shell_string_error_ipv4_format = "\nwrong ipv4 address"

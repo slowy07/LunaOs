@@ -15,6 +15,7 @@ kernel:
  %include "kernel/macro/close.asm"
  %include "kernel/macro/apic.asm"
  %include "kernel/macro/debug.asm"
+ %include "kernel/macro/copy.asm"
  %include "kernel/ipc.asm"
  %include "kernel/panic.asm"
  %include "kernel/page.asm"

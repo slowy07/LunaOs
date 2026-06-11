@@ -23,14 +23,8 @@ service_shell_prompt:
  mov ecx, dword [kernel_video_cursor.y]
  inc ecx
 
-.clean:
- call kernel_video_scroll
-
- dec ecx
- jnz .clean
-
- mov dword [kernel_video_cursor.x], STATIC_EMPTY
- mov dword [kernel_video_cursor.y], (KERNEL_VIDEO_HEIGHT_pixel / KERNEL_FONT_HEIGHT_pixel) - 0x01
+ call kernel_video_drain
+ mov qword [kernel_video_cursor], STATIC_EMPTY
  call kernel_video_cursor_set
 
 

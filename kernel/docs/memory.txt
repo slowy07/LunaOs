@@ -40,6 +40,22 @@ kernel_memory_lock
   Purpose: Acquire memory allocator lock
   Uses atomic test-and-set (macro_close)
 
+kernel_memory_copy
+  Purpose: High-performance memory copy using SIMD
+  Input: RSI = source address, RDI = destination address,
+         RCX = size in bytes
+  Output: None
+  Algorithm:
+    1. Divide RCX by 256 to get iteration count
+    2. Loop: call macro_copy to transfer 256 bytes per iteration
+       using prefetchnta + movdqa + movntdq (16 XMM registers)
+    3. Advances RSI/RDI by 256 each iteration
+  Notes:
+    - Uses non-temporal stores (movntdq) to avoid cache pollution
+    - Uses prefetchnta for streaming prefetch
+    - Size must be 256-byte aligned for correct operation
+    - Wrapper for the macro_copy macro defined in kernel/macro/copy.asm
+
 ALGORITHM: kernel_memory_alloc
   Uses bitmap where:
     0 = page is allocated/used
@@ -101,21 +117,21 @@ FLOW: kernel_memory_alloc
   | RDX == RCX (needed)?   |
   +--------+----------------+
            |           |
-          NO          YES (.found)
-           |           |
-           v           v
+          NO           YES (.found)
+           |            |
+           v            v
   +----------------+  +------------------------+
   | End of bitmap? |  | Restore RAX = RBX      |
   +----------------+  | .lock: BTR to clear    |
      |           |    | Check RBP for reserved |
     YES          NO   | Decrement counts       |
-     |           |    +--------+----------------+
-     v           v             |
+     |            |   +--------+----------------+
+     v            v            |
   +----------+ .search        v
-  | .error:  |        +------------------------+
-  | STC      |        | Calculate address      |
-  | Return   |        | RDI = RBX << 12 + BASE |
-  +----------+        +--------+----------------+
+  | .error:  |       +------------------------+
+  | STC      |       | Calculate address      |
+  | Return   |       | RDI = RBX << 12 + BASE |
+  +----------+       +--------+----------------+
                                |
                                v
                       +------------------------+
@@ -128,3 +144,41 @@ FLOW: kernel_memory_alloc
                       +------------------------+
                       | Return                 |
                       +------------------------+
+
+FLOW: kernel_memory_copy
+  +------------------------+
+  | Start                  |
+  +--------+----------------+
+           |
+           v
+  +------------------------+
+  | Save RCX, RSI, RDI     |
+  | RCX >>= 8 (div by 256) |
+  +--------+----------------+
+           |
+           v
+  +------------------------+
+  | .loop:                 |
+  | macro_copy             |
+  | (256 bytes via SIMD)   |
+  +--------+----------------+
+           |
+           v
+  +------------------------+
+  | RSI += 256, RDI += 256 |
+  +--------+----------------+
+           |
+           v
+  +------------------------+
+  | RCX--, JNZ .loop       |
+  +--------+----------------+
+           |
+           v
+  +------------------------+
+  | Restore registers      |
+  +--------+----------------+
+           |
+           v
+  +------------------------+
+  | Return                 |
+  +------------------------+

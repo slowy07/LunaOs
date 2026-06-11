@@ -1,0 +1,33 @@
+MACRO: macro_copy
+File: kernel/macro/copy.asm
+Author: arfy slowy
+
+OVERVIEW
+High-performance SIMD memory copy macro. Transfers 256 bytes from
+RSI to RDI using streaming prefetch and non-temporal stores.
+
+REGISTER USAGE
+  RSI = Source address (advanced by 256 after call)
+  RDI = Destination address (advanced by 256 after call)
+  XMM0-XMM15 = Temporary (all 16 registers used)
+
+ALGORITHM
+  1. Issue prefetchnta hints for the next cache lines (256-480 byte offsets)
+  2. Load 16 * 16 bytes = 256 bytes via movdqa from [rsi + 0x00..0xF0]
+  3. Store via movntdq (non-temporal) to [rdi + 0x00..0xF0]
+
+PERFORMANCE NOTES
+  - prefetchnta: Streaming prefetch, minimizes cache pollution
+  - movdqa:      Aligned 128-bit load (assumes 16-byte alignment)
+  - movntdq:     Non-temporal store, bypasses cache hierarchy
+  - Total:       256 bytes per invocation
+  - Expected use: Loop with 256-byte granularity
+
+CALLER REQUIREMENTS
+  - RSI, RDI must be valid readable/writable addresses
+  - 16-byte alignment recommended for both source and destination
+  - Does NOT save/restore XMM registers (caller must handle if needed)
+  - Does NOT advance RSI/RDI pointers (caller must advance by 256)
+
+USAGE
+  macro_copy

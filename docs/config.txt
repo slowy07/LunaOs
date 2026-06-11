@@ -23,6 +23,7 @@ SHIFT CONSTANTS (multiply by powers of 2)
   STATIC_DIVIDE_BY_4_shift        = 2 (/4)
   STATIC_DIVIDE_BY_8_shift        = 3 (/8)
   STATIC_DIVIDE_BY_PAGE_shift     = 12 (/4096)
+  STATIC_DIVIDE_BY_256_shift      = 8 (/256)
 
 SHIFT CONSTANTS (move bits)
   STATIC_MOVE_AL_TO_HIGH_shift   = 8
@@ -100,23 +101,24 @@ COLOR CONSTANTS (VGA text mode attributes)
     STATIC_COLOR_ASCII_WHITE   = "\e[39m"
 
   VGA Colors (numeric values):
-    STATIC_COLOR_default      = STATIC_COLOR_green (2)
-    STATIC_COLOR_black        = 0
-    STATIC_COLOR_blue         = 1
-    STATIC_COLOR_green        = 2
-    STATIC_COLOR_cyan         = 3
-    STATIC_COLOR_red          = 4
-    STATIC_COLOR_magenta      = 5
-    STATIC_COLOR_brown        = 6
-    STATIC_COLOR_gray_light   = 7
-    STATIC_COLOR_gray         = 8
-    STATIC_COLOR_blue_light   = 9
-    STATIC_COLOR_green_light  = 10
-    STATIC_COLOR_cyan_light   = 11
-    STATIC_COLOR_red_light    = 12
-    STATIC_COLOR_magenta_light = 13
-    STATIC_COLOR_yellow       = 14
-    STATIC_COLOR_white        = 15
+    STATIC_COLOR_background_default = STATIC_COLOR_black
+    STATIC_COLOR_default            = STATIC_COLOR_red_light (12)
+    STATIC_COLOR_black              = 0
+    STATIC_COLOR_blue               = 1
+    STATIC_COLOR_green              = 2
+    STATIC_COLOR_cyan               = 3
+    STATIC_COLOR_red                = 4
+    STATIC_COLOR_magenta            = 5
+    STATIC_COLOR_brown              = 6
+    STATIC_COLOR_gray_light         = 7
+    STATIC_COLOR_gray               = 8
+    STATIC_COLOR_blue_light         = 9
+    STATIC_COLOR_green_light        = 10
+    STATIC_COLOR_cyan_light         = 11
+    STATIC_COLOR_red_light          = 12
+    STATIC_COLOR_magenta_light      = 13
+    STATIC_COLOR_yellow             = 14
+    STATIC_COLOR_white              = 15
 
 STRUCTURE: STATIC_STRUCTURE_BLOCK
   Used for linked list nodes in memory allocation

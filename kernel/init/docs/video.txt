@@ -2,9 +2,9 @@ File: kernel/init/video.asm
 Author: arfy slowy
 Date: 2026
 License: MIT
-This module initializes the video/display subsystem by dumping video memory
-and printing a welcome message to the screen.
-Purpose: Initialize video output and display welcome message
+This module initializes the video/display subsystem by reading framebuffer
+information from the Multiboot header and clearing the screen.
+Purpose: Initialize framebuffer video output and display welcome message
 
 Flow Diagram:
 
@@ -14,24 +14,46 @@ Flow Diagram:
            |
            v
 +------------------------+
-| Dump video memory      | --> kernel_video_dump
-| (clear screen)         |
+| Check multiboot flags  |
+| bit 12 (video flag)    |
 +----------+-------------+
            |
            v
 +------------------------+
-| Calculate string length| --> welcome_end - welcome
+| Read framebuffer addr  |
+| from multiboot header  |
 +----------+-------------+
            |
            v
 +------------------------+
-| Load string address    |
-| into RSI               |
+| kernel_video_base_addr |
+| = framebuffer_base     |
+| kernel_video_pointer   |
+| = framebuffer_base     |
 +----------+-------------+
            |
            v
 +------------------------+
-| Print string to screen | --> kernel_video_string
+| Read framebuffer       |
+| width and height       |
++----------+-------------+
+           |
+           v
++------------------------+
+| Calculate scanline_char|
+| = width * 4 * font_h   |
++----------+-------------+
+           |
+           v
++------------------------+
+| Clear screen           |
+| --> kernel_video_drain |
++----------+-------------+
+           |
+           v
++------------------------+
+| Print welcome string   |
+| --> kernel_video_string|
 +----------+-------------+
            |
            v
@@ -41,13 +63,14 @@ Flow Diagram:
 
 Output:
   - Welcome message: "welcome cik" followed by newline
-  - Displayed on VGA text mode video memory
+  - Displayed on LFB framebuffer via kernel_video_string
 
 Dependencies:
-  - kernel_video_dump   : Clear/initialize video buffer
-  - kernel_video_string  : Print null-terminated string
+  - kernel_video_drain   : Clear/initialize framebuffer with background color
+  - kernel_video_string  : Print null-terminated string with color support
 
-Video Memory:
-  - Base address: KERNEL_VIDEO_BASE_address (typically 0xB8000)
-  - VGA text mode: 80x25, 16 colors
-  - Each character: 2 bytes (character + attribute)
+Framebuffer:
+  - Address from Multiboot header (EFL framebuffer addr)
+  - 32 bits per pixel (KERNEL_VIDEO_DEPTH_bit = 32)
+  - Width and height set by bootloader (typically 640x400)
+  - Character cell size: FONT_WIDTH x FONT_HEIGHT pixels

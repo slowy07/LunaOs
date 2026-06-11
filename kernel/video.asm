@@ -5,6 +5,10 @@ KERNEL_VIDEO_DEPTH_byte equ 4
 KERNEL_VIDEO_DEPTH_bit equ 32
 KERNEL_VIDEO_SIZE_byte equ (KERNEL_VIDEO_WIDTH_pixel * KERNEL_VIDEO_HEIGHT_pixel) << KERNEL_VIDEO_DEPTH_shift
 
+KERNEL_VIDEO_WIDTH_char equ KERNEL_VIDEO_WIDTH_pixel / KERNEL_FONT_WIDTH_pixel
+KERNEL_VIDEO_HEIGHT_char equ KERNEL_VIDEO_HEIGHT_pixel / KERNEL_FONT_HEIGHT_pixel
+KERNEL_VIDEO_SCANLINE_CHAR_byte equ (KERNEL_VIDEO_WIDTH_pixel * KERNEL_FONT_HEIGHT_pixel) << KERNEL_VIDEO_DEPTH_shift
+
 kernel_video_semaphore db STATIC_FALSE
 kernel_video_base_address dq STATIC_EMPTY
 kernel_video_pointer dq STATIC_EMPTY
@@ -13,9 +17,10 @@ kernel_video_height_pixel dq STATIC_EMPTY
 kernel_video_scanline_char dq STATIC_EMPTY
 
 kernel_video_color dd STATIC_COLOR_default
-kernel_video_color_background dd STATIC_COLOR_black
+kernel_video_color_background dd STATIC_COLOR_BACKGROUND_default
 
 
+kernel_video_cursor_lock dq STATIC_EMPTY
 kernel_video_cursor:
  .x: dd STATIC_EMPTY
  .y: dd STATIC_EMPTY
@@ -54,31 +59,6 @@ kernel_video_drain:
 
  pop rdi
  pop rcx
- pop rax
-
- ret
-
-kernel_video_char:
- push rax
- push rdi
-
- macro_close kernel_video_semaphore, 0
-
- mov rdi, qword [kernel_video_pointer]
-
- call kernel_video_char_clean
-
- sub ax, STATIC_ASCII_SPACE
- call kernel_video_matrix
-
- add rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
-
-.end:
- mov qword [kernel_video_pointer], rdi
-
- mov byte [kernel_video_semaphore], STATIC_FALSE
-
- pop rdi
  pop rax
 
  ret
@@ -194,6 +174,8 @@ kernel_video_string:
  push rcx
  push rdx
  push rsi
+
+ call kernel_video_cursor_disable
 
  test rcx, rcx
  jz .end
@@ -395,6 +377,8 @@ kernel_video_string:
  jnz .loop
 
 .end:
+ call kernel_video_cursor_enable
+
  pop rsi
  pop rdx
  pop rcx
@@ -403,6 +387,117 @@ kernel_video_string:
 
  ret
 
+kernel_video_char:
+ push rax
+ push rbx
+ push rcx
+ push rdx
+ push rdi
+
+ call kernel_video_cursor_disable
+
+ macro_close kernel_video_semaphore, 0
+
+ mov ebx, dword [kernel_video_cursor]
+ mov edx, dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]
+
+ mov rdi, qword [kernel_video_pointer]
+
+.loop:
+ cmp ax, STATIC_ASCII_NEW_LINE
+ je .new_line
+
+ cmp ax, STATIC_ASCII_BACKSPACE
+ je .backspace
+
+ call kernel_video_char_clean
+
+ sub ax, STATIC_ASCII_SPACE
+ call kernel_video_matrix
+
+ inc ebx
+
+ add rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
+
+ cmp ebx, KERNEL_VIDEO_WIDTH_pixel / KERNEL_FONT_WIDTH_pixel
+ jb .continue
+
+ sub ebx, KERNEL_VIDEO_WIDTH_pixel / KERNEL_FONT_WIDTH_pixel
+ inc edx
+
+.row:
+ cmp edx, KERNEL_VIDEO_HEIGHT_pixel / KERNEL_FONT_HEIGHT_pixel
+ jb .continue
+
+ dec edx
+
+ sub rdi, (KERNEL_VIDEO_WIDTH_pixel * KERNEL_FONT_HEIGHT_pixel) << KERNEL_VIDEO_DEPTH_shift
+
+ call kernel_video_scroll
+
+.continue:
+ dec rcx
+ jnz .loop
+
+ mov dword [kernel_video_cursor], ebx
+ mov dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte], edx
+
+ mov qword [kernel_video_pointer], rdi
+
+ mov byte [kernel_video_semaphore], STATIC_FALSE
+
+ call kernel_video_cursor_enable
+
+ pop rdi
+ pop rdx
+ pop rcx
+ pop rbx
+ pop rax
+
+ ret
+
+.new_line:
+ push rax
+ push rdx
+
+ mov eax, ebx
+ mul qword [kernel_font_width_pixel]
+ shl rax, KERNEL_VIDEO_DEPTH_shift
+ sub rdi, rax
+
+ xor ebx, ebx
+
+ add rdi, (KERNEL_VIDEO_WIDTH_pixel * KERNEL_FONT_HEIGHT_pixel) << KERNEL_VIDEO_DEPTH_shift
+
+ pop rdx
+ inc rdx
+
+ pop rax
+
+ jmp .row
+
+.backspace:
+ test ebx, ebx
+ jz .begin
+
+ dec ebx
+
+ jmp .clear
+
+.begin:
+ test edx, edx
+ jz .clear
+
+ dec edx
+
+ mov ebx, (KERNEL_VIDEO_WIDTH_pixel / KERNEL_FONT_WIDTH_pixel) - 0x01
+
+.clear:
+ sub rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
+
+ call kernel_video_char_clean
+
+ jmp .continue
 
 kernel_video_number:
  push rax
@@ -410,6 +505,8 @@ kernel_video_number:
  push rbp
  push r8
  push r9
+
+ call kernel_video_cursor_disable
 
  cmp bl, 2
  jb .error
@@ -467,6 +564,8 @@ kernel_video_number:
  stc
 
 .end:
+ call kernel_video_cursor_enable
+
  pop r9
  pop r8
  pop rbp
@@ -476,5 +575,109 @@ kernel_video_number:
  ret
 
 kernel_video_scroll:
+ push rcx
+ push rsi
+ push rdi
+
+ call kernel_video_cursor_disable
+
+ mov rcx, KERNEL_VIDEO_SCANLINE_CHAR_byte * (KERNEL_VIDEO_HEIGHT_char - 0x01)
+
+ mov rdi, qword [kernel_video_base_address]
+ mov rsi, rdi
+ add rsi, KERNEL_VIDEO_SCANLINE_CHAR_byte
+ call kernel_memory_copy
+
+ mov ecx, KERNEL_VIDEO_HEIGHT_char - 0x01
+ call kernel_video_line_drain
+
+ call kernel_video_cursor_enable
+
+ pop rdi
+ pop rsi
+ pop rcx
+
+ ret
+
+kernel_video_line_drain:
+ push rax
+ push rbx
+ push rcx
+ push rdx
+ push rdi
+
+ call kernel_video_cursor_disable
+
+ mov rax, rcx
+
+ mov rcx, KERNEL_VIDEO_SCANLINE_CHAR_byte
+ mul rcx
+ add rax, qword [kernel_video_base_address]
+ mov rdi, rax
+
+ mov eax, STATIC_COLOR_BACKGROUND_default
+ shr rcx, KERNEL_VIDEO_DEPTH_shift
+ rep stosd
+
+ call kernel_video_cursor_enable
+
+ pop rdi
+ pop rdx
+ pop rcx
+ pop rbx
+ pop rax
+
+ ret
+
+kernel_video_cursor_disable:
+ inc qword [kernel_video_cursor_lock]
+
+ cmp qword [kernel_video_cursor_lock], STATIC_FALSE
+ jne .ready
+
+ call kernel_video_cursor_switch
+
+.ready:
+ ret
+
+kernel_video_cursor_enable:
+ cmp qword [kernel_video_cursor_lock], STATIC_EMPTY
+ je .ready
+
+ dec qword [kernel_video_cursor_lock]
+
+ cmp qword [kernel_video_cursor_lock], STATIC_EMPTY
+ jne .ready
+
+ call kernel_video_cursor_switch
+
+.ready:
+ ret
+
+kernel_video_cursor_switch:
+ push rax
+ push rcx
+ push rdi
+
+ mov rax, KERNEL_VIDEO_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
+
+ mov rcx, KERNEL_FONT_HEIGHT_pixel
+
+ mov rdi, qword [kernel_video_pointer]
+
+.loop:
+ not dword [rdi]
+
+ or byte [rdi + 0x03], STATIC_MAX_unsigned
+
+ add rdi, rax
+
+ dec rcx
+ jnz .loop
+
+.end:
+ pop rdi
+ pop rcx
+ pop rax
 
  ret

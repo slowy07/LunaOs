@@ -21,6 +21,7 @@ service_shell:
  mov rsi, service_shell_cache
 
  call library_input
+ xchg bx, bx
  jc service_shell
 
  call library_string_trim

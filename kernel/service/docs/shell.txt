@@ -20,6 +20,8 @@ service_shell:
   5. Jump to service_shell_prompt for command dispatch
   6. service_shell_prompt returns by jumping back to service_shell
 
+  Debug: xchg bx, bx (magic breakpoint) placed after library_input call
+
 INCLUDES (included inline)
   shell/config.asm  - Cache size constant
   shell/data.asm    - Prompt strings, command strings

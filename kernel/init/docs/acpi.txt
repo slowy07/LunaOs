@@ -5,9 +5,19 @@ Date: 2026
 License: MIT
 
 OVERVIEW
-Initializes ACPI hardware, finds RSDP, parses RSDT/XSDT/MADT tables, and
+Initializes ACPI hardware, finds RSDP/RSDT/XSDT, parses MADT tables, and
 enumerates LAPICs and IO-APICs for SMP support. Supports both 32-bit RSDT
 (ACPI 1.0) and 64-bit XSDT (ACPI 2.0+) via RSDP revision detection.
+
+STRUCTURES
+  ACPI_STRUCTURE_RSDP         — Root System Description Pointer (v1)
+  ACPI_STRUCTURE_XSDP         — Extended System Description Pointer (v2+, was RSDP_20)
+  ACPI_STRUCTURE_RSDT_or_XSDT — Shared layout for both RSDT and XSDT (was RSDT)
+  ACPI_STRUCTURE_MADT         — Multiple APIC Description Table
+  ACPI_STRUCTURE_MADT_entry   — Generic MADT record header
+  ACPI_STRUCTURE_MADT_APIC    — Processor Local APIC entry (type 0)
+  ACPI_STRUCTURE_MADT_IOAPIC  — I/O APIC entry (type 1)
+  ACPI_STRUCTURE_MADT_NMI     — NMI source entry (type 4)
 
 FLOW DIAGRAM
 
@@ -28,77 +38,109 @@ FLOW DIAGRAM
            |
            v
 +--------------------------+
+| .rsdp_or_xsdp:           |
 | RSDP revision == 0?      |
 +----------+---------------+
      |              |
-  YES(NO RSDT)    NO(XSDT)
+   YES             NO (.extended)
      |              |
      v              v
 +-------------+  +-------------+
 | Read RSDT   |  | Read XSDT   |
 | 32-bit addr |  | 64-bit addr |
+| via rsdt.   |  | via XSDP.   |
+| rsdt_addr   |  | xsdt_addr   |
 +------+------+  +------+------+
-       |                |
-       +-------+--------+
+     |                |
+     +-------+--------+
+             |
+             v
++--------------------------+
+| .standard:               |
+| Verify signature         |
+| ("RSDT" / "XSDT")        |
++----------+---------------+
+           |
+           v
++--------------------------+
+| .found:                  |
+| Read header.length       |
+| Subtract STRUCTURE.SIZE  |
+| Advance rdi past header  |
++----------+---------------+
+           |
+     +-----+------+
+     | r8b flag?  |
+     +-----+------+
+        |        |
+    TRUE        FALSE
+   (RSDT)      (XSDT)
+        |        |
+        v        v
++-------------+ +-------------+
+| .rsdt_ptr:  | | .xsdt_ptr:  |
+| shr ecx, 2  | | shr ecx, 3  |
+| (DWORD ptr) | | (QWORD ptr) |
++------+------+ +------+------+
+       |               |
+       v               v
++-------------+ +-------------+
+| .rsdt_loop: | | .xsdt_loop: |
+| mov esi,    | | mov rsi,    |
+| dword [rdi] | | qword [rdi] |
++------+------+ +------+------+
+       |               |
+       +-------+-------+
                |
                v
 +--------------------------+
-| Verify RSDT/XSDT         |
-| signature ("RSDT"/"XSDT")|
+| call .header (subroutine)|
+| Check if signature ==    |
+| "APIC" (MADT)            |
 +----------+---------------+
            |
-           v
-+--------------------------+
-| Calculate entry count:   |
-| len = header.length      |
-| - STRUCTURE_RSDT.SIZE    |
-| If r8b == TRUE ->        |
-|   shr ecx, 2 (DWORD)     |
-| If r8b == FALSE ->       |
-|   shr ecx, 3 (QWORD)     |
-+----------+---------------+
-           |
-           v
-+--------------------------+
-| Loop through entries:    |
-| r8b == TRUE  -> RSDT     |
-|   (32-bit pointers,      |
-|    advance by 4 bytes)   |
-| r8b == FALSE -> XSDT     |
-|   (64-bit pointers,      |
-|    advance by 8 bytes)   |
-+----------+---------------+
-           |
-           v
-+--------------------------+
-| Find "APIC" (MADT) entry |
-+----------+---------------+
-           |
-           v
     +------+------+
-    | MADT parsing |
-    +------+-------+
-           |
-           v
+    | MATCH?      |
     +------+------+
-    | Return       |
-    +-------------+
+     YES         NO
+       |          |
+       v          v
++-------------+  +-------------+
+| Jump to     |  | Advance rdi |
+| .madt       |  | by 4 or 8   |
+|             |  | (DWORD/     |
+|             |  |  QWORD)     |
++-------------+  +------+------+
+       |                |
+       |          +-----+------+
+       |          | dec ecx,   |
+       |          | jnz .loop  |
+       |          +-----+------+
+       |                |
+       |           +---------+
+       |           | .summary |
+       |           | (error:  |
+       |           |  no APIC)|
+       |           +---------+
+       |
+       v
++--------------------------+
+| .madt:                   |
+| Parse MADT entries       |
+| loop until done          |
++--------------------------+
 
-FLOW DIAGRAM: MADT Entry Processing
+FLOW DIAGRAM: MADT Entry Processing (.madt)
 
 +-------------------------+
-| .madt_loop              |
-+--------+-----------------+
-          |
-          v
-+-------------------------+
+| .madt_loop:             |
 | Read entry type         |
-+--------+-----------------+
++--------+----------------+
           |
           v
 +-------------------------+
 | Type == 0x00 (LAPIC)?   |
-+--------+-----------------+
++--------+----------------+
           |
     +-----+-----+
     |YES          |NO
@@ -123,26 +165,23 @@ FLOW DIAGRAM: MADT Entry Processing
 +-------------------------+
           |
           v
-+------------------+
-| .madt_next_entry|
-+------------------+
++-------------------------+
+| .madt_next_entry:       |
+| Advance rsi by entry.len|
++--------+----------------+
           |
           v
-+------------------+
-| More entries?    |
-+-----------------+
-          |
-    +-----+-----+
-    |YES        |NO
-    v           v
-    |     +---------------------+
-    |     | End of MADT parsing|
-    +-----+---------------------+
++-------------------------+
+| dec ecx, jnz .madt_loop |
++--------+----------------+
           |
           v
-   +-------------+
-   | Return      |
-   +-------------+
++-------------------------+
+| ret (to RSDT/XSDT loop) |
++-------------------------+
+
+MADT entry processing returns via `ret` to the calling RSDT or XSDT loop,
+which continues iterating the remaining table entries.
 
 KEY VARIABLES
   kernel_apic_base_address       : Local APIC MMIO base
@@ -153,17 +192,16 @@ KEY VARIABLES
   kernel_init_ioapic_semaphore  : Set when IO-APIC found
 
 RSDP / RSDT / XSDT NOTES
-  - RSDP revision 0: ACPI 1.0, uses 32-bit RSDT address
-  - RSDP revision > 0: ACPI 2.0+, uses 64-bit XSDT address
+  - RSDP revision 0: ACPI 1.0, uses 32-bit RSDT address from RSDP.rsdt_address
+  - RSDP revision > 0: ACPI 2.0+, uses 64-bit XSDT address from XSDP.xsdt_address
   - R8B used as flag: TRUE for RSDT (32-bit), FALSE for XSDT (64-bit)
-  - Entry pointers in RSDT are 32-bit; in XSDT they are 64-bit
-  - Both RSDT and XSDT use the ACPI_STRUCTURE_RSDT structure layout
-    (signature, length, then pointer array)
+  - Entry pointers in RSDT are 32-bit (DWORD); in XSDT they are 64-bit (QWORD)
+  - Both RSDT and XSDT use ACPI_STRUCTURE_RSDT_or_XSDT layout
+    (signature, length, revision, checksum, OEM info, then pointer array)
   - Entry count calculation:
-    - RSDT: (length - STRUCTURE_RSDT.SIZE) / 4 (DWORD entries)
-    - XSDT: (length - STRUCTURE_RSDT.SIZE) / 8 (QWORD entries)
-  - Address advancement per iteration:
-    - RSDT: add rdi, 4 (DWORD pointer)
-    - XSDT: add rdi, 8 (QWORD pointer, extra 4 bytes skipped)
-  - Old `.extended` path (halt with ACPI v2 message) removed; XSDT is now
-    fully parsed instead of halting
+    - RSDT: (length - STRUCTURE.SIZE) / 4 (shr 2)
+    - XSDT: (length - STRUCTURE.SIZE) / 8 (shr 3)
+  - RSDT loop: `mov esi, dword [rdi]` + `add rdi, 4` per entry
+  - XSDT loop: `mov rsi, qword [rdi]` + `add rdi, 8` per entry
+  - MADT header check extracted into `.header` subroutine (called via call/ret)
+  - `.madt_next_entry` returns via `ret` to the calling pointer loop

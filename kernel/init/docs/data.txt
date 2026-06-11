@@ -19,7 +19,12 @@ Error Messages:
   | kernel_init_string_error_acpi_2    | "Error: no support for acpi v2 version"
   | kernel_init_string_error_acpi_     | "Error: APIC table not found"
   | kernel_init_string_error_apic      | "Error: APIC table not found"
-  | kernel_init_string_error_ioapic    | "Error: I / O APIC table not found" 
+  | kernel_init_string_error_ioapic    | "Error: I / O APIC table not found"
+
+Status Messages:
+  Variable                              | Message
+  | kernel_init_string_acpi_search      | "Checking for an RSDP / XSDP table, "
+  | kernel_init_string_acpi_search_found| "found." 
 VARIABLES
 Semaphores (Mutex Locks):
   | Variable              | Type     | Purpose           

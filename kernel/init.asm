@@ -1,3 +1,9 @@
+ cmp byte [kernel_init_smp_semaphore], STATIC_FALSE
+ je .entry
+
+ %include "kernel/init/ap.asm"
+
+.entry:
  %include "kernel/init/long_mode.asm"
 
  %include "kernel/init/panic.asm"
@@ -10,7 +16,7 @@
 
  %include "kernel/init/apic.asm"
 
-kernel_init_long_mode:
+kernel_init:
  %include "kernel/init/video.asm"
 
  %include "kernel/init/memory.asm"
@@ -34,6 +40,8 @@ kernel_init_long_mode:
  %include "kernel/init/task.asm"
 
  %include "kernel/init/services.asm"
+
+ %include "kernel/init/smp.asm"
 
  call kernel_init_apic
 

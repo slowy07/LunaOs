@@ -1,5 +1,6 @@
  %include "config.asm"
  %include "kernel/config.asm"
+ %include "kernel/macro/apic.asm"
 
 [BITS 32]
 
@@ -13,7 +14,6 @@ kernel:
  jmp $
 
  %include "kernel/macro/close.asm"
- %include "kernel/macro/apic.asm"
  %include "kernel/macro/debug.asm"
  %include "kernel/macro/copy.asm"
  %include "kernel/ipc.asm"

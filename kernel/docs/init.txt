@@ -4,78 +4,95 @@ Author: arfy slowy
 
 OVERVIEW
 Main initialization module that includes all init components in the correct order.
-Handles transition from 32-bit to 64-bit mode and complete kernel initialization.
+Handles transition from 32-bit to 64-bit mode, SMP application processor boot, and
+complete kernel initialization.
 
 STRUCTURE
 
+SMP Boot Check (top of init.asm):
+  1. Check kernel_init_smp_semaphore
+     STATIC_FALSE -> BSP path (continue init)
+     STATIC_TRUE  -> AP path, include ap.asm (application processor init)
+     Falls through to .entry to continue boot
+
 32-bit Pre-Initialization (before [BITS 64]):
-  1. kernel/init/long_mode.asm
+  2. kernel/init/long_mode.asm
      Set up 64-bit long mode (GDT, paging, etc.)
      Switches CPU from 32-bit to 64-bit mode
 
-  2. kernel/init/panic.asm
+  3. kernel/init/panic.asm
      Initialize panic handler for early errors
 
-  3. kernel/init/data.asm
+  4. kernel/init/data.asm
      Initialize data structures and strings
+     Contains kernel_init_boot_file (incbin of boot.asm trampoline)
 
-  4. kernel/init/multiboot.asm
+  5. kernel/init/multiboot.asm
      Process Multiboot information from bootloader
 
 [BITS 64] Transition:
-  5. kernel/init/apic.asm
+  6. kernel/init/apic.asm
      Early APIC detection (before full init)
      Must run after 64-bit mode is enabled
 
-64-bit Initialization (kernel_init_long_mode):
-  6. kernel/init/video.asm
+64-bit Initialization (kernel_init):
+  7. kernel/init/video.asm
      Initialize video output and display welcome message
      Calls: kernel_video_dump, kernel_video_string
 
-  7. kernel/init/memory.asm
+  8. kernel/init/memory.asm
      Parse Multiboot memory map and initialize memory manager
      Uses: Multiboot info structure from bootloader
      Output: kernel_memory_map_address, page bitmap
 
-  8. kernel/init/acpi.asm
+  9. kernel/init/acpi.asm
      Initialize ACPI and enumerate CPUs
      Finds: RSDP, RSDT, MADT
      Output: kernel_apic_base_address, kernel_apic_count, IO-APIC info
 
-  9. kernel/init/page.asm
+  10. kernel/init/page.asm
      Set up paging and virtual memory mappings
      Allocates: PML4 table
      Maps: kernel, stack, video memory, APIC registers
 
-  10. kernel/init/gdt.asm
+  11. kernel/init/gdt.asm
      Initialize Global Descriptor Table
      Sets up: null, CS, DS, TSS descriptors
      Loads: GDT and task register
 
-  11. kernel/init/idt.asm
+  12. kernel/init/idt.asm
      Initialize Interrupt Descriptor Table
      Sets up: exception handlers (0-31), spurious handler
      Loads: IDT via LIDT, enables interrupts (sti)
 
-  12. kernel/init/rtc.asm
+  13. kernel/init/rtc.asm
      Initialize Real Time Clock
      Configures: 1024Hz periodic interrupts
      Connects: IRQ 8 to IO-APIC
 
-   13. kernel/init/ps2.asm
+   14. kernel/init/ps2.asm
       Initialize PS/2 keyboard controller
       Configures: scan code set, interrupt enable
       Note: Does NOT connect to IO-APIC (missing in code)
 
-   14. kernel/init/ipc.asm
+   15. kernel/init/ipc.asm
       Initialize IPC message pool
       Allocates: IPC pool page
       Must run before network and task init
 
-   15. kernel/init/task.asm
-     Initialize tasking system
-     Creates: first kernel task
-     Mounts: timer interrupt handler (IRQ 0)
+   16. kernel/init/task.asm
+      Initialize tasking system
+      Creates: first kernel task
+      Mounts: timer interrupt handler (IRQ 0)
+
+   17. kernel/init/services.asm
+      Start kernel services (shell, HTTP, network)
+
+   18. kernel/init/smp.asm
+      Copy boot trampoline (boot.asm) to 0x8000
+      Set kernel_init_smp_semaphore to STATIC_TRUE
+      Iterate APIC ID table to wake application processors
+      APs start at boot.asm (16-bit real mode -> 32-bit -> kernel)
 
 Final Steps (after all init modules):
   - call kernel_init_apic (full APIC initialization)
@@ -84,15 +101,29 @@ Final Steps (after all init modules):
 
 INITIALIZATION FLOW
 
-  +-------------------------+
-  | 32-bit Entry            |
-  +-----------+-------------+
-              |
-              v
-  +-------------------------+
-  | long_mode.asm           |
-  | Enable 64-bit mode      |
-  +-----------+-------------+
+   +-------------------------+
+   | 32-bit Entry            |
+   +-----------+-------------+
+               |
+               v
+   +-------------------------+
+   | SMP check:              |
+   | semaphore == FALSE?     |
+   +-----------+-------------+
+      BSP |           | AP
+          v           v
+   +-------------+ +-------------+
+   | continue    | | ap.asm      |
+   | (skip ap)   | | (AP init)   |
+   +------+------+ +------+------+
+          |              |
+          +------+-------+
+                 |
+                 v
+   +-------------------------+
+   | long_mode.asm           |
+   | Enable 64-bit mode      |
+   +-----------+-------------+
               |
               v
   +-------------------------+
@@ -108,11 +139,11 @@ INITIALIZATION FLOW
   +-----------+-------------+
               |
               v
-  +-------------------------+
-  | kernel_init_long_mode:  |
-  +-----------+-------------+
-              |
-              v
+  +---------------+
+  | kernel_init:  |
+  +--------+------+
+           |
+           v
   +-------------------------+
   | video.asm               |
   +-----------+-------------+
@@ -160,6 +191,18 @@ INITIALIZATION FLOW
                v
    +-------------------------+
    | task.asm                |
+  +-----------+-------------+
+              |
+              v
+   +--------------------+
+   | services.asm       |
+   +-----------+--------+
+              |
+              v
+  +-------------------------+
+  | smp.asm                 |
+  | Copy boot file to 0x8000|
+  | Wake APs via IPI        |
   +-----------+-------------+
               |
               v

@@ -41,21 +41,14 @@ kernel_init:
 
  %include "kernel/init/services.asm"
 
- %include "kernel/init/smp.asm"
-
  call kernel_init_apic
 
  mov dword [rsi + KERNEL_APIC_TICR_register], DRIVER_RTC_Hz
 
  mov dword [rsi + KERNEL_APIC_EOI_register], STATIC_EMPTY
 
+ sti
 
-kernel_init_clean:
-
- mov ecx, kernel_init_clean - $$
- call library_page_from_size
-
- mov rdi, KERNEL_BASE_address
- call kernel_memory_release
+ %include "kernel/init/smp.asm"
 
  jmp kernel

@@ -16,6 +16,7 @@ MEMORY ADDRESSES
   KERNEL_STACK_address      = Virtual address at top of 128TB virtual space
   KERNEL_STACK_pointer      = KERNEL_STACK_address - 1 page
   KERNEL_STACK_SIZE_byte   = 2 * KERNEL_PAGE_SIZE_byte (8KB)
+  KERNEL_STACK_TEMPORARY_pointer = 0x8000 + 4KB (temporary stack for AP boot)
 
 NOTES
 The kernel is linked to load at 1MB (0x100000).

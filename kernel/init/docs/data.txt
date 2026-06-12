@@ -31,11 +31,17 @@ Semaphores (Mutex Locks):
   | kernel_init_apic_semaphore | byte  | Lock for APIC operations
   | kernel_init_ioapic_semaphore| byte | Lock for IO-APIC operations
   | kernel_init_smp_semaphore   | byte | Lock for SMP operations
+  | kernel_init_ap_semaphore    | byte | AP boot synchronization
 
 Counters:
   | Variable              | Type     | Purpose
   | kernel_init_ap_count  | byte     | Number of Application Processors (APs))
   | kernel_init_apic_id_highest | byte | Highest APIC ID detected
+
+Embedded Binary:
+  | Variable              | Purpose
+  | kernel_init_boot_file | SMP AP boot trampoline (incbin of boot.asm)
+  | kernel_init_boot_file_end | End marker for size calculation
 
 Service List:
   kernel_init_services_list:

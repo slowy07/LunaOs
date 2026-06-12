@@ -118,8 +118,8 @@ kernel/kernel.asm (32-bit)
         |
         +---> kernel/init/ (32-bit -> 64-bit transition)
         |         |
-        |         +-- smp.asm           SMP boot (AP wake)
-        |         +-- ap.asm           Application Processor init
+        |         +-- smp.asm           SMP boot (INIT/STARTUP IPI)
+        |         +-- ap.asm           AP full init (PAE, long mode, TSS)
         |         +-- boot.asm         16-bit real mode trampoline
         |         +-- long_mode.asm
         |         +-- video.asm
@@ -292,15 +292,21 @@ kernel/kernel.asm (32-bit)
               |
               v
 +------------------------------+
-|   smp.asm -> AP boot         |
-|   (copy boot trampoline,     |
-|    wake application CPUs)    |
+|   kernel_init_apic           |
+|   Enable timer IRQ via LAPIC |
+|   Set TICR = DRIVER_RTC_Hz  |
+|   Send EOI                   |
+|   sti (enable interrupts)   |
 +------------------------------+
               |
               v
 +------------------------------+
-|   kernel_init_apic           |
-|   Enable timer IRQ via LAPIC |
+|   smp.asm -> AP boot         |
+|   Send INIT IPI to all APs   |
+|   Wait 10ms                  |
+|   Send STARTUP IPI (vec 8)   |
+|   APs boot via boot.asm      |
+|   16-bit -> 32-bit -> kernel |
 +------------------------------+
 ```
 

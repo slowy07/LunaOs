@@ -23,11 +23,12 @@ SMP Boot Check (top of init.asm):
   3. kernel/init/panic.asm
      Initialize panic handler for early errors
 
-  4. kernel/init/data.asm
-     Initialize data structures and strings
-     Contains kernel_init_boot_file (incbin of boot.asm trampoline)
+   4. kernel/init/data.asm
+      Initialize data structures and strings
+      Contains kernel_init_boot_file (incbin of boot.asm trampoline)
+      Contains kernel_init_ap_semaphore for AP synchronization
 
-  5. kernel/init/multiboot.asm
+   5. kernel/init/multiboot.asm
      Process Multiboot information from bootloader
 
 [BITS 64] Transition:
@@ -50,10 +51,11 @@ SMP Boot Check (top of init.asm):
      Finds: RSDP, RSDT, MADT
      Output: kernel_apic_base_address, kernel_apic_count, IO-APIC info
 
-  10. kernel/init/page.asm
-     Set up paging and virtual memory mappings
-     Allocates: PML4 table
-     Maps: kernel, stack, video memory, APIC registers
+   10. kernel/init/page.asm
+      Set up paging and virtual memory mappings
+      Allocates: PML4 table
+      Maps: kernel, stack, video memory, APIC registers
+      Maps: boot trampoline at 0x8000 for SMP AP wake
 
   11. kernel/init/gdt.asm
      Initialize Global Descriptor Table
@@ -91,13 +93,31 @@ SMP Boot Check (top of init.asm):
    18. kernel/init/smp.asm
       Copy boot trampoline (boot.asm) to 0x8000
       Set kernel_init_smp_semaphore to STATIC_TRUE
-      Iterate APIC ID table to wake application processors
+      Send INIT IPI to all APs (ICR = 0x00004500)
+      Wait 10ms for APs to complete INIT
+      Send STARTUP IPI with vector 0x08 to each AP (ICR = 0x00004608)
       APs start at boot.asm (16-bit real mode -> 32-bit -> kernel)
+
+AP boot path (ap.asm):
+  - Reload GDT, enable PAE, load PML4
+  - Enable long mode (EFER.LME), enable paging
+  - Far jump to 64-bit mode
+  - Configure LAPIC: task priority, get APIC ID
+  - Calculate and load per-CPU TSS selector
+  - Load IDT
+  - Wait on kernel_init_ap_semaphore
+  - Allocate and map stack page via kernel_page_map_logical
+  - Merge page tables with BSP via kernel_page_merge
+  - Load merged CR3, set stack pointer
+  - Release semaphore, call kernel_init_apic
+  - Get APIC ID, find task slot, jump to kernel_task.ap_entry
 
 Final Steps (after all init modules):
   - call kernel_init_apic (full APIC initialization)
   - Set APIC TICR register to DRIVER_RTC_Hz (1024Hz timer)
   - Send EOI to clear any pending interrupt
+  - sti (enable interrupts)
+  - smp.asm -> wake application processors
 
 INITIALIZATION FLOW
 
@@ -194,24 +214,26 @@ INITIALIZATION FLOW
   +-----------+-------------+
               |
               v
-   +--------------------+
-   | services.asm       |
-   +-----------+--------+
+   | services.asm            |
+   +-----------+-------------+
               |
               v
-  +-------------------------+
-  | smp.asm                 |
-  | Copy boot file to 0x8000|
-  | Wake APs via IPI        |
-  +-----------+-------------+
+   +-------------------------+
+   | Final: call             |
+   | kernel_init_apic        |
+   | Set TICR = DRIVER_RTC_Hz|
+   | Send EOI                |
+   | sti (enable interrupts) |
+   +-----------+-------------+
               |
               v
-  +-------------------------+
-  | Final: call             |
-  | kernel_init_apic        |
-  | Set TICR = DRIVER_RTC_Hz|
-  | Send EOI                |
-  +-----------+-------------+
+   +-------------------------+
+   | smp.asm                 |
+   | Send INIT IPI (all APs) |
+   | Wait 10ms               |
+   | Send STARTUP IPI (vec 8)|
+   | APs boot via boot.asm   |
+   +-----------+-------------+
               |
               v
   +-------------------------+

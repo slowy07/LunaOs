@@ -308,6 +308,20 @@ kernel/kernel.asm (32-bit)
 |   APs boot via boot.asm      |
 |   16-bit -> 32-bit -> kernel |
 +------------------------------+
+              |
+              v
++------------------------------+
+|   Wait for all APs           |
+|   kernel_init_ap_count ==    |
+|   kernel_apic_count          |
++------------------------------+
+              |
+              v
++------------------------------+
+|   clean:                     |
+|   Free init code pages       |
+|   via kernel_memory_release  |
++------------------------------+
 ```
 
 ## Process Flow Diagrams
@@ -575,7 +589,7 @@ Task Flags:
 | **SMP** | Multi-processor boot via 16-bit real mode trampoline (`boot.asm`), AP wake through IPI, per-CPU GDT TSS entries |
 | **Drivers** | PS/2 keyboard/mouse, RTC, PCI enumeration, Intel 82540EM Gigabit Ethernet |
 | **IPC** | Inter-process communication primitives |
-| **Services** | Interactive shell (clear, ip commands), HTTP client, network transmit, tresher |
+| **Services** | Interactive shell (clear, ip commands), HTTP server (port 80), network transmit, tresher |
 
 ## References
 

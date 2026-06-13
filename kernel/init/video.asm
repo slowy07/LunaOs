@@ -6,6 +6,7 @@ kernel_init_video:
 
  mov edi, dword [ebx + HEADER_multiboot.framebuffer_addr]
  mov qword [kernel_video_base_address], rdi
+ mov qword [kernel_video_framebuffer], rdi
  mov qword [kernel_video_pointer], rdi
 
  mov eax, dword [ebx + HEADER_multiboot.framebuffer_height]

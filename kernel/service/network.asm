@@ -151,9 +151,6 @@ endstruc
 
 struc SERVICE_NETWORK_STRUCTURE_PORT
  .cr3_and_flags resb 8
- .tcp_connection resb 8
- .size resb 8
- .address resb 8
  .SIZE:
 endstruc
 
@@ -162,6 +159,7 @@ service_network_pid dq STATIC_EMPTY
 service_network_rx_count dq STATIC_EMPTY
 service_network_tx_count dq STATIC_EMPTY
 
+service_network_port_semaphore db STATIC_FALSE
 service_network_port_table dq STATIC_EMPTY
 
 service_network_stack_address dq STATIC_EMPTY
@@ -325,54 +323,7 @@ service_network_tcp_psh_ack:
  push rdi
  push rsi
 
- movzx ecx, word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.total_length]
- rol cx, STATIC_REPLACE_AL_WITH_HIGH_shift
- sub cx, bx
-
- push rcx
-
- movzx eax, word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + rbx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.port_target]
- rol ax, STATIC_REPLACE_AL_WITH_HIGH_shift
- shl rax, STATIC_MULTIPLE_BY_32_shift
-
- movzx edx, byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + rbx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.header_length]
- shr dl, STATIC_MOVE_AL_HALF_TO_HIGH_shift
- shl dx, STATIC_MULTIPLE_BY_4_shift
-
- mov rdi, rsi
-
- add rsi, SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE
- add rsi, rbx
- add rsi, rdx
-
- rep movsb
-
- mov rcx, KERNEL_PAGE_SIZE_byte
- sub rcx, qword [rsp]
- rep stosb
-
- mov rsi, qword [service_network_port_table]
- add rsi, rax
-
-
-
- add rsp, STATIC_QWORD_SIZE_byte
-
- jmp .end
-
-.empty:
-
- mov rax, qword [rsp + STATIC_QWORD_SIZE_byte * 0x02]
- mov qword [rsi + SERVICE_NETWORK_STRUCTURE_PORT.tcp_connection], rax
-
- pop qword [rsi + SERVICE_NETWORK_STRUCTURE_PORT.size]
-
- mov rax, qword [rsp]
- mov qword [rsi + SERVICE_NETWORK_STRUCTURE_PORT.address], rax
-
- or byte [rsi + SERVICE_NETWORK_STRUCTURE_PORT.cr3_and_flags], SERVICE_NETWORK_PORT_FLAG_received
-
- mov qword [rsp], STATIC_EMPTY
+ xchg bx, bx
 
 .end:
  pop rsi
@@ -748,19 +699,27 @@ service_network_tcp_pseudo_header:
 service_network_tcp_port_assign:
  push rax
  push rcx
+ push rdx
  push rdi
+
+ macro_close service_network_port_semaphore, 0
 
  cmp cx, 512
  jnb .error
 
+ mov eax, SERVICE_NETWORK_STRUCTURE_PORT.SIZE
  and ecx, STATIC_WORD_mask
- shl cx, STATIC_MULTIPLE_BY_32_shift
+ mul ecx
 
  call kernel_task_active
- mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
+ mov rcx, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
 
  mov rdi, qword [service_network_port_table]
- mov qword [rdi + rcx], rax
+ 
+ cmp qword [rdi + rcx], STATIC_EMPTY
+ jne .error
+
+ mov qword [rdi + rax], rcx
 
  jmp .end
 
@@ -768,7 +727,10 @@ service_network_tcp_port_assign:
  stc
 
 .end:
+ mov byte [service_network_port_semaphore], STATIC_FALSE
+
  pop rdi
+ pop rdx
  pop rcx
  pop rax
 

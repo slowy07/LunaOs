@@ -21,6 +21,7 @@ CONSTANTS
 VARIABLES
   kernel_video_semaphore          = Mutex lock (0 = locked, 1 = free)
   kernel_video_base_address       = Framebuffer physical base address
+  kernel_video_framebuffer        = Framebuffer virtual address (used for rendering)
   kernel_video_pointer            = Current write position in framebuffer
   kernel_video_width_pixel        = Cached width in pixels
   kernel_video_height_pixel       = Cached height in pixels

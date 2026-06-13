@@ -56,12 +56,13 @@ SERVICE_NETWORK_STRUCTURE_FRAME_UDP (8 bytes): ports, length, checksum
 SERVICE_NETWORK_STRUCTURE_FRAME_TCP (20 bytes): ports, seq, ack, flags, etc.
 SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER (12 bytes): for checksum
 SERVICE_NETWORK_STRUCTURE_TCP_STACK (48 bytes): per-connection state
-SERVICE_NETWORK_STRUCTURE_PORT (32 bytes): per-port receive buffer
+SERVICE_NETWORK_STRUCTURE_PORT (8 bytes): per-port registration (cr3 + flags)
 
 GLOBAL VARIABLES
 service_network_pid          - PID of this service (self-registered at start)
 service_network_rx_count     - received packet counter
 service_network_tx_count     - transmitted packet counter
+service_network_port_semaphore - spinlock for port table access
 service_network_port_table   - pointer to port table page
 service_network_stack_address - pointer to TCP connection table
 service_network_ipc_message  - KERNEL_IPC_STRUCTURE_LIST.SIZE buffer for IPC receive
@@ -111,8 +112,8 @@ service_network_tcp_fin:
   service_network_transfer, notifies connection end.
 
 service_network_tcp_psh_ack:
-  Handles PSH+ACK (data push). Copies payload data into port buffer,
-  sets received flag for target task, waits if buffer is busy.
+  Handles PSH+ACK (data push). Currently stubbed with xchg bx,bx
+  (breakpoint marker) after port structure simplification.
 
 service_network_tcp_find:
   Searches TCP connection table for matching MAC/IP/port pair.
@@ -138,8 +139,9 @@ service_network_tcp_pseudo_header:
 
 service_network_tcp_port_assign:
   Registers a port for the current task (CR3 stored).
+  Uses service_network_port_semaphore for exclusive access.
   Input: CX = port number (< 512)
-  Output: CF set if port >= 512
+  Output: CF set if port >= 512 or port already in use
 
 service_network_tcp_port_receive:
   Checks port for received data. Returns data pointer/size if available.

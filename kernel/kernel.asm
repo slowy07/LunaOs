@@ -10,6 +10,14 @@ init:
  %include "kernel/init.asm"
 
 align KERNEL_PAGE_SIZE_byte, db STATIC_NOTHING
+
+clean:
+ mov ecx, clean - $$
+ call library_page_from_size
+
+ mov rdi, KERNEL_BASE_address
+ call kernel_memory_release
+
 kernel:
  jmp $
 

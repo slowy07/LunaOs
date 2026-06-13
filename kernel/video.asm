@@ -12,6 +12,7 @@ KERNEL_VIDEO_SCANLINE_CHAR_byte equ (KERNEL_VIDEO_WIDTH_pixel * KERNEL_FONT_HEIG
 kernel_video_semaphore db STATIC_FALSE
 kernel_video_base_address dq STATIC_EMPTY
 kernel_video_pointer dq STATIC_EMPTY
+kernel_video_framebuffer dq STATIC_EMPTY
 kernel_video_width_pixel dq STATIC_EMPTY
 kernel_video_height_pixel dq STATIC_EMPTY
 kernel_video_scanline_char dq KERNEL_VIDEO_SCANLINE_CHAR_byte
@@ -50,7 +51,7 @@ kernel_video_drain:
 
  mov eax, dword [kernel_video_color_background]
  mov ecx, KERNEL_VIDEO_WIDTH_pixel * KERNEL_VIDEO_HEIGHT_pixel
- mov rdi, qword [kernel_video_base_address]
+ mov rdi, qword [kernel_video_framebuffer]
  rep stosd
 
  mov qword [kernel_video_cursor], STATIC_EMPTY
@@ -159,7 +160,7 @@ kernel_video_cursor_set:
  shl rdx, KERNEL_VIDEO_DEPTH_shift
  add rdx, rax
 
- add rdx, qword [kernel_video_base_address]
+ add rdx, qword [kernel_video_framebuffer]
  mov qword [kernel_video_pointer], rdx
 
  pop rdx
@@ -583,7 +584,7 @@ kernel_video_scroll:
 
  mov rcx, KERNEL_VIDEO_SCANLINE_CHAR_byte * (KERNEL_VIDEO_HEIGHT_char - 0x01)
 
- mov rdi, qword [kernel_video_base_address]
+ mov rdi, qword [kernel_video_framebuffer]
  mov rsi, rdi
  add rsi, KERNEL_VIDEO_SCANLINE_CHAR_byte
  call kernel_memory_copy
@@ -612,7 +613,7 @@ kernel_video_line_drain:
 
  mov rcx, KERNEL_VIDEO_SCANLINE_CHAR_byte
  mul rcx
- add rax, qword [kernel_video_base_address]
+ add rax, qword [kernel_video_framebuffer]
  mov rdi, rax
 
  mov eax, STATIC_COLOR_BACKGROUND_default

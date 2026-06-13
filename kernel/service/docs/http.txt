@@ -18,22 +18,26 @@ PROCEDURES
 
 service_http:
   Main service loop:
-  1. Assign port 80 via service_network_tcp_port_assign
-  2. Wait for receive via service_network_tcp_port_receive
-  3. Compare request to "GET / "
-  4. If match, send 200 OK via service_network_tcp_port_send
-  5. If no match, send 404 Not Found
-  6. Release received page via kernel_memory_release_page
-  7. Halt infinitely (jmp $) -- service runs once per task lifetime
+  1. Allocate service_http_ipc_message buffer
+  2. Assign port 80 via service_network_tcp_port_assign
+  3. Loop: receive IPC via kernel_ipc_receive (blocks until message arrives)
+  4. Compare request to "GET / "
+  5. If match, send 200 OK via service_network_tcp_port_send
+  6. If no match, send 404 Not Found
+  7. Release received page via kernel_memory_release_page
+  8. Repeat from step 3
 
 DATA
 service_http_get_root:    "GET / " (comparison string)
 service_http_200_default: HTTP/1.0 200 OK + HTML body
 service_http_404:         HTTP/1.0 404 Not Found + HTML body
 
+DATA
+service_http_ipc_message  - KERNEL_IPC_STRUCTURE_LIST.SIZE buffer for IPC receive
+
 NOTES
 - Uses service_network_tcp_port_* functions (refactored from kernel_network)
-- After handling one request, loops on jmp $ (infinite halt)
+- Now loops continuously via IPC receive (was single-request before)
 - Service lifecycle managed by the init scheduler
 - HTML includes inline CSS with green/red/white color scheme
 - All responses include LunaOS version footer via macro

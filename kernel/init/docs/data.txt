@@ -48,7 +48,7 @@ Service List:
     dq service_tresher  - Task reaper (cleans up closed tasks)
     dq service_tx       - Packet transmission service
     dq service_network  - Network stack (IPv4/TCP/UDP/ICMP/ARP)
-    dq service_http     - HTTP server (port 80)
+    dq service_http     - HTTP server (port 80, IPC receive loop)
     dq service_shell    - Interactive shell
     dq STATIC_EMPTY     - Terminator
 

@@ -51,4 +51,10 @@ kernel_init:
 
  %include "kernel/init/smp.asm"
 
- jmp kernel
+.wait:
+ mov al, byte [kernel_init_ap_count]
+ inc al
+ cmp al, byte [kernel_apic_count]
+ jne .wait
+
+ jmp clean

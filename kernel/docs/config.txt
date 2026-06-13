@@ -8,7 +8,7 @@ This file defines core kernel configuration constants including kernel name, ver
 KERNEL METADATA
   KERNEL_name        = "Luna"
   KERNEL_version     = "1"
-  KERNEL_revision    = "0"
+  KERNEL_revision    = "50"
   KERNEL_architecture = "x86_64"
 
 MEMORY ADDRESSES

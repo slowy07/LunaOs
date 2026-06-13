@@ -25,3 +25,5 @@ library_string_digits:
  pop rsi
 
  ret
+
+ macro_debug "library_string_digits"

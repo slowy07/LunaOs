@@ -29,3 +29,5 @@ library_string_compare:
  pop rax
 
  ret
+
+ macro_debug "library_string_compare"

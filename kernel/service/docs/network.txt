@@ -56,7 +56,7 @@ SERVICE_NETWORK_STRUCTURE_FRAME_UDP (8 bytes): ports, length, checksum
 SERVICE_NETWORK_STRUCTURE_FRAME_TCP (20 bytes): ports, seq, ack, flags, etc.
 SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER (12 bytes): for checksum
 SERVICE_NETWORK_STRUCTURE_TCP_STACK (48 bytes): per-connection state
-SERVICE_NETWORK_STRUCTURE_PORT (8 bytes): per-port registration (cr3 + flags)
+SERVICE_NETWORK_STRUCTURE_PORT (8 bytes): per-port registration (pid)
 
 GLOBAL VARIABLES
 service_network_pid          - PID of this service (self-registered at start)
@@ -98,6 +98,7 @@ service_network_icmp:
 service_network_tcp:
   TCP state machine dispatcher. Routes to SYN/ACK/FIN/PSH-ACK handlers.
   Validates port number (< 512) and port table entry.
+  Port table offset: port * SERVICE_NETWORK_STRUCTURE_PORT.SIZE.
 
 service_network_tcp_syn:
   Handles incoming SYN. Allocates TCP connection slot, stores remote
@@ -106,14 +107,16 @@ service_network_tcp_syn:
 
 service_network_tcp_ack:
   Handles pure ACK. Clears pending ACK flag, checks for FIN+ACK completion.
+  No longer contains debug breakpoint.
 
 service_network_tcp_fin:
   Handles FIN. Updates sequence numbers, sends ACK+FIN via
   service_network_transfer, notifies connection end.
 
 service_network_tcp_psh_ack:
-  Handles PSH+ACK (data push). Currently stubbed with xchg bx,bx
-  (breakpoint marker) after port structure simplification.
+  Handles PSH+ACK (data push). Copies TCP payload data, pads
+  remaining page with zeros, then sends data to the registered
+  port owner via kernel_ipc_insert using the PID from the port table.
 
 service_network_tcp_find:
   Searches TCP connection table for matching MAC/IP/port pair.
@@ -138,7 +141,7 @@ service_network_tcp_pseudo_header:
   Computes TCP pseudo-header checksum contribution.
 
 service_network_tcp_port_assign:
-  Registers a port for the current task (CR3 stored).
+  Registers a port for the current task (PID stored in port entry).
   Uses service_network_port_semaphore for exclusive access.
   Input: CX = port number (< 512)
   Output: CF set if port >= 512 or port already in use
@@ -163,5 +166,6 @@ NOTES
   using service_network_pid as the target.
 - This service forwards outgoing packets to the TX service via
   service_network_transfer (kernel_ipc_insert using service_tx_pid).
-- Port table entries are keyed by CR3 (task address space) for isolation.
-- Contains xchg bx, bx (breakpoint marker) in the cleanup path after IPC dispatch.
+- Port table entries are keyed by PID (task identifier) for isolation.
+- TCP PSH+ACK data is forwarded to the registered port owner's task
+  via kernel_ipc_insert (direct IPC, not polling).

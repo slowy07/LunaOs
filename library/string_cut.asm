@@ -21,3 +21,5 @@ library_string_cut:
  pop rsi
 
  ret
+
+ macro_debug "library_string_cut"

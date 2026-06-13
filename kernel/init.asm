@@ -35,6 +35,8 @@ kernel_init:
 
  %include "kernel/init/ipc.asm"
 
+ %include "kernel/init/vfs.asm"
+
  %include "kernel/init/network.asm"
 
  %include "kernel/init/task.asm"

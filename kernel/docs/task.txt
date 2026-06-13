@@ -35,14 +35,15 @@ STACK
 
 DATA STRUCTURES
 
-KERNEL_STRUCTURE_TASK (42 bytes):
+KERNEL_STRUCTURE_TASK (50 bytes):
   Offset  Size  Field   Description
   0x00    8     cr3     Page table base address (CR3 register)
   0x08    8     rsp     Stack pointer at time of context switch
   0x10    8     pid     Process ID
   0x18    8     cpu     CPU this task is running on (0 = not running)
   0x20    8     time    Creation timestamp (microtime)
-  0x28    2     flags   Task state flags (see above)
+  0x28    8     knot    VFS knot (working directory node)
+  0x30    2     flags   Task state flags (see above)
 
 KERNEL_STRUCTURE_TASK_IRETQ (40 bytes):
   Used for initial task setup (iretq frame)

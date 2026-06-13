@@ -32,6 +32,7 @@ STRUCTURE
       - kernel/data.asm: Data structures (GDT, TSS, IDT headers)
       - kernel/idt.asm: Interrupt handling
       - kernel/task.asm: Task scheduler
+      - kernel/vfs.asm: Virtual File System
     
     Drivers:
       - kernel/driver/rtc.asm: Real-time clock driver
@@ -74,6 +75,7 @@ Kernel Core (64-bit):
   kernel/idt.asm
   kernel/task.asm
   kernel/thread.asm
+  kernel/vfs.asm
 
 Drivers:
   kernel/driver/rtc.asm

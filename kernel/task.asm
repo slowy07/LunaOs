@@ -27,6 +27,7 @@ struc KERNEL_STRUCTURE_TASK
  .cpu resb 8
  .pid resb 8
  .time resb 8
+ .knot resb 8
  .flags resb 2
  .stack resb 2
  .SIZE:

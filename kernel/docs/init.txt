@@ -77,20 +77,25 @@ SMP Boot Check (top of init.asm):
       Configures: scan code set, interrupt enable
       Note: Does NOT connect to IO-APIC (missing in code)
 
-   15. kernel/init/ipc.asm
-      Initialize IPC message pool
-      Allocates: IPC pool page
-      Must run before network and task init
+    15. kernel/init/ipc.asm
+       Initialize IPC message pool
+       Allocates: IPC pool page
+       Must run before VFS, network and task init
 
-   16. kernel/init/task.asm
-      Initialize tasking system
-      Creates: first kernel task
-      Mounts: timer interrupt handler (IRQ 0)
+    16. kernel/init/vfs.asm
+       Initialize Virtual File System
+       Allocates: VFS magicknot structure
+       Runs after IPC, before network
 
-   17. kernel/init/services.asm
-      Start kernel services (tresher, tx, network, HTTP, shell)
+    17. kernel/init/task.asm
+       Initialize tasking system
+       Creates: first kernel task
+       Mounts: timer interrupt handler (IRQ 0)
 
-   18. kernel/init/smp.asm
+    18. kernel/init/services.asm
+       Start kernel services (tresher, tx, network, HTTP, shell)
+
+    19. kernel/init/smp.asm
       Copy boot trampoline (boot.asm) to 0x8000
       Set kernel_init_smp_semaphore to STATIC_TRUE
       Send INIT IPI to all APs (ICR = 0x00004500)
@@ -212,8 +217,13 @@ INITIALIZATION FLOW
                |
                v
    +-------------------------+
+   | vfs.asm                 |
+   +-----------+-------------+
+               |
+               v
+   +-------------------------+
    | task.asm                |
-  +-----------+-------------+
+   +-----------+-------------+
               |
               v
    | services.asm            |

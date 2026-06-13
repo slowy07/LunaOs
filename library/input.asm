@@ -84,3 +84,5 @@ library_input:
  pop rax
 
  ret
+
+ macro_debug "library_input"

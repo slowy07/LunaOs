@@ -20,6 +20,8 @@ service_http:
  call kernel_ipc_receive
  jc .loop
 
+ mov rbx, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.other]
+
  mov ecx, service_http_get_root_end - service_http_get_root
  mov rdi, service_http_get_root
  call library_string_compare
@@ -35,6 +37,8 @@ service_http:
  mov rsi, service_http_404
 
 .answer:
+ xchg bx, bx
+
  call service_network_tcp_port_send
 
  jmp $

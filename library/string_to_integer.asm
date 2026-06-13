@@ -34,3 +34,5 @@ library_string_to_integer:
  pop rbx
 
  ret
+
+ macro_debug "library_string_to_integer"

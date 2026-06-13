@@ -4,18 +4,18 @@ Author: arfy slowy
 
 OVERVIEW
 Provides LFB (Linear Frame Buffer) video output functions for the kernel.
-Renders text using a bitmap font onto a 640x400 pixel framebuffer at 32bpp.
+Renders text using a bitmap font onto a 640x480 pixel framebuffer at 32bpp.
 
 CONSTANTS
   KERNEL_VIDEO_WIDTH_pixel        = 640
-  KERNEL_VIDEO_HEIGHT_pixel       = 400
+  KERNEL_VIDEO_HEIGHT_pixel       = 480
   KERNEL_VIDEO_DEPTH_shift        = 2 (4 bytes per pixel)
   KERNEL_VIDEO_DEPTH_byte         = 4
   KERNEL_VIDEO_DEPTH_bit          = 32
-  KERNEL_VIDEO_SIZE_byte          = 640 * 400 * 4
+  KERNEL_VIDEO_SIZE_byte          = 640 * 480 * 4
 
   KERNEL_VIDEO_WIDTH_char         = 640 / KERNEL_FONT_WIDTH_pixel
-  KERNEL_VIDEO_HEIGHT_char        = 400 / KERNEL_FONT_HEIGHT_pixel
+  KERNEL_VIDEO_HEIGHT_char        = 480 / KERNEL_FONT_HEIGHT_pixel
   KERNEL_VIDEO_SCANLINE_CHAR_byte = 640 * KERNEL_FONT_HEIGHT_pixel * 4
 
 VARIABLES

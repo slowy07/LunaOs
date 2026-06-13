@@ -12,3 +12,5 @@ library_page_align_up:
  add rsp, STATIC_QWORD_SIZE_byte
 
  ret
+
+ macro_debug "library_page_align_up"

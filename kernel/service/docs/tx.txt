@@ -20,15 +20,15 @@ service_tx:
   2. Loop: receive IPC message via kernel_ipc_receive into
      service_tx_ipc_message
   3. If no size, skip (empty message)
-  4. jmp .send (bypass PID check, always transmit)
-  5. Otherwise, free the packet page via kernel_memory_release
-  6. Repeat
+  4. Send packet directly via driver_nic_i82540em_transfer
+  5. Repeat
 
 NOTES
 - Removed SERVICE_TX_CACHE_SIZE_page and SERVICE_TX_STRUCTURE_CACHE.
-- Now unconditionally sends packets (removed the PID source filter that
-  previously only accepted packets from service_network_pid).
+- No sender validation: directly forwards any received IPC payload
+  to the NIC driver (removed the PID source filter that previously
+  only accepted packets from service_network_pid).
 - service_tx_pid is used by service_network_transfer to send packets
   for transmission.
-- Allocated pages are freed after transmit via library_page_from_size
-  + kernel_memory_release.
+- Packet pages are handed to the NIC driver; driver frees them after
+  transmit.

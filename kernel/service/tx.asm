@@ -19,19 +19,6 @@ service_tx:
  test rcx, rcx
  jz .loop
 
- jmp .send
-
- mov rbx, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pid_source]
- cmp rbx, qword [service_network_pid]
- je .send
-
- call library_page_from_size
- mov rdi, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pointer]
- call kernel_memory_release
-
- jmp .loop
-
-.send:
  mov rax, rcx
  mov rdi, qword [rdi + KERNEL_IPC_STRUCTURE_LIST.pointer]
  call driver_nic_i82540em_transfer

@@ -69,3 +69,5 @@ library_string_word_next:
  pop rax
 
  ret
+
+ macro_debug "library_string_word_next"

@@ -150,7 +150,7 @@ struc SERVICE_NETWORK_STRUCTURE_TCP_STACK
 endstruc
 
 struc SERVICE_NETWORK_STRUCTURE_PORT
- .cr3_and_flags resb 8
+ .pid resb 8
  .SIZE:
 endstruc
 
@@ -280,6 +280,8 @@ service_network_ip:
 
 service_network_tcp:
  push rax
+ push rdx
+ push rcx
 
  movzx eax, word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.port_target]
  rol ax, STATIC_REPLACE_AL_WITH_HIGH_shift
@@ -287,7 +289,8 @@ service_network_tcp:
  cmp ax, 512
  jnb .end
 
- shl eax, STATIC_MULTIPLE_BY_32_shift
+ mov ecx, SERVICE_NETWORK_STRUCTURE_PORT.SIZE
+ mul ecx
  add rax, qword [service_network_port_table]
  cmp qword [rax], STATIC_EMPTY
  je .end
@@ -308,9 +311,9 @@ service_network_tcp:
  jnz service_network_tcp_psh_ack
 
 .end:
+ pop rdx
+ pop rcx
  pop rax
-
- add rsp, STATIC_QWORD_SIZE_byte
 
  jmp service_network.end
 
@@ -318,18 +321,57 @@ service_network_tcp:
 
 service_network_tcp_psh_ack:
  push rax
+ push rbx
  push rcx
  push rdx
  push rdi
  push rsi
 
- xchg bx, bx
+ movzx eax, word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + rbx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.port_target]
+ rol ax, STATIC_REPLACE_AL_WITH_HIGH_shift
+ mov ecx, SERVICE_NETWORK_STRUCTURE_PORT.SIZE
+ mul ecx
+
+ movzx ecx, word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.total_length]
+ rol cx, STATIC_REPLACE_AL_WITH_HIGH_shift
+ sub cx, bx
+
+ push rcx
+
+ movzx edx, byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + rbx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.header_length]
+ shr dl, STATIC_MOVE_AL_HALF_TO_HIGH_shift
+ shl dx, STATIC_MULTIPLE_BY_4_shift
+
+ mov rdi, rsi
+
+ add rsi, SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE
+ add rsi, rbx
+ add rsi, rdx
+
+ rep movsb
+
+ mov rcx, KERNEL_PAGE_SIZE_byte
+ sub rcx, qword [rsp]
+ rep stosb
+
+ mov rbx, qword [service_network_port_table]
+ mov rbx, qword [rbx + rax]
+
+ xor ecx, ecx
+ mov rsi, rsp
+
+ call kernel_ipc_insert
+
+ add rsp, STATIC_QWORD_SIZE_byte
+
+ mov qword [rsp], STATIC_EMPTY
 
 .end:
  pop rsi
  pop rdi
  pop rdx
  pop rcx
+ pop rbx
  pop rax
 
  jmp service_network_tcp.end
@@ -396,8 +438,6 @@ service_network_tcp_fin:
 service_network_tcp_ack:
  push rsi
  push rdi
-
- xchg bx,bx
 
  test word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags_request], SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
  jz .end
@@ -716,11 +756,11 @@ service_network_tcp_port_assign:
 
  mov rdi, qword [service_network_port_table]
  
- cmp qword [rdi + rcx], STATIC_EMPTY
+ cmp qword [rdi + rcx + SERVICE_NETWORK_STRUCTURE_PORT.pid], STATIC_EMPTY
  jne .error
 
- mov qword [rdi + rax], rcx
 
+ mov qword [rdi + rax + SERVICE_NETWORK_STRUCTURE_PORT.pid], rcx
  jmp .end
 
 .error:

@@ -62,3 +62,5 @@ library_string_trim:
  pop rcx
 
  ret
+
+ macro_debug "library_string_trim"

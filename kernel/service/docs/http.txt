@@ -21,11 +21,13 @@ service_http:
   1. Allocate service_http_ipc_message buffer
   2. Assign port 80 via service_network_tcp_port_assign
   3. Loop: receive IPC via kernel_ipc_receive (blocks until message arrives)
-  4. Compare request to "GET / "
-  5. If match, send 200 OK via service_network_tcp_port_send
-  6. If no match, send 404 Not Found
-  7. Release received page via kernel_memory_release_page
-  8. Repeat from step 3
+  4. Extract data pointer from KERNEL_IPC_STRUCTURE_LIST.other
+  5. Compare request to "GET / "
+  6. If match, send 200 OK via service_network_tcp_port_send
+  7. If no match, send 404 Not Found
+  8. Debug breakpoint (xchg bx, bx) before answer
+  9. Release received page via kernel_memory_release_page
+  10. Repeat from step 3
 
 DATA
 service_http_get_root:    "GET / " (comparison string)

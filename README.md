@@ -580,7 +580,7 @@ Task Flags:
 
 | System | Description |
 |--------|-------------|
-| **Video** | LFB framebuffer (640x400, 32bpp), bitmap font rendering, cursor with nesting lock, SIMD-accelerated scrolling via `kernel_memory_copy` |
+| **Video** | LFB framebuffer (640x480, 32bpp), bitmap font rendering, cursor with nesting lock, SIMD-accelerated scrolling via `kernel_memory_copy` |
 | **Paging** | 4-level page tables (PML4 → PDPT → PD → PT), 4 KB / 2 MB pages |
 | **Memory** | Bitmap-based physical page allocator, SIMD-accelerated memory copy (`macro_copy`, 256 B/iter, prefetchnta + movdqa + movntdq) |
 | **ACPI** | RSDP v1/v2 detection, RSDT (32-bit) and XSDT (64-bit) support, MADT parsing for LAPIC/IO-APIC enumeration |

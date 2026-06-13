@@ -618,3 +618,4 @@ Task Flags:
 | **Context Switching** | [wiki.osdev.org/Context_Switching](https://wiki.osdev.org/Context_Switching)  Save/restore state, TSS, IRETQ |
 | **SSE / SIMD** | [wiki.osdev.org/SSE](https://wiki.osdev.org/SSE)  Streaming SIMD Extensions, movdqa, movntdq, prefetchnta |
 | **IPC** | [wiki.osdev.org/Inter_Process_Communication](https://wiki.osdev.org/Inter_Process_Communication)  Message passing, shared memory |
+| **VFS** | [wiki.osdev.org/VFS](https://wiki.osdev.org/VFS)  Virtual file system design and inode structures |

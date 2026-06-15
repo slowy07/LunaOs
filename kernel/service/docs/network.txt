@@ -1,5 +1,6 @@
 NETWORK SERVICE
-File: kernel/service/network.asm
+File: kernel/service/network.asm (main)
+Files: kernel/service/network/config.asm, data.asm, checksum.asm, arp.asm, icmp.asm, tcp.asm, wrap.asm
 Author: arfy slowy
 
 OVERVIEW
@@ -9,6 +10,21 @@ Communicates with the NIC driver and TX service entirely via IPC
 (kernel_ipc_insert / kernel_ipc_receive). Loops continuously: receives
 IPC messages from the NIC driver, processes each packet, forwards to TX
 service for transmission via IPC.
+
+The implementation was refactored from a single monolithic file into
+modular sub-files under kernel/service/network/. The main network.asm
+uses %include directives to pull in each module.
+
+FILE STRUCTURE
+
+kernel/service/network.asm        - Main loop + dispatcher
+kernel/service/network/config.asm - Constants + structures
+kernel/service/network/data.asm   - Global variables
+kernel/service/network/checksum.asm - Internet checksum routines
+kernel/service/network/arp.asm    - ARP handler
+kernel/service/network/icmp.asm   - ICMP handler
+kernel/service/network/tcp.asm    - TCP state machine (includes wrap.asm)
+kernel/service/network/wrap.asm   - Ethernet/IP/TCP frame builders
 
 CONSTANTS
 SERVICE_NETWORK_RECEIVE_PUSH_WAIT_limit = 3 max spin iterations on receive
@@ -75,76 +91,95 @@ service_network:
   2. Extract packet pointer from IPC message
   3. Dispatch to ARP or IP handler based on Ethernet type
   4. Release packet page and repeat
+  Defined in: kernel/service/network.asm
 
 service_network_transfer:
   Sends a packet to the TX service via IPC.
   Input:  EAX = packet length, RDI = packet data address
   Uses service_tx_pid as the destination PID for kernel_ipc_insert.
-  Replaces direct calls to service_tx_add (now removed).
+  Defined in: kernel/service/network.asm
 
 service_network_ip:
   IP dispatcher. Routes based on protocol field to ICMP/TCP handlers.
+  Defined in: kernel/service/network.asm
 
 service_network_arp:
   Handles ARP requests. Responds with ARP reply containing own MAC address.
   Skips non-Ethernet/IPv4/mismatched target IP. Forwards via
   service_network_transfer.
+  Defined in: kernel/service/network/arp.asm
 
 service_network_icmp:
   Handles ICMP echo requests (ping). Computes IP header length, copies ICMP
   data payload from request to reply (32 bytes), computes checksums, and
   queues ICMP echo reply via service_network_transfer.
+  Defined in: kernel/service/network/icmp.asm
 
 service_network_tcp:
-  TCP state machine dispatcher. Routes to SYN/ACK/FIN/PSH-ACK handlers.
+  TCP state machine dispatcher. Routes to SYN/ACK/FIN/PSH handlers.
   Validates port number (< 512) and port table entry.
   Port table offset: port * SERVICE_NETWORK_STRUCTURE_PORT.SIZE.
+  Defined in: kernel/service/network/tcp.asm
 
 service_network_tcp_syn:
   Handles incoming SYN. Allocates TCP connection slot, stores remote
   MAC/IP/ports, generates initial sequence number, sends SYN-ACK via
   service_network_transfer.
+  Defined in: kernel/service/network/tcp.asm
 
 service_network_tcp_ack:
   Handles pure ACK. Clears pending ACK flag, checks for FIN+ACK completion.
-  No longer contains debug breakpoint.
+  Defined in: kernel/service/network/tcp.asm
 
 service_network_tcp_fin:
   Handles FIN. Updates sequence numbers, sends ACK+FIN via
   service_network_transfer, notifies connection end.
+  Defined in: kernel/service/network/tcp.asm
 
-service_network_tcp_psh_ack:
-  Handles PSH+ACK (data push). Copies TCP payload data, pads
+service_network_tcp_psh:
+  Handles PSH (data push). Copies TCP payload data, pads
   remaining page with zeros, then sends data to the registered
   port owner via kernel_ipc_insert using the PID from the port table.
+  Defined in: kernel/service/network/tcp.asm
 
 service_network_tcp_find:
   Searches TCP connection table for matching MAC/IP/port pair.
   Returns connection structure pointer and IP header length.
   Input: RSI = Ethernet frame
   Output: CF set if not found, RDI = connection, RBX = IP header length
+  Defined in: kernel/service/network/tcp.asm
 
 service_network_tcp_port_send:
   Sends data on an existing TCP connection.
   Allocates a page, builds TCP segment with PSH+ACK flags, wraps in
   IP/Ethernet, queues via service_network_transfer.
+  Defined in: kernel/service/network/tcp.asm
+
+service_network_tcp_reply:
+  Allocates a page, builds a TCP segment with configured flags,
+  wraps in IP/Ethernet, queues via service_network_transfer.
+  Defined in: kernel/service/network/tcp.asm
 
 service_network_tcp_wrap:
   Builds TCP segment from connection state. Fills ports, seq, ack, flags,
   window, computes checksum via pseudo-header, calls IP wrapper.
+  Defined in: kernel/service/network/wrap.asm
 
 service_network_ip_wrap:
   Builds IP header from connection state. Sets version, length, ID, TTL,
   protocol, computes checksum, calls Ethernet wrapper.
+  Defined in: kernel/service/network/wrap.asm
 
 service_network_tcp_pseudo_header:
   Computes TCP pseudo-header checksum contribution.
+  Defined in: kernel/service/network/tcp.asm
 
 service_network_tcp_port_assign:
   Registers a port for the current task (PID stored in port entry).
   Uses service_network_port_semaphore for exclusive access.
   Input: CX = port number (< 512)
   Output: CF set if port >= 512 or port already in use
+  Defined in: kernel/service/network/tcp.asm
 
 service_network_tcp_port_receive:
   Checks port for received data. Returns data pointer/size if available.
@@ -153,13 +188,16 @@ service_network_tcp_port_receive:
 
 service_network_ethernet_wrap:
   Wraps a frame with Ethernet header (target MAC, source MAC, type).
+  Defined in: kernel/service/network/wrap.asm
 
 service_network_checksum:
   Standard internet checksum (ones' complement).
   Accumulates 16-bit words, folds carry, returns complement.
+  Defined in: kernel/service/network/checksum.asm
 
 service_network_checksum_part:
   Partial checksum accumulator (for pseudo-header chaining).
+  Defined in: kernel/service/network/checksum.asm
 
 NOTES
 - NIC driver forwards received packets to this service via kernel_ipc_insert

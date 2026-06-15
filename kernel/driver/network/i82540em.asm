@@ -265,6 +265,8 @@ driver_nic_i82540em_rx_release:
 
  ret
 
+ macro_debug "driver_nic_i82540em_rx_release"
+
 driver_nic_i82540em_transfer:
  push rsi
  push rax
@@ -298,6 +300,8 @@ driver_nic_i82540em_transfer:
  pop rsi
 
  ret
+
+ macro_debug "driver_nic_i82540em_transfer"
 
 driver_nic_i82540em:
  push rax
@@ -339,7 +343,6 @@ driver_nic_i82540em:
  mov r11, cr3
  call kernel_page_map_physical
 
-
  mov dword [rsi + DRIVER_NIC_I82540EM_EERD], 0x00000001
  mov eax, dword [rsi + DRIVER_NIC_I82540EM_EERD]
  shr eax, STATIC_MOVE_HIGH_TO_AX_shift
@@ -370,10 +373,11 @@ driver_nic_i82540em:
 
  ret
 
+ macro_debug "driver_nic_i82540em"
+
 driver_nic_i82540em_setup:
  push rax
  push rdi
-
 
  call kernel_memory_alloc_page
  call kernel_page_drain
@@ -401,7 +405,6 @@ driver_nic_i82540em_setup:
  or eax, DRIVER_NIC_I82540EM_RCTL_MPE
  mov dword [rsi + DRIVER_NIC_I82540EM_RCTL], eax
 
-
  call kernel_memory_alloc_page
  call kernel_page_drain
 
@@ -426,7 +429,6 @@ driver_nic_i82540em_setup:
  or eax, DRIVER_NIC_I82540EM_TIPG_IPGR1_DEFAULT
  or eax, DRIVER_NIC_I82540EM_TIPG_IPGR2_DEFAULT
  mov dword [rsi + DRIVER_NIC_I82540EM_TIPG], eax
-
 
  mov eax, dword [rsi + DRIVER_NIC_I82540EM_CTRL]
  or eax, DRIVER_NIC_I82540EM_CTRL_SLU
@@ -455,3 +457,5 @@ driver_nic_i82540em_setup:
  pop rax
 
  ret
+
+ macro_debug "driver_nic_i82540em_setup"

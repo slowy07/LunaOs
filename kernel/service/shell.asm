@@ -1,6 +1,10 @@
  %include "kernel/service/shell/config.asm"
 
 service_shell:
+ cmp byte [kernel_init_semaphore], STATIC_FALSE
+ jne service_shell
+
+.main:
  mov ecx, service_shell_string_prompt_end - service_shell_string_prompt_with_new_line
  mov rsi, service_shell_string_prompt_with_new_line
 
@@ -21,10 +25,10 @@ service_shell:
  mov rsi, service_shell_cache
 
  call library_input
- jc service_shell
+ jc service_shell.main
 
  call library_string_trim
- jc service_shell
+ jc service_shell.main
 
  call library_string_word_next
 

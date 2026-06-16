@@ -59,6 +59,8 @@ Configuration:
 
 Init (32-bit):
   kernel/init.asm               (includes all kernel/init/*.asm)
+  kernel/init/font.asm          (font name display, between video and memory)
+  kernel/init/network.asm       (NIC detection, between vfs and task)
 
 Macros:
   kernel/macro/close.asm        (semaphore lock)
@@ -76,6 +78,7 @@ Kernel Core (64-bit):
   kernel/task.asm
   kernel/thread.asm
   kernel/vfs.asm
+  kernel/font/setfonts.asm
 
 Drivers:
   kernel/driver/rtc.asm
@@ -85,7 +88,7 @@ Services:
   kernel/service/shell.asm
   kernel/service/http.asm
   kernel/service/tx.asm
-  kernel/service/network.asm
+  kernel/service/network.asm     (includes sub-files: config, data, checksum, arp, icmp, tcp, wrap)
 
 Libraries:
   library/page_align_up.asm          - Page alignment

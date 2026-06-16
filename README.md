@@ -26,6 +26,9 @@ luna.raw
   |     +-- kernel.asm       Entry point, includes chain
   |     +-- init/            Boot-time initialization (32-bit -> 64-bit)
   |     +-- service/         Kernel services (shell, HTTP, networking)
+  |     |     +-- network/   Network protocol sub-files (arp, icmp, tcp, ...)
+  |     |     +-- shell/     Shell sub-files (config, data, prompt)
+  |     +-- font/            Bitmap font data and setfonts.asm
   |     +-- driver/          Device drivers (RTC, PS/2, PCI, NIC)
   |     +-- macro/           Assembly macros (copy, close, apic, debug)
   |     +-- docs/            Kernel documentation
@@ -67,8 +70,9 @@ luna.raw
 |------|-------------|
 | `long_mode.txt` | 32-bit to 64-bit transition |
 | `multiboot.txt` | Multiboot header |
-| `video.txt` | Framebuffer initialization |
-| `memory.txt` | Physical memory map setup |
+| `video.txt` | Framebuffer initialization (banner + resolution display) |
+| `font.txt` | Font name display |
+| `memory.txt` | Physical memory map setup (RAM size display) |
 | `acpi.txt` | ACPI RSDP/RSDT/XSDT/MADT parsing |
 | `page.txt` | Virtual memory setup |
 | `gdt.txt` | GDT initialization |
@@ -86,10 +90,10 @@ luna.raw
 | `prompt.txt` | Command dispatch (clear, ip, etc.) |
 | `data.txt` | Shell strings and cache buffer |
 | `config.txt` | Shell configuration |
-| `network.txt` | Network service |
-| `http.txt` | HTTP client service |
+| `network.txt` | Network service (7 sub-files: config, data, checksum, arp, icmp, tcp, wrap) |
+| `http.txt` | HTTP server service (port 80, IPC receive loop) |
 | `tx.txt` | Network transmit service |
-| `tresher.txt` | Tresher service |
+| `tresher.txt` | Task reaper service |
 
 ### Drivers (`kernel/driver/`)
 | File | Description |
@@ -122,13 +126,18 @@ kernel/kernel.asm (32-bit)
         |         +-- ap.asm           AP full init (PAE, long mode, TSS)
         |         +-- boot.asm         16-bit real mode trampoline
         |         +-- long_mode.asm
-        |         +-- video.asm
-        |         +-- memory.asm
+        |         +-- video.asm         (banner + resolution display)
+        |         +-- font.asm          (font name display)
+        |         +-- memory.asm        (RAM size display)
         |         +-- acpi.asm
         |         +-- page.asm
         |         +-- gdt.asm
         |         +-- idt.asm
         |         +-- rtc.asm
+        |         +-- ps2.asm
+        |         +-- ipc.asm
+        |         +-- vfs.asm
+        |         +-- network.asm       (NIC detection)
         |         +-- task.asm
         |
         +---> kernel/panic.asm
@@ -150,7 +159,7 @@ kernel/kernel.asm (32-bit)
         |
         +---> kernel/service/
         |     +-- shell.asm (+ config, data, prompt)
-        |     +-- network.asm
+        |     +-- network/   (config, data, checksum, arp, icmp, tcp, wrap)
         |     +-- http.asm
         |     +-- tx.asm
         |     +-- tresher.asm
@@ -233,13 +242,21 @@ kernel/kernel.asm (32-bit)
               v
 +------------------------------+
 |   video.asm  -> Framebuffer  |
-|   (read multiboot, clear)    |
+|   (banner "LunaOS v1.90"     |
+|    + resolution display)     |
++------------------------------+
+              |
+              v
++------------------------------+
+|   font.asm  -> Font name     |
+|   (display current font)     |
 +------------------------------+
               |
               v
 +------------------------------+
 |   memory.asm -> Page bitmap  |
-|   (parse multiboot mem map)  |
+|   (parse multiboot mem map   |
+|    + RAM size display)       |
 +------------------------------+
               |
               v
@@ -280,14 +297,31 @@ kernel/kernel.asm (32-bit)
               |
               v
 +------------------------------+
+|   ipc.asm  -> IPC pool       |
++------------------------------+
+              |
+              v
++------------------------------+
+|   vfs.asm  -> VFS init       |
++------------------------------+
+              |
+              v
++------------------------------+
+|   network.asm -> NIC detect  |
+|   (PCI scan for i82540EM)    |
++------------------------------+
+              |
+              v
++------------------------------+
 |   task.asm -> Scheduler init |
-|   (idle task, shell task)    |
+|   (idle task, kernel task)   |
 +------------------------------+
               |
               v
 +------------------------------+
 |   services.asm               |
-|   (shell, HTTP, network)     |
+|   (tresher, tx, network,     |
+|    HTTP, shell)              |
 +------------------------------+
               |
               v
@@ -314,6 +348,13 @@ kernel/kernel.asm (32-bit)
 |   Wait for all APs           |
 |   kernel_init_ap_count ==    |
 |   kernel_apic_count          |
++------------------------------+
+              |
+              v
++------------------------------+
+|   "Made By - Arfy Slowy"     |
+|   kernel_init_semaphore = 0  |
+|   (signals services to run)  |
 +------------------------------+
               |
               v
@@ -580,7 +621,7 @@ Task Flags:
 
 | System | Description |
 |--------|-------------|
-| **Video** | LFB framebuffer (640x480, 32bpp), bitmap font rendering, cursor with nesting lock, SIMD-accelerated scrolling via `kernel_memory_copy` |
+| **Video** | LFB framebuffer (32bpp, resolution read from multiboot, defaults 640x480), bitmap font rendering, cursor with nesting lock, SIMD-accelerated scrolling via `kernel_memory_copy` |
 | **Paging** | 4-level page tables (PML4 → PDPT → PD → PT), 4 KB / 2 MB pages |
 | **Memory** | Bitmap-based physical page allocator, SIMD-accelerated memory copy (`macro_copy`, 256 B/iter, prefetchnta + movdqa + movntdq) |
 | **ACPI** | RSDP v1/v2 detection, RSDT (32-bit) and XSDT (64-bit) support, MADT parsing for LAPIC/IO-APIC enumeration |
@@ -589,7 +630,8 @@ Task Flags:
 | **SMP** | Multi-processor boot via 16-bit real mode trampoline (`boot.asm`), AP wake through IPI, per-CPU GDT TSS entries |
 | **Drivers** | PS/2 keyboard/mouse, RTC, PCI enumeration, Intel 82540EM Gigabit Ethernet |
 | **IPC** | Inter-process communication primitives |
-| **Services** | Interactive shell (clear, ip commands), HTTP server (port 80), network transmit, tresher |
+| **Font** | Bitmap font glyph data loaded from `kernel/font/setfonts.asm`, font name displayed at boot |
+| **Services** | Task reaper (tresher), network transmit (tx), network stack (IPv4/TCP/UDP/ICMP/ARP), HTTP server (port 80), interactive shell (clear, ip commands) |
 
 ## References
 

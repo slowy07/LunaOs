@@ -13,14 +13,19 @@ SERVICE_SHELL_CACHE_SIZE_byte = KERNEL_VIDEO_WIDTH_char - prompt_len - 1
 PROCEDURES
 
 service_shell:
-  1. Draw prompt string (with or without leading newline based on cursor)
-  2. Clear EBX (word buffer index)
-  3. Read input via library_input with SERVICE_SHELL_CACHE_SIZE_byte limit
-  4. Trim input, extract first word into EBX
-  5. Jump to service_shell_prompt for command dispatch
-  6. service_shell_prompt returns by jumping back to service_shell
+  1. Wait for kernel_init_semaphore == STATIC_FALSE (init complete)
+  2. Draw prompt string (with or without leading newline based on cursor)
+  3. Clear EBX (word buffer index)
+  4. Read input via library_input with SERVICE_SHELL_CACHE_SIZE_byte limit
+  5. Trim input, extract first word into EBX
+  6. Jump to service_shell_prompt for command dispatch
+  7. service_shell_prompt returns by jumping back to service_shell.main
 
-  Debug: xchg bx, bx (magic breakpoint) placed after library_input call
+LABELS:
+  service_shell    - Entry point (includes init semaphore wait loop)
+  .main            - Prompt + input loop body
+  .prompt          - Draw prompt and fall through to .restart
+  .restart         - Read input, trim, extract word, dispatch
 
 INCLUDES (included inline)
   shell/config.asm  - Cache size constant

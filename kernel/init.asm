@@ -19,6 +19,8 @@
 kernel_init:
  %include "kernel/init/video.asm"
 
+ %include "kernel/init/font.asm"
+
  %include "kernel/init/memory.asm"
 
  %include "kernel/init/acpi.asm"
@@ -53,10 +55,17 @@ kernel_init:
 
  %include "kernel/init/smp.asm"
 
-.wait:
  mov al, byte [kernel_init_ap_count]
  inc al
+
+.wait:
  cmp al, byte [kernel_apic_count]
  jne .wait
+
+ mov ecx, kernel_init_string_end - kernel_init_string
+ mov rsi, kernel_init_string
+ call kernel_video_string
+
+ mov byte [kernel_init_semaphore], STATIC_FALSE
 
  jmp clean

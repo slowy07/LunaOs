@@ -129,7 +129,9 @@ AP boot path (ap.asm):
   - Merge page tables with BSP via kernel_page_merge
   - Load merged CR3, set stack pointer
   - Release semaphore, call kernel_init_apic
-  - Get APIC ID, find task slot, jump to kernel_task.ap_entry
+  - Get APIC ID, find task slot
+  - Increment kernel_init_ap_count (signal BSP of completion)
+  - Jump to kernel_task.ap_entry
 
 Final Steps (after all init modules):
   - call kernel_init_apic (full APIC initialization)
@@ -137,7 +139,8 @@ Final Steps (after all init modules):
   - Send EOI to clear any pending interrupt
   - sti (enable interrupts)
   - smp.asm -> wake application processors
-  - Wait for all APs (kernel_init_ap_count == kernel_apic_count)
+  - Wait for all APs: re-read kernel_init_ap_count on each
+    iteration, compare against kernel_apic_count
   - Display "Made By - Arfy Slowy" footer
   - Set kernel_init_semaphore to STATIC_FALSE (signals services to start)
   - Jump to clean: (in kernel.asm) free init code pages via kernel_memory_release

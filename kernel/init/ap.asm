@@ -76,4 +76,6 @@
 
  mov rdi, qword [kernel_task_address]
 
+ inc byte [kernel_init_ap_count]
+
  jmp kernel_task.ap_entry

@@ -372,6 +372,8 @@ service_network_tcp_port_assign:
  mov rcx, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
 
  mov rdi, qword [service_network_port_table]
+ test rdi, rdi
+ jz .error
 
  cmp qword [rdi + rcx + SERVICE_NETWORK_STRUCTURE_PORT.pid], STATIC_EMPTY
  jne .error

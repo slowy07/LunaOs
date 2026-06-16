@@ -38,64 +38,78 @@ SMP Boot Check (top of init.asm):
 
 64-bit Initialization (kernel_init):
   7. kernel/init/video.asm
-     Initialize video output and display welcome message
-     Calls: kernel_video_dump, kernel_video_string
+      Initialize video output and display welcome + resolution
+      Displays: "Luna Operating System (v1.90 x86_64)" then ":: Video resolution WxH"
+      Calls: kernel_video_drain, kernel_video_string, kernel_video_number
 
-  8. kernel/init/memory.asm
-     Parse Multiboot memory map and initialize memory manager
-     Uses: Multiboot info structure from bootloader
-     Output: kernel_memory_map_address, page bitmap
+  8. kernel/init/font.asm
+      Display font name used by the kernel
+      Displays: ":: Font: <font_name>"
+      Calls: kernel_video_string
 
-  9. kernel/init/acpi.asm
+  9. kernel/init/memory.asm
+      Parse Multiboot memory map and initialize memory manager
+      After bitmap setup, displays available RAM
+      Displays: ":: Available <size> KiB of RAM memory."
+      Uses: Multiboot info structure from bootloader
+      Output: kernel_memory_map_address, page bitmap
+
+  10. kernel/init/acpi.asm
      Initialize ACPI and enumerate CPUs
      Finds: RSDP, RSDT, MADT
      Output: kernel_apic_base_address, kernel_apic_count, IO-APIC info
 
-   10. kernel/init/page.asm
+  11. kernel/init/page.asm
       Set up paging and virtual memory mappings
       Allocates: PML4 table
       Maps: kernel, stack, video memory, APIC registers
       Maps: boot trampoline at 0x8000 for SMP AP wake
 
-  11. kernel/init/gdt.asm
+  12. kernel/init/gdt.asm
      Initialize Global Descriptor Table
      Sets up: null, CS, DS, TSS descriptors
      Loads: GDT and task register
 
-  12. kernel/init/idt.asm
+  13. kernel/init/idt.asm
      Initialize Interrupt Descriptor Table
      Sets up: exception handlers (0-31), spurious handler
      Loads: IDT via LIDT, enables interrupts (sti)
 
-  13. kernel/init/rtc.asm
+  14. kernel/init/rtc.asm
      Initialize Real Time Clock
      Configures: 1024Hz periodic interrupts
      Connects: IRQ 8 to IO-APIC
 
-   14. kernel/init/ps2.asm
+  15. kernel/init/ps2.asm
       Initialize PS/2 keyboard controller
       Configures: scan code set, interrupt enable
       Note: Does NOT connect to IO-APIC (missing in code)
 
-    15. kernel/init/ipc.asm
+  16. kernel/init/ipc.asm
        Initialize IPC message pool
        Allocates: IPC pool page
        Must run before VFS, network and task init
 
-    16. kernel/init/vfs.asm
+  17. kernel/init/vfs.asm
        Initialize Virtual File System
        Allocates: VFS magicknot structure
        Runs after IPC, before network
 
-    17. kernel/init/task.asm
+  18. kernel/init/network.asm
+       Detect and initialize NIC hardware
+       Scans PCI for network class, matches i82540EM vendor/device
+       Allocates: port table page, stack address page
+       Calls: driver_pci_find_class_and_subclass, driver_nic_i82540em
+
+  19. kernel/init/task.asm
        Initialize tasking system
        Creates: first kernel task
        Mounts: timer interrupt handler (IRQ 0)
 
-    18. kernel/init/services.asm
+  20. kernel/init/services.asm
        Start kernel services (tresher, tx, network, HTTP, shell)
 
-    19. kernel/init/smp.asm
+  21. kernel/init/smp.asm
       Copy boot trampoline (boot.asm) to 0x8000
       Set kernel_init_smp_semaphore to STATIC_TRUE
       Send INIT IPI to all APs (ICR = 0x00004500)
@@ -122,9 +136,11 @@ Final Steps (after all init modules):
   - Set APIC TICR register to DRIVER_RTC_Hz (1024Hz timer)
   - Send EOI to clear any pending interrupt
   - sti (enable interrupts)
-   - smp.asm -> wake application processors
-   - Wait for all APs (kernel_init_ap_count == kernel_apic_count)
-   - Jump to clean: (in kernel.asm) free init code pages via kernel_memory_release
+  - smp.asm -> wake application processors
+  - Wait for all APs (kernel_init_ap_count == kernel_apic_count)
+  - Display "Made By - Arfy Slowy" footer
+  - Set kernel_init_semaphore to STATIC_FALSE (signals services to start)
+  - Jump to clean: (in kernel.asm) free init code pages via kernel_memory_release
 
 INITIALIZATION FLOW
 
@@ -171,14 +187,22 @@ INITIALIZATION FLOW
   +--------+------+
            |
            v
-  +-------------------------+
-  | video.asm               |
-  +-----------+-------------+
-              |
-              v
-  +-------------------------+
-  | memory.asm              |
-  +-----------+-------------+
+   +-------------------------+
+   | video.asm               |
+   | (banner + resolution)   |
+   +-----------+-------------+
+               |
+               v
+   +-------------------------+
+   | font.asm                |
+   | (font name display)     |
+   +-----------+-------------+
+               |
+               v
+   +-------------------------+
+   | memory.asm              |
+   | (bitmap + RAM display)  |
+   +-----------+-------------+
               |
               v
   +-------------------------+
@@ -224,8 +248,14 @@ INITIALIZATION FLOW
    +-------------------------+
    | task.asm                |
    +-----------+-------------+
-              |
-              v
+               |
+               v
+   +-------------------------+
+   | network.asm             |
+   | (NIC detection)         |
+   +-----------+-------------+
+               |
+               v
    | services.asm            |
    +-----------+-------------+
               |
@@ -253,8 +283,14 @@ INITIALIZATION FLOW
    | init_ap_count ==        |
    | apic_count              |
    +-----------+-------------+
-              |
-              v
+               |
+               v
+   +-------------------------+
+   | "Made By - Arfy Slowy"  |
+   | init_semaphore = FALSE  |
+   +-----------+-------------+
+               |
+               v
    +-------------------------+
    | clean:                  |
    | Free init pages         |

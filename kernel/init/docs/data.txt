@@ -8,9 +8,15 @@ This module contains static data definitions including:
 - Initialization semaphore variables
 - APIC-related counters
 
-Welcome Message:
-  Variable                           | Value
-  kernel_init_video_string_welcome   | "welcome cik" + newline
+Display Strings:
+  Variable                              | Content
+  kernel_init_string_welcome            | "[green]Luna Operating System[gray] (v1.90 x86_64)[newline]"
+  kernel_init_string_video              | "[green]::[default] Video resolution [white]"
+  kernel_init_string_video_separator    | "[default]x[white]"
+  kernel_init_string_video_font         | "[green]::[default] Font: [default]"
+  kernel_init_string_memory_size        | "[green]::[default] Available [white]"
+  kernel_init_string_memory_format      | "[default] KiB of RAM memory.[newline]"
+  kernel_init_string                    | "[newline][green] Made By - Arfy Slowy[newline][gray] ---------- [newline][newline]"
 
 Error Messages:
   Variable                              | Message
@@ -25,6 +31,10 @@ Status Messages:
   Variable                              | Message
   | kernel_init_string_acpi_search      | "Checking for an RSDP / XSDP table, "
   | kernel_init_string_acpi_search_found| "found." 
+Note: The old welcome string "kernel_init_video_string_welcome" has been replaced by
+the richer banner above. The old ACPI error string "kernel_init_string_error_acpi_2"
+and the duplicate "kernel_init_string_error_acpi_" have been consolidated.
+
 VARIABLES
 Semaphores (Mutex Locks):
   | Variable              | Type     | Purpose           
@@ -32,6 +42,7 @@ Semaphores (Mutex Locks):
   | kernel_init_ioapic_semaphore| byte | Lock for IO-APIC operations
   | kernel_init_smp_semaphore   | byte | Lock for SMP operations
   | kernel_init_ap_semaphore    | byte | AP boot synchronization
+  | kernel_init_semaphore       | byte | Global init complete flag (kernel/data.asm)
 
 Counters:
   | Variable              | Type     | Purpose
@@ -43,14 +54,13 @@ Embedded Binary:
   | kernel_init_boot_file | SMP AP boot trampoline (incbin of boot.asm)
   | kernel_init_boot_file_end | End marker for size calculation
 
-Service List:
-  kernel_init_services_list:
-    dq service_tresher  - Task reaper (cleans up closed tasks)
-    dq service_tx       - Packet transmission service
-    dq service_network  - Network stack (IPv4/TCP/UDP/ICMP/ARP)
-    dq service_http     - HTTP server (port 80, IPC receive loop)
-    dq service_shell    - Interactive shell
-    dq STATIC_EMPTY     - Terminator
+Service List (kernel_init_services_list):
+  1. service_tresher  - Task reaper (cleans up closed tasks)
+  2. service_tx       - Packet transmission service
+  3. service_network  - Network stack (IPv4/TCP/UDP/ICMP/ARP)
+  4. service_http     - HTTP server (port 80, IPC receive loop)
+  5. service_shell    - Interactive shell
+  Terminator: dq STATIC_EMPTY
 
   Services are started sequentially during init. Each registers its
   own PID via kernel_task_active on first execution.

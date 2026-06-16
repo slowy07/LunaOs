@@ -14,6 +14,13 @@ Flow Diagram:
            |
            v
 +------------------------+
+| push rbx               |
+| (preserve multiboot    |
+|  pointer across call)  |
++----------+-------------+
+           |
+           v
++------------------------+
 | Check multiboot flags  |
 | bit 12 (video flag)    |
 +----------+-------------+
@@ -52,18 +59,47 @@ Flow Diagram:
            |
            v
 +------------------------+
-| Print welcome string   |
-| --> kernel_video_string|
+| Print banner:          |
+| "Luna Operating System |
+|  (v1.90 x86_64)"       |
 +----------+-------------+
            |
            v
 +------------------------+
+| Print ":: Video        |
+|  resolution "          |
++----------+-------------+
+           |
+           v
++------------------------+
+| Print width (decimal)  |
++----------+-------------+
+           |
+           v
++------------------------+
+| Print "x" separator    |
++----------+-------------+
+           |
+           v
++------------------------+
+| Print height (decimal) |
++----------+-------------+
+           |
+           v
++------------------------+
+| Print newline          |
++----------+-------------+
+           |
+           v
++------------------------+
+| pop rbx                |
 | Return                 |
 +------------------------+
 
 Output:
-  - Welcome message: "welcome cik" followed by newline
-  - Displayed on LFB framebuffer via kernel_video_string
+  - "Luna Operating System (v1.90 x86_64)"
+  - ":: Video resolution <width>x<height>"
+  - Displayed on LFB framebuffer via kernel_video_string/kernel_video_number
 
 Dependencies:
   - kernel_video_drain   : Clear/initialize framebuffer with background color

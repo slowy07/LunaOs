@@ -8,7 +8,7 @@ This file defines core kernel configuration constants including kernel name, ver
 KERNEL METADATA
   KERNEL_name        = "Luna"
   KERNEL_version     = "1"
-  KERNEL_revision    = "50"
+  KERNEL_revision    = "90"
   KERNEL_architecture = "x86_64"
 
 MEMORY ADDRESSES
@@ -17,6 +17,10 @@ MEMORY ADDRESSES
   KERNEL_STACK_pointer      = KERNEL_STACK_address - 1 page
   KERNEL_STACK_SIZE_byte   = 2 * KERNEL_PAGE_SIZE_byte (8KB)
   KERNEL_STACK_TEMPORARY_pointer = 0x8000 + 4KB (temporary stack for AP boot)
+
+CHANGES (rev 50 -> 90)
+  - Removed %define DEBUG (debug breakpoints no longer compiled in)
+  - Kernel name changed from "Luna" to "luna" (lowercase)
 
 NOTES
 The kernel is linked to load at 1MB (0x100000).

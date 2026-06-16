@@ -178,7 +178,7 @@ service_network_tcp_port_assign:
   Registers a port for the current task (PID stored in port entry).
   Uses service_network_port_semaphore for exclusive access.
   Input: CX = port number (< 512)
-  Output: CF set if port >= 512 or port already in use
+  Output: CF set if port >= 512, port table not allocated, or port already in use
   Defined in: kernel/service/network/tcp.asm
 
 service_network_tcp_port_receive:

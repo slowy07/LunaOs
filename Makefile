@@ -1,12 +1,9 @@
 all:
 	nasm -f bin kernel/init/boot.asm -o build/boot
-	nasm -f bin kernel/kernel.asm -o build/kernel -dMULTIBOOT_VIDEO_WIDTH_pixel=640 -dMULTIBOOT_VIDEO_HEIGHT_pixel=480 \
-		-dMULTIBOOT_VIDEO_WIDTH_pixel=640 -dMULTIBOOT_VIDEO_HEIGHT_pixel=480
-	nasm -f bin luna/luna.asm -o build/luna_disk.raw \
-		-dMULTIBOOT_VIDEO_WIDTH_pixel=640 -dMULTIBOOT_VIDEO_HEIGHT_pixel=480 \
-		-dMULTIBOOT_VIDEO_WIDTH_pixel=640 -dMULTIBOOT_VIDEO_HEIGHT_pixel=480 
+	nasm -f bin kernel/kernel.asm -o build/kernel -dMULTIBOOT_VIDEO_WIDTH_pixel=640 -dMULTIBOOT_VIDEO_HEIGHT_pixel=480
+	nasm -f bin luna/luna.asm -o build/luna_disk.raw -dMULTIBOOT_VIDEO_WIDTH_pixel=640 -dMULTIBOOT_VIDEO_HEIGHT_pixel=480
 
-running-qemu:
+run-qemu:
 	@echo "running qemu"
 	qemu-system-x86_64 -drive file=build/luna_disk.raw,media=disk,format=raw -m 2 -smp 1 -rtc base=localtime
 

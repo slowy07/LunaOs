@@ -2,7 +2,7 @@
 
 [BITS 16]
 
-[ORG STATIC_LUNA_address]
+[ORG STATIC_LUNA_base_address]
 
 luna:
 
@@ -150,10 +150,10 @@ luna:
  mov di, STATIC_LUNA_video_mode_info_block
  int 0x10
 
- cmp word [di + STATIC_LUNA_VIDEO_STRUCTURE_MODE_INFO_BLOCK.x_resolution], STATIC_LUNA_VIDEO_WIDTH_pixel
+ cmp word [di + STATIC_LUNA_VIDEO_STRUCTURE_MODE_INFO_BLOCK.x_resolution], MULTIBOOT_VIDEO_WIDTH_pixel
  jne .next
 
- cmp word [di + STATIC_LUNA_VIDEO_STRUCTURE_MODE_INFO_BLOCK.y_resolution], STATIC_LUNA_VIDEO_HEIGHT_pixel
+ cmp word [di + STATIC_LUNA_VIDEO_STRUCTURE_MODE_INFO_BLOCK.y_resolution], MULTIBOOT_VIDEO_HEIGHT_pixel
  jne .next
 
  cmp byte [di + STATIC_LUNA_VIDEO_STRUCTURE_MODE_INFO_BLOCK.bits_per_pixel], STATIC_LUNA_VIDEO_DEPTH_bit
@@ -201,11 +201,11 @@ luna_line_a20_check:
  mov ax, 0xFFFF
  mov ds, ax
 
- mov ebx, dword [ds:STATIC_LUNA_address + 0x10]
+ mov ebx, dword [ds:STATIC_LUNA_base_address + 0x10]
 
  pop ds
 
- test ebx, dword [ds:STATIC_LUNA_address]
+ test ebx, dword [ds:STATIC_LUNA_base_address]
 
  ret
 
@@ -246,8 +246,8 @@ luna_protected_mode:
 
  mov eax, dword [STATIC_LUNA_video_mode_info_block + STATIC_LUNA_VIDEO_STRUCTURE_MODE_INFO_BLOCK.physical_base_address]
  mov dword [edi + STATIC_MULTIBOOT_header.framebuffer_addr], eax
- mov dword [edi + STATIC_MULTIBOOT_header.framebuffer_width], STATIC_LUNA_VIDEO_WIDTH_pixel
- mov dword [edi + STATIC_MULTIBOOT_header.framebuffer_height], STATIC_LUNA_VIDEO_HEIGHT_pixel
+ mov dword [edi + STATIC_MULTIBOOT_header.framebuffer_width], MULTIBOOT_VIDEO_WIDTH_pixel
+ mov dword [edi + STATIC_MULTIBOOT_header.framebuffer_height], MULTIBOOT_VIDEO_HEIGHT_pixel
  mov byte [edi + STATIC_MULTIBOOT_header.framebuffer_bpp], STATIC_LUNA_VIDEO_DEPTH_bit
  mov byte [edi + STATIC_MULTIBOOT_header.framebuffer_type], STATIC_EMPTY
 

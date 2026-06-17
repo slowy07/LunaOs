@@ -3,22 +3,40 @@ KERNEL_INIT_MEMORY_MULTIBOOT_FLAG_video equ 12
 kernel_init_video:
  push rbx
 
- bt dword [ebx + HEADER_multiboot.flags], KERNEL_INIT_MEMORY_MULTIBOOT_FLAG_video
+ bt dword [ebx + MULTIBOOT_HEADER.flags], KERNEL_INIT_MEMORY_MULTIBOOT_FLAG_video
  jnc kernel_panic
 
- mov edi, dword [ebx + HEADER_multiboot.framebuffer_addr]
+ mov edi, dword [ebx + MULTIBOOT_HEADER.framebuffer_addr]
  mov qword [kernel_video_base_address], rdi
  mov qword [kernel_video_framebuffer], rdi
  mov qword [kernel_video_pointer], rdi
 
- mov eax, dword [ebx + HEADER_multiboot.framebuffer_height]
+ mov eax, dword [ebx + MULTIBOOT_HEADER.framebuffer_width]
+ mov dword [kernel_video_width_pixel], eax
+ mov eax, dword [ebx + MULTIBOOT_HEADER.framebuffer_height]
  mov dword [kernel_video_height_pixel], eax
 
- mov eax, dword [ebx + HEADER_multiboot.framebuffer_width]
- mov dword [kernel_video_width_pixel], eax
+ mul qword [kernel_video_width_pixel]
+ mov qword [kernel_video_size_pixel], rax
 
  shl rax, KERNEL_VIDEO_DEPTH_shift
- mul dword [kernel_font_height_pixel]
+ mov qword [kernel_video_size_byte], rax
+
+ mov rax, qword [kernel_video_width_pixel]
+ xor edx, edx
+ div qword [kernel_font_width_pixel]
+ mov dword [kernel_video_width_char], eax
+
+ mov rax, qword [kernel_video_height_pixel]
+ xor edx, edx
+ div qword [kernel_font_height_pixel]
+ mov dword [kernel_video_height_char], eax
+
+ mov rax, qword [kernel_video_width_pixel]
+ shl rax, KERNEL_VIDEO_DEPTH_shift
+ mov qword [kernel_video_scanline_byte], rax
+
+ mul qword [kernel_font_height_pixel]
  mov qword [kernel_video_scanline_char], rax
 
  call kernel_video_drain

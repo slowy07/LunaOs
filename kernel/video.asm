@@ -10,8 +10,8 @@ kernel_video_size_byte dq STATIC_EMPTY
 kernel_video_size_pixel dq STATIC_EMPTY
 kernel_video_width_pixel dq STATIC_EMPTY
 kernel_video_height_pixel dq STATIC_EMPTY
-kernel_video_width_char dd STATIC_EMPTY
-kernel_video_height_char dd STATIC_EMPTY
+kernel_video_width_char dq STATIC_EMPTY
+kernel_video_height_char dq STATIC_EMPTY
 kernel_video_scanline_byte dq STATIC_EMPTY
 kernel_video_scanline_char dq STATIC_EMPTY
 
@@ -422,7 +422,18 @@ kernel_video_char:
  cmp ebx, dword [kernel_video_width_char]
  jb .continue
 
- sub ebx, dword [kernel_video_width_char]
+ push rax
+ push rdx
+ 
+ mov rax, qword [kernel_font_width_byte]
+ mul rbx
+ sub rdi, rax
+ add rdi, qword [kernel_video_scanline_char]
+ 
+ pop rdx
+ pop rax
+
+ xor ebx, ebx
  inc edx
 
 .row:
@@ -485,13 +496,23 @@ kernel_video_char:
  jmp .clear
 
 .begin:
- test edx, edx
- jz .clear
-
- dec edx
+ jz .continue
 
  mov ebx, dword [kernel_video_width_char]
  dec ebx
+
+ dec edx
+
+ push rax
+ push rdx
+
+ sub rdi, qword [kernel_video_scanline_char]
+ mov rax, qword [kernel_font_width_byte]
+ mul dword [kernel_video_width_char]
+ add rdi, rax
+
+ pop rdx
+ pop rax
 
 .clear:
  sub rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift

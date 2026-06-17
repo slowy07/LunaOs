@@ -1,14 +1,14 @@
-HEADER_MAGIC equ 0x1BADB002
+MULTIBOOT_HEADER_MAGIC equ 0x1BADB002
 
-HEADER_FLAG_align equ 1 << 0
-HEADER_FLAG_memory_map equ 1 << 1
-HEADER_FLAG_video equ 1 << 2
-HEADER_FLAG_header equ 1 << 16
-HEADER_FLAG_default equ HEADER_FLAG_align | HEADER_FLAG_memory_map | HEADER_FLAG_video | HEADER_FLAG_header
+MULTIBOOT_HEADER_FLAG_align equ 1 << 0
+MULTIBOOT_HEADER_FLAG_memory_map equ 1 << 1
+MULTIBOOT_HEADER_FLAG_video equ 1 << 2
+MULTIBOOT_HEADER_FLAG_header equ 1 << 16
+MULTIBOOT_HEADER_FLAG_default equ MULTIBOOT_HEADER_FLAG_align | MULTIBOOT_HEADER_FLAG_memory_map | MULTIBOOT_HEADER_FLAG_video | MULTIBOOT_HEADER_FLAG_header
 
-HEADER_CHECKSUM equ -(HEADER_FLAG_default + HEADER_MAGIC)
+MULTIBOOT_HEADER_CHECKSUM equ -(MULTIBOOT_HEADER_FLAG_default + MULTIBOOT_HEADER_MAGIC)
 
-struc HEADER_multiboot
+struc MULTIBOOT_HEADER
  .flags resb 4
  .unsupported0 resb 40
  .mmap_length resb 4
@@ -24,18 +24,18 @@ struc HEADER_multiboot
 endstruc
 
 align 0x04
-header:
- dd HEADER_MAGIC
- dd HEADER_FLAG_default
- dd HEADER_CHECKSUM
- dd header
+multiboot_header:
+ dd MULTIBOOT_HEADER_MAGIC
+ dd MULTIBOOT_HEADER_FLAG_default
+ dd MULTIBOOT_HEADER_CHECKSUM
+ dd multiboot_header
  dd init
  dd STATIC_EMPTY
  dd STATIC_EMPTY
  dd init
  dd STATIC_EMPTY
- dd KERNEL_VIDEO_WIDTH_pixel
- dd KERNEL_VIDEO_HEIGHT_pixel
+ dd MULTIBOOT_VIDEO_WIDTH_pixel
+ dd MULTIBOOT_VIDEO_HEIGHT_pixel
  dd KERNEL_VIDEO_DEPTH_bit
 
 align 0x10

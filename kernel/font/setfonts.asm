@@ -3,6 +3,7 @@ KERNEL_FONT_HEIGHT_pixel equ 12
 
 kernel_font_width_pixel dq KERNEL_FONT_WIDTH_pixel
 kernel_font_height_pixel dq KERNEL_FONT_HEIGHT_pixel
+kernel_font_width_byte dq KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
 
 kernel_font_string_name db STATIC_COLOR_ASCII_WHITE, "Canele"
 kernel_font_string_name_end:

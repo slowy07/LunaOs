@@ -1,8 +1,5 @@
-STATIC_LUNA_bit_mode equ 32
-
-
-STATIC_LUNA_address equ 0x7C00
-STATIC_LUNA_stack equ STATIC_LUNA_address
+STATIC_LUNA_base_address equ 0x7C00
+STATIC_LUNA_stack equ STATIC_LUNA_base_address
 STATIC_LUNA_magic equ 0xAA55
 STATIC_LUNA_kernel_address equ 0x1000
 STATIC_LUNA_memory_map equ 0x1000
@@ -10,8 +7,6 @@ STATIC_LUNA_multiboot_header equ 0x0500
 STATIC_LUNA_video_vga_info_block equ 0x2000
 STATIC_LUNA_video_mode_info_block equ 0x3000
 
-STATIC_LUNA_VIDEO_WIDTH_pixel equ 640
-STATIC_LUNA_VIDEO_HEIGHT_pixel equ 480
 STATIC_LUNA_VIDEO_DEPTH_bit equ 32
 STATIC_LUNA_VIDEO_MODE_clean equ 0x8000
 STATIC_LUNA_VIDEO_MODE_linear equ 0x4000

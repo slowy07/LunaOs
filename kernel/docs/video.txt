@@ -4,28 +4,28 @@ Author: arfy slowy
 
 OVERVIEW
 Provides LFB (Linear Frame Buffer) video output functions for the kernel.
-Renders text using a bitmap font onto a 640x480 pixel framebuffer at 32bpp.
+Renders text using a bitmap font onto the framebuffer at 32bpp.
+Resolution is read from the bootloader Multiboot header at runtime, not
+hardcoded at compile time.
 
 CONSTANTS
-  KERNEL_VIDEO_WIDTH_pixel        = 640
-  KERNEL_VIDEO_HEIGHT_pixel       = 480
   KERNEL_VIDEO_DEPTH_shift        = 2 (4 bytes per pixel)
   KERNEL_VIDEO_DEPTH_byte         = 4
   KERNEL_VIDEO_DEPTH_bit          = 32
-  KERNEL_VIDEO_SIZE_byte          = 640 * 480 * 4
-
-  KERNEL_VIDEO_WIDTH_char         = 640 / KERNEL_FONT_WIDTH_pixel
-  KERNEL_VIDEO_HEIGHT_char        = 480 / KERNEL_FONT_HEIGHT_pixel
-  KERNEL_VIDEO_SCANLINE_CHAR_byte = 640 * KERNEL_FONT_HEIGHT_pixel * 4
 
 VARIABLES
   kernel_video_semaphore          = Mutex lock (0 = locked, 1 = free)
   kernel_video_base_address       = Framebuffer physical base address
   kernel_video_framebuffer        = Framebuffer virtual address (used for rendering)
   kernel_video_pointer            = Current write position in framebuffer
-  kernel_video_width_pixel        = Cached width in pixels (initialized to KERNEL_VIDEO_WIDTH_pixel)
-  kernel_video_height_pixel       = Cached height in pixels (initialized to KERNEL_VIDEO_HEIGHT_pixel)
-  kernel_video_scanline_char      = Bytes per character row (default: KERNEL_VIDEO_SCANLINE_CHAR_byte)
+  kernel_video_size_byte          = Framebuffer total size in bytes (runtime)
+  kernel_video_size_pixel         = Framebuffer total pixels (runtime)
+  kernel_video_width_pixel        = Framebuffer width in pixels (runtime)
+  kernel_video_height_pixel       = Framebuffer height in pixels (runtime)
+  kernel_video_width_char         = Screen width in characters (runtime)
+  kernel_video_height_char        = Screen height in characters (runtime)
+  kernel_video_scanline_byte      = Bytes per pixel scanline (runtime)
+  kernel_video_scanline_char      = Bytes per character row (runtime)
   kernel_video_color              = Current foreground color (DWORD)
   kernel_video_color_background   = Current background color (DWORD)
   kernel_video_cursor_lock        = Cursor disable nesting counter (0 = visible)
@@ -38,6 +38,7 @@ kernel_video_drain
   Purpose: Clear entire screen with background color
   Flow:
     1. Fill framebuffer with kernel_video_color_background using REP STOSD
+       Count = kernel_video_size_pixel
     2. Reset cursor to (0, 0)
     3. Call kernel_video_cursor_set to recalculate pointer
 
@@ -48,7 +49,7 @@ kernel_video_matrix
     1. Calculate offset into kernel_font_matrix (glyph_height * index)
     2. For each row: test bits from font bitmap, write foreground color
        where bits are set, skip where clear
-    3. Advance RDI by one scanline per row
+    3. Advance RDI by kernel_video_scanline_byte per row (runtime)
 
 kernel_video_char_clean
   Purpose: Clear one character cell with background color
@@ -56,6 +57,7 @@ kernel_video_char_clean
   Flow:
     1. Fill character cell (FONT_WIDTH x FONT_HEIGHT) with
        kernel_video_color_background using STOSD
+    2. Advance RDI by kernel_video_scanline_byte per row (runtime)
 
 kernel_video_cursor_set
   Purpose: Recalculate kernel_video_pointer from cursor (x, y)
@@ -82,14 +84,15 @@ kernel_video_char
   Input:  AL = character, RCX = count (unused in single-char calls)
   Handles:
     - Regular characters: clear cell, render via kernel_video_matrix,
-      advance cursor x
+      advance cursor x; step by kernel_font_width_byte (runtime)
     - Newline (0x0A): wrap to next line, reset x to 0
     - Backspace (0x08): decrement x (or previous line if at column 0),
       clear character at new position
   Flow:
     1. Disable cursor, acquire semaphore
     2. Load cursor (x, y) and pointer from globals
-    3. Process character with line wrapping
+    3. Process character with line wrapping (bounds via kernel_video_width_char,
+       kernel_video_height_char, scroll via kernel_video_scanline_char)
     4. If cursor.y exceeds screen height, decrement y and scroll
     5. Store updated cursor (x, y) and pointer back to globals
     6. Release semaphore, re-enable cursor
@@ -112,7 +115,7 @@ kernel_video_scroll
     1. Disable cursor
     2. Use kernel_memory_copy (SIMD) to shift all rows up by one
        scanline: copy from row 1 to row 0, row 2 to row 1, etc.
-       Copy size = SCANLINE_CHAR_byte * (HEIGHT_char - 1)
+       Copy size = kernel_video_size_byte - kernel_video_scanline_char
     3. Clear the bottom row via kernel_video_line_drain
     4. Re-enable cursor
 
@@ -121,8 +124,8 @@ kernel_video_line_drain
   Input:  RCX = row index (0-based)
   Flow:
     1. Disable cursor
-    2. Calculate framebuffer address for the row
-    3. Fill with STATIC_COLOR_BACKGROUND_default using REP STOSD
+    2. Calculate framebuffer address: base + row * kernel_video_scanline_char
+    3. Fill row with STATIC_COLOR_BACKGROUND_default using REP STOSD
     4. Re-enable cursor
 
 kernel_video_cursor_disable
@@ -224,14 +227,15 @@ FLOW: kernel_video_scroll
   | kernel_memory_copy(    |
   |   src = base + scanline|
   |   dst = base,          |
-  |   len = scanline*(h-1) |
+  |   len = size_byte -    |
+  |         scanline_char  |
   +--------+---------------+
            |
            v
   +------------------------+
   | Clear bottom row:      |
   | kernel_video_line_drain|
-  | (row = HEIGHT_char - 1)|
+  | (row = height_char - 1)|
   +--------+---------------+
            |
            v

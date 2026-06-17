@@ -1,30 +1,27 @@
-KERNEL_VIDEO_WIDTH_pixel equ 640
-KERNEL_VIDEO_HEIGHT_pixel equ 480
 KERNEL_VIDEO_DEPTH_shift equ 2
 KERNEL_VIDEO_DEPTH_byte equ 4
 KERNEL_VIDEO_DEPTH_bit equ 32
-KERNEL_VIDEO_SIZE_byte equ (KERNEL_VIDEO_WIDTH_pixel * KERNEL_VIDEO_HEIGHT_pixel) << KERNEL_VIDEO_DEPTH_shift
-
-KERNEL_VIDEO_WIDTH_char equ KERNEL_VIDEO_WIDTH_pixel / KERNEL_FONT_WIDTH_pixel
-KERNEL_VIDEO_HEIGHT_char equ KERNEL_VIDEO_HEIGHT_pixel / KERNEL_FONT_HEIGHT_pixel
-KERNEL_VIDEO_SCANLINE_CHAR_byte equ (KERNEL_VIDEO_WIDTH_pixel * KERNEL_FONT_HEIGHT_pixel) << KERNEL_VIDEO_DEPTH_shift
 
 kernel_video_semaphore db STATIC_FALSE
 kernel_video_base_address dq STATIC_EMPTY
 kernel_video_pointer dq STATIC_EMPTY
 kernel_video_framebuffer dq STATIC_EMPTY
-kernel_video_width_pixel dq KERNEL_VIDEO_WIDTH_pixel
-kernel_video_height_pixel dq KERNEL_VIDEO_HEIGHT_pixel
-kernel_video_scanline_char dq KERNEL_VIDEO_SCANLINE_CHAR_byte
+kernel_video_size_byte dq STATIC_EMPTY
+kernel_video_size_pixel dq STATIC_EMPTY
+kernel_video_width_pixel dq STATIC_EMPTY
+kernel_video_height_pixel dq STATIC_EMPTY
+kernel_video_width_char dd STATIC_EMPTY
+kernel_video_height_char dd STATIC_EMPTY
+kernel_video_scanline_byte dq STATIC_EMPTY
+kernel_video_scanline_char dq STATIC_EMPTY
 
 kernel_video_color dd STATIC_COLOR_default
 kernel_video_color_background dd STATIC_COLOR_BACKGROUND_default
 
-
 kernel_video_cursor_lock dq STATIC_EMPTY
 kernel_video_cursor:
- .x: dd STATIC_EMPTY
- .y: dd STATIC_EMPTY
+ .x dd STATIC_EMPTY
+ .y dd STATIC_EMPTY
 
 kernel_video_color_sequence_default db STATIC_COLOR_ASCII_DEFAULT
 kernel_video_color_sequence_black db STATIC_COLOR_ASCII_BLACK
@@ -50,7 +47,7 @@ kernel_video_drain:
  push rdi
 
  mov eax, dword [kernel_video_color_background]
- mov ecx, KERNEL_VIDEO_WIDTH_pixel * KERNEL_VIDEO_HEIGHT_pixel
+ mov rcx, qword [kernel_video_size_pixel]
  mov rdi, qword [kernel_video_framebuffer]
  rep stosd
 
@@ -99,7 +96,7 @@ kernel_video_matrix:
  jns .loop
 
  sub rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
- add rdi, KERNEL_VIDEO_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
+ add rdi, qword [kernel_video_scanline_byte]
 
  inc rsi
 
@@ -138,7 +135,7 @@ kernel_video_char_clean:
  jns .loop
 
  sub rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
- add rdi, KERNEL_VIDEO_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
+ add rdi, qword [kernel_video_scanline_byte]
 
  dec bl
  jnz .next
@@ -420,21 +417,21 @@ kernel_video_char:
 
  inc ebx
 
- add rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
+ add rdi, qword [kernel_font_width_byte]
 
- cmp ebx, KERNEL_VIDEO_WIDTH_pixel / KERNEL_FONT_WIDTH_pixel
+ cmp ebx, dword [kernel_video_width_char]
  jb .continue
 
- sub ebx, KERNEL_VIDEO_WIDTH_pixel / KERNEL_FONT_WIDTH_pixel
+ sub ebx, dword [kernel_video_width_char]
  inc edx
 
 .row:
- cmp edx, KERNEL_VIDEO_HEIGHT_pixel / KERNEL_FONT_HEIGHT_pixel
+ cmp edx, dword [kernel_video_height_char]
  jb .continue
 
  dec edx
 
- sub rdi, (KERNEL_VIDEO_WIDTH_pixel * KERNEL_FONT_HEIGHT_pixel) << KERNEL_VIDEO_DEPTH_shift
+ sub rdi, qword [kernel_video_scanline_char]
 
  call kernel_video_scroll
 
@@ -470,7 +467,7 @@ kernel_video_char:
 
  xor ebx, ebx
 
- add rdi, (KERNEL_VIDEO_WIDTH_pixel * KERNEL_FONT_HEIGHT_pixel) << KERNEL_VIDEO_DEPTH_shift
+ add rdi, qword [kernel_video_scanline_char]
 
  pop rdx
  inc rdx
@@ -493,7 +490,8 @@ kernel_video_char:
 
  dec edx
 
- mov ebx, (KERNEL_VIDEO_WIDTH_pixel / KERNEL_FONT_WIDTH_pixel) - 0x01
+ mov ebx, dword [kernel_video_width_char]
+ dec ebx
 
 .clear:
  sub rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
@@ -584,14 +582,16 @@ kernel_video_scroll:
 
  call kernel_video_cursor_disable
 
- mov rcx, KERNEL_VIDEO_SCANLINE_CHAR_byte * (KERNEL_VIDEO_HEIGHT_char - 0x01)
+ mov rcx, qword [kernel_video_size_byte]
+ sub rcx, qword [kernel_video_scanline_char]
 
  mov rdi, qword [kernel_video_framebuffer]
  mov rsi, rdi
- add rsi, KERNEL_VIDEO_SCANLINE_CHAR_byte
+ add rsi, qword [kernel_video_scanline_char]
  call kernel_memory_copy
 
- mov ecx, KERNEL_VIDEO_HEIGHT_char - 0x01
+ mov ecx, dword [kernel_video_height_char]
+ dec ecx
  call kernel_video_line_drain
 
  call kernel_video_cursor_enable
@@ -613,7 +613,7 @@ kernel_video_line_drain:
 
  mov rax, rcx
 
- mov rcx, KERNEL_VIDEO_SCANLINE_CHAR_byte
+ mov rcx, qword [kernel_video_scanline_char]
  mul rcx
  add rax, qword [kernel_video_framebuffer]
  mov rdi, rax
@@ -662,7 +662,7 @@ kernel_video_cursor_switch:
  push rcx
  push rdi
 
- mov rax, KERNEL_VIDEO_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
+ mov rax, qword [kernel_video_scanline_byte]
 
  mov rcx, KERNEL_FONT_HEIGHT_pixel
 

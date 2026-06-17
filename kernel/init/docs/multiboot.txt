@@ -31,8 +31,13 @@ Checksum Calculation:
 MEMORY LAYOUT
 
 | Symbol           | Address            | Description
-| header           | 0x00100000         | Multiboot header (4KB aligned)
-| header_end       | 0x00100028         | End of header
+  | multiboot_header | 0x00100000         | Multiboot header (4KB aligned)
+  | header_end       | 0x00100028         | End of header
+
+NOTE: The struct was renamed from HEADER_multiboot to MULTIBOOT_HEADER,
+      and the instance from header to multiboot_header. The framebuffer
+      size fields now use MULTIBOOT_VIDEO_WIDTH_pixel / _HEIGHT_pixel,
+      passed as -d defines at build time (no longer hardcoded in kernel).
 | init             | (linker address)   | Kernel entry point
 
 The bootloader reads the Multiboot header at the beginning of the kernel image

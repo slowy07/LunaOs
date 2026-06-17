@@ -8,7 +8,7 @@ trims whitespace, extracts the first word, and dispatches to the
 prompt handler.
 
 CONSTANTS (from shell/config.asm)
-SERVICE_SHELL_CACHE_SIZE_byte = KERNEL_VIDEO_WIDTH_char - prompt_len - 1
+SERVICE_SHELL_CACHE_SIZE_byte = 128 (replaced complex expression with fixed value)
 
 PROCEDURES
 

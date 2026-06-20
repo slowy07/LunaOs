@@ -84,6 +84,7 @@ Kernel Core (64-bit):
 Drivers:
   kernel/driver/rtc.asm
   kernel/driver/ps2.asm
+  kernel/driver/storage/ide.asm
 
 Services:
   kernel/service/shell.asm

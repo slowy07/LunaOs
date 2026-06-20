@@ -137,7 +137,7 @@ kernel/kernel.asm (32-bit)
         |         +-- ps2.asm
         |         +-- ipc.asm
   |         +-- vfs.asm
-  |         +-- storage.asm       (storage subsystem stub)
+  |         +-- storage.asm       (PCI IDE scan + init)
   |         +-- network.asm       (NIC detection)
   |         +-- task.asm
         |
@@ -156,6 +156,7 @@ kernel/kernel.asm (32-bit)
         |     +-- rtc.asm
         |     +-- ps2.asm
         |     +-- pci.asm
+        |     +-- storage/ide.asm
         |     +-- network/i82540em.asm
         |
         +---> kernel/service/
@@ -308,8 +309,8 @@ kernel/kernel.asm (32-bit)
               |
               v
 +------------------------------+
-|   storage.asm -> PCI storage |
-|   (AHCI/SCSI class scan)     |
+|   storage.asm -> PCI IDE scan|
+|   (class 0x0101 detection)   |
 +------------------------------+
               |
               v

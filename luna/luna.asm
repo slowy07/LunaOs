@@ -25,74 +25,6 @@ luna:
 
  sti
 
-
- call luna_line_a20_check
- jz .unlocked
-
- mov ax, 0x2401
- int 0x15
-
- call luna_line_a20_check
- jz .unlocked
-
- in al, 0x92
- or al, 2
- out 0x92, al
-
- call luna_line_a20_check
- jz .unlocked
-
- in al, 0xEE
-
- call luna_line_a20_check
- jz .unlocked
-
-
- cli
-
- call luna_ps2_keyboard_in
-
- mov al, 0xAD
- out 0x64, al
-
- call luna_ps2_keyboard_in
-
- mov al, 0xD0
- out 0x64, al
-
- call luna_ps2_keyboard_out
-
- in al, 0x60
-
- push ax
-
- call luna_ps2_keyboard_in
-
- mov al, 0xD1
- out 0x64, al
-
- call luna_ps2_keyboard_in
-
- pop ax
-
- or al, 2
- out 0x60, al
-
- call luna_ps2_keyboard_in
-
- mov al, 0xAE
- out 0x64, al
-
- call luna_ps2_keyboard_in
-
- sti
-
- mov si, STATIC_LUNA_ERROR_a20
-
- call luna_line_a20_check
- jnz luna_panic
-
-.unlocked:
  mov ax, 0x0003
  int 0x10
 
@@ -280,10 +212,24 @@ luna_header_gdt_32bit:
  dw luna_table_gdt_32bit_end - luna_table_gdt_32bit - 0x01
  dd luna_table_gdt_32bit
 
+times 436 - ( $ - $$ ) db 0x00
+  
+ db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+ db 0x00
+ db 0x00, 0x00, 0x00
+ db 0xEB
+ db 0x00, 0x00, 0x00
+ dd (file_kernel_end - $$) / 512
+ dd (1048576 - (file_kernel_end - $$)) / 512
+
 times 510 - ($ - $$) db STATIC_EMPTY
  dw STATIC_LUNA_magic
+ 
 
 file_kernel:
  incbin "build/kernel"
  align STATIC_SECTOR_SIZE_byte
 file_kernel_end:
+
+times 1048576 - ($ - $$) db STATIC_EMPTY

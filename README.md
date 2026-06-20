@@ -136,9 +136,10 @@ kernel/kernel.asm (32-bit)
         |         +-- rtc.asm
         |         +-- ps2.asm
         |         +-- ipc.asm
-        |         +-- vfs.asm
-        |         +-- network.asm       (NIC detection)
-        |         +-- task.asm
+  |         +-- vfs.asm
+  |         +-- storage.asm       (storage subsystem stub)
+  |         +-- network.asm       (NIC detection)
+  |         +-- task.asm
         |
         +---> kernel/panic.asm
         +---> kernel/page.asm
@@ -303,6 +304,12 @@ kernel/kernel.asm (32-bit)
               v
 +------------------------------+
 |   vfs.asm  -> VFS init       |
++------------------------------+
+              |
+              v
++------------------------------+
+|   storage.asm -> PCI storage |
+|   (AHCI/SCSI class scan)     |
 +------------------------------+
               |
               v

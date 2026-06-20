@@ -1,0 +1,12 @@
+STORAGE - INITIALIZATION
+File: kernel/init/storage.asm
+Author: arfy slowy
+
+OVERVIEW
+Stub for storage subsystem initialization during kernel boot.
+Runs after VFS init and before network init.
+
+PROCEDURE
+
+kernel_init_storage:
+  (reserved for future PCI AHCI/SCSI detection and driver init)

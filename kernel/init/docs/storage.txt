@@ -3,10 +3,14 @@ File: kernel/init/storage.asm
 Author: arfy slowy
 
 OVERVIEW
-Stub for storage subsystem initialization during kernel boot.
+Initializes storage subsystem during kernel boot.
+Scans PCI bus for IDE controller; if found, initializes IDE driver.
 Runs after VFS init and before network init.
 
 PROCEDURE
 
 kernel_init_storage:
-  (reserved for future PCI AHCI/SCSI detection and driver init)
+  Scans PCI for IDE class (DRIVER_PCI_CLASS_SUBCLASS_ide = 0x0101)
+  Calls driver_pci_find_class_and_subclass
+  On success: calls driver_ide_init
+  On failure (no IDE controller): continues silently

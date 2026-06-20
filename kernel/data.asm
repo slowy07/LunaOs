@@ -19,3 +19,5 @@ align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 kernel_idt_header:
  dw KERNEL_PAGE_SIZE_byte
  dq STATIC_EMPTY
+
+kernel_storage_list:

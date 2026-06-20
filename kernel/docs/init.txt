@@ -96,8 +96,9 @@ SMP Boot Check (top of init.asm):
        Runs after IPC, before network
 
   18. kernel/init/storage.asm
-       Initialize storage subsystem (stub)
-       Prepares PCI AHCI/SCSI class constants
+       Initialize storage subsystem
+       Scans PCI for IDE controller (class 0x0101)
+       Calls driver_ide_init on detection
        Runs after VFS, before network
 
   19. kernel/init/network.asm

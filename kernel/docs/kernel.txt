@@ -60,7 +60,8 @@ Configuration:
 Init (32-bit):
   kernel/init.asm               (includes all kernel/init/*.asm)
   kernel/init/font.asm          (font name display, between video and memory)
-  kernel/init/network.asm       (NIC detection, between vfs and task)
+  kernel/init/storage.asm       (storage subsystem stub, between vfs and network)
+  kernel/init/network.asm       (NIC detection, between storage and task)
 
 Macros:
   kernel/macro/close.asm        (semaphore lock)

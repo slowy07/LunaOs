@@ -1,0 +1,28 @@
+VIRTUAL FILE SYSTEM
+File: kernel/vfs.asm
+Author: arfy slowy
+
+OVERVIEW
+Hierarchical virtual file system with symlink resolution and directory support.
+Uses magicknot structures (variable-length inode-like entries) for file metadata.
+
+CHANGES (rev 92)
+  - Removed mode/type field writes from kernel_vfs_file_touch regular_file path
+    (mode and type are already set during knot allocation)
+
+KEY PROCEDURES
+
+kernel_vfs_dir_symlinks:
+  Resolves symlink chains in a directory path
+
+kernel_vfs_path_resolve:
+  Resolves a path string to its parent directory knot
+
+kernel_vfs_file_touch:
+  Creates or opens a file/directory node
+  Input: DL = file type (KERNEL_VFS_FILE_TYPE_*)
+  Calls kernel_vfs_knot_allocate for new entries
+
+KNOT STRUCTURE (KERNEL_STRUCTURE_VFS_KNOT):
+  Fields: mode, type, size, length, address, time, secured
+  Size field initially set to 1

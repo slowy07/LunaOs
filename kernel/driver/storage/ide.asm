@@ -74,9 +74,11 @@ DRIVER_IDE_ERROR_bad_block equ 10000000b
 struc DRIVER_IDE_STRUCTURE_DEVICE
  .channel resb 2
  .drive resb 1
- .size resb 8
+ .size_sectors resb 8
  .SIZE:
 endstruc
+
+driver_ide_devices_count db STATIC_EMPTY
 
 align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 driver_ide_devices:
@@ -131,7 +133,9 @@ driver_ide_init_drive:
  mov byte [rcx + DRIVER_IDE_STRUCTURE_DEVICE.drive], al
 
  mov eax, dword [rdi + DRIVER_IDE_IDENTIFY_max_lba_extended]
- mov qword [rcx + DRIVER_IDE_STRUCTURE_DEVICE.size], rax
+ mov qword [rcx + DRIVER_IDE_STRUCTURE_DEVICE.size_sectors], rax
+
+ inc byte [driver_ide_devices_count]
 
 .end:
  pop rdx

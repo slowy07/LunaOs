@@ -33,15 +33,18 @@ CONTROL BITS
 
 DATA STRUCTURE
   DRIVER_IDE_STRUCTURE_DEVICE:
-    .channel  resb 2   (I/O port base)
-    .drive    resb 1   (drive select byte)
-    .size     resb 8   (LBA48 sector count)
+    .channel      resb 2   (I/O port base)
+    .drive        resb 1   (drive select byte)
+    .size_sectors resb 8   (LBA48 sector count)
     .SIZE:
 
   driver_ide_devices:
     4-entry table (primary master, primary slave,
                    secondary master, secondary slave)
     Pre-initialized to STATIC_EMPTY
+
+  driver_ide_devices_count db
+    Incremented each time driver_ide_init_drive populates a slot
 
 PROCEDURES
 

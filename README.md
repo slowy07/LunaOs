@@ -312,7 +312,8 @@ kernel/kernel.asm (32-bit)
               v
 +------------------------------+
 |   storage.asm -> PCI IDE init|
-|   (SRST reset + enumerate)   |
+|   (SRST reset, enumerate,    |
+|    display /dev/hd{a-d})     |
 +------------------------------+
               |
               v

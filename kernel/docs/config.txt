@@ -23,6 +23,9 @@ CHANGES (rev 90 -> 92)
   - Added DRIVER_PCI_CLASS_SUBCLASS_ide (0x0101) PCI constant
   - Added kernel/driver/storage/ide.asm driver include
   - kernel_init_storage: now scans PCI for IDE controller, calls driver_ide_init
+  - Added STATIC_MULTIPLE_BY_512_shift, STATIC_DIVIDE_BY_1024_shift (config.asm)
+  - Added kernel_init_string_storage_ide* display strings
+  - kernel_init_storage: displays detected IDE devices (/dev/hd{a-d}) with KiB size
 
 NOTES
 The kernel is linked to load at 1MB (0x100000).

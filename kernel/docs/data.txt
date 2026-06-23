@@ -43,6 +43,10 @@ STRING CONSTANTS
   kernel_string_dot    - ASCII dot (0x2E)
   kernel_string_welcome - Blue color escape + "welcome cik!" (blue colored via STATIC_COLOR_ASCII_BLUE_LIGHT)
 
+EXEC
+  kernel_init_exec     - "/bin/init" (path to initial userspace executable)
+  kernel_init_exec_end - end marker for length calculation
+
 DEBUG STRING CONSTANTS (used when %ifdef DEBUG is active)
   kernel_debug_string_irq          - "IRQ"
   kernel_debug_string_tx_empty     - "TX empty\n"

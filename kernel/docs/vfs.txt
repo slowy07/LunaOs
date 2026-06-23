@@ -58,3 +58,13 @@ kernel_vfs_file_find:
 
 kernel_vfs_knot_prepare:
   Allocates a fresh knot slot in a directory page
+
+INIT-TIME FILE PRELOADING (kernel/init/vfs.asm)
+  After directory creation, init/vfs.asm iterates
+  kernel_init_vfs_files (defined in init/data.asm) and for each entry:
+    1. Resolves the parent directory path
+    2. Calls kernel_vfs_file_touch to create the file knot
+    3. Calls kernel_vfs_file_append to write the preloaded data
+  Format per entry: [data_pointer:8][size:8][length:1][path:var]
+
+  Currently preloaded: /bin/wello (built from software/wello.asm)

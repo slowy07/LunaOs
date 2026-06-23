@@ -16,28 +16,6 @@ nasm -f bin luna/luna.asm -o build/luna.raw
 qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 -rtc base=localtime
 ```
 
-## Project Structure
-
-```
-luna.raw
-  |
-  +-- luna/           Bootsector and stage binaries
-  +-- kernel/         Core kernel
-  |     +-- kernel.asm       Entry point, includes chain
-  |     +-- init/            Boot-time initialization (32-bit -> 64-bit)
-  |     +-- service/         Kernel services (shell, HTTP, networking)
-  |     |     +-- network/   Network protocol sub-files (arp, icmp, tcp, ...)
-  |     |     +-- shell/     Shell sub-files (config, data, prompt)
-  |     +-- font/            Bitmap font data and setfonts.asm
-  |     +-- driver/          Device drivers (RTC, PS/2, PCI, NIC)
-  |     +-- macro/           Assembly macros (copy, close, apic, debug)
-  |     +-- docs/            Kernel documentation
-  +-- library/        Shared utility routines
-  |     +-- docs/            Library documentation
-  +-- config.asm      Global constants
-  +-- docs/           Root documentation
-```
-
 ## Documentation
 
 ### Root

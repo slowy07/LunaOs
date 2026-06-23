@@ -63,9 +63,22 @@ kernel_init_services_list:
 
 kernel_init_vfs_directory_structure:
  db 0x04
+ db "/bin"
+ db 0x04
  db "/dev"
 
  db STATIC_EMPTY
+
+kernel_init_vfs_files:
+ dq kernel_init_vfs_file_wello
+ dq kernel_init_vfs_file_wello_end - kernel_init_vfs_file_wello
+ db 10
+ db "/bin/wello"
+ 
+ dq STATIC_EMPTY
+
+kernel_init_vfs_file_wello incbin "build/wello"
+kernel_init_vfs_file_wello_end:
 
 kernel_init_boot_file:
  incbin "build/boot"

@@ -49,13 +49,20 @@ Flow Diagram:
 +----------+-------------+
            |
            v
+ +------------------------+
+| Install syscall gate   |
+| (vector 0x40)          | --> kernel_service
+| Type: ISR              |
++----------+-------------+
+            |
+            v
 +------------------------+
 | Install spurious IRQ   |
 | handler (vector 255)   | --> kernel_idt_spurious_interrupt
 | Type: IRQ              |
 +----------+-------------+
-           |
-           v
+            |
+            v
 +------------------------+
 | Load IDT via LIDT      | --> lidt [kernel_idt_header]
 +----------+-------------+

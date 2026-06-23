@@ -72,7 +72,8 @@ SMP Boot Check (top of init.asm):
 
   13. kernel/init/idt.asm
       Initialize Interrupt Descriptor Table
-      Sets up: exception handlers (0-31), spurious handler
+      Sets up: exception handlers (0-31), syscall gate (vector 0x40 -> kernel_service),
+               spurious handler (vector 0xFF)
       Loads: IDT via LIDT
 
   14. kernel/init/rtc.asm

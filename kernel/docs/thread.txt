@@ -3,12 +3,13 @@ File: kernel/thread.asm
 Author: arfy slowy
 
 OVERVIEW
-Provides kernel_thread_exec for creating threads within the current task's
+Provides kernel_thread for creating threads within the current task's
 address space. Threads share CR3 (page table) with their parent task.
+Note: currently commented out in kernel/kernel.asm (testing exec/service).
 
 PROCEDURE
 
-kernel_thread_exec:
+kernel_thread:
   Creates a new thread that executes in the same address space as the caller.
   Input:  RSI = thread entry point
           R8  = pointer to caller's task structure (for CR3)

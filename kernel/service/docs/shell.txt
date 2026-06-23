@@ -27,6 +27,11 @@ LABELS:
   .prompt          - Draw prompt and fall through to .restart
   .restart         - Read input, trim, extract word, dispatch
 
+DATA STRINGS (shell/data.asm)
+  service_shell_command_ip        "ip"
+  service_shell_command_ip_set    "set"
+  service_shell_command_ls        "ls" (added)
+
 INCLUDES (included inline)
   shell/config.asm  - Cache size constant
   shell/data.asm    - Prompt strings, command strings

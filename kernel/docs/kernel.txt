@@ -78,8 +78,10 @@ Kernel Core (64-bit):
   kernel/data.asm
   kernel/idt.asm
   kernel/task.asm
-  kernel/thread.asm
+  ; kernel/thread.asm       (commented out for testing)
   kernel/vfs.asm
+  kernel/exec.asm           (process exec support)
+  kernel/service.asm        (syscall dispatcher, vector 0x40)
   kernel/font/setfonts.asm
 
 Drivers:

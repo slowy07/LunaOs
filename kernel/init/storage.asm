@@ -69,4 +69,3 @@ kernel_init_storage:
  jnz .ide_loop
 
 .ide_end:
- xchg bx, bx

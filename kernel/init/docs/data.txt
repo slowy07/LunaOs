@@ -59,7 +59,16 @@ VFS Directory Structure:
   | Variable              | Purpose
   | kernel_init_vfs_directory_structure | Predefined directory list for VFS root
   |                       | Format: [length_byte][path_string] per entry, 0x00 terminator
-  |                       | Current entries: /dev
+  |                       | Current entries: /bin, /dev
+
+VFS Files (kernel_init_vfs_files):
+  | Variable              | Purpose
+  | kernel_init_vfs_files | Predefined files to create in VFS at boot
+  |                       | Format: [data_ptr:8][size:8][len:1][path:var] per entry
+  |                       | Terminated by dq STATIC_EMPTY
+  |                       | Current: /bin/wello
+
+  kernel_init_vfs_file_wello - Incbin of "build/wello" (preloaded userspace binary)
 
 Embedded Binary:
   | Variable              | Purpose

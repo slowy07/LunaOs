@@ -95,7 +95,9 @@ SMP Boot Check (top of init.asm):
   17. kernel/init/vfs.asm
       Initialize Virtual File System
       Allocates: VFS magicknot structure
-      Creates: root directories from kernel_init_vfs_directory_structure (/dev)
+      Creates: root directories (kernel_init_vfs_directory_structure: /bin, /dev)
+      Preloads: files from kernel_init_vfs_files (touch + append data)
+      Currently preloads: /bin/wello (userspace binary from software/wello.asm)
       Runs after IPC, before network
 
   18. kernel/init/storage.asm

@@ -1,0 +1,33 @@
+VFS - INITIALIZATION
+File: kernel/init/vfs.asm
+Author: arfy slowy
+
+OVERVIEW
+Initializes the Virtual File System during kernel boot.
+Creates predefined directories, preloads initial files from
+embedded binaries, and sets up the root magicknot structure.
+
+STRUCTURE
+  KERNEL_INIT_STRUCTURE_VFS_FILE:
+    .data_pointer resb 8  (pointer to file data)
+    .size         resb 8  (file size in bytes)
+    .length       resb 1  (path string length)
+    .path:                (variable-length path string)
+
+PROCEDURE
+
+kernel_init_vfs:
+  1. Allocate a page for the magicknot structure
+  2. Drain page table for the new allocation
+  3. Store root pointer in kernel_vfs_magicknot.root
+  4. Call kernel_vfs_dir_symlinks to set up . and ..
+  5. Directory creation loop:
+     - Reads kernel_init_vfs_directory_structure
+     - Parses [length_byte][path_string] entries
+     - Calls kernel_vfs_path_resolve + kernel_vfs_file_touch
+     - Current directories: /bin, /dev
+  6. File preloading loop:
+     - Reads kernel_init_vfs_files
+     - Parses [data_ptr:8][size:8][len:1][path:var] entries
+     - Resolves path, touches file, appends data
+     - Currently preloads: /bin/wello

@@ -1,0 +1,33 @@
+EXEC - PROCESS EXECUTION
+File: kernel/exec.asm
+Author: arfy slowy
+
+OVERVIEW
+Loads and executes a userspace process from a VFS file knot.
+Allocates a new page table, maps process code and stack, sets up
+a ring-3 iretq frame, reads the executable from VFS, and registers
+the task with the scheduler.
+
+PROCEDURE
+
+kernel_exec:
+  Input: RDI = VFS knot of executable, R8 = parent task structure
+  Output: RCX = PID of new process
+  Flow:
+    1. Calculate page count from file size (via library_page_from_size)
+    2. Secure that many pages (+14 extra)
+    3. Allocate a page for the new PML4 table
+    4. Map code at SOFTWARE_base_address (KERNEL_MEMORY_HIGH_REAL_address)
+    5. Map stack at KERNEL_STACK_address
+    6. Merge new PML4 with current kernel mappings
+    7. Build iretq frame on parent task's stack:
+       - RIP = KERNEL_MEMORY_HIGH_REAL_address
+       - CS = ring-3 code segment
+       - EFLAGS = KERNEL_TASK_EFLAGS_default
+       - RSP = 0
+       - DS = ring-3 data segment
+    8. Switch to new page table (cr3)
+    9. Read executable from VFS into SOFTWARE_base_address
+    10. Restore original cr3
+    11. Call kernel_task_add to register the task
+    12. Release secured pages, return PID

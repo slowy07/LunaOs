@@ -1,5 +1,8 @@
 kernel_init_semaphore db STATIC_TRUE
 
+kernel_init_exec db "/bin/init"
+kernel_init_exec_end:
+
 align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 kernel_gdt_header dw KERNEL_PAGE_SIZE_byte
  dq STATIC_EMPTY

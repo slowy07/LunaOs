@@ -1,0 +1,24 @@
+SERVICE - SYSCALL DISPATCHER
+File: kernel/service.asm
+Author: arfy slowy
+
+OVERVIEW
+Handles syscall interrupts via IDT vector 0x40 (KERNEL_SERVICE).
+Dispatches to sub-handlers based on the service ID in AL/AX.
+
+SERVICE IDS
+  KERNEL_SERVICE              equ 0x40  (interrupt vector)
+  KERNEL_SERVICE_PROCESS      equ 0x00
+  KERNEL_SERVICE_PROCESS_exit equ 0x0000
+  KERNEL_SERVICE_VIDEO        equ 0x01
+  KERNEL_SERVICE_VIDEO_string equ 0x0100
+
+PROCEDURE
+
+kernel_service:
+  Checks AL for service class:
+    KERNEL_SERVICE_PROCESS:
+      KERNEL_SERVICE_PROCESS_exit -> calls kernel_task_kill
+    KERNEL_SERVICE_VIDEO:
+      KERNEL_SERVICE_VIDEO_string -> calls kernel_video_string
+  Falls through to iretq if no match

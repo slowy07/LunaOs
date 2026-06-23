@@ -103,6 +103,8 @@ SMP Boot Check (top of init.asm):
       Calls driver_ide_init: resets both IDE channels (SRST),
       enumerates master/slave drives via IDENTIFY command,
       detects LBA48 support, populates driver_ide_devices table
+      Creates: VFS block device knots for each detected drive
+      Stores: byte size in knot (sectors * 512)
       Displays: ":: IDE storage device:" then "/dev/hd{a-d}" with KiB size
       Runs after VFS, before network
 

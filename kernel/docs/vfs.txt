@@ -6,23 +6,55 @@ OVERVIEW
 Hierarchical virtual file system with symlink resolution and directory support.
 Uses magicknot structures (variable-length inode-like entries) for file metadata.
 
-CHANGES (rev 92)
-  - Removed mode/type field writes from kernel_vfs_file_touch regular_file path
-    (mode and type are already set during knot allocation)
+STRUCT RENAMES
+  KERNEL_STRUCTURE_VFS_MAGICKNOT -> KERNEL_VFS_STRUCTURE_MAGICKNOT
+  KERNEL_STRUCTURE_VFS_KNOT -> KERNEL_VFS_STRUCTURE_KNOT
+
+KNOT STRUCTURE (KERNEL_VFS_STRUCTURE_KNOT):
+  .id_or_data     resb 8
+  .size           resb 8
+  .type           resb 1   (directory, regular file, block device, symlink)
+  .flags          resb 2
+  .time_modified  resb 8
+  .length         resb 1
+  .name           resb 0   (variable-length, starts here)
+  Removed fields: owner, group, mode (simplified)
+
+FILE TYPES
+  KERNEL_VFS_FILE_TYPE_directory    - Directory node (allocates page for children)
+  KERNEL_VFS_FILE_TYPE_regular_file - Regular data file
+  KERNEL_VFS_FILE_TYPE_block_device - Block device (id_or_data holds parent knot)
+  KERNEL_VFS_FILE_TYPE_symbolic_link - Symlink (id_or_data points to target)
 
 KEY PROCEDURES
 
 kernel_vfs_dir_symlinks:
   Resolves symlink chains in a directory path
+  Creates . and .. entries for each directory
+  Note: mode assignments temporarily commented out (test)
 
 kernel_vfs_path_resolve:
   Resolves a path string to its parent directory knot
 
 kernel_vfs_file_touch:
-  Creates or opens a file/directory node
-  Input: DL = file type (KERNEL_VFS_FILE_TYPE_*)
+  Creates or opens a file/directory/device node
+  Input: DL = file type
+  Directory: allocates a page for child knot list
+  Block device: stores parent knot address in id_or_data
+  Regular file: sets type byte, copies name
   Calls kernel_vfs_knot_allocate for new entries
 
-KNOT STRUCTURE (KERNEL_STRUCTURE_VFS_KNOT):
-  Fields: mode, type, size, length, address, time, secured
-  Size field initially set to 1
+kernel_vfs_file_write:
+  Writes data to a file knot (allocates block pages as needed)
+
+kernel_vfs_file_append:
+  Appends data to an existing file
+
+kernel_vfs_file_read:
+  Reads data from a file knot (follows symlinks automatically)
+
+kernel_vfs_file_find:
+  Searches a directory for a file by name
+
+kernel_vfs_knot_prepare:
+  Allocates a fresh knot slot in a directory page

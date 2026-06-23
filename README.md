@@ -113,62 +113,6 @@ luna.raw
 | `string_cut.txt` | String trimming |
 | `string_to_integer.txt` | ASCII to integer conversion |
 
-## Architecture Overview
-
-```
-bootloader (GRUB/QEMU)
-        |
-        v
-kernel/kernel.asm (32-bit)
-        |
-        +---> kernel/init/ (32-bit -> 64-bit transition)
-        |         |
-        |         +-- smp.asm           SMP boot (INIT/STARTUP IPI)
-        |         +-- ap.asm           AP full init (PAE, long mode, TSS)
-        |         +-- boot.asm         16-bit real mode trampoline
-        |         +-- long_mode.asm
-        |         +-- video.asm         (banner + resolution display)
-        |         +-- font.asm          (font name display)
-        |         +-- memory.asm        (RAM size display)
-        |         +-- acpi.asm
-        |         +-- page.asm
-        |         +-- gdt.asm
-        |         +-- idt.asm
-        |         +-- rtc.asm
-        |         +-- ps2.asm
-        |         +-- ipc.asm
-  |         +-- vfs.asm
-  |         +-- storage.asm       (PCI IDE scan + init)
-  |         +-- network.asm       (NIC detection)
-  |         +-- task.asm
-        |
-        +---> kernel/panic.asm
-        +---> kernel/page.asm
-        +---> kernel/memory.asm
-        +---> kernel/video.asm
-        +---> kernel/apic.asm
-        +---> kernel/io_apic.asm
-        +---> kernel/idt.asm
-        +---> kernel/task.asm
-        +---> kernel/ipc.asm
-        +---> kernel/macro/copy.asm
-        |
-        +---> kernel/driver/
-        |     +-- rtc.asm
-        |     +-- ps2.asm
-        |     +-- pci.asm
-        |     +-- storage/ide.asm
-        |     +-- network/i82540em.asm
-        |
-        +---> kernel/service/
-        |     +-- shell.asm (+ config, data, prompt)
-        |     +-- network/   (config, data, checksum, arp, icmp, tcp, wrap)
-        |     +-- http.asm
-        |     +-- tx.asm
-        |     +-- tresher.asm
-        |
-        +---> library/ (shared routines)
-```
 
 ## Boot Process
 

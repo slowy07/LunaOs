@@ -77,7 +77,7 @@ luna.raw
 | `page.txt` | Virtual memory setup |
 | `gdt.txt` | GDT initialization |
 | `idt.txt` | IDT initialization |
-| `rtc.txt` | RTC timer setup (1024 Hz) |
+| `rtc.txt` | RTC timer setup (1024 Hz, sti enabled here) |
 | `task.txt` | Scheduler startup |
 | `ipc.txt` | IPC initialization |
 | `panic.txt` | Panic handler setup |
@@ -99,6 +99,7 @@ luna.raw
 | File | Description |
 |------|-------------|
 | `driver_docs.txt` | RTC driver |
+| `ide.txt` | IDE ATA/ATAPI storage driver |
 | `ps2.txt` | PS/2 keyboard/mouse (interrupt flow, scan codes, I/O ports) |
 | `pci.txt` | PCI enumeration |
 | `network/i82540em.txt` | Intel 82540EM Gigabit Ethernet |
@@ -288,7 +289,7 @@ kernel/kernel.asm (32-bit)
               v
 +------------------------------+
 |   rtc.asm  -> Timer 1024 Hz  |
-|   (periodic interrupt)       |
+|   (interrupts enabled here)  |
 +------------------------------+
               |
               v
@@ -305,12 +306,13 @@ kernel/kernel.asm (32-bit)
               v
 +------------------------------+
 |   vfs.asm  -> VFS init       |
+|   (/dev directory created)   |
 +------------------------------+
               |
               v
 +------------------------------+
-|   storage.asm -> PCI IDE scan|
-|   (class 0x0101 detection)   |
+|   storage.asm -> PCI IDE init|
+|   (SRST reset + enumerate)   |
 +------------------------------+
               |
               v
@@ -636,7 +638,7 @@ Task Flags:
 | **Scheduling** | Round-robin scheduler driven by RTC at 1024 Hz, per-task flags (active, closed, daemon, processing, secured, thread) |
 | **APIC** | Local APIC for timer interrupts, IO-APIC for device interrupt routing |
 | **SMP** | Multi-processor boot via 16-bit real mode trampoline (`boot.asm`), AP wake through IPI, per-CPU GDT TSS entries |
-| **Drivers** | PS/2 keyboard/mouse, RTC, PCI enumeration, Intel 82540EM Gigabit Ethernet |
+| **Drivers** | PS/2 keyboard/mouse, RTC, PCI enumeration, IDE ATA/ATAPI, Intel 82540EM Gigabit Ethernet |
 | **IPC** | Inter-process communication primitives |
 | **Font** | Bitmap font glyph data loaded from `kernel/font/setfonts.asm`, font name displayed at boot |
 | **Services** | Task reaper (tresher), network transmit (tx), network stack (IPv4/TCP/UDP/ICMP/ARP), HTTP server (port 80), interactive shell (clear, ip commands) |

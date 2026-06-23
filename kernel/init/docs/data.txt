@@ -49,6 +49,12 @@ Counters:
   | kernel_init_ap_count  | byte     | Number of Application Processors (APs))
   | kernel_init_apic_id_highest | byte | Highest APIC ID detected
 
+VFS Directory Structure:
+  | Variable              | Purpose
+  | kernel_init_vfs_directory_structure | Predefined directory list for VFS root
+  |                       | Format: [length_byte][path_string] per entry, 0x00 terminator
+  |                       | Current entries: /dev
+
 Embedded Binary:
   | Variable              | Purpose
   | kernel_init_boot_file | SMP AP boot trampoline (incbin of boot.asm)

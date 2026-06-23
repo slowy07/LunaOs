@@ -1,0 +1,106 @@
+IDE STORAGE DRIVER
+File: kernel/driver/storage/ide.asm
+Author: arfy slowy
+
+OVERVIEW
+IDE ATA/ATAPI storage driver. Supports master/slave drives on primary
+and secondary channels. Detects LBA48 support via IDENTIFY command.
+
+HARDWARE PORTS
+  DRIVER_IDE_CHANNEL_PRIMARY   equ 0x01F0
+  DRIVER_IDE_CHANNEL_SECONDARY equ 0x0170
+
+REGISTER OFFSETS (relative to channel base)
+  data                    0x0000
+  error                   0x0001
+  sector_count_0          0x0002
+  lba0-2                  0x0003-0x0005
+  drive_or_head           0x0006
+  command_or_status       0x0007
+  sector_count_1          0x0008
+  lba3-5                  0x0009-0x000B
+  control_or_altstatus    0x000C
+  device_address          0x000D
+  channel_control         0x0206
+
+DRIVE SELECT
+  DRIVER_IDE_DRIVE_master equ 10100000b
+  DRIVER_IDE_DRIVE_slave  equ 10110000b
+
+CONTROL BITS
+  DRIVER_IDE_CONTROL_nIEN equ 00000010b  (disable interrupts)
+  DRIVER_IDE_CONTROL_SRST equ 00000100b  (software reset)
+
+DATA STRUCTURE
+  DRIVER_IDE_STRUCTURE_DEVICE:
+    .channel  resb 2   (I/O port base)
+    .drive    resb 1   (drive select byte)
+    .size     resb 8   (LBA48 sector count)
+    .SIZE:
+
+  driver_ide_devices:
+    4-entry table (primary master, primary slave,
+                   secondary master, secondary slave)
+    Pre-initialized to STATIC_EMPTY
+
+PROCEDURES
+
+driver_ide_init:
+  1. Allocate one page for IDENTIFY data buffer
+  2. For each channel (primary, secondary):
+     a. Write DRIVER_IDE_CONTROL_nIEN to channel control
+     b. Call driver_ide_pool to detect presence
+     c. If present: write DRIVER_IDE_CONTROL_SRST, clear it (channel reset)
+     d. Call driver_ide_pool to wait after reset
+     e. Init master drive (call driver_ide_init_drive)
+     f. Init slave drive (call driver_ide_init_drive)
+  3. Release IDENTIFY buffer page
+
+driver_ide_init_drive:
+  Input: AL = drive select, DX = channel base
+  Writes drive select, waits, sends IDENTIFY command (0xEC)
+  Polls for result:
+    - If port reads 0x00: no device (jz .end)
+    - If status != error: no ATAPI device (jnz .end)
+  Reads 256 words (512 bytes) of IDENTIFY data via REP INSW
+  Checks command_sets field for LBA48 support (bit 26)
+  If LBA48: populates driver_ide_devices entry with channel, drive, size
+
+driver_ide_wait:
+  Spin-waits on driver_rtc_microtime (ensures at least 1 tick passes)
+
+driver_ide_pool:
+  Reads channel control register 4 times (drain stale data)
+  If result is 0x00 or 0xFF: no device (stc, return)
+  Polls status register for (BUSY=0 && READY=1)
+  Returns with clc on success
+
+COMMANDS
+  atapi_eject             0x1B
+  read_pio                0x20
+  read_pio_extended       0x24
+  read_dma_extended       0x25
+  write_pio               0x30
+  write_pio_extended      0x34
+  write_dma_extended      0x35
+  packet                  0xA0
+  identify_packet         0xA1
+  atapi_read              0xA8
+  read_dma                0xC8
+  write_dma               0xCA
+  cache_flush             0xE7
+  cache_flush_extended    0xEA
+  identify                0xEC
+
+IDENTIFY DATA OFFSETS
+  device_type             0x00
+  cylinders               0x02
+  heads                   0x06
+  sectors                 0x0C
+  serial                  0x14
+  model                   0x36
+  capabilities            0x02  (note: re-check; likely at 0x30)
+  field_valid             0x6A
+  max_lba                 0x78
+  command_sets            0xA4
+  max_lba_extended        0xC8

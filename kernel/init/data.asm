@@ -51,6 +51,12 @@ kernel_init_services_list:
 
  dq STATIC_EMPTY
 
+kernel_init_vfs_directory_structure:
+ db 0x04
+ db "/dev"
+
+ db STATIC_EMPTY
+
 kernel_init_boot_file:
  incbin "build/boot"
 kernel_init_boot_file_end:

@@ -53,8 +53,6 @@ kernel_init:
 
  mov dword [rsi + KERNEL_APIC_EOI_register], STATIC_EMPTY
 
- sti
-
  %include "kernel/init/smp.asm"
 
 .wait:

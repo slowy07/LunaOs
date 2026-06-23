@@ -37,11 +37,6 @@ IDT HEADER
   
   Alignment: 8 bytes (QWORD)
 
-STORAGE
-  kernel_storage_list:
-    - Storage controller list (head of linked list)
-    - Populated by driver_ide_init during kernel_init_storage
-
 STRING CONSTANTS
   kernel_string_space  - ASCII space (0x20)
   kernel_string_new_line - ASCII new line (0x0A)

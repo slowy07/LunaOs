@@ -34,9 +34,10 @@ STRUCTURE
       - kernel/task.asm: Task scheduler
       - kernel/vfs.asm: Virtual File System
     
-    Drivers:
-      - kernel/driver/rtc.asm: Real-time clock driver
-      - kernel/driver/ps2.asm: PS/2 keyboard/mouse driver
+Drivers:
+  - kernel/driver/rtc.asm: Real-time clock driver
+  - kernel/driver/ps2.asm: PS/2 keyboard/mouse driver
+  - kernel/driver/storage/ide.asm: IDE ATA/ATAPI storage driver
     
     Libraries:
       - library/page_align_up.asm: Page alignment utility

@@ -71,14 +71,15 @@ SMP Boot Check (top of init.asm):
      Loads: GDT and task register
 
   13. kernel/init/idt.asm
-     Initialize Interrupt Descriptor Table
-     Sets up: exception handlers (0-31), spurious handler
-     Loads: IDT via LIDT, enables interrupts (sti)
+      Initialize Interrupt Descriptor Table
+      Sets up: exception handlers (0-31), spurious handler
+      Loads: IDT via LIDT
 
   14. kernel/init/rtc.asm
-     Initialize Real Time Clock
-     Configures: 1024Hz periodic interrupts
-     Connects: IRQ 8 to IO-APIC
+      Initialize Real Time Clock
+      Configures: 1024Hz periodic interrupts
+      Connects: IRQ 8 to IO-APIC
+      Enables interrupts (sti) — moved from init.asm
 
   15. kernel/init/ps2.asm
       Initialize PS/2 keyboard controller
@@ -86,20 +87,23 @@ SMP Boot Check (top of init.asm):
       Note: Does NOT connect to IO-APIC (missing in code)
 
   16. kernel/init/ipc.asm
-       Initialize IPC message pool
-       Allocates: IPC pool page
-       Must run before VFS, network and task init
+      Initialize IPC message pool
+      Allocates: IPC pool page
+      Must run before VFS, network and task init
 
   17. kernel/init/vfs.asm
-       Initialize Virtual File System
-       Allocates: VFS magicknot structure
-       Runs after IPC, before network
+      Initialize Virtual File System
+      Allocates: VFS magicknot structure
+      Creates: root directories from kernel_init_vfs_directory_structure (/dev)
+      Runs after IPC, before network
 
   18. kernel/init/storage.asm
-       Initialize storage subsystem
-       Scans PCI for IDE controller (class 0x0101)
-       Calls driver_ide_init on detection
-       Runs after VFS, before network
+      Initialize storage subsystem
+      Scans PCI for IDE controller (class 0x0101)
+      Calls driver_ide_init: resets both IDE channels (SRST),
+      enumerates master/slave drives via IDENTIFY command,
+      detects LBA48 support, populates driver_ide_devices table
+      Runs after VFS, before network
 
   19. kernel/init/network.asm
        Detect and initialize NIC hardware
@@ -122,6 +126,7 @@ SMP Boot Check (top of init.asm):
       Wait 10ms for APs to complete INIT
       Send STARTUP IPI with vector 0x08 to each AP (ICR = 0x00004608)
       APs start at boot.asm (16-bit real mode -> 32-bit -> kernel)
+      Note: sti moved to init/rtc.asm (step 14), removed from init.asm
 
 AP boot path (ap.asm):
   - Reload GDT, enable PAE, load PML4
@@ -143,8 +148,8 @@ Final Steps (after all init modules):
   - call kernel_init_apic (full APIC initialization)
   - Set APIC TICR register to DRIVER_RTC_Hz (1024Hz timer)
   - Send EOI to clear any pending interrupt
-  - sti (enable interrupts)
   - smp.asm -> wake application processors
+  Note: sti was moved from here to init/rtc.asm (step 14)
   - Wait for all APs: re-read kernel_init_ap_count on each
     iteration, compare against kernel_apic_count
   - Display "Made By - Arfy Slowy" footer
@@ -234,48 +239,57 @@ INITIALIZATION FLOW
   +-----------+-------------+
               |
               v
-  +-------------------------+
-  | rtc.asm                 |
-  +-----------+-------------+
-              |
-              v
-  +-------------------------+
-   | ps2.asm                 |
-   +-----------+-------------+
-               |
-               v
-   +-------------------------+
-   | ipc.asm                 |
-   +-----------+-------------+
-               |
-               v
-   +-------------------------+
-   | vfs.asm                 |
-   +-----------+-------------+
-               |
-               v
-   +-------------------------+
-   | task.asm                |
-   +-----------+-------------+
-               |
-               v
-   +-------------------------+
-   | network.asm             |
-   | (NIC detection)         |
-   +-----------+-------------+
-               |
-               v
-   | services.asm            |
-   +-----------+-------------+
-              |
-              v
-   +-------------------------+
-   | Final: call             |
-   | kernel_init_apic        |
-   | Set TICR = DRIVER_RTC_Hz|
-   | Send EOI                |
-   | sti (enable interrupts) |
-   +-----------+-------------+
++-------------------------+
+| rtc.asm                 |
+| (sti enabled here)      |
++-----------+-------------+
+            |
+            v
++-------------------------+
+ | ps2.asm                 |
+ +-----------+-------------+
+             |
+             v
+ +-------------------------+
+ | ipc.asm                 |
+ +-----------+-------------+
+             |
+             v
+ +-------------------------+
+ | vfs.asm                 |
+ | (/dev dirs created)     |
+ +-----------+-------------+
+             |
+             v
+ +-------------------------+
+ | storage.asm             |
+ | (IDE reset + enumerate) |
+ +-----------+-------------+
+             |
+             v
+ +-------------------------+
+ | network.asm             |
+ | (NIC detection)         |
+ +-----------+-------------+
+             |
+             v
+ +-------------------------+
+ | task.asm                |
+ +-----------+-------------+
+             |
+             v
+ +-------------------------+
+ | services.asm            |
+ +-----------+-------------+
+            |
+            v
+ +-------------------------+
+ | Final: call             |
+ | kernel_init_apic        |
+ | Set TICR = DRIVER_RTC_Hz|
+ | Send EOI                |
+ | (sti now in rtc.asm)   |
+ +-----------+-------------+
               |
               v
    +-------------------------+

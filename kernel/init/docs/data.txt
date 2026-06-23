@@ -16,10 +16,12 @@ Display Strings:
   kernel_init_string_video_font         | "[green]::[default] Font: [default]"
   kernel_init_string_memory_size        | "[green]::[default] Available [white]"
   kernel_init_string_memory_format      | "[default] KiB of RAM memory.[newline]"
-  kernel_init_string_storage_ide        | "[green]::[default] IDE storage device: "
-  kernel_init_string_storage_ide_hd     | "   /dev/hd"
-  kernel_init_string_storage_ide_size   | " of size [white]"
-  kernel_init_string_storage_ide_format | " KiB[newline]"
+  kernel_init_string_storage_ide          | "[green]::[default] IDE storage device: "
+  kernel_init_string_storage_ide_hd       | "   "
+  kernel_init_string_storage_ide_hd_path  | "/dev/hd"
+  kernel_init_string_storage_ide_hd_letter| "a" (variable, incremented per device)
+  kernel_init_string_storage_ide_size     | " of size [white]"
+  kernel_init_string_storage_ide_format   | " KiB[newline]"
   kernel_init_string                    | "[newline][green] Made By - Arfy Slowy[newline][gray] ---------- [newline][newline]"
 
 Error Messages:

@@ -3,7 +3,7 @@ kernel_init_vfs:
  jc kernel_init_panic_low_memory
 
  call kernel_page_drain
- mov qword [kernel_vfs_magicknot + KERNEL_STRUCTURE_VFS_MAGICKNOT.root], rdi
+ mov qword [kernel_vfs_magicknot + KERNEL_VFS_STRUCTURE_MAGICKNOT.root], rdi
 
  mov rdi, kernel_vfs_magicknot
 

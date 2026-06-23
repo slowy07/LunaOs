@@ -7,11 +7,13 @@ Initializes storage subsystem during kernel boot.
 Scans PCI bus for IDE controller; if found, initializes IDE driver.
 Runs after VFS init and before network init.
 
-DISPLAY STRINGS (in kernel/init/data.asm)
-  kernel_init_string_storage_ide        ":: IDE storage device: "
-  kernel_init_string_storage_ide_hd     "   /dev/hd"
-  kernel_init_string_storage_ide_size   " of size "
-  kernel_init_string_storage_ide_format " KiB[newline]"
+DISPLAY/VFS STRINGS (in kernel/init/data.asm)
+  kernel_init_string_storage_ide          ":: IDE storage device: "
+  kernel_init_string_storage_ide_hd       "   " (indent prefix)
+  kernel_init_string_storage_ide_hd_path  "/dev/hd" (path for VFS lookup)
+  kernel_init_string_storage_ide_hd_letter "a" (mutable, incremented per slot)
+  kernel_init_string_storage_ide_size     " of size "
+  kernel_init_string_storage_ide_format   " KiB[newline]"
 
 PROCEDURE
 
@@ -25,7 +27,10 @@ kernel_init_storage:
   4. Prints ":: IDE storage device: " header
   5. Iterates 4 device slots (a-d):
      For each populated slot:
-       Prints "   /dev/hd{a,b,c,d}"
-       Reads size_sectors, converts to KiB (sectors*512/1024)
-       Prints " of size <N> KiB"
+       a. Calculates byte size (size_sectors << 9)
+       b. Resolves "/dev/hd" path via kernel_vfs_path_resolve
+       c. Creates block device knot via kernel_vfs_file_touch
+       d. Stores byte size into knot (KERNEL_VFS_STRUCTURE_KNOT.size)
+       e. Prints indent, "/dev/hd", letter "a"-"d", " of size <N> KiB"
+       f. Increments letter variable for next slot
   6. Continues to next init module

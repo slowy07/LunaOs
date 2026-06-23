@@ -3,7 +3,11 @@ File: kernel/config.asm
 Author: arfy slowy
 
 OVERVIEW
-This file defines core kernel configuration constants including kernel name, version, architecture, and memory layout addresses.
+This file defines global and kernel configuration constants including kernel metadata, memory layout, and software/service IDs.
+
+FILES
+  config.asm            - Global constants (page size, shift/multiply, SOFTWARE_base)
+  kernel/config.asm     - Kernel-specific constants (memory high, services)
 
 KERNEL METADATA
   KERNEL_name        = "luna"
@@ -11,22 +15,31 @@ KERNEL METADATA
   KERNEL_revision    = "92"
   KERNEL_architecture = "x86_64"
 
-MEMORY ADDRESSES
-  KERNEL_BASE_address      = 0x0000000000100000 (1MB)
-  KERNEL_STACK_address      = Virtual address at top of 128TB virtual space
-  KERNEL_STACK_pointer      = KERNEL_STACK_address - 1 page
-  KERNEL_STACK_SIZE_byte   = 2 * KERNEL_PAGE_SIZE_byte (8KB)
+MEMORY ADDRESSES (kernel/config.asm)
+  KERNEL_BASE_address         = 0x0000000000100000 (1MB)
+  KERNEL_STACK_address        = Virtual address at top of 128TB virtual space
+  KERNEL_STACK_pointer        = KERNEL_STACK_address - 1 page
+  KERNEL_STACK_SIZE_byte      = 2 * KERNEL_PAGE_SIZE_byte (8KB)
   KERNEL_STACK_TEMPORARY_pointer = 0x8000 + 4KB (temporary stack for AP boot)
+  KERNEL_MEMORY_HIGH_mask     = 0xFFFF000000000000 (upper half canonical mask)
+  KERNEL_MEMORY_HIGH_REAL_address = 0xFFFF800000000000
+  KERNEL_MEMORY_HIGH_VIRTUAL_address = KERNEL_MEMORY_HIGH_REAL_address - KERNEL_MEMORY_HIGH_mask
 
-CHANGES (rev 90 -> 92)
-  - Added kernel_storage_list data structure
-  - Added DRIVER_PCI_CLASS_SUBCLASS_ide (0x0101) PCI constant
-  - Added kernel/driver/storage/ide.asm driver include
-  - kernel_init_storage: now scans PCI for IDE controller, calls driver_ide_init
-  - Added STATIC_MULTIPLE_BY_512_shift, STATIC_DIVIDE_BY_1024_shift (config.asm)
-  - Added kernel_init_string_storage_ide* display strings
-  - kernel_init_storage: displays detected IDE devices (/dev/hd{a-d}) with KiB size
+SOFTWARE (config.asm)
+  SOFTWARE_base_address = KERNEL_MEMORY_HIGH_REAL_address
 
-NOTES
-The kernel is linked to load at 1MB (0x100000).
-Stack grows downward from the top of the virtual address space.
+SERVICE IDS (kernel/config.asm)
+  KERNEL_SERVICE           = 0x40 (interrupt vector for syscall gate)
+  KERNEL_SERVICE_PROCESS   = 0x00
+  KERNEL_SERVICE_PROCESS_exit = 0x0000
+  KERNEL_SERVICE_VIDEO     = 0x01
+  KERNEL_SERVICE_VIDEO_string = 0x0100
+
+RECENT CHANGES
+  - Moved KERNEL_MEMORY_HIGH_* constants from kernel/memory.asm to kernel/config.asm
+  - Added SOFTWARE_base_address in config.asm
+  - Added KERNEL_SERVICE* syscall constants
+  - Mounted kernel_service ISR at vector 0x40 in init/idt.asm
+  - kernel_task_kill_me renamed to kernel_task_kill
+  - kernel_thread_exec renamed to kernel_thread
+  - Added "ls" command string to service/shell/data.asm

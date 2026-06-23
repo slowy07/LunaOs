@@ -6,12 +6,8 @@ OVERVIEW
 Provides memory allocation using a bitmap-based page allocator. Manages physical memory via a bitmap where each bit represents one page.
 
 CONSTANTS
-  KERNEL_MEMORY_HIGH_mask          = 0xFFFF000000000000
-  KERNEL_MEMORY_HIGH_REAL_address  = 0xFFFF800000000000
-  KERNEL_MEMORY_HIGH_VIRTUAL_address = KERNEL_MEMORY_HIGH_REAL_address - KERNEL_MEMORY_HIGH_mask
-                                   = 0x0000000000000000 (canonical upper half base)
-
   KERNEL_MEMORY_MAP_SIZE_page = 1 (unit for bitmap allocation)
+  Note: KERNEL_MEMORY_HIGH_* constants moved to kernel/config.asm
 
 VARIABLES
   kernel_memory_map_address     = Start of page bitmap

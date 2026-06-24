@@ -39,7 +39,7 @@ SMP Boot Check (top of init.asm):
 64-bit Initialization (kernel_init):
   7. kernel/init/video.asm
       Initialize video output and display welcome + resolution
-      Displays: "Luna Operating System (v1.90 x86_64)" then ":: Video resolution WxH"
+      Displays: "Welcome to Luna OS! (v1.90 x86_64)" then ":: Video resolution at WxH"
       Calls: kernel_video_drain, kernel_video_string, kernel_video_number
 
   8. kernel/init/font.asm
@@ -96,8 +96,7 @@ SMP Boot Check (top of init.asm):
       Initialize Virtual File System
       Allocates: VFS magicknot structure
       Creates: root directories (kernel_init_vfs_directory_structure: /bin, /dev)
-      Preloads: files from kernel_init_vfs_files (touch + append data)
-      Currently preloads: /bin/wello (userspace binary from software/wello.asm)
+      Preloads: /bin/init, /bin/shell, /bin/wello (from software/*.asm)
       Runs after IPC, before network
 
   18. kernel/init/storage.asm
@@ -108,7 +107,7 @@ SMP Boot Check (top of init.asm):
       detects LBA48 support, populates driver_ide_devices table
       Creates: VFS block device knots for each detected drive
       Stores: byte size in knot (sectors * 512)
-      Displays: ":: IDE storage device:" then "/dev/hd{a-d}" with KiB size
+      Displays: ":: IDE storage devices:" then "/dev/hd{a-d}" with KiB size
       Runs after VFS, before network
 
   19. kernel/init/network.asm
@@ -123,7 +122,7 @@ SMP Boot Check (top of init.asm):
        Mounts: timer interrupt handler (IRQ 0)
 
   21. kernel/init/services.asm
-       Start kernel services (tresher, tx, network, HTTP, shell)
+       Start kernel services (tresher, tx, network, HTTP)
 
   22. kernel/init/smp.asm
       Copy boot trampoline (boot.asm) to 0x8000
@@ -158,7 +157,6 @@ Final Steps (after all init modules):
   Note: sti was moved from here to init/rtc.asm (step 14)
   - Wait for all APs: re-read kernel_init_ap_count on each
     iteration, compare against kernel_apic_count
-  - Display "Made By - Arfy Slowy" footer
   - Set kernel_init_semaphore to STATIC_FALSE (signals services to start)
   - Jump to clean: (in kernel.asm) free init code pages via kernel_memory_release
 
@@ -263,7 +261,9 @@ INITIALIZATION FLOW
              v
  +-------------------------+
  | vfs.asm                 |
- | (/dev dirs created)     |
+ | (/bin, /dev created)    |
+ | (/bin/init, /bin/shell, |
+ |  /bin/wello preloaded)  |
  +-----------+-------------+
              |
              v
@@ -315,7 +315,6 @@ INITIALIZATION FLOW
                |
                v
    +-------------------------+
-   | "Made By - Arfy Slowy"  |
    | init_semaphore = FALSE  |
    +-----------+-------------+
                |

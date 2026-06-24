@@ -1,33 +1,36 @@
 library_string_compare:
- push rax
- push rcx
- push rsi
- push rdi
+
+push rax
+push rcx
+push rsi
+push rdi
 
 .loop:
- lodsb
 
- cmp al, byte [rdi]
- jne .error
+lodsb
 
- inc rdi
+cmp al, byte [rdi]
+jne .error
 
- dec rcx
- jnz .loop
+inc rdi
 
- clc
+dec rcx
+jnz .loop
 
- jmp .end
+clc
+
+jmp .end
 
 .error:
- stc
+
+stc
 
 .end:
- pop rdi
- pop rsi
- pop rcx
- pop rax
 
- ret
+pop rdi
+pop rsi
+pop rcx
+pop rax
 
- macro_debug "library_string_compare"
+ret
+

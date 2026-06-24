@@ -1,16 +1,17 @@
 library_page_align_up:
- push rdi
 
- and di, KERNEL_PAGE_mask
+push rdi
 
- cmp rdi, qword [rsp]
- je .end
+and di, KERNEL_PAGE_mask
 
- add rdi, KERNEL_PAGE_SIZE_byte
+cmp rdi, qword [rsp]
+je .end
+
+add rdi, KERNEL_PAGE_SIZE_byte
 
 .end:
- add rsp, STATIC_QWORD_SIZE_byte
 
- ret
+add rsp, STATIC_QWORD_SIZE_byte
 
- macro_debug "library_page_align_up"
+ret
+

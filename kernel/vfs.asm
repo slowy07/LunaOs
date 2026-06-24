@@ -44,19 +44,19 @@ KERNEL_VFS_ERROR_FILE_overflow equ 0x07
 KERNEL_VFS_ERROR_FILE_no_directory equ 0x08
 
 struc KERNEL_VFS_STRUCTURE_MAGICKNOT
- .root resb 8
- .size resb 8
+.root resb 8
+.size resb 8
 endstruc
 
 struc KERNEL_VFS_STRUCTURE_KNOT
- .id_or_data resb 8
- .size resb 8
- .type resb 1
- .flags resb 2
- .time_modified resb 8
- .length resb 1
- .name resb 16
- .SIZE:
+.id_or_data resb 8
+.size resb 8
+.type resb 1
+.flags resb 2
+.time_modified resb 8
+.length resb 1
+.name resb 16
+.SIZE:
 endstruc
 
 kernel_vfs_semaphore db STATIC_FALSE
@@ -67,627 +67,678 @@ kernel_vfs_string_directory_local db "."
 kernel_vfs_string_directory_local_end:
 
 kernel_vfs_dir_symlinks:
- push rax
- push rbx
 
- mov rbx, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
+push rax
+push rbx
 
- mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rdi
+mov rbx, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
 
- ; NOTE: test
- ; mov word [rbx + KERNEL_VFS_STRUCTURE_KNOT.mode], KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rdi
 
- mov word [rbx + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_symbolic_link
+mov word [rbx + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_symbolic_link
 
- mov rax, qword [driver_rtc_microtime]
- mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified], rax
+mov rax, qword [driver_rtc_microtime]
+mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified], rax
 
- mov byte [rbx + KERNEL_VFS_STRUCTURE_KNOT.length], 0x01
+mov byte [rbx + KERNEL_VFS_STRUCTURE_KNOT.length], 0x01
 
- mov byte [rbx + KERNEL_VFS_STRUCTURE_KNOT.name], "."
+mov byte [rbx + KERNEL_VFS_STRUCTURE_KNOT.name], "."
 
- add rbx, KERNEL_VFS_STRUCTURE_KNOT.SIZE
+add rbx, KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
- mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rsi
+mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rsi
 
- ; NOTE: test
- ; mov word [rbx + KERNEL_VFS_STRUCTURE_KNOT.mode], KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+mov word [rbx + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_symbolic_link
 
- mov word [rbx + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_symbolic_link
+mov rax, qword [driver_rtc_microtime]
+mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified], rax
 
- mov rax, qword [driver_rtc_microtime]
- mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified], rax
+mov byte [rbx + KERNEL_VFS_STRUCTURE_KNOT.length], 0x02
 
- mov byte [rbx + KERNEL_VFS_STRUCTURE_KNOT.length], 0x02
+mov word [rbx + KERNEL_VFS_STRUCTURE_KNOT.name], ".."
 
- mov word [rbx + KERNEL_VFS_STRUCTURE_KNOT.name], ".."
+pop rbx
+pop rax
 
- pop rbx
- pop rax
+ret
 
- ret
-
- macro_debug "kernel_vfs_dir_symlinks"
+macro_debug "kernel_vfs_dir_symlinks"
 
 kernel_vfs_path_resolve:
- push rax
- push rbx
- push rdx
- push rsi
- push rcx
 
- push STATIC_EMPTY
+push rax
+push rbx
+push rdx
+push rsi
+push rcx
 
- xor ebx, ebx
+push STATIC_EMPTY
 
- test rcx, rcx
- jz .empty
+xor ebx, ebx
 
- mov rdi, kernel_vfs_magicknot
+test rcx, rcx
+jz .empty
 
- cmp byte [rsi], STATIC_ASCII_SLASH
- je .prefix
+mov rdi, kernel_vfs_magicknot
 
- call kernel_task_active
+cmp byte [rsi], STATIC_ASCII_SLASH
+je .prefix
 
- mov rdi, qword [rdi + KERNEL_STRUCTURE_TASK.knot]
+call kernel_task_active
 
- jmp .suffix
+mov rdi, qword [rdi + KERNEL_STRUCTURE_TASK.knot]
+
+jmp .suffix
 
 .prefix:
- dec rcx
- inc rsi
 
- test rcx, rcx
- jz .root
+dec rcx
+inc rsi
 
- cmp byte [rsi], STATIC_ASCII_SLASH
- je .prefix
+test rcx, rcx
+jz .root
+
+cmp byte [rsi], STATIC_ASCII_SLASH
+je .prefix
 
 .suffix:
- cmp byte [rsi + rcx - 0x01], STATIC_ASCII_SLASH
- jne .cut
 
- dec rcx
+cmp byte [rsi + rcx - 0x01], STATIC_ASCII_SLASH
+jne .cut
 
- test rcx, rcx
- jnz .suffix
+dec rcx
+
+test rcx, rcx
+jnz .suffix
 
 .cut:
- cmp byte [rsi + rcx - STATIC_BYTE_SIZE_byte], STATIC_ASCII_SLASH
- je .loop
 
- inc rbx
- dec rcx
+cmp byte [rsi + rcx - STATIC_BYTE_SIZE_byte], STATIC_ASCII_SLASH
+je .loop
 
- test rcx, rcx
- jnz .cut
+inc rbx
+dec rcx
 
- jmp .ready
+test rcx, rcx
+jnz .cut
+
+jmp .ready
 
 .doubled:
- dec rcx
- inc rsi
+
+dec rcx
+inc rsi
 
 .loop:
- test rcx, rcx
- jz .ready
 
- mov qword [rsp], rcx
+test rcx, rcx
+jz .ready
 
- mov al, STATIC_ASCII_SLASH
- call library_string_cut
- jc .ready
+mov qword [rsp], rcx
 
- test rcx, rcx
- jz .leave
+mov al, STATIC_ASCII_SLASH
+call library_string_cut
+jc .ready
 
- mov eax, KERNEL_VFS_ERROR_FILE_not_exists
+test rcx, rcx
+jz .leave
 
- call kernel_vfs_file_find
- jc .error
+mov eax, KERNEL_VFS_ERROR_FILE_not_exists
 
- bt word [rdi + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_symbolic_link_bit
- jnc .no_link
+call kernel_vfs_file_find
+jc .error
 
- mov rdi, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
+bt word [rdi + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_symbolic_link_bit
+jnc .no_link
+
+mov rdi, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
 
 .no_link:
- mov eax, KERNEL_VFS_ERROR_FILE_no_directory
 
- bt word [rdi + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_directory_bit
- jnc .error
+mov eax, KERNEL_VFS_ERROR_FILE_no_directory
 
- sub qword [rsp], rcx
- add rsi, rcx
+bt word [rdi + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_directory_bit
+jnc .error
+
+sub qword [rsp], rcx
+add rsi, rcx
 
 .leave:
- mov rcx, qword [rsp]
 
- jmp .doubled
+mov rcx, qword [rsp]
+
+jmp .doubled
 
 .ready:
- mov rcx, rbx
+
+mov rcx, rbx
 
 .prepared:
- mov qword [rsp + STATIC_QWORD_SIZE_byte], rcx
- mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x02], rsi
 
- clc
+mov qword [rsp + STATIC_QWORD_SIZE_byte], rcx
+mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x02], rsi
 
- jmp .end
+clc
+
+jmp .end
 
 .root:
- mov rcx, kernel_vfs_string_directory_local_end - kernel_vfs_string_directory_local
- mov rsi, kernel_vfs_string_directory_local
 
- jmp .prepared
+mov rcx, kernel_vfs_string_directory_local_end - kernel_vfs_string_directory_local
+mov rsi, kernel_vfs_string_directory_local
+
+jmp .prepared
 
 .empty:
- mov rax, KERNEL_VFS_ERROR_FILE_not_exists
+
+mov rax, KERNEL_VFS_ERROR_FILE_not_exists
 
 .error:
- mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x05], rax
 
- stc
+mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x05], rax
+
+stc
 
 .end:
- add rsp, STATIC_QWORD_SIZE_byte
 
- pop rcx
- pop rsi
- pop rdx
- pop rbx
- pop rax
+add rsp, STATIC_QWORD_SIZE_byte
 
- ret
+pop rcx
+pop rsi
+pop rdx
+pop rbx
+pop rax
 
- macro_debug "kernel_vfs_path_resolve"
+ret
+
+macro_debug "kernel_vfs_path_resolve"
 
 kernel_vfs_file_touch:
- push rcx
- push rsi
- push rax
 
- mov eax, KERNEL_VFS_ERROR_FILE_name_long
+push rcx
+push rsi
+push rax
 
- cmp rcx, KERNEL_VFS_STRUCTURE_KNOT.SIZE - KERNEL_VFS_STRUCTURE_KNOT.name
- ja .error
+mov eax, KERNEL_VFS_ERROR_FILE_name_long
 
- mov eax, KERNEL_VFS_ERROR_FILE_name_short
+cmp rcx, KERNEL_VFS_STRUCTURE_KNOT.SIZE - KERNEL_VFS_STRUCTURE_KNOT.name
+ja .error
 
- cmp rcx, STATIC_EMPTY
- je .error
+mov eax, KERNEL_VFS_ERROR_FILE_name_short
 
- mov eax, KERNEL_VFS_ERROR_FILE_exists
+cmp rcx, STATIC_EMPTY
+je .error
 
- call kernel_vfs_file_find
- jnc .error
+mov eax, KERNEL_VFS_ERROR_FILE_exists
 
- mov rax, KERNEL_VFS_ERROR_DIRECTORY_full
+call kernel_vfs_file_find
+jnc .error
 
- call kernel_vfs_knot_prepare
- jc .end
+mov rax, KERNEL_VFS_ERROR_DIRECTORY_full
 
- mov rax, rdi
+call kernel_vfs_knot_prepare
+jc .end
 
- cmp dl, KERNEL_VFS_FILE_TYPE_directory
- jz .directory
+mov rax, rdi
 
- cmp dl, KERNEL_VFS_FILE_TYPE_block_device
- jne .regular_file
- 
- mov qword [rax + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rbx
- 
- jmp .regular_file
+cmp dl, KERNEL_VFS_FILE_TYPE_directory
+je .directory
+
+cmp dl, KERNEL_VFS_FILE_TYPE_block_device
+jne .regular_file
+
+mov qword [rax + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rbx
+
+jmp .regular_file
 
 .directory:
- call kernel_memory_alloc_page
- jc .end
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc .end
 
- mov qword [rax + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rdi
- mov qword [rax + KERNEL_VFS_STRUCTURE_KNOT.size], 1
+call kernel_page_drain
+
+mov qword [rax + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rdi
+mov qword [rax + KERNEL_VFS_STRUCTURE_KNOT.size], 1
 
 .regular_file:
- mov byte [rax + KERNEL_VFS_STRUCTURE_KNOT.length], cl
 
- mov byte [rax + KERNEL_VFS_STRUCTURE_KNOT.type], dl
+mov byte [rax + KERNEL_VFS_STRUCTURE_KNOT.length], cl
 
- push rax
+mov byte [rax + KERNEL_VFS_STRUCTURE_KNOT.type], dl
 
- mov rdi, rax
- add rdi, KERNEL_VFS_STRUCTURE_KNOT.name
- rep movsb
+push rax
 
- pop rdi
+mov rdi, rax
+add rdi, KERNEL_VFS_STRUCTURE_KNOT.name
+rep movsb
 
- jmp .end
+pop rdi
+
+jmp .end
 
 .error:
- mov qword [rsp], rax
 
- stc
+mov qword [rsp], rax
+
+stc
 
 .end:
- pop rax
- pop rsi
- pop rcx
 
- ret
+pop rax
+pop rsi
+pop rcx
 
- macro_debug "kernel_vfs_file_touch"
+ret
+
+macro_debug "kernel_vfs_file_touch"
 
 kernel_vfs_file_find:
- push rax
- push rcx
- push rsi
- push rdi
 
- mov rax, rcx
+push rax
+push rcx
+push rsi
+push rdi
 
- mov rdi, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
+mov rax, rcx
+
+mov rdi, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
 
 .prepare:
- mov rcx, STATIC_STRUCTURE_BLOCK.link / KERNEL_VFS_STRUCTURE_KNOT.SIZE
+
+mov rcx, STATIC_STRUCTURE_BLOCK.link / KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
 .loop:
- cmp byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.length], al
- jne .next
 
- add rdi, KERNEL_VFS_STRUCTURE_KNOT.name
+cmp byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.length], al
+jne .next
 
- xchg rcx, rax
+add rdi, KERNEL_VFS_STRUCTURE_KNOT.name
 
- call library_string_compare
+xchg rcx, rax
 
- xchg rcx, rax
+call library_string_compare
 
- jnc .found
+xchg rcx, rax
 
- sub rdi, KERNEL_VFS_STRUCTURE_KNOT.name
+jnc .found
+
+sub rdi, KERNEL_VFS_STRUCTURE_KNOT.name
 
 .next:
- add rdi, KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
- loop .loop
+add rdi, KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
- and di, KERNEL_PAGE_mask
- mov rdi, qword [rdi + STATIC_STRUCTURE_BLOCK.link]
- test rdi, rdi
- jnz .prepare
+loop .loop
 
- stc
+and di, KERNEL_PAGE_mask
+mov rdi, qword [rdi + STATIC_STRUCTURE_BLOCK.link]
+test rdi, rdi
+jnz .prepare
 
- jmp .end
+stc
+
+jmp .end
 
 .found:
- sub rdi, KERNEL_VFS_STRUCTURE_KNOT.name
- mov qword [rsp], rdi
+
+sub rdi, KERNEL_VFS_STRUCTURE_KNOT.name
+mov qword [rsp], rdi
 
 .end:
- pop rdi
- pop rsi
- pop rcx
- pop rax
 
- ret
+pop rdi
+pop rsi
+pop rcx
+pop rax
 
- macro_debug "kernel_vfs_file_find"
+ret
+
+macro_debug "kernel_vfs_file_find"
 
 kernel_vfs_knot_prepare:
- push rcx
 
- macro_close kernel_vfs_semaphore, 0
+push rcx
 
- mov rdi, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
+macro_close kernel_vfs_semaphore, 0
+
+mov rdi, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
 
 .prepare:
- mov ecx, STATIC_STRUCTURE_BLOCK.link / KERNEL_VFS_STRUCTURE_KNOT.SIZE
+
+mov ecx, STATIC_STRUCTURE_BLOCK.link / KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
 .loop:
- cmp byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.type], STATIC_EMPTY
- je .ready
 
- add rdi, KERNEL_VFS_STRUCTURE_KNOT.SIZE
+cmp byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.type], STATIC_EMPTY
+je .ready
 
- loop .loop
+add rdi, KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
- and di, KERNEL_PAGE_mask
- mov rdi, qword [rdi + STATIC_STRUCTURE_BLOCK.link]
- test rdi, rdi
- jnz .prepare
+loop .loop
 
- mov rcx, rdi
+and di, KERNEL_PAGE_mask
+mov rdi, qword [rdi + STATIC_STRUCTURE_BLOCK.link]
+test rdi, rdi
+jnz .prepare
 
- call kernel_memory_alloc_page
- jnc .ok
+mov rcx, rdi
 
- stc
+call kernel_memory_alloc_page
+jnc .ok
 
- jmp .end
+stc
+
+jmp .end
 
 .ok:
- call kernel_page_drain
 
- mov qword [rcx], rdi
+call kernel_page_drain
+
+mov qword [rcx], rdi
 
 .ready:
- mov byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.length], STATIC_TRUE
+
+mov byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.length], STATIC_TRUE
 
 .end:
- mov byte [kernel_vfs_semaphore], STATIC_FALSE
 
- pop rcx
+mov byte [kernel_vfs_semaphore], STATIC_FALSE
 
- ret
+pop rcx
 
- macro_debug "kernel_vfs_knot_prepare"
+ret
+
+macro_debug "kernel_vfs_knot_prepare"
 
 kernel_vfs_file_write:
- push rax
- push rbx
- push rdx
- push rcx
- push rdi
 
- mov rbx, rdi
+push rax
+push rbx
+push rdx
+push rcx
+push rdi
 
- cmp qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], STATIC_EMPTY
- jne .exist
+mov rbx, rdi
 
- call kernel_memory_alloc_page
- jc .end
+cmp qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], STATIC_EMPTY
+jne .exist
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc .end
 
- mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rdi
+call kernel_page_drain
+
+mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rdi
 
 .exist:
- mov rdx, qword [rsp + STATIC_QWORD_SIZE_byte]
 
- mov rdi, qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
+mov rdx, qword [rsp + STATIC_QWORD_SIZE_byte]
 
- cmp rcx, STATIC_STRUCTURE_BLOCK.link
- jbe .all_in_one
+mov rdi, qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
 
- mov rax, STATIC_STRUCTURE_BLOCK.link
- xchg rax, rcx
- xor edx, edx
- div rcx
+cmp rcx, STATIC_STRUCTURE_BLOCK.link
+jbe .all_in_one
 
- test dx, dx
- jz .no_modulo
+mov rax, STATIC_STRUCTURE_BLOCK.link
+xchg rax, rcx
+xor edx, edx
+div rcx
 
- mov ecx, STATIC_TRUE
+test dx, dx
+jz .no_modulo
+
+mov ecx, STATIC_TRUE
 
 .no_modulo:
- add rcx, rax
- call kernel_page_secure
- jc .end
 
- mov rbp, rcx
+add rcx, rax
+call kernel_page_secure
+jc .end
 
- mov rdx, qword [rsp + STATIC_QWORD_SIZE_byte]
+mov rbp, rcx
+
+mov rdx, qword [rsp + STATIC_QWORD_SIZE_byte]
 
 .loop:
- mov ecx, STATIC_STRUCTURE_BLOCK.link
- shr ecx, STATIC_DIVIDE_BY_8_shift
- rep movsq
 
- sub rdx, STATIC_STRUCTURE_BLOCK.link
+mov ecx, STATIC_STRUCTURE_BLOCK.link
+shr ecx, STATIC_DIVIDE_BY_8_shift
+rep movsq
 
- cmp qword [rdi], STATIC_EMPTY
- jne .next_block
+sub rdx, STATIC_STRUCTURE_BLOCK.link
+
+cmp qword [rdi], STATIC_EMPTY
+jne .next_block
 
 .next_block:
- mov rdi, qword [rdi]
 
- cmp rdx, STATIC_STRUCTURE_BLOCK.link
- ja .loop
+mov rdi, qword [rdi]
+
+cmp rdx, STATIC_STRUCTURE_BLOCK.link
+ja .loop
 
 .all_in_one:
- test rdx, rdx
- jz .saved
 
- mov rcx, rdx
- rep movsb
+test rdx, rdx
+jz .saved
 
- and di, KERNEL_PAGE_mask
- mov rdi, qword [rdi + STATIC_STRUCTURE_BLOCK.link]
+mov rcx, rdx
+rep movsb
+
+and di, KERNEL_PAGE_mask
+mov rdi, qword [rdi + STATIC_STRUCTURE_BLOCK.link]
 
 .remove:
- test rdi, rdi
- jz .saved
 
- push qword [rdi + STATIC_STRUCTURE_BLOCK.link]
+test rdi, rdi
+jz .saved
 
- call kernel_memory_release_page
+push qword [rdi + STATIC_STRUCTURE_BLOCK.link]
 
- pop rdi
+call kernel_memory_release_page
 
- jmp .remove
+pop rdi
+
+jmp .remove
 
 .saved:
- sub qword [kernel_page_reserved_count], rbp
- add qword [kernel_page_free_count], rbp
 
- mov rcx, qword [rsp + STATIC_QWORD_SIZE_byte]
- mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.size], rcx
+sub qword [kernel_page_reserved_count], rbp
+add qword [kernel_page_free_count], rbp
 
- mov rcx, qword [driver_rtc_microtime]
- mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified], rcx
+mov rcx, qword [rsp + STATIC_QWORD_SIZE_byte]
+mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.size], rcx
+
+mov rcx, qword [driver_rtc_microtime]
+mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified], rcx
 
 .end:
- pop rdi
- pop rcx
- pop rdx
- pop rbx
- pop rax
 
- ret
+pop rdi
+pop rcx
+pop rdx
+pop rbx
+pop rax
 
- macro_debug "kernel_vfs_file_write"
+ret
+
+macro_debug "kernel_vfs_file_write"
 
 kernel_vfs_file_append:
- push rax
- push rbx
- push rcx
- push rdx
- push rdi
 
- push rcx
+push rax
+push rbx
+push rcx
+push rdx
+push rdi
 
- mov rbx, rdi
+push rcx
 
- cmp qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], STATIC_EMPTY
- jne .exist
+mov rbx, rdi
 
- mov eax, KERNEL_VFS_ERROR_FILE_low_memory
+cmp qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], STATIC_EMPTY
+jne .exist
 
- call kernel_memory_alloc_page
- jc .end
+mov eax, KERNEL_VFS_ERROR_FILE_low_memory
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc .end
 
- mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rdi
+call kernel_page_drain
+
+mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data], rdi
 
 .exist:
- mov rdi, qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
+
+mov rdi, qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
 
 .last_one:
- cmp qword [rdi + STATIC_STRUCTURE_BLOCK.link], STATIC_EMPTY
- je .found
 
- mov rdi, qword [rdi + STATIC_STRUCTURE_BLOCK.link]
+cmp qword [rdi + STATIC_STRUCTURE_BLOCK.link], STATIC_EMPTY
+je .found
 
- jmp .last_one
+mov rdi, qword [rdi + STATIC_STRUCTURE_BLOCK.link]
+
+jmp .last_one
 
 .found:
- mov rax, qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.size]
- mov rcx, STATIC_STRUCTURE_BLOCK.link
- xor edx, edx
- div rcx
 
- add rdi, rax
+mov rax, qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.size]
+mov rcx, STATIC_STRUCTURE_BLOCK.link
+xor edx, edx
+div rcx
 
- sub rax, STATIC_STRUCTURE_BLOCK.link
- not rax
- inc rax
+add rdi, rax
 
- mov rcx, rax
+sub rax, STATIC_STRUCTURE_BLOCK.link
+not rax
+inc rax
 
- cmp rcx, qword [rsp]
- jbe .more
+mov rcx, rax
+
+cmp rcx, qword [rsp]
+jbe .more
 
 .less:
- xor ecx, ecx
 
- xchg rcx, qword [rsp]
+xor ecx, ecx
 
- jmp .write
+xchg rcx, qword [rsp]
+
+jmp .write
 
 .more:
- sub qword [rsp], rcx
+
+sub qword [rsp], rcx
 
 .write:
- rep movsb
 
- cmp qword [rsp], STATIC_EMPTY
- je .ready
+rep movsb
 
- mov rdx, rdi
+cmp qword [rsp], STATIC_EMPTY
+je .ready
 
- mov eax, KERNEL_VFS_ERROR_FILE_low_memory
+mov rdx, rdi
 
- call kernel_memory_alloc_page
- jc .end
+mov eax, KERNEL_VFS_ERROR_FILE_low_memory
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc .end
 
- mov qword [rdx], rdi
+call kernel_page_drain
 
- mov ecx, STATIC_STRUCTURE_BLOCK.link
+mov qword [rdx], rdi
 
- cmp qword [rsp], rcx
- jbe .less
- ja .more
+mov ecx, STATIC_STRUCTURE_BLOCK.link
+
+cmp qword [rsp], rcx
+jbe .less
+ja .more
 
 .ready:
- mov rcx, qword [rsp + STATIC_QWORD_SIZE_byte * 0x03]
- add qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.size], rcx
 
- mov rcx, qword [driver_rtc_microtime]
- mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified], rcx
+mov rcx, qword [rsp + STATIC_QWORD_SIZE_byte * 0x03]
+add qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.size], rcx
+
+mov rcx, qword [driver_rtc_microtime]
+mov qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified], rcx
 
 .end:
- add rsp, STATIC_QWORD_SIZE_byte
 
- pop rdi
- pop rdx
- pop rcx
- pop rbx
- pop rax
+add rsp, STATIC_QWORD_SIZE_byte
 
- ret
+pop rdi
+pop rdx
+pop rcx
+pop rbx
+pop rax
 
- macro_debug "kernel_vfs_file_append"
+ret
+
+macro_debug "kernel_vfs_file_append"
 
 kernel_vfs_file_read:
- push rax
- push rdx
- push rsi
- push rdi
+
+push rax
+push rdx
+push rsi
+push rdi
 
 .symbolic_link:
- bt word [rsi + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_symbolic_link_bit
- jnc .file
 
- mov rsi, qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
+bt word [rsi + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_symbolic_link_bit
+jnc .file
 
- jmp .symbolic_link
+mov rsi, qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
+
+jmp .symbolic_link
 
 .file:
- mov rax, qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.size]
 
- bt word [rsi + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_directory_bit
- jnc .regular_file
+mov rax, qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.size]
 
- mov rcx, STATIC_STRUCTURE_BLOCK.link
- mul rcx
+bt word [rsi + KERNEL_VFS_STRUCTURE_KNOT.type], KERNEL_VFS_FILE_TYPE_directory_bit
+jnc .regular_file
+
+mov rcx, STATIC_STRUCTURE_BLOCK.link
+mul rcx
 
 .regular_file:
- push rax
 
- mov rsi, qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
+push rax
+
+mov rsi, qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
 
 .loop:
- mov rcx, STATIC_STRUCTURE_BLOCK.link
 
- cmp rax, rcx
- ja .next_block
+mov rcx, STATIC_STRUCTURE_BLOCK.link
 
- mov rcx, rax
+cmp rax, rcx
+ja .next_block
+
+mov rcx, rax
 
 .next_block:
- sub rax, rcx
 
- rep movsb
+sub rax, rcx
 
- and si, KERNEL_PAGE_mask
- mov rsi, qword [rsi + STATIC_STRUCTURE_BLOCK.link]
+rep movsb
 
- test rax, rax
- jnz .loop
+and si, KERNEL_PAGE_mask
+mov rsi, qword [rsi + STATIC_STRUCTURE_BLOCK.link]
 
- pop rcx
+test rax, rax
+jnz .loop
 
- pop rdi
- pop rsi
- pop rdx
- pop rax
+pop rcx
 
- ret
+pop rdi
+pop rsi
+pop rdx
+pop rax
 
- macro_debug "kernel_vfs_file_read"
+ret
+
+macro_debug "kernel_vfs_file_read"
+

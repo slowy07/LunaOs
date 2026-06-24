@@ -1,9 +1,10 @@
 %MACRO macro_debug 1
 %ifdef DEBUG
- jmp %%skip
+jmp %%skip
 
- db "^ ", %1
+db "^ ", %1
 
 %%skip:
 %endif
 %ENDMACRO
+

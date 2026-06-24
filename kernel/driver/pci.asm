@@ -19,181 +19,198 @@ DRIVER_PCI_CLASS_SUBCLASS_scsi equ 0x0107
 DRIVER_PCI_CLASS_SUBCLASS_network equ 0x0200
 
 driver_pci_find_vendor_and_device:
- push rbx
- push rcx
- push rdx
- push rax
 
- xor ebx, ebx
- xor ecx, ecx
- xor edx, edx
+push rbx
+push rcx
+push rdx
+push rax
+
+xor ebx, ebx
+
+xor ecx, ecx
+
+xor edx, edx
 
 .next:
- mov eax, DRIVER_PCI_REGISTER_vendor_and_device
- call driver_pci_read
 
- cmp eax, dword [rsp]
- je .found
+mov eax, DRIVER_PCI_REGISTER_vendor_and_device
+call driver_pci_read
 
- inc edx
+cmp eax, dword [rsp]
+je .found
 
- cmp edx, 0x0008
- jb .next
+inc edx
 
- inc ecx
+cmp edx, 0x0008
+jb .next
 
- xor edx, edx
+inc ecx
 
- cmp ecx, 0x0020
- jb .next
+xor edx, edx
 
- inc ebx
+cmp ecx, 0x0020
+jb .next
 
- xor ecx, ecx
+inc ebx
 
- cmp ebx, 0x0100
- jb .next
+xor ecx, ecx
+
+cmp ebx, 0x0100
+jb .next
 
 .error:
- stc
 
- jmp .end
+stc
+
+jmp .end
 
 .found:
- mov eax, DRIVER_PCI_REGISTER_bar0
- call driver_pci_read
 
- mov qword [rsp + STATIC_QWORD_SIZE_byte], rdx
- mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x02], rcx
- mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x03], rbx
+mov eax, DRIVER_PCI_REGISTER_bar0
+call driver_pci_read
 
- clc
+mov qword [rsp + STATIC_QWORD_SIZE_byte], rdx
+mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x02], rcx
+mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x03], rbx
+
+clc
 
 .end:
- pop rax
- pop rdx
- pop rcx
- pop rbx
 
- ret
+pop rax
+pop rdx
+pop rcx
+pop rbx
+
+ret
 
 driver_pci_find_class_and_subclass:
- push rbx
- push rcx
- push rdx
- push rax
 
- xor ebx, ebx
- xor ecx, ecx
- xor edx, edx
+push rbx
+push rcx
+push rdx
+push rax
+
+xor ebx, ebx
+
+xor ecx, ecx
+
+xor edx, edx
 
 .next:
- mov eax, DRIVER_PCI_REGISTER_class_and_subclass
- call driver_pci_read
 
- shr eax, STATIC_MOVE_HIGH_TO_AX_shift
+mov eax, DRIVER_PCI_REGISTER_class_and_subclass
+call driver_pci_read
 
- cmp ax, word [rsp]
- je .found
+shr eax, STATIC_MOVE_HIGH_TO_AX_shift
 
- inc edx
+cmp ax, word [rsp]
+je .found
 
- cmp edx, 0x0008
- jb .next
+inc edx
 
- inc ecx
+cmp edx, 0x0008
+jb .next
 
- xor edx, edx
+inc ecx
 
- cmp ecx, 0x0020
- jb .next
+xor edx, edx
 
- inc ebx
+cmp ecx, 0x0020
+jb .next
 
- xor ecx, ecx
+inc ebx
 
- cmp ebx, 0x0100
- jb .next
+xor ecx, ecx
+
+cmp ebx, 0x0100
+jb .next
 
 .error:
- stc
 
- jmp .end
+stc
+
+jmp .end
 
 .found:
- mov qword [rsp + STATIC_QWORD_SIZE_byte], rdx
- mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x02], rcx
- mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x03], rbx
 
- clc
+mov qword [rsp + STATIC_QWORD_SIZE_byte], rdx
+mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x02], rcx
+mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x03], rbx
+
+clc
 
 .end:
- pop rax
- pop rdx
- pop rcx
- pop rbx
 
- ret
+pop rax
+pop rdx
+pop rcx
+pop rbx
+
+ret
 
 driver_pci_read:
- push rbx
- push rcx
- push rdx
 
- or eax, 0x80000000
+push rbx
+push rcx
+push rdx
 
- ror eax, 8
- or al, dl
+or eax, 0x80000000
 
- ror eax, 3
- or al, cl
+ror eax, 8
+or al, dl
 
- ror eax, 5
- or al, bl
+ror eax, 3
+or al, cl
 
- rol eax, 16
+ror eax, 5
+or al, bl
 
- mov dx, DRIVER_PCI_PORT_command
- out dx, eax
+rol eax, 16
 
- mov dx, DRIVER_PCI_PORT_data
- in eax, dx
+mov dx, DRIVER_PCI_PORT_command
+out dx, eax
 
- pop rdx
- pop rcx
- pop rbx
+mov dx, DRIVER_PCI_PORT_data
+in eax, dx
 
- ret
+pop rdx
+pop rcx
+pop rbx
+
+ret
 
 driver_pci_write:
- push rbx
- push rcx
- push rdx
- push rax
 
- or eax, 0x80000000
+push rbx
+push rcx
+push rdx
+push rax
 
- ror eax, 8
- or al, dl
+or eax, 0x80000000
 
- ror eax, 3
- or al, cl
+ror eax, 8
+or al, dl
 
- ror eax, 5
- or al, bl
+ror eax, 3
+or al, cl
 
- rol eax, 16
+ror eax, 5
+or al, bl
 
- mov dx, DRIVER_PCI_PORT_command
- out dx, eax
+rol eax, 16
 
- pop rax
+mov dx, DRIVER_PCI_PORT_command
+out dx, eax
 
- mov dx, DRIVER_PCI_PORT_data
- out dx, eax
+pop rax
 
- pop rdx
- pop rcx
- pop rbx
+mov dx, DRIVER_PCI_PORT_data
+out dx, eax
 
- ret
+pop rdx
+pop rcx
+pop rbx
+
+ret
+

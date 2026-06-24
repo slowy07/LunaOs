@@ -1,73 +1,79 @@
 library_string_word_next:
- push rax
- push rcx
 
- test rcx, rcx
- jz .not_found
+push rax
+push rcx
+
+test rcx, rcx
+jz .not_found
 
 .find:
- cmp byte [rsi], STATIC_ASCII_TERMINATOR
- je .not_found
 
- cmp byte [rsi], STATIC_ASCII_NEW_LINE
- je .leave
+cmp byte [rsi], STATIC_ASCII_TERMINATOR
+je .not_found
 
- cmp byte [rsi], STATIC_ASCII_SPACE
- je .leave
+cmp byte [rsi], STATIC_ASCII_NEW_LINE
+je .leave
 
- cmp byte [rsi], STATIC_ASCII_TAB
- jne .char
+cmp byte [rsi], STATIC_ASCII_SPACE
+je .leave
+
+cmp byte [rsi], STATIC_ASCII_TAB
+jne .char
 
 .leave:
- inc rsi
 
- dec rcx
- jnz .find
+inc rsi
 
- jmp .not_found
+dec rcx
+jnz .find
+
+jmp .not_found
 
 .char:
 
- push rsi
+push rsi
 
- xor rax, rax
+xor rax, rax
 
 .count:
- cmp byte [rsi], STATIC_ASCII_TERMINATOR
- je .ready
 
- cmp byte [rsi], STATIC_ASCII_NEW_LINE
- je .ready
+cmp byte [rsi], STATIC_ASCII_TERMINATOR
+je .ready
 
- cmp byte [rsi], STATIC_ASCII_SPACE
- je .ready
+cmp byte [rsi], STATIC_ASCII_NEW_LINE
+je .ready
 
- cmp byte [rsi], STATIC_ASCII_TAB
- je .ready
+cmp byte [rsi], STATIC_ASCII_SPACE
+je .ready
 
- inc rsi
+cmp byte [rsi], STATIC_ASCII_TAB
+je .ready
 
- inc rax
+inc rsi
 
- dec rcx
- jnz .count
+inc rax
+
+dec rcx
+jnz .count
 
 .ready:
- pop rsi
 
- mov rbx, rax
+pop rsi
 
- clc
+mov rbx, rax
 
- jmp .end
+clc
+
+jmp .end
 
 .not_found:
- stc
+
+stc
 
 .end:
- pop rcx
- pop rax
 
- ret
+pop rcx
+pop rax
 
- macro_debug "library_string_word_next"
+ret
+

@@ -27,13 +27,13 @@ DRIVER_RTC_PORT_STATUS_REGISTER_C equ 0x0C
 DRIVER_RTC_Hz equ 1024
 
 struc DRIVER_RTC_STRUCTURE
- .second resb 1
- .minute resb 1
- .hour resb 1
- .day resb 1
- .month resb 1
- .year resb 1
- .day_of_week resb 1
+.second resb 1
+.minute resb 1
+.hour resb 1
+.day resb 1
+.month resb 1
+.year resb 1
+.day_of_week resb 1
 endstruc
 
 driver_rtc_semaphore db STATIC_FALSE
@@ -43,40 +43,43 @@ driver_rtc_microtime dq STATIC_EMPTY
 driver_rtc_date_and_time dq STATIC_EMPTY
 
 driver_rtc:
- push rax
 
- inc qword [driver_rtc_microtime]
+push rax
 
- in al, DRIVER_RTC_PORT_data
+inc qword [driver_rtc_microtime]
 
- mov rax, qword [kernel_apic_base_address]
- mov dword [rax + KERNEL_APIC_EOI_register], STATIC_EMPTY
+in al, DRIVER_RTC_PORT_data
 
- pop rax
+mov rax, qword [kernel_apic_base_address]
+mov dword [rax + KERNEL_APIC_EOI_register], STATIC_EMPTY
 
- iretq
+pop rax
+
+iretq
 
 driver_rtc_get_date_and_time:
- push rax
 
- mov al, DRIVER_RTC_PORT_second
- out DRIVER_RTC_PORT_command, al
- in al, DRIVER_RTC_PORT_data
+push rax
 
- mov byte [driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.second], al
+mov al, DRIVER_RTC_PORT_second
+out DRIVER_RTC_PORT_command, al
+in al, DRIVER_RTC_PORT_data
 
- mov al, DRIVER_RTC_PORT_minute
- out DRIVER_RTC_PORT_command, al
- in al, DRIVER_RTC_PORT_data
+mov byte [driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.second], al
 
- mov byte [driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.minute], al
+mov al, DRIVER_RTC_PORT_minute
+out DRIVER_RTC_PORT_command, al
+in al, DRIVER_RTC_PORT_data
 
- mov al, DRIVER_RTC_PORT_hour
- out DRIVER_RTC_PORT_command, al
- in al, DRIVER_RTC_PORT_data
+mov byte [driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.minute], al
 
- mov byte [driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.hour], al
+mov al, DRIVER_RTC_PORT_hour
+out DRIVER_RTC_PORT_command, al
+in al, DRIVER_RTC_PORT_data
 
- pop rax
+mov byte [driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.hour], al
 
- ret
+pop rax
+
+ret
+

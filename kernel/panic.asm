@@ -1,14 +1,17 @@
 kernel_panic:
- mov ah, 0x0C
 
- mov edi, 0x000B8000
+mov ah, 0x0C
+
+mov edi, 0x000B8000
 
 .loop:
- lodsb
 
- stosw
+lodsb
 
- dec ecx
- jnz .loop
+stosw
 
- jmp $
+dec ecx
+jnz .loop
+
+jmp $
+

@@ -1,29 +1,32 @@
 library_string_digits:
- push rsi
- push rcx
+
+push rsi
+push rcx
 
 .loop:
- cmp byte [rsi], STATIC_ASCII_DIGIT_0
- jb .error
- cmp byte [rsi], STATIC_ASCII_DIGIT_9
- ja .error
 
- inc rsi
+cmp byte [rsi], STATIC_ASCII_DIGIT_0
+jb .error
+cmp byte [rsi], STATIC_ASCII_DIGIT_9
+ja .error
 
- dec rcx
- jnz .loop
+inc rsi
 
- clc
+dec rcx
+jnz .loop
 
- jmp .end
+clc
+
+jmp .end
 
 .error:
- stc
+
+stc
 
 .end:
- pop rcx
- pop rsi
 
- ret
+pop rcx
+pop rsi
 
- macro_debug "library_string_digits"
+ret
+

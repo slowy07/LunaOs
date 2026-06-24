@@ -3,31 +3,109 @@ File: kernel/exec.asm
 Author: arfy slowy
 
 OVERVIEW
-Loads and executes a userspace process from a VFS file knot.
-Allocates a new page table, maps process code and stack, sets up
-a ring-3 iretq frame, reads the executable from VFS, and registers
-the task with the scheduler.
+Loads and executes a flat binary userspace process from a VFS file
+knot. Creates an isolated address space using a dedicated PML4 table
+with ring-3 accessible code and ring-0-only stack. Sets up an iretq
+frame on the parent task's stack for ring-3 return.
 
-PROCEDURE
+PROCEDURE FLOW
 
-kernel_exec:
-  Input: RDI = VFS knot of executable, R8 = parent task structure
-  Output: RCX = PID of new process
-  Flow:
-    1. Calculate page count from file size (via library_page_from_size)
-    2. Secure that many pages (+14 extra)
-    3. Allocate a page for the new PML4 table
-    4. Map code at SOFTWARE_base_address (KERNEL_MEMORY_HIGH_REAL_address)
-    5. Map stack at KERNEL_STACK_address
-    6. Merge new PML4 with current kernel mappings
-    7. Build iretq frame on parent task's stack:
-       - RIP = KERNEL_MEMORY_HIGH_REAL_address
-       - CS = ring-3 code segment
-       - EFLAGS = KERNEL_TASK_EFLAGS_default
-       - RSP = 0
-       - DS = ring-3 data segment
-    8. Switch to new page table (cr3)
-    9. Read executable from VFS into SOFTWARE_base_address
-    10. Restore original cr3
-    11. Call kernel_task_add to register the task
-    12. Release secured pages, return PID
+kernel_exec(RDI=vfs_knot, R8=parent_task)
+
++-------+-------------------------------------------------------------+
+| Step  | Operation                                                   |
++-------+-------------------------------------------------------------+
+|  1    | rcx = file_size -> call library_page_from_size              |
+|  2    | rcx += 14 -> call kernel_page_secure (reserve pages)        |
+|  3    | call kernel_memory_alloc_page  (new PML4 page)              |
+|  4    | call kernel_page_drain         (zero it out)                |
+|  5    | Save PML4 ptr in r11                                        |
+|  6    | Map code at KERNEL_MEMORY_HIGH_VIRTUAL with user+rw flags   |
+|  7    | Map code+1 page at (HIGH_VIRTUAL << 1) - PAGE_SIZE           |
+|  8    | Map stack at KERNEL_STACK_address (kernel-only, rw)          |
+|  9    | Merge new PML4 with kernel mappings (kernel_page_merge)      |
+| 10    | Build iretq frame on parent task stack:                      |
+|       |    [RIP]   = KERNEL_MEMORY_HIGH_REAL_address (+0x00)        |
+|       |    [CS]    = GDT.cs_ring3 | 0x03                 (+0x08)    |
+|       |    [RFLAGS]= KERNEL_TASK_EFLAGS_default          (+0x10)    |
+|       |    [RSP]   = 0                                    (+0x18)    |
+|       |    [SS]    = GDT.ds_ring3 | 0x03                 (+0x20)    |
+| 11    | Switch to new cr3 (r11)                                     |
+| 12    | Read VFS file into SOFTWARE_base_address                    |
+| 13    | Restore original cr3                                        |
+| 14    | call kernel_task_add(flags=KERNEL_TASK_FLAG_active)          |
+| 15    | Release secured pages (free += rbp, reserved -= rbp)        |
+| 16    | Return PID in rcx via stack slot                             |
++-------+-------------------------------------------------------------+
+
+PAGE TABLE HIERARCHY (4-level paging)
+
+                    CR3
+                     |
+                     v
+ [ PML4 Table ] -- 512 entries x 8 bytes = 4K page
+   entry[i] --> PDPT physical address + flags
+                     |
+                     v
+ [ PDP Table ]  -- 512 entries x 8 bytes = 4K page
+   entry[i] --> PD physical address + flags
+                     |
+                     v
+ [ PD Table ]   -- 512 entries x 2MB pages = 1GB range
+   entry[i] --> PT physical address + flags  (4K pages)
+   entry[i] --> 2MB page addr + flags        (huge page)
+                     |
+                     v
+ [ PT Table ]   -- 512 entries x 4K pages = 2MB range
+   entry[i] --> 4K page physical address + flags
+
+PROCESS VIRTUAL ADDRESS SPACE
+
+0xFFFF800000000000  KERNEL_MEMORY_HIGH_REAL_address (= SOFTWARE_base_address)
++------------------------------------------+
+| Userspace code (from VFS file)  [RW]     |  ring-3 accessible
++------------------------------------------+
+| Extra code page (HIGH_VIRTUAL << 1)-PAGE  |  [RW]
++------------------------------------------+
+| ...                                       |
++------------------------------------------+
+| Kernel stack (KERNEL_STACK_address) [RW]  |  ring-0 only
++------------------------------------------+
+
+Note: The new PML4 is merged with the kernel's existing PML4 via
+kernel_page_merge, so the new process sees kernel mappings in the
+high half while having its own low-half mappings.
+
+IRETQ FRAME LAYOUT (on parent task stack)
+
++0x00: RIP  = KERNEL_MEMORY_HIGH_REAL_address
++0x08: CS   = KERNEL_STRUCTURE_GDT.cs_ring3 | 0x03
++0x10: RFLAGS = KERNEL_TASK_EFLAGS_default
++0x18: RSP  = 0x0000000000000000
++0x20: SS   = KERNEL_STRUCTURE_GDT.ds_ring3 | 0x03
+
+When the scheduler switches to this task and iretq executes, the CPU
+will pop these values, entering ring-3 with CS/RPL=3, SS/RPL=3, and
+start executing at SOFTWARE_base_address with stack at 0.
+
+CALLING CONVENTION
+
+Inputs:
+  RDI - Pointer to VFS knot (struct KERNEL_VFS_STRUCTURE_KNOT)
+        of the executable file to load (must be regular file type)
+  R8  - Pointer to parent task structure whose stack page is used
+        to build the iretq frame (reads qword [r8], page-aligns,
+        adds PAGE_SIZE - 5*qwords for frame)
+
+Outputs:
+  RCX - PID of the newly created process, or 0 on failure
+
+Dependencies:
+  library_page_from_size  - Convert byte size to page count
+  kernel_page_secure      - Reserve physical pages
+  kernel_memory_alloc_page- Allocate a zeroed PML4 page
+  kernel_page_drain       - Zero a page (after allocation)
+  kernel_page_map_logical - Map a virtual address range
+  kernel_page_merge       - Copy kernel PML4 entries into new table
+  kernel_vfs_file_read    - Read file contents into memory
+  kernel_task_add         - Register process with scheduler

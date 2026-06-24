@@ -1,37 +1,41 @@
 kernel_init_task:
- movzx ecx, byte [kernel_init_apic_id_highest]
- inc cx
 
- shl ecx, STATIC_MULTIPLE_BY_8_shift
+movzx ecx, byte [kernel_init_apic_id_highest]
+inc cx
 
- call library_page_from_size
+shl ecx, STATIC_MULTIPLE_BY_8_shift
 
- call kernel_memory_alloc
- jc kernel_init_panic_low_memory
+call library_page_from_size
 
- mov qword [kernel_task_active_list], rdi
+call kernel_memory_alloc
+jc kernel_init_panic_low_memory
 
- mov rsi, rdi
+mov qword [kernel_task_active_list], rdi
 
- call kernel_memory_alloc_page
- jc kernel_init_panic_low_memory
+mov rsi, rdi
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc kernel_init_panic_low_memory
 
- mov qword [kernel_task_address], rdi
+call kernel_page_drain
 
- mov qword [rdi + STATIC_STRUCTURE_BLOCK.link], rdi
+mov qword [kernel_task_address], rdi
 
- call kernel_apic_id_get
+mov qword [rdi + STATIC_STRUCTURE_BLOCK.link], rdi
 
- shl rax, STATIC_MULTIPLE_BY_8_shift
- mov qword [rsi + rax], rdi
+call kernel_apic_id_get
 
- mov ebx, KERNEL_TASK_FLAG_active | KERNEL_TASK_FLAG_secured | KERNEL_TASK_FLAG_processing
- mov r11, qword [kernel_page_pml4_address]
- call kernel_task_add
+shl rax, STATIC_MULTIPLE_BY_8_shift
+mov qword [rsi + rax], rdi
 
- mov rax, KERNEL_APIC_IRQ_number
- mov bx, KERNEL_IDT_TYPE_irq
- mov rdi, kernel_task
- call kernel_idt_mount
+mov ebx, KERNEL_TASK_FLAG_active | KERNEL_TASK_FLAG_secured | KERNEL_TASK_FLAG_processing
+mov r11, qword [kernel_page_pml4_address]
+call kernel_task_add
+
+mov qword [rdi + KERNEL_STRUCTURE_TASK.knot], kernel_vfs_magicknot
+
+mov rax, KERNEL_APIC_IRQ_number
+mov bx, KERNEL_IDT_TYPE_irq
+mov rdi, kernel_task
+call kernel_idt_mount
+

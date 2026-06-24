@@ -20,685 +20,747 @@ kernel_page_reserved_count dq STATIC_EMPTY
 kernel_page_paged_count dq STATIC_EMPTY
 
 kernel_page_purge:
- push rbx
- push rcx
- push rdi
 
- mov bl, 0x04
+push rbx
+push rcx
+push rdi
 
- mov rdi, r11
+mov bl, 0x04
+
+mov rdi, r11
 
 .recursion:
- dec bl
 
- push rcx
+dec bl
 
- call kernel_page_purge.table
- jnc .purge
+push rcx
 
- test bl, bl
- jz .continue
+call kernel_page_purge.table
+jnc .purge
 
- mov ecx, KERNEL_PAGE_RECORDS_amount
+test bl, bl
+jz .continue
+
+mov ecx, KERNEL_PAGE_RECORDS_amount
 
 .loop:
- cmp qword [rdi], STATIC_EMPTY
- je .empty
 
- push rdi
+cmp qword [rdi], STATIC_EMPTY
+je .empty
 
- mov rdi, qword [rdi]
- and di, KERNEL_PAGE_mask
+push rdi
 
- call kernel_page_purge.recursion
+mov rdi, qword [rdi]
+and di, KERNEL_PAGE_mask
 
- pop rdi
+call kernel_page_purge.recursion
+
+pop rdi
 
 .empty:
- add rdi, STATIC_QWORD_SIZE_byte
 
- dec ecx
- jnz .loop
+add rdi, STATIC_QWORD_SIZE_byte
+
+dec ecx
+jnz .loop
 
 .continue:
- pop rcx
 
- inc bl
+pop rcx
 
- cmp bl, 0x04
- je .end
+inc bl
 
- ret
+cmp bl, 0x04
+je .end
+
+ret
 
 .purge:
- test rdi, r11
- jz .end
 
- call kernel_memory_release_page
+test rdi, r11
+jz .end
 
- mov rdi, qword [rsp + STATIC_QWORD_SIZE_byte * 0x02]
- mov qword [rdi], STATIC_EMPTY
+call kernel_memory_release_page
 
- jmp .continue
+mov rdi, qword [rsp + STATIC_QWORD_SIZE_byte * 0x02]
+mov qword [rdi], STATIC_EMPTY
+
+jmp .continue
 
 .end:
- pop rdi
- pop rcx
- pop rbx
 
- ret
+pop rdi
+pop rcx
+pop rbx
+
+ret
 
 .table:
- push rcx
- push rdi
 
- mov ecx, KERNEL_PAGE_RECORDS_amount
+push rcx
+push rdi
+
+mov ecx, KERNEL_PAGE_RECORDS_amount
 
 .table_check:
- cmp qword [rdi], STATIC_EMPTY
- jne .table_not_empty
 
- add rdi, STATIC_QWORD_SIZE_byte
+cmp qword [rdi], STATIC_EMPTY
+jne .table_not_empty
 
- dec ecx
- jnz .table_check
+add rdi, STATIC_QWORD_SIZE_byte
 
- clc
+dec ecx
+jnz .table_check
 
- jmp .table_end
+clc
+
+jmp .table_end
 
 .table_not_empty:
- stc
+
+stc
 
 .table_end:
- pop rdi
- pop rcx
 
- ret
+pop rdi
+pop rcx
+
+ret
 
 kernel_page_drain:
- push rcx
 
- mov rcx, KERNEL_PAGE_SIZE_byte
- call .proceed
+push rcx
 
- pop rcx
+mov rcx, KERNEL_PAGE_SIZE_byte
+call .proceed
 
- ret
+pop rcx
 
- macro_debug "kernel_page_drain"
+ret
+
+macro_debug "kernel_page_drain"
 
 .proceed:
- push rax
- push rdi
 
- xor rax, rax
- shr rcx, STATIC_DIVIDE_BY_8_shift
- and di, KERNEL_PAGE_mask
- rep stosq
+push rax
+push rdi
 
- pop rdi
- pop rax
+xor rax, rax
+shr rcx, STATIC_DIVIDE_BY_8_shift
+and di, KERNEL_PAGE_mask
+rep stosq
 
- ret
+pop rdi
+pop rax
+
+ret
 
 kernel_page_drain_few:
- push rcx
 
- shl rcx, KERNEL_PAGE_SIZE_shift
- call kernel_page_drain.proceed
+push rcx
 
- pop rcx
+shl rcx, KERNEL_PAGE_SIZE_shift
+call kernel_page_drain.proceed
 
- ret
+pop rcx
 
- macro_debug "kernel_page_drain_few"
+ret
+
+macro_debug "kernel_page_drain_few"
 
 kernel_page_map_physical:
- push rcx
- push rdx
- push rdi
- push r9
- push r10
- push r11
- push r12
- push r13
- push r14
- push r15
- push rax
 
- call kernel_page_prepare
- jc .error
+push rcx
+push rdx
+push rdi
+push r9
+push r10
+push r11
+push r12
+push r13
+push r14
+push r15
+push rax
 
- or ax, bx
+call kernel_page_prepare
+jc .error
+
+or ax, bx
 
 .row:
- cmp r12, KERNEL_PAGE_RECORDS_amount
- jb .exist
 
- call kernel_page_pml1
+cmp r12, KERNEL_PAGE_RECORDS_amount
+jb .exist
+
+call kernel_page_pml1
 
 .exist:
- stosq
 
- add rax, KERNEL_PAGE_SIZE_byte
+stosq
 
- inc r12
+add rax, KERNEL_PAGE_SIZE_byte
 
- dec rcx
- jnz .row
+inc r12
 
- clc
+dec rcx
+jnz .row
 
- jmp .end
+clc
+
+jmp .end
 
 .error:
- stc
+
+stc
 
 .end:
- pop rax
- pop r15
- pop r14
- pop r13
- pop r12
- pop r11
- pop r10
- pop r9
- pop rdi
- pop rdx
- pop rcx
 
- ret
+pop rax
+pop r15
+pop r14
+pop r13
+pop r12
+pop r11
+pop r10
+pop r9
+pop rdi
+pop rdx
+pop rcx
 
- macro_debug "kernel_page_map_physical"
+ret
+
+macro_debug "kernel_page_map_physical"
 
 kernel_page_map_logical:
- push rax
- push rcx
- push rdx
- push rdi
- push r9
- push r10
- push r11
- push r12
- push r13
- push r14
- push r15
 
- call kernel_page_prepare
+push rax
+push rcx
+push rdx
+push rdi
+push r9
+push r10
+push r11
+push r12
+push r13
+push r14
+push r15
+
+call kernel_page_prepare
 
 .record:
- cmp r12, KERNEL_PAGE_RECORDS_amount
- jb .exists
 
- call kernel_page_pml1
+cmp r12, KERNEL_PAGE_RECORDS_amount
+jb .exists
+
+call kernel_page_pml1
 
 .exists:
- cmp qword [rdi], STATIC_EMPTY
- je .no
 
- add rdi, STATIC_QWORD_SIZE_byte
- jmp .continue
+cmp qword [rdi], STATIC_EMPTY
+je .no
+
+add rdi, STATIC_QWORD_SIZE_byte
+jmp .continue
 
 .no:
- push rdi
 
- call kernel_memory_alloc_page
- jc .end
+push rdi
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc .end
 
- add di, bx
+call kernel_page_drain
 
- pop rax
+add di, bx
 
- xchg rdi, rax
- stosq
+pop rax
+
+xchg rdi, rax
+stosq
 
 .continue:
- inc r12
 
- dec rcx
- jnz .record
+inc r12
+
+dec rcx
+jnz .record
 
 .end:
- pop r15
- pop r14
- pop r13
- pop r12
- pop r11
- pop r10
- pop r9
- pop rdi
- pop rdx
- pop rcx
- pop rax
 
- ret
+pop r15
+pop r14
+pop r13
+pop r12
+pop r11
+pop r10
+pop r9
+pop rdi
+pop rdx
+pop rcx
+pop rax
+
+ret
 
 .error:
- stc
 
- jmp .end
+stc
 
- macro_debug "kernel_page_map_logical"
+jmp .end
+
+macro_debug "kernel_page_map_logical"
 
 kernel_page_prepare:
- push rax
- push rcx
- push rdx
 
- mov rcx, KERNEL_PAGE_PML3_SIZE_byte
- xor rdx, rdx
- div rcx
+push rax
+push rcx
+push rdx
 
- mov r15, rax
+mov rcx, KERNEL_PAGE_PML3_SIZE_byte
+xor rdx, rdx
+div rcx
 
- shl rax, STATIC_MULTIPLE_BY_8_shift
- add r11, rax
+mov r15, rax
 
- cmp qword [r11], STATIC_EMPTY
- je .no_pml3
+shl rax, STATIC_MULTIPLE_BY_8_shift
+add r11, rax
 
- mov rax, qword [r11]
- xor al, al
+cmp qword [r11], STATIC_EMPTY
+je .no_pml3
 
- mov r10, rax
+mov rax, qword [r11]
+xor al, al
 
- jmp .pml3
+mov r10, rax
+
+jmp .pml3
 
 .no_pml3:
- call kernel_memory_alloc_page
- jc .end
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc .end
 
- mov r10, rdi
+call kernel_page_drain
 
- mov qword [r11], rdi
- or word [r11], bx
+mov r10, rdi
 
- inc qword [kernel_page_paged_count]
+mov qword [r11], rdi
+or word [r11], bx
+
+inc qword [kernel_page_paged_count]
 
 .pml3:
- inc r15
- add r11, STATIC_QWORD_SIZE_byte
 
- mov rax, rdx
- mov rcx, KERNEL_PAGE_PML2_SIZE_byte
- xor rdx, rdx
- div rcx
+inc r15
+add r11, STATIC_QWORD_SIZE_byte
 
- mov r14, rax
+mov rax, rdx
+mov rcx, KERNEL_PAGE_PML2_SIZE_byte
+xor rdx, rdx
+div rcx
 
- shl rax, STATIC_MULTIPLE_BY_8_shift
- add r10, rax
+mov r14, rax
 
- cmp qword [r10], STATIC_EMPTY
- je .no_pml2
+shl rax, STATIC_MULTIPLE_BY_8_shift
+add r10, rax
 
- mov rax, qword [r10]
- xor al, al
+cmp qword [r10], STATIC_EMPTY
+je .no_pml2
 
- mov r9, rax
+mov rax, qword [r10]
+xor al, al
 
- jmp .pml2
+mov r9, rax
+
+jmp .pml2
 
 .no_pml2:
- call kernel_memory_alloc_page
- jc .end
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc .end
 
- mov r9, rdi
+call kernel_page_drain
 
- mov qword [r10], rdi
- or word [r10], bx
+mov r9, rdi
 
- inc qword [kernel_page_paged_count]
+mov qword [r10], rdi
+or word [r10], bx
+
+inc qword [kernel_page_paged_count]
 
 .pml2:
- inc r14
- add r10, STATIC_QWORD_SIZE_byte
 
- mov rax, rdx
- mov rcx, KERNEL_PAGE_PML1_SIZE_byte
- xor rdx, rdx
- div rcx
+inc r14
+add r10, STATIC_QWORD_SIZE_byte
 
- mov r13, rax
+mov rax, rdx
+mov rcx, KERNEL_PAGE_PML1_SIZE_byte
+xor rdx, rdx
+div rcx
 
- shl rax, STATIC_MULTIPLE_BY_8_shift
- add r9, rax
+mov r13, rax
 
- cmp qword [r9], STATIC_EMPTY
- je .no_pml1
+shl rax, STATIC_MULTIPLE_BY_8_shift
+add r9, rax
 
- mov rax, qword [r9]
- xor al, al
+cmp qword [r9], STATIC_EMPTY
+je .no_pml1
 
- mov r8, rax
+mov rax, qword [r9]
+xor al, al
 
- jmp .pml1
+mov r8, rax
+
+jmp .pml1
 
 .no_pml1:
- call kernel_memory_alloc_page
- jc .end
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc .end
 
- mov r8, rdi
+call kernel_page_drain
 
- mov qword [r9], rdi
- or word [r9], bx
+mov r8, rdi
 
- inc qword [kernel_page_paged_count]
+mov qword [r9], rdi
+or word [r9], bx
+
+inc qword [kernel_page_paged_count]
 
 .pml1:
- inc r13
- add r9, STATIC_QWORD_SIZE_byte
 
- mov rax, rdx
- mov rcx, KERNEL_PAGE_SIZE_byte
- xor rdx, rdx
- div rcx
+inc r13
+add r9, STATIC_QWORD_SIZE_byte
 
- mov r12, rax
+mov rax, rdx
+mov rcx, KERNEL_PAGE_SIZE_byte
+xor rdx, rdx
+div rcx
 
- shl rax, STATIC_MULTIPLE_BY_8_shift
- add r8, rax
+mov r12, rax
 
- mov rdi, r8
+shl rax, STATIC_MULTIPLE_BY_8_shift
+add r8, rax
+
+mov rdi, r8
 
 .end:
- pop rdx
- pop rcx
- pop rax
 
- ret
+pop rdx
+pop rcx
+pop rax
 
- macro_debug "kernel_page_prepare"
+ret
+
+macro_debug "kernel_page_prepare"
 
 kernel_page_pml1:
- cmp r13, KERNEL_PAGE_RECORDS_amount
- je .pml3
 
- cmp qword [r9], STATIC_EMPTY
- je .pml2_create
+cmp r13, KERNEL_PAGE_RECORDS_amount
+je .pml3
 
- mov rdi, qword [r9]
+cmp qword [r9], STATIC_EMPTY
+je .pml2_create
 
- jmp .pml2_continue
+mov rdi, qword [r9]
+
+jmp .pml2_continue
 
 .pml2_create:
- call kernel_memory_alloc_page
- jc .error
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc .error
 
- or di, bx
+call kernel_page_drain
 
- mov qword [r9], rdi
+or di, bx
 
- inc qword [kernel_page_paged_count]
+mov qword [r9], rdi
+
+inc qword [kernel_page_paged_count]
 
 .pml2_continue:
- and di, KERNEL_PAGE_mask
 
- mov r8, rdi
+and di, KERNEL_PAGE_mask
 
- xor r12, r12
+mov r8, rdi
 
- add r9, STATIC_QWORD_SIZE_byte
- inc r13
+xor r12, r12
 
- ret
+add r9, STATIC_QWORD_SIZE_byte
+inc r13
+
+ret
 
 .pml3:
- cmp r14, KERNEL_PAGE_RECORDS_amount
- je .pml4
 
- cmp qword [r10], STATIC_EMPTY
- je .pml3_create
+cmp r14, KERNEL_PAGE_RECORDS_amount
+je .pml4
 
- mov rdi, qword [r10]
+cmp qword [r10], STATIC_EMPTY
+je .pml3_create
 
- jmp .pml3_continue
+mov rdi, qword [r10]
+
+jmp .pml3_continue
 
 .pml3_create:
- call kernel_memory_alloc_page
- jc .error
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc .error
 
- or di, bx
+call kernel_page_drain
 
- mov qword [r10], rdi
+or di, bx
 
- inc qword [kernel_page_paged_count]
+mov qword [r10], rdi
+
+inc qword [kernel_page_paged_count]
 
 .pml3_continue:
- and di, KERNEL_PAGE_mask
 
- mov r9, rdi
+and di, KERNEL_PAGE_mask
 
- xor r13, r13
+mov r9, rdi
 
- add r10, STATIC_QWORD_SIZE_byte
- inc r14
+xor r13, r13
 
- jmp kernel_page_pml1
+add r10, STATIC_QWORD_SIZE_byte
+inc r14
+
+jmp kernel_page_pml1
 
 .pml4:
- cmp r15, KERNEL_PAGE_RECORDS_amount
- je .error
 
- cmp qword [r11], STATIC_EMPTY
- je .pml4_create
+cmp r15, KERNEL_PAGE_RECORDS_amount
+je .error
 
- mov rdi, qword [r11]
+cmp qword [r11], STATIC_EMPTY
+je .pml4_create
 
- jmp .pml4_continue
+mov rdi, qword [r11]
+
+jmp .pml4_continue
 
 .pml4_create:
- call kernel_memory_alloc_page
- jc .error
 
- call kernel_page_drain
+call kernel_memory_alloc_page
+jc .error
 
- or di, bx
+call kernel_page_drain
 
- mov qword [r11], rdi
+or di, bx
 
- inc qword [kernel_page_paged_count]
+mov qword [r11], rdi
+
+inc qword [kernel_page_paged_count]
 
 .pml4_continue:
- and di, KERNEL_PAGE_mask
 
- mov r10, rdi
+and di, KERNEL_PAGE_mask
 
- xor r14, r14
+mov r10, rdi
 
- add r11, STATIC_QWORD_SIZE_byte
- inc r15
+xor r14, r14
 
- jmp .pml3
+add r11, STATIC_QWORD_SIZE_byte
+inc r15
+
+jmp .pml3
 
 .error:
- stc
 
- ret
+stc
 
- macro_debug "kernel_page_pml1"
+ret
+
+macro_debug "kernel_page_pml1"
 
 kernel_page_merge:
- push rbx
 
- mov rbx, 4
+push rbx
+
+mov rbx, 4
 
 .inner:
- push rax
- push rbx
- push rcx
- push rsi
- push rdi
 
- cmp rdi, rsi
- je .copy
+push rax
+push rbx
+push rcx
+push rsi
+push rdi
 
- dec rbx
+cmp rdi, rsi
+je .copy
 
- mov rcx, KERNEL_PAGE_RECORDS_amount
+dec rbx
+
+mov rcx, KERNEL_PAGE_RECORDS_amount
 
 .loop:
- cmp qword [rsi], STATIC_EMPTY
- je .next
 
- cmp qword [rdi], STATIC_EMPTY
- ja .compare
+cmp qword [rsi], STATIC_EMPTY
+je .next
 
- mov rax, qword [rsi]
- mov qword [rdi], rax
+cmp qword [rdi], STATIC_EMPTY
+ja .compare
+
+mov rax, qword [rsi]
+mov qword [rdi], rax
 
 .compare:
- cmp rbx, STATIC_EMPTY
- je .next
 
- push rsi
- push rdi
+cmp rbx, STATIC_EMPTY
+je .next
 
- mov rsi, qword [rsi]
- mov rdi, qword [rdi]
+push rsi
+push rdi
 
- test rsi, rdi
- jnz .the_same
+mov rsi, qword [rsi]
+mov rdi, qword [rdi]
 
- and si, KERNEL_PAGE_mask
- and di, KERNEL_PAGE_mask
+test rsi, rdi
+jnz .the_same
 
- call .inner
+and si, KERNEL_PAGE_mask
+and di, KERNEL_PAGE_mask
+
+call .inner
 
 .the_same:
- pop rdi
- pop rsi
+
+pop rdi
+pop rsi
 
 .next:
- add rsi, STATIC_QWORD_SIZE_byte
- add rdi, STATIC_QWORD_SIZE_byte
 
- dec rcx
- jnz .loop
+add rsi, STATIC_QWORD_SIZE_byte
+add rdi, STATIC_QWORD_SIZE_byte
+
+dec rcx
+jnz .loop
 
 .copy:
- pop rdi
- pop rsi
- pop rcx
- pop rbx
- pop rax
 
- cmp rbx, 4
- jne .return
+pop rdi
+pop rsi
+pop rcx
+pop rbx
+pop rax
 
- pop rbx
+cmp rbx, 4
+jne .return
+
+pop rbx
 
 .return:
- ret
 
- macro_debug "kernel_page_merge"
+ret
+
+macro_debug "kernel_page_merge"
 
 kernel_page_secure:
- push rax
 
- call kernel_memory_lock
+push rax
 
- mov rax, qword [kernel_page_free_count]
- sub rax, qword [kernel_page_reserved_count]
- jz .error
+call kernel_memory_lock
 
- cmp rax, rcx
- jb .error
+mov rax, qword [kernel_page_free_count]
+sub rax, qword [kernel_page_reserved_count]
+jz .error
 
- sub qword [kernel_page_free_count], rcx
- add qword [kernel_page_reserved_count], rcx
+cmp rax, rcx
+jb .error
 
- clc
+sub qword [kernel_page_free_count], rcx
+add qword [kernel_page_reserved_count], rcx
 
- jmp .end
+clc
+
+jmp .end
 
 .error:
- stc
+
+stc
 
 .end:
- mov byte [kernel_memory_lock_semaphore], STATIC_FALSE
 
- pop rax
+mov byte [kernel_memory_lock_semaphore], STATIC_FALSE
 
- ret
+pop rax
 
- macro_debug "kernel_page_secure"
+ret
+
+macro_debug "kernel_page_secure"
 
 kernel_page_release_pml:
- dec rbx
- mov rcx, KERNEL_PAGE_RECORDS_amount
 
- cmp rbx, 0x01
- je .continue
+dec rbx
+mov rcx, KERNEL_PAGE_RECORDS_amount
+
+cmp rbx, 0x01
+je .continue
 
 .loop:
- push rcx
- push rdi
 
- cmp qword [rdi], STATIC_EMPTY
- je .empty
+push rcx
+push rdi
 
- mov rdi, qword [rdi]
- and di, KERNEL_PAGE_mask
+cmp qword [rdi], STATIC_EMPTY
+je .empty
 
- push rdi
+mov rdi, qword [rdi]
+and di, KERNEL_PAGE_mask
 
- call kernel_page_release_pml
+push rdi
 
- pop rdi
+call kernel_page_release_pml
 
- call kernel_memory_release_page
+pop rdi
 
- dec qword [kernel_page_paged_count]
+call kernel_memory_release_page
 
- inc rbx
+dec qword [kernel_page_paged_count]
+
+inc rbx
 
 .empty:
- pop rdi
- pop rcx
 
- add rdi, STATIC_QWORD_SIZE_byte
+pop rdi
+pop rcx
 
- dec rcx
- jnz .loop
+add rdi, STATIC_QWORD_SIZE_byte
+
+dec rcx
+jnz .loop
 
 .end:
- ret
+
+ret
 
 .continue:
- cmp qword [rdi], STATIC_EMPTY
- jne .after
+
+cmp qword [rdi], STATIC_EMPTY
+jne .after
 
 .next:
- add rdi, STATIC_QWORD_SIZE_byte
- dec rcx
- jnz .continue
+add rdi, STATIC_QWORD_SIZE_byte
+dec rcx
+jnz .continue
 
- ret
+ret
 
 .after:
- push rdi
 
- mov rdi, qword [rdi]
- and di, KERNEL_PAGE_mask
+push rdi
 
- call kernel_memory_release_page
+mov rdi, qword [rdi]
+and di, KERNEL_PAGE_mask
 
- pop rdi
+call kernel_memory_release_page
 
- jmp .next
+pop rdi
 
- macro_debug "kernel_page_release_pml1"
+jmp .next
+
+macro_debug "kernel_page_release_pml1"
+

@@ -1,74 +1,74 @@
 library_string_trim:
 
-push rcx
-push rsi
+ push rcx
+ push rsi
 
-test rcx, rcx
-jz .error
+ test rcx, rcx
+ jz .error
 
 .prefix:
 
-cmp byte [rsi], STATIC_ASCII_SPACE
-je .prefix_found
+ cmp byte [rsi], STATIC_ASCII_SPACE
+ je .prefix_found
 
-cmp byte [rsi], STATIC_ASCII_TAB
-je .prefix_found
+ cmp byte [rsi], STATIC_ASCII_TAB
+ je .prefix_found
 
-cmp byte [rsi], STATIC_EMPTY
-jne .prefix_ready
+ cmp byte [rsi], STATIC_EMPTY
+ jne .prefix_ready
 
 .prefix_found:
 
-inc rsi
+ inc rsi
 
-dec rcx
-jnz .prefix
+ dec rcx
+ jnz .prefix
 
-jmp .error
+ jmp .error
 
 .prefix_ready:
 
-add rsi, rcx
+ add rsi, rcx
 
 .suffix:
 
-cmp byte [rsi - STATIC_BYTE_SIZE_byte], STATIC_ASCII_SPACE
-je .suffix_found
+ cmp byte [rsi - STATIC_BYTE_SIZE_byte], STATIC_ASCII_SPACE
+ je .suffix_found
 
-cmp byte [rsi - STATIC_BYTE_SIZE_byte], STATIC_ASCII_TAB
-je .suffix_found
+ cmp byte [rsi - STATIC_BYTE_SIZE_byte], STATIC_ASCII_TAB
+ je .suffix_found
 
-cmp byte [rsi - STATIC_BYTE_SIZE_byte], STATIC_EMPTY
-jne .suffix_ready
+ cmp byte [rsi - STATIC_BYTE_SIZE_byte], STATIC_EMPTY
+ jne .suffix_ready
 
 .suffix_found:
 
-dec rsi
+ dec rsi
 
-dec rcx
-jnz .suffix
+ dec rcx
+ jnz .suffix
 
-jmp .error
+ jmp .error
 
 .suffix_ready:
 
-sub rsi, rcx
+ sub rsi, rcx
 
-mov qword [rsp], rsi
-mov qword [rsp + STATIC_QWORD_SIZE_byte], rcx
+ mov qword [rsp], rsi
+ mov qword [rsp + STATIC_QWORD_SIZE_byte], rcx
 
-clc
+ clc
 
-jmp .end
+ jmp .end
 
 .error:
 
-stc
+ stc
 
 .end:
 
-pop rsi
-pop rcx
+ pop rsi
+ pop rcx
 
-ret
+ ret
 

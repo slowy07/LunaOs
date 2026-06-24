@@ -1,36 +1,36 @@
 library_string_compare:
 
-push rax
-push rcx
-push rsi
-push rdi
+ push rax
+ push rcx
+ push rsi
+ push rdi
 
 .loop:
 
-lodsb
+ lodsb
 
-cmp al, byte [rdi]
-jne .error
+ cmp al, byte [rdi]
+ jne .error
 
-inc rdi
+ inc rdi
 
-dec rcx
-jnz .loop
+ dec rcx
+ jnz .loop
 
-clc
+ clc
 
-jmp .end
+ jmp .end
 
 .error:
 
-stc
+ stc
 
 .end:
 
-pop rdi
-pop rsi
-pop rcx
-pop rax
+ pop rdi
+ pop rsi
+ pop rcx
+ pop rax
 
-ret
+ ret
 

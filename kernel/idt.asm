@@ -6,123 +6,123 @@ KERNEL_IDT_TYPE_isr equ 0xEF00
 
 kernel_idt_mount:
 
-push rax
-push rbx
-push rcx
-push rdi
+ push rax
+ push rbx
+ push rcx
+ push rdi
 
-xchg rax, rdi
+ xchg rax, rdi
 
-shl rdi, STATIC_MULTIPLE_BY_16_shift
-add rdi, qword [kernel_idt_header + KERNEL_STRUCTURE_IDT_HEADER.address]
+ shl rdi, STATIC_MULTIPLE_BY_16_shift
+ add rdi, qword [kernel_idt_header + KERNEL_STRUCTURE_IDT_HEADER.address]
 
-mov rcx, 1
-call kernel_idt_update
+ mov rcx, 1
+ call kernel_idt_update
 
-pop rdi
-pop rcx
-pop rbx
-pop rax
+ pop rdi
+ pop rcx
+ pop rbx
+ pop rax
 
-ret
+ ret
 
-macro_debug "kernel_idt_mount"
+ macro_debug "kernel_idt_mount"
 
 kernel_idt_update:
 
-push rcx
+ push rcx
 
 .next:
 
-push rax
+ push rax
 
-stosw
+ stosw
 
-mov ax, KERNEL_STRUCTURE_GDT.cs_ring0
-stosw
+ mov ax, KERNEL_STRUCTURE_GDT.cs_ring0
+ stosw
 
-mov ax, bx
-stosw
+ mov ax, bx
+ stosw
 
-mov rax, qword [rsp]
+ mov rax, qword [rsp]
 
-shr rax, STATIC_MOVE_HIGH_TO_AX_shift
-stosw
+ shr rax, STATIC_MOVE_HIGH_TO_AX_shift
+ stosw
 
-shr rax, STATIC_MOVE_HIGH_TO_EAX_shift
-stosd
+ shr rax, STATIC_MOVE_HIGH_TO_EAX_shift
+ stosd
 
-xor eax, eax
-stosd
+ xor eax, eax
+ stosd
 
-pop rax
+ pop rax
 
-dec rcx
-jnz .next
+ dec rcx
+ jnz .next
 
-pop rcx
+ pop rcx
 
-ret
+ ret
 
-macro_debug "kernel_idt_update"
+ macro_debug "kernel_idt_update"
 
 kernel_idt_exception_default:
 
-xchg bx,bx
+ xchg bx,bx
 
-nop
+ nop
 
-iretq
+ iretq
 
-macro_debug "kernel_idt_exception_default"
+ macro_debug "kernel_idt_exception_default"
 
 kernel_idt_exception_general_protection_fault:
 
-xchg bx,bx
+ xchg bx,bx
 
-nop
-nop
+ nop
+ nop
 
-iretq
+ iretq
 
-macro_debug "kernel_idt_exception_general_protection_fault"
+ macro_debug "kernel_idt_exception_general_protection_fault"
 
 kernel_idt_exception_page_fault:
 
-xchg bx,bx
+ xchg bx,bx
 
-nop
-nop
-nop
+ nop
+ nop
+ nop
 
-iretq
+ iretq
 
-macro_debug "kernel_idt_exception_page_fault"
+ macro_debug "kernel_idt_exception_page_fault"
 
 kernel_idt_interrupt_hardware:
 
-push rdi
+ push rdi
 
-mov rdi, qword [kernel_apic_base_address]
-mov dword [rdi + KERNEL_APIC_EOI_register], STATIC_EMPTY
+ mov rdi, qword [kernel_apic_base_address]
+ mov dword [rdi + KERNEL_APIC_EOI_register], STATIC_EMPTY
 
-pop rdi
+ pop rdi
 
-iretq
+ iretq
 
-macro_debug "kernel_idt_interrupt_hardware"
+ macro_debug "kernel_idt_interrupt_hardware"
 
 kernel_idt_interrupt_software:
 
-or word [rsp + KERNEL_STRUCTURE_TASK_IRETQ.eflags], KERNEL_TASK_EFLAGS_cf
+ or word [rsp + KERNEL_STRUCTURE_TASK_IRETQ.eflags], KERNEL_TASK_EFLAGS_cf
 
-iretq
+ iretq
 
-macro_debug "kernel_idt_interrupt_software"
+ macro_debug "kernel_idt_interrupt_software"
 
 kernel_idt_spurious_interrupt:
 
-iretq
+ iretq
 
-macro_debug "kernel_idt_spurious_interrupt"
+ macro_debug "kernel_idt_spurious_interrupt"
 

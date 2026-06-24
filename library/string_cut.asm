@@ -1,27 +1,27 @@
 library_string_cut:
 
-push rsi
-push rcx
+ push rsi
+ push rcx
 
 .loop:
 
-cmp byte [rsi], STATIC_ASCII_TERMINATOR
-je .end
+ cmp byte [rsi], STATIC_ASCII_TERMINATOR
+ je .end
 
-cmp byte [rsi], al
-je .end
+ cmp byte [rsi], al
+ je .end
 
-inc rsi
+ inc rsi
 
-dec rcx
-jnz .loop
+ dec rcx
+ jnz .loop
 
 .end:
 
-sub qword [rsp], rcx
+ sub qword [rsp], rcx
 
-pop rcx
-pop rsi
+ pop rcx
+ pop rsi
 
-ret
+ ret
 

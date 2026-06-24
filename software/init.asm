@@ -1,5 +1,5 @@
-%include "config.asm"
-%include "kernel/config.asm"
+ %include "config.asm"
+ %include "kernel/config.asm"
 
 [BITS 64]
 
@@ -9,27 +9,27 @@
 
 init:
 
-mov ax, KERNEL_SERVICE_VIDEO_string
-mov ecx, kernel_init_string_end - kernel_init_string
-mov rsi, kernel_init_string
-int KERNEL_SERVICE
+ mov ax, KERNEL_SERVICE_VIDEO_string
+ mov ecx, kernel_init_string_end - kernel_init_string
+ mov rsi, kernel_init_string
+ int KERNEL_SERVICE
 
-mov ax, KERNEL_SERVICE_PROCESS_run
-mov ecx, init_program_shell_end - init_program_shell
-xor edx, edx
-mov rsi, init_program_shell
-int KERNEL_SERVICE
+ mov ax, KERNEL_SERVICE_PROCESS_run
+ mov ecx, init_program_shell_end - init_program_shell
+ xor edx, edx
+ mov rsi, init_program_shell
+ int KERNEL_SERVICE
 
-jmp $
+ jmp $
 
-mov ax, KERNEL_SERVICE_PROCESS_pid
+ mov ax, KERNEL_SERVICE_PROCESS_pid
 
 .wait_for_shell:
 
-int KERNEL_SERVICE
-jnc .wait_for_shell
+ int KERNEL_SERVICE
+ jnc .wait_for_shell
 
-jmp init
+ jmp init
 
-%include "software/init/data.asm"
+ %include "software/init/data.asm"
 

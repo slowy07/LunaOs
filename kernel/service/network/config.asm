@@ -49,107 +49,108 @@ SERVICE_NETWORK_FRAME_TCP_PROTOCOL_default equ 0x06
 SERVICE_NETWORK_FRAME_TCP_WINDOW_SIZE_default equ 0x05B4
 
 struc SERVICE_NETWORK_STRUCTURE_MAC
- .0 resb 1
- .1 resb 1
- .2 resb 1
- .3 resb 1
- .4 resb 1
- .5 resb 1
- .SIZE:
+.0 resb 1
+.1 resb 1
+.2 resb 1
+.3 resb 1
+.4 resb 1
+.5 resb 1
+.SIZE:
 endstruc
 
 struc SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET
- .target resb 0x06
- .source resb 0x06
- .type resb 0x02
- .SIZE:
+.target resb 0x06
+.source resb 0x06
+.type resb 0x02
+.SIZE:
 endstruc
 
 struc SERVICE_NETWORK_STRUCTURE_FRAME_ARP
- .htype resb 0x02
- .ptype resb 0x02
- .hal resb 0x01
- .pal resb 0x01
- .opcode resb 0x02
- .source_mac resb 0x06
- .source_ip resb 0x04
- .target_mac resb 0x06
- .target_ip resb 0x04
- .SIZE:
+.htype resb 0x02
+.ptype resb 0x02
+.hal resb 0x01
+.pal resb 0x01
+.opcode resb 0x02
+.source_mac resb 0x06
+.source_ip resb 0x04
+.target_mac resb 0x06
+.target_ip resb 0x04
+.SIZE:
 endstruc
 
 struc SERVICE_NETWORK_STRUCTURE_FRAME_IP
- .version_and_ihl resb 0x01
- .dscp_and_ecn resb 0x01
- .total_length resb 0x02
- .identification resb 0x02
- .f_and_f resb 0x02
- .ttl resb 0x01
- .protocol resb 0x01
- .checksum resb 0x02
- .source_address resb 0x04
- .destination_address resb 0x04
- .SIZE:
+.version_and_ihl resb 0x01
+.dscp_and_ecn resb 0x01
+.total_length resb 0x02
+.identification resb 0x02
+.f_and_f resb 0x02
+.ttl resb 0x01
+.protocol resb 0x01
+.checksum resb 0x02
+.source_address resb 0x04
+.destination_address resb 0x04
+.SIZE:
 endstruc
 
 struc SERVICE_NETWORK_STRUCTURE_FRAME_ICMP
- .type resb 0x01
- .code resb 0x01
- .checksum resb 0x02
- .reserved resb 0x04
- .data resb 0x20
- .SIZE:
+.type resb 0x01
+.code resb 0x01
+.checksum resb 0x02
+.reserved resb 0x04
+.data resb 0x20
+.SIZE:
 endstruc
 
 struc SERVICE_NETWORK_STRUCTURE_FRAME_UDP
- .port_source resb 0x02
- .port_target resb 0x02
- .length resb 0x02
- .checksum resb 0x02
- .SIZE:
+.port_source resb 0x02
+.port_target resb 0x02
+.length resb 0x02
+.checksum resb 0x02
+.SIZE:
 endstruc
 
 struc SERVICE_NETWORK_STRUCTURE_FRAME_TCP
- .port_source resb 0x02
- .port_target resb 0x02
- .sequence resb 0x04
- .acknowledgement resb 0x04
- .header_length resb 0x01
- .flags resb 0x01
- .window_size resb 0x02
- .checksum_and_urgent_pointer:
- .checksum resb 0x02
- .urgent_pointer resb 0x02
- .SIZE:
- .options:
+.port_source resb 0x02
+.port_target resb 0x02
+.sequence resb 0x04
+.acknowledgement resb 0x04
+.header_length resb 0x01
+.flags resb 0x01
+.window_size resb 0x02
+.checksum_and_urgent_pointer:
+.checksum resb 0x02
+.urgent_pointer resb 0x02
+.SIZE:
+.options:
 endstruc
 
 struc SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER
- .source_ipv4 resb 4
- .target_ipv4 resb 4
- .reserved resb 1
- .protocol resb 1
- .segment_length resb 2
- .SIZE:
+.source_ipv4 resb 4
+.target_ipv4 resb 4
+.reserved resb 1
+.protocol resb 1
+.segment_length resb 2
+.SIZE:
 endstruc
 
 struc SERVICE_NETWORK_STRUCTURE_TCP_STACK
- .source_mac resb 8
- .source_ipv4 resb 4
- .source_sequence resb 4
- .host_sequence resb 4
- .request_acknowledgement resb 4
- .window_size resb 2
- .source_port resb 2
- .host_port resb 2
- .status resb 2
- .flags resb 2
- .flags_request resb 2
- .identification resb 2
- .SIZE:
+.source_mac resb 8
+.source_ipv4 resb 4
+.source_sequence resb 4
+.host_sequence resb 4
+.request_acknowledgement resb 4
+.window_size resb 2
+.source_port resb 2
+.host_port resb 2
+.status resb 2
+.flags resb 2
+.flags_request resb 2
+.identification resb 2
+.SIZE:
 endstruc
 
 struc SERVICE_NETWORK_STRUCTURE_PORT
- .pid resb 8
- .SIZE:
+.pid resb 8
+.SIZE:
 endstruc
+

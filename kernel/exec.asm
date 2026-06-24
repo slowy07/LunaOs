@@ -1,84 +1,91 @@
 kernel_exec:
- push rax
- push rbx
- push rdx
- push rsi
- push rbp
- push r8
- push r11
- push rcx
- push rdi
 
- mov rcx, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.size]
- call library_page_from_size
+push rax
+push rbx
+push rdx
+push rsi
+push rbp
+push r8
+push r11
+push rcx
+push rdi
 
- add rcx, 14
- call kernel_page_secure
+mov rcx, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.size]
+call library_page_from_size
 
- mov rbp, rcx
+add rcx, 14
+call kernel_page_secure
 
- call kernel_memory_alloc_page
- call kernel_page_drain
+mov rbp, rcx
 
- mov r11, rdi
+call kernel_memory_alloc_page
+call kernel_page_drain
 
- mov rax, (KERNEL_MEMORY_HIGH_VIRTUAL_address << STATIC_MULTIPLE_BY_2_shift) - KERNEL_PAGE_SIZE_byte
- mov rcx, KERNEL_PAGE_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
- call kernel_page_map_logical
+mov r11, rdi
 
- mov rax, KERNEL_STACK_address
- mov rbx, KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
- mov rcx, KERNEL_STACK_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
- call kernel_page_map_logical
+mov rax, KERNEL_MEMORY_HIGH_VIRTUAL_address
+mov ebx, KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write | KERNEL_PAGE_FLAG_user
+call kernel_page_map_logical
 
- mov rsi, qword [kernel_page_pml4_address]
- mov rdi, r11
- call kernel_page_merge
+mov rax, (KERNEL_MEMORY_HIGH_VIRTUAL_address << STATIC_MULTIPLE_BY_2_shift) - KERNEL_PAGE_SIZE_byte
+mov rcx, KERNEL_PAGE_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
+call kernel_page_map_logical
 
- mov rdi, qword [r8]
- and di, KERNEL_PAGE_mask
- add rdi, KERNEL_PAGE_SIZE_byte - (STATIC_QWORD_SIZE_byte * 0x05)
- 
- mov rax, KERNEL_MEMORY_HIGH_REAL_address
- stosq
+mov rax, KERNEL_STACK_address
+mov rbx, KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
+mov rcx, KERNEL_STACK_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
+call kernel_page_map_logical
 
- mov rax, KERNEL_STRUCTURE_GDT.cs_ring3 | 0x03
- stosq
+mov rsi, qword [kernel_page_pml4_address]
+mov rdi, r11
+call kernel_page_merge
 
- mov rax, KERNEL_TASK_EFLAGS_default
- stosq
+mov rdi, qword [r8]
+and di, KERNEL_PAGE_mask
+add rdi, KERNEL_PAGE_SIZE_byte - ( STATIC_QWORD_SIZE_byte * 0x05 )
 
- mov rax, STATIC_EMPTY
- stosq
+mov rax, KERNEL_MEMORY_HIGH_REAL_address
+stosq
 
- mov rax, KERNEL_STRUCTURE_GDT.cs_ring3 | 0x03
- stosq
+mov rax, KERNEL_STRUCTURE_GDT.cs_ring3 | 0x03
+stosq
 
- mov rsi, qword [rsp]
+mov rax, KERNEL_TASK_EFLAGS_default
+stosq
 
- mov rax, cr3
- mov cr3, r11
+mov rax, STATIC_EMPTY
+stosq
 
- mov rdi, SOFTWARE_base_address
- call kernel_vfs_file_read
+mov rax, KERNEL_STRUCTURE_GDT.ds_ring3 | 0x03
+stosq
 
- mov cr3, rax
+mov rsi, qword [rsp]
 
- call kernel_task_add
+mov rax, cr3
+mov cr3, r11
 
- add qword [kernel_page_free_count], rbp
- sub qword [kernel_page_reserved_count], rbp
+mov rdi, SOFTWARE_base_address
+call kernel_vfs_file_read
 
- mov qword [rsp + STATIC_QWORD_SIZE_byte], rcx
+mov cr3, rax
 
- pop rdi
- pop rcx
- pop r11
- pop r8
- pop rbp
- pop rsi
- pop rdx
- pop rbx
- pop rax
+mov ebx, KERNEL_TASK_FLAG_active
+call kernel_task_add
 
- ret
+add qword [kernel_page_free_count], rbp
+sub qword [kernel_page_reserved_count], rbp
+
+mov qword [rsp + STATIC_QWORD_SIZE_byte], rcx
+
+pop rdi
+pop rcx
+pop r11
+pop r8
+pop rbp
+pop rsi
+pop rdx
+pop rbx
+pop rax
+
+ret
+

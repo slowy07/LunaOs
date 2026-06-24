@@ -1,0 +1,2 @@
+SHELL_CACHE_SIZE_byte equ 128
+

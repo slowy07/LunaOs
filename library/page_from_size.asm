@@ -1,18 +1,19 @@
 library_page_from_size:
- push rcx
 
- and cx, KERNEL_PAGE_mask
+push rcx
 
- cmp rcx, qword [rsp]
- je .ready
+and cx, KERNEL_PAGE_mask
 
- add rcx, KERNEL_PAGE_SIZE_byte
+cmp rcx, qword [rsp]
+je .ready
+
+add rcx, KERNEL_PAGE_SIZE_byte
 
 .ready:
- shr rcx, STATIC_DIVIDE_BY_PAGE_shift
 
- add rsp, STATIC_QWORD_SIZE_byte
+shr rcx, STATIC_DIVIDE_BY_PAGE_shift
 
- ret
+add rsp, STATIC_QWORD_SIZE_byte
 
- macro_debug "library_page_from_size"
+ret
+

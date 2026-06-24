@@ -1,38 +1,39 @@
 library_string_to_integer:
- push rbx
- push rcx
- push rdx
- push rsi
- push r8
- push rax
 
- mov ebx, 1
+push rbx
+push rcx
+push rdx
+push rsi
+push r8
+push rax
 
- xor r8, r8
+mov ebx, 1
+
+xor r8, r8
 
 .loop:
- movzx eax, byte [rsi + rcx - 0x01]
- sub al, STATIC_ASCII_DIGIT_0
- mul rbx
 
- add r8, rax
+movzx eax, byte [rsi + rcx - 0x01]
+sub al, STATIC_ASCII_DIGIT_0
+mul rbx
 
- mov eax, 10
- mul rbx
- mov rbx, rax
+add r8, rax
 
- dec rcx
- jnz .loop
+mov eax, 10
+mul rbx
+mov rbx, rax
 
- mov qword [rsp], r8
+dec rcx
+jnz .loop
 
- pop rax
- pop r8
- pop rsi
- pop rdx
- pop rcx
- pop rbx
+mov qword [rsp], r8
 
- ret
+pop rax
+pop r8
+pop rsi
+pop rdx
+pop rcx
+pop rbx
 
- macro_debug "library_string_to_integer"
+ret
+

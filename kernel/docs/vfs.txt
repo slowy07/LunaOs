@@ -3,68 +3,157 @@ File: kernel/vfs.asm
 Author: arfy slowy
 
 OVERVIEW
-Hierarchical virtual file system with symlink resolution and directory support.
-Uses magicknot structures (variable-length inode-like entries) for file metadata.
+Hierarchical virtual file system with symlink resolution and directory
+support. Each directory is a linked list of pages containing fixed-size
+KNOT entries (variable-length inode-like structures). Data is stored as
+linked-list block chains of 4K pages with a link pointer at the top.
 
-STRUCT RENAMES
-  KERNEL_STRUCTURE_VFS_MAGICKNOT -> KERNEL_VFS_STRUCTURE_MAGICKNOT
-  KERNEL_STRUCTURE_VFS_KNOT -> KERNEL_VFS_STRUCTURE_KNOT
+STRUCTURES
 
-KNOT STRUCTURE (KERNEL_VFS_STRUCTURE_KNOT):
-  .id_or_data     resb 8
-  .size           resb 8
-  .type           resb 1   (directory, regular file, block device, symlink)
-  .flags          resb 2
-  .time_modified  resb 8
-  .length         resb 1
-  .name           resb 0   (variable-length, starts here)
-  Removed fields: owner, group, mode (simplified)
+KERNEL_VFS_STRUCTURE_MAGICKNOT (16 bytes):
++0x00: .root  qword  -- pointer to root directory KNOT
++0x08: .size  qword  -- size (always 1 for magicknot)
 
-FILE TYPES
-  KERNEL_VFS_FILE_TYPE_directory    - Directory node (allocates page for children)
-  KERNEL_VFS_FILE_TYPE_regular_file - Regular data file
-  KERNEL_VFS_FILE_TYPE_block_device - Block device (id_or_data holds parent knot)
-  KERNEL_VFS_FILE_TYPE_symbolic_link - Symlink (id_or_data points to target)
+KERNEL_VFS_STRUCTURE_KNOT (33 + 16 = 49 bytes):
+Offset  Size  Field         Description
+------  ----  -----         -----------
++0x00   8     .id_or_data   For dir: pointer to child page; for block dev: parent knot
++0x08   8     .size         File size in bytes (dir: number of children)
++0x10   1     .type         File type bitmask (see FILE TYPES)
++0x11   2     .flags        File flags (save, reserved)
++0x13   8     .time_modified Microsecond timestamp of last modification
++0x1B   1     .length       Length of filename in bytes
++0x1C   16    .name         Filename (fixed 16-byte buffer)
++0x2C   --    .SIZE         = 49 bytes per knot slot
+
+Per page: floor((4096 - 8) / 49) = 83 knot slots + 8 byte link ptr
+           STATIC_STRUCTURE_BLOCK.link = 8 bytes at top of page
+
+FILE TYPES (bitmask in .type field)
+
+KERNEL_VFS_FILE_TYPE_socket          equ 01000000b
+KERNEL_VFS_FILE_TYPE_symbolic_link   equ 00100000b   (id_or_data = target knot)
+KERNEL_VFS_FILE_TYPE_regular_file    equ 00010000b   (id_or_data = data chain)
+KERNEL_VFS_FILE_TYPE_block_device    equ 00001000b   (id_or_data = parent knot)
+KERNEL_VFS_FILE_TYPE_directory       equ 00000100b   (id_or_data = child page)
+KERNEL_VFS_FILE_TYPE_character_device equ 00000010b
+KERNEL_VFS_FILE_TYPE_fifo            equ 00000001b
 
 KEY PROCEDURES
 
 kernel_vfs_dir_symlinks:
-  Resolves symlink chains in a directory path
-  Creates . and .. entries for each directory
-  Note: mode assignments temporarily commented out (test)
+  Creates the special "." and ".." entries in a directory.
+  Input: RDI = directory KNOT, RSI = parent directory KNOT
+  "." points to the directory itself (symlink to RDI)
+  ".." points to the parent (symlink to RSI)
 
 kernel_vfs_path_resolve:
-  Resolves a path string to its parent directory knot
+  Resolves a path string to its parent directory KNOT.
+  Input:  RSI = path string, RCX = path length
+  Output: RDI = parent directory KNOT, RCX = leaf name length,
+          RSI = leaf name pointer; CF=0 on success, CF=1 on error
+  Flow:
+    1. If path starts with '/': start from magicknot root
+    2. If relative: start from current task's CWD knot
+    3. Strip trailing slashes
+    4. Find last '/' and split: parent path (traversed) vs leaf name (saved)
+    5. Walk each path component: find child, follow symlinks, verify directory
+    6. Return parent KNOT and leaf name
 
 kernel_vfs_file_touch:
-  Creates or opens a file/directory/device node
-  Input: DL = file type
-  Directory: allocates a page for child knot list
-  Block device: stores parent knot address in id_or_data
-  Regular file: sets type byte, copies name
-  Calls kernel_vfs_knot_allocate for new entries
+  Creates or opens a file/directory/device node in a parent directory.
+  Input:  RDI = parent directory KNOT, RSI = name, RCX = name length,
+          DL = file type, RBX = parent knot (for block devices only)
+  Output: CF=0 on success (RDI = new knot), CF=1 on error
 
-kernel_vfs_file_write:
-  Writes data to a file knot (allocates block pages as needed)
-
-kernel_vfs_file_append:
-  Appends data to an existing file
-
-kernel_vfs_file_read:
-  Reads data from a file knot (follows symlinks automatically)
+Directory creation flow:
+  1. Check name length (1 to 48 bytes)
+  2. Check if file already exists (error if so)
+  3. Call kernel_vfs_knot_prepare to find free slot (allocates new page if full)
+  4. If directory type: allocate a page for child knots, store in id_or_data
+  5. If block device: store parent knot address in id_or_data
+  6. Copy type byte, length byte, name bytes into slot
 
 kernel_vfs_file_find:
-  Searches a directory for a file by name
+  Searches a directory for a file by name.
+  Input:  RDI = directory KNOT, RSI = name, RCX = name length
+  Output: RDI = found KNOT, CF=0 on success; CF=1 on error
+  Traverses linked-list pages, scanning all 83 knot slots per page.
 
 kernel_vfs_knot_prepare:
-  Allocates a fresh knot slot in a directory page
+  Finds an empty slot in a directory's knot page chain.
+  Input:  RDI = directory KNOT
+  Output: RDI = pointer to empty KNOT slot, CF=0 on success
+  If all pages are full, allocates a new page and links it.
+
+DATA STORAGE MODEL
+
+Regular files and directories store data in a linked list of pages:
+
++-----------+       +-----------+       +-----------+
+| Page data |       | Page data |       | Page data |
+| (4088 B)  |       | (4088 B)  |       | (4088 B)  |
+|           |  +--> |           |  +--> |           |
+| .link     |--+    | .link     |--+    | .link = 0 |
++-----------+       +-----------+       +-----------+
+
+STATIC_STRUCTURE_BLOCK:
+  .data  resb KERNEL_PAGE_SIZE_byte - 8  (4088 bytes of data)
+  .link  resb 8                          (pointer to next block/page)
+  .SIZE:
+
+kernel_vfs_file_write:
+  Writes data to a file knot. Allocates pages as needed.
+  If file already has data blocks, overwrites and frees excess blocks.
+  Input: RDI = file KNOT, RSI = data, RCX = size (on stack)
+  Handles partial writes across block boundaries.
+
+kernel_vfs_file_append:
+  Appends data to an existing file. Allocates new pages as needed.
+  Walks to the last block, writes starting at residual offset.
+  Input: RDI = file KNOT, RSI = data, RCX = size (on stack)
+
+kernel_vfs_file_read:
+  Reads data from a file knot.
+  Input:  RSI = file KNOT, RDI = destination buffer
+  Output: RCX = total bytes read
+  Follows symlinks automatically (recursive loop).
+  For directories: multiplies size by BLOCK.link (size = page count).
+  Walks block chain, copies full pages at a time.
+
+VFS TREE STRUCTURE EXAMPLE
+
+kernel_vfs_magicknot
+  |
+  +-- root KNOT  (/, directory, id_or_data -> child page)
+       |
+       +-- child page (linked list of KNOT slots)
+            |
+            +-- [".", symlink -> root]
+            +-- ["..", symlink -> root (parent of root = root)]
+            +-- ["bin", directory, id_or_data -> /bin child page]
+            |    |
+            |    +-- [".", symlink -> /bin]
+            |    +-- ["..", symlink -> /]
+            |    +-- ["init", regular file, data chain -> blocks]
+            |    +-- ["shell", regular file, data chain -> blocks]
+            |    +-- ["wello", regular file, data chain -> blocks]
+            |
+            +-- ["dev", directory, id_or_data -> /dev child page]
+                 |
+                 +-- [".", symlink -> /dev]
+                 +-- ["..", symlink -> /]
+                 +-- ["hda", block_device, id_or_data -> parent knot]
+                 +-- ["hdb", block_device, id_or_data -> parent knot]
+                 +-- ["hdc", block_device, id_or_data -> parent knot]
+                 +-- ["hdd", block_device, id_or_data -> parent knot]
 
 INIT-TIME FILE PRELOADING (kernel/init/vfs.asm)
-  After directory creation, init/vfs.asm iterates
-  kernel_init_vfs_files (defined in init/data.asm) and for each entry:
-    1. Resolves the parent directory path
-    2. Calls kernel_vfs_file_touch to create the file knot
-    3. Calls kernel_vfs_file_append to write the preloaded data
-  Format per entry: [data_pointer:8][size:8][length:1][path:var]
+  After directory creation, init/vfs.asm iterates kernel_init_vfs_files
+  and for each entry:
+    1. Parse [data_pointer:8][size:8][length:1][path:var]
+    2. Resolve parent directory (kernel_vfs_path_resolve)
+    3. Create file knot (kernel_vfs_file_touch, type = regular)
+    4. Write data (kernel_vfs_file_append)
 
-  Currently preloaded: /bin/wello (built from software/wello.asm)
+  Preloaded files: /bin/init, /bin/shell, /bin/wello

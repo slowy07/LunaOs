@@ -1,25 +1,27 @@
 library_string_cut:
- push rsi
- push rcx
+
+push rsi
+push rcx
 
 .loop:
- cmp byte [rsi], STATIC_ASCII_TERMINATOR
- je .end
 
- cmp byte [rsi], al
- je .end
+cmp byte [rsi], STATIC_ASCII_TERMINATOR
+je .end
 
- inc rsi
+cmp byte [rsi], al
+je .end
 
- dec rcx
- jnz .loop
+inc rsi
+
+dec rcx
+jnz .loop
 
 .end:
- sub qword [rsp], rcx
 
- pop rcx
- pop rsi
+sub qword [rsp], rcx
 
- ret
+pop rcx
+pop rsi
 
- macro_debug "library_string_cut"
+ret
+

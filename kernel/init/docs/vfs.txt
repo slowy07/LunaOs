@@ -3,31 +3,105 @@ File: kernel/init/vfs.asm
 Author: arfy slowy
 
 OVERVIEW
-Initializes the Virtual File System during kernel boot.
-Creates predefined directories, preloads initial files from
-embedded binaries, and sets up the root magicknot structure.
+Boot-time Virtual File System initialization. Allocates the root
+magicknot, creates predefined directories (/bin, /dev), and preloads
+userspace binaries (/bin/init, /bin/shell, /bin/wello) from embedded
+data into VFS regular file knots.
 
 STRUCTURE
-  KERNEL_INIT_STRUCTURE_VFS_FILE:
-    .data_pointer resb 8  (pointer to file data)
-    .size         resb 8  (file size in bytes)
-    .length       resb 1  (path string length)
-    .path:                (variable-length path string)
 
-PROCEDURE
+KERNEL_INIT_STRUCTURE_VFS_FILE (17+ bytes):
++0x00: .data_pointer  qword  -- pointer to binary data
++0x08: .size          qword  -- size in bytes
++0x10: .length        byte   -- path string length
++0x11: .path           var   -- path string (e.g. "/bin/init")
+.SIZE = 17 (use after path for iterator advancement)
 
-kernel_init_vfs:
-  1. Allocate a page for the magicknot structure
-  2. Drain page table for the new allocation
-  3. Store root pointer in kernel_vfs_magicknot.root
-  4. Call kernel_vfs_dir_symlinks to set up . and ..
-  5. Directory creation loop:
-     - Reads kernel_init_vfs_directory_structure
-     - Parses [length_byte][path_string] entries
-     - Calls kernel_vfs_path_resolve + kernel_vfs_file_touch
-     - Current directories: /bin, /dev
-  6. File preloading loop:
-     - Reads kernel_init_vfs_files
-     - Parses [data_ptr:8][size:8][len:1][path:var] entries
-     - Resolves path, touches file, appends data
-     - Currently preloads: /bin/wello
+PROCEDURE FLOW
+
+kernel_init_vfs
+  |
+  +-- Step 1: Allocate magicknot page
+  |     call kernel_memory_alloc_page
+  |     jc   kernel_init_panic_low_memory
+  |     call kernel_page_drain
+  |     mov  [kernel_vfs_magicknot.root], rdi
+  |
+  +-- Step 2: Create root . and ..
+  |     mov  rdi, kernel_vfs_magicknot
+  |     mov  rsi, rdi
+  |     call kernel_vfs_dir_symlinks
+  |
+  +-- Step 3: Directory creation loop
+  |     rsi = kernel_init_vfs_directory_structure
+  |     |
+  |     +-- .dir: read length byte
+  |     |     if 0, jump to .next (file preloading)
+  |     |     increment rsi past length byte
+  |     |     push rcx, rsi
+  |     |     call kernel_vfs_path_resolve
+  |     |     mov  dl, KERNEL_VFS_FILE_TYPE_directory
+  |     |     call kernel_vfs_file_touch
+  |     |     pop rsi, rcx
+  |     |     rsi += length (skip path string)
+  |     |     jmp .dir (next entry)
+  |     |
+  |     +-- Creates: /bin, /dev
+  |
+  +-- Step 4: File preloading loop
+        rsi = kernel_init_vfs_files
+        |
+        +-- .file: cmp [rsi], STATIC_EMPTY
+              if 0, jump to .end (done)
+              push rsi (save entry pointer)
+              mov  cl, [rsi + KERNEL_INIT_STRUCTURE_VFS_FILE.length]
+              mov  dl, KERNEL_VFS_FILE_TYPE_regular_file
+              lea  rsi, [rsi + KERNEL_INIT_STRUCTURE_VFS_FILE.path]
+              call kernel_vfs_path_resolve
+              call kernel_vfs_file_touch      (create file knot)
+              mov  rsi, [rsp]                 (restore entry ptr)
+              mov  rcx, [rsi + KERNEL_INIT_STRUCTURE_VFS_FILE.size]
+              mov  rsi, [rsi + KERNEL_INIT_STRUCTURE_VFS_FILE.data_pointer]
+              call kernel_vfs_file_append     (write data)
+              pop  rsi
+              mov  cl, [rsi + KERNEL_INIT_STRUCTURE_VFS_FILE.length]
+              lea  rsi, [rsi + rcx + KERNEL_INIT_STRUCTURE_VFS_FILE.SIZE]
+              jmp  .file
+        |
+        +-- Preloads:
+              /bin/init  <- kernel_init_vfs_file_init  (incbin "build/init")
+              /bin/shell <- kernel_init_vfs_file_shell (incbin "build/shell")
+              /bin/wello <- kernel_init_vfs_file_hello (incbin "build/wello")
+
+DATA FLOW
+
+init/data.asm                   init/vfs.asm
++-------------+                 +---------------------+
+| VFS dirs:   | --- [rsi] -->   | .dir loop:          |
+| /bin, /dev  |                 | path_resolve + touch |
++-------------+                 +---------------------+
+
++-------------+                 +---------------------+
+| VFS files:  | --- [rsi] -->   | .file loop:         |
+| /bin/init   |                 | path_resolve + touch|
+| /bin/shell  |                 | + append(data)      |
+| /bin/wello  |                 +---------------------+
++-------------+
+       |
+       | (data pointers)
+       v
++------------------------------+
+| Embedded binaries:           |
+| kernel_init_vfs_file_init    |
+| kernel_init_vfs_file_shell   |
+| kernel_init_vfs_file_hello   |
++------------------------------+
+
+DEPENDENCIES
+
+Called from:   kernel/init.asm (step 17, after ipc, before storage)
+Depends on:    kernel_memory_alloc_page, kernel_page_drain,
+               kernel_vfs_dir_symlinks, kernel_vfs_path_resolve,
+               kernel_vfs_file_touch, kernel_vfs_file_append
+Data from:     kernel/init/data.asm (kernel_init_vfs_directory_structure,
+               kernel_init_vfs_files, kernel_init_vfs_file_*)

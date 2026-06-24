@@ -5,114 +5,124 @@ KERNEL_IDT_TYPE_irq equ 0x8F00
 KERNEL_IDT_TYPE_isr equ 0xEF00
 
 kernel_idt_mount:
- push rax
- push rbx
- push rcx
- push rdi
 
- xchg rax, rdi
+push rax
+push rbx
+push rcx
+push rdi
 
- shl rdi, STATIC_MULTIPLE_BY_16_shift
- add rdi, qword [kernel_idt_header + KERNEL_STRUCTURE_IDT_HEADER.address]
+xchg rax, rdi
 
- mov rcx, 1
- call kernel_idt_update
+shl rdi, STATIC_MULTIPLE_BY_16_shift
+add rdi, qword [kernel_idt_header + KERNEL_STRUCTURE_IDT_HEADER.address]
 
- pop rdi
- pop rcx
- pop rbx
- pop rax
+mov rcx, 1
+call kernel_idt_update
 
- ret
+pop rdi
+pop rcx
+pop rbx
+pop rax
 
- macro_debug "kernel_idt_mount"
+ret
+
+macro_debug "kernel_idt_mount"
 
 kernel_idt_update:
- push rcx
+
+push rcx
 
 .next:
- push rax
 
- stosw
+push rax
 
- mov ax, KERNEL_STRUCTURE_GDT.cs_ring0
- stosw
+stosw
 
- mov ax, bx
- stosw
+mov ax, KERNEL_STRUCTURE_GDT.cs_ring0
+stosw
 
- mov rax, qword [rsp]
+mov ax, bx
+stosw
 
- shr rax, STATIC_MOVE_HIGH_TO_AX_shift
- stosw
+mov rax, qword [rsp]
 
- shr rax, STATIC_MOVE_HIGH_TO_EAX_shift
- stosd
+shr rax, STATIC_MOVE_HIGH_TO_AX_shift
+stosw
 
- xor eax, eax
- stosd
+shr rax, STATIC_MOVE_HIGH_TO_EAX_shift
+stosd
 
- pop rax
+xor eax, eax
+stosd
 
- dec rcx
- jnz .next
+pop rax
 
- pop rcx
+dec rcx
+jnz .next
 
- ret
+pop rcx
 
- macro_debug "kernel_idt_update"
+ret
+
+macro_debug "kernel_idt_update"
 
 kernel_idt_exception_default:
- xchg bx,bx
 
- nop
+xchg bx,bx
 
- iretq
+nop
 
- macro_debug "kernel_idt_exception_default"
+iretq
+
+macro_debug "kernel_idt_exception_default"
 
 kernel_idt_exception_general_protection_fault:
- xchg bx,bx
 
- nop
- nop
+xchg bx,bx
 
- iretq
+nop
+nop
 
- macro_debug "kernel_idt_exception_general_protection_fault"
+iretq
+
+macro_debug "kernel_idt_exception_general_protection_fault"
 
 kernel_idt_exception_page_fault:
- xchg bx,bx
 
- nop
- nop
- nop
+xchg bx,bx
 
- iretq
+nop
+nop
+nop
 
- macro_debug "kernel_idt_exception_page_fault"
+iretq
+
+macro_debug "kernel_idt_exception_page_fault"
 
 kernel_idt_interrupt_hardware:
- push rdi
 
- mov rdi, qword [kernel_apic_base_address]
- mov dword [rdi + KERNEL_APIC_EOI_register], STATIC_EMPTY
+push rdi
 
- pop rdi
+mov rdi, qword [kernel_apic_base_address]
+mov dword [rdi + KERNEL_APIC_EOI_register], STATIC_EMPTY
 
- iretq
+pop rdi
 
- macro_debug "kernel_idt_interrupt_hardware"
+iretq
+
+macro_debug "kernel_idt_interrupt_hardware"
 
 kernel_idt_interrupt_software:
- or word [rsp + KERNEL_STRUCTURE_TASK_IRETQ.eflags], KERNEL_TASK_EFLAGS_cf
 
- iretq
+or word [rsp + KERNEL_STRUCTURE_TASK_IRETQ.eflags], KERNEL_TASK_EFLAGS_cf
 
- macro_debug "kernel_idt_interrupt_software"
+iretq
+
+macro_debug "kernel_idt_interrupt_software"
 
 kernel_idt_spurious_interrupt:
- iretq
 
- macro_debug "kernel_idt_spurious_interrupt"
+iretq
+
+macro_debug "kernel_idt_spurious_interrupt"
+

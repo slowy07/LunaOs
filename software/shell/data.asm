@@ -5,7 +5,7 @@ shell_string_prompt_type_end db STATIC_COLOR_ASCII_DEFAULT
 shell_string_prompt_end:
 
 shell_cache:
-times SHELL_CACHE_SIZE_byte db STATIC_EMPTY
+ times SHELL_CACHE_SIZE_byte db STATIC_EMPTY
 
 shell_command_clean db "clean"
 shell_command_clean_end:

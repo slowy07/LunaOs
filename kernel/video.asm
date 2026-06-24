@@ -43,725 +43,725 @@ kernel_video_color_sequence_white db STATIC_COLOR_ASCII_WHITE
 
 kernel_video_drain:
 
-push rax
-push rcx
-push rdi
+ push rax
+ push rcx
+ push rdi
 
-mov eax, dword [kernel_video_color_background]
-mov rcx, qword [kernel_video_size_pixel]
-mov rdi, qword [kernel_video_framebuffer]
-rep stosd
+ mov eax, dword [kernel_video_color_background]
+ mov rcx, qword [kernel_video_size_pixel]
+ mov rdi, qword [kernel_video_framebuffer]
+ rep stosd
 
-mov qword [kernel_video_cursor], STATIC_EMPTY
+ mov qword [kernel_video_cursor], STATIC_EMPTY
 
-call kernel_video_cursor_set
+ call kernel_video_cursor_set
 
-pop rdi
-pop rcx
-pop rax
+ pop rdi
+ pop rcx
+ pop rax
 
-ret
+ ret
 
 kernel_video_matrix:
 
-push rax
-push rbx
-push rcx
-push rdx
-push rsi
-push rdi
-push r8
+ push rax
+ push rbx
+ push rcx
+ push rdx
+ push rsi
+ push rdi
+ push r8
 
-mov ebx, dword [kernel_font_height_pixel]
-mul rbx
+ mov ebx, dword [kernel_font_height_pixel]
+ mul rbx
 
-mov rsi, kernel_font_matrix
-add rsi, rax
+ mov rsi, kernel_font_matrix
+ add rsi, rax
 
-mov r8d, dword [kernel_video_color]
+ mov r8d, dword [kernel_video_color]
 
 .next:
 
-mov ecx, KERNEL_FONT_WIDTH_pixel - 0x01
+ mov ecx, KERNEL_FONT_WIDTH_pixel - 0x01
 
 .loop:
 
-bt word [rsi], cx
-jnc .continue
+ bt word [rsi], cx
+ jnc .continue
 
-mov dword [rdi], r8d
+ mov dword [rdi], r8d
 
-mov dword [rdi + STATIC_DWORD_SIZE_byte], STATIC_EMPTY
+ mov dword [rdi + STATIC_DWORD_SIZE_byte], STATIC_EMPTY
 
 .continue:
 
-add rdi, STATIC_DWORD_SIZE_byte
+ add rdi, STATIC_DWORD_SIZE_byte
 
-dec cl
-jns .loop
+ dec cl
+ jns .loop
 
-sub rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
-add rdi, qword [kernel_video_scanline_byte]
+ sub rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
+ add rdi, qword [kernel_video_scanline_byte]
 
-inc rsi
+ inc rsi
 
-dec bl
-jnz .next
+ dec bl
+ jnz .next
 
-pop r8
-pop rdi
-pop rsi
-pop rdx
-pop rcx
-pop rbx
-pop rax
+ pop r8
+ pop rdi
+ pop rsi
+ pop rdx
+ pop rcx
+ pop rbx
+ pop rax
 
-ret
+ ret
 
 kernel_video_char_clean:
 
-push rax
-push rbx
-push rcx
-push rdx
-push rdi
+ push rax
+ push rbx
+ push rcx
+ push rdx
+ push rdi
 
-mov ebx, KERNEL_FONT_HEIGHT_pixel
+ mov ebx, KERNEL_FONT_HEIGHT_pixel
 
-mov eax, dword [kernel_video_color_background]
+ mov eax, dword [kernel_video_color_background]
 
 .next:
 
-mov cx, KERNEL_FONT_WIDTH_pixel - 0x01
+ mov cx, KERNEL_FONT_WIDTH_pixel - 0x01
 
 .loop:
 
-stosd
+ stosd
 
 .continue:
 
-dec cl
-jns .loop
+ dec cl
+ jns .loop
 
-sub rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
-add rdi, qword [kernel_video_scanline_byte]
+ sub rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
+ add rdi, qword [kernel_video_scanline_byte]
 
-dec bl
-jnz .next
+ dec bl
+ jnz .next
 
-pop rdi
-pop rdx
-pop rcx
-pop rbx
-pop rax
+ pop rdi
+ pop rdx
+ pop rcx
+ pop rbx
+ pop rax
 
-ret
+ ret
 
 kernel_video_cursor_set:
 
-push rax
-push rcx
-push rdx
+ push rax
+ push rcx
+ push rdx
 
-mov eax, dword [kernel_video_cursor.y]
-mul qword [kernel_video_scanline_char]
-mov edx, dword [kernel_video_cursor.x]
-shl rdx, KERNEL_VIDEO_DEPTH_shift
-add rdx, rax
+ mov eax, dword [kernel_video_cursor.y]
+ mul qword [kernel_video_scanline_char]
+ mov edx, dword [kernel_video_cursor.x]
+ shl rdx, KERNEL_VIDEO_DEPTH_shift
+ add rdx, rax
 
-add rdx, qword [kernel_video_framebuffer]
-mov qword [kernel_video_pointer], rdx
+ add rdx, qword [kernel_video_framebuffer]
+ mov qword [kernel_video_pointer], rdx
 
-pop rdx
-pop rcx
-pop rax
+ pop rdx
+ pop rcx
+ pop rax
 
-ret
+ ret
 
 kernel_video_string:
 
-push rax
-push rbx
-push rcx
-push rdx
-push rsi
+ push rax
+ push rbx
+ push rcx
+ push rdx
+ push rsi
 
-call kernel_video_cursor_disable
+ call kernel_video_cursor_disable
 
-test rcx, rcx
-jz .end
+ test rcx, rcx
+ jz .end
 
-xor eax, eax
+ xor eax, eax
 
 .loop:
 
-lodsb
+ lodsb
 
-test al, al
-jz .end
+ test al, al
+ jz .end
 
-cmp al, STATIC_ASCII_BACKSLASH
-jne .no
+ cmp al, STATIC_ASCII_BACKSLASH
+ jne .no
 
-cmp rcx, STATIC_ASCII_SEQUENCE_length
-jb .fail
+ cmp rcx, STATIC_ASCII_SEQUENCE_length
+ jb .fail
 
-push rdi
-push rsi
-push rcx
+ push rdi
+ push rsi
+ push rcx
 
-dec rsi
+ dec rsi
 
-mov ecx, STATIC_ASCII_SEQUENCE_length
+ mov ecx, STATIC_ASCII_SEQUENCE_length
 
 .default:
 
-mov rdi, kernel_video_color_sequence_default
-call library_string_compare
-jc .black
+ mov rdi, kernel_video_color_sequence_default
+ call library_string_compare
+ jc .black
 
-mov dword [kernel_video_color], STATIC_COLOR_default
+ mov dword [kernel_video_color], STATIC_COLOR_default
 
-jmp .done
+ jmp .done
 
 .black:
 
-mov rdi, kernel_video_color_sequence_black
-call library_string_compare
-jc .blue
+ mov rdi, kernel_video_color_sequence_black
+ call library_string_compare
+ jc .blue
 
-mov dword [kernel_video_color], STATIC_COLOR_black
+ mov dword [kernel_video_color], STATIC_COLOR_black
 
-jmp .done
+ jmp .done
 
 .blue:
 
-mov rdi, kernel_video_color_sequence_blue
-call library_string_compare
-jc .green
+ mov rdi, kernel_video_color_sequence_blue
+ call library_string_compare
+ jc .green
 
-mov dword [kernel_video_color], STATIC_COLOR_blue
+ mov dword [kernel_video_color], STATIC_COLOR_blue
 
-jmp .done
+ jmp .done
 
 .green:
 
-mov rdi, kernel_video_color_sequence_green
-call library_string_compare
-jc .cyan
+ mov rdi, kernel_video_color_sequence_green
+ call library_string_compare
+ jc .cyan
 
-mov dword [kernel_video_color], STATIC_COLOR_green
+ mov dword [kernel_video_color], STATIC_COLOR_green
 
-jmp .done
+ jmp .done
 
 .cyan:
 
-mov rdi, kernel_video_color_sequence_cyan
-call library_string_compare
-jc .red
+ mov rdi, kernel_video_color_sequence_cyan
+ call library_string_compare
+ jc .red
 
-mov dword [kernel_video_color], STATIC_COLOR_cyan
+ mov dword [kernel_video_color], STATIC_COLOR_cyan
 
-jmp .done
+ jmp .done
 
 .red:
 
-mov rdi, kernel_video_color_sequence_red
-call library_string_compare
-jc .magenta
+ mov rdi, kernel_video_color_sequence_red
+ call library_string_compare
+ jc .magenta
 
-mov dword [kernel_video_color], STATIC_COLOR_red
+ mov dword [kernel_video_color], STATIC_COLOR_red
 
-jmp .done
+ jmp .done
 
 .magenta:
 
-mov rdi, kernel_video_color_sequence_magenta
-call library_string_compare
-jc .brown
+ mov rdi, kernel_video_color_sequence_magenta
+ call library_string_compare
+ jc .brown
 
-mov dword [kernel_video_color], STATIC_COLOR_magenta
+ mov dword [kernel_video_color], STATIC_COLOR_magenta
 
-jmp .done
+ jmp .done
 
 .brown:
 
-mov rdi, kernel_video_color_sequence_brown
-call library_string_compare
-jc .gray_light
+ mov rdi, kernel_video_color_sequence_brown
+ call library_string_compare
+ jc .gray_light
 
-mov dword [kernel_video_color], STATIC_COLOR_brown
+ mov dword [kernel_video_color], STATIC_COLOR_brown
 
-jmp .done
+ jmp .done
 
 .gray_light:
 
-mov rdi, kernel_video_color_sequence_gray_light
-call library_string_compare
-jc .gray
+ mov rdi, kernel_video_color_sequence_gray_light
+ call library_string_compare
+ jc .gray
 
-mov dword [kernel_video_color], STATIC_COLOR_gray_light
+ mov dword [kernel_video_color], STATIC_COLOR_gray_light
 
-jmp .done
+ jmp .done
 
 .gray:
 
-mov rdi, kernel_video_color_sequence_gray
-call library_string_compare
-jc .blue_light
+ mov rdi, kernel_video_color_sequence_gray
+ call library_string_compare
+ jc .blue_light
 
-mov dword [kernel_video_color], STATIC_COLOR_gray
+ mov dword [kernel_video_color], STATIC_COLOR_gray
 
-jmp .done
+ jmp .done
 
 .blue_light:
 
-mov rdi, kernel_video_color_sequence_blue_light
-call library_string_compare
-jc .green_light
+ mov rdi, kernel_video_color_sequence_blue_light
+ call library_string_compare
+ jc .green_light
 
-mov dword [kernel_video_color], STATIC_COLOR_blue_light
+ mov dword [kernel_video_color], STATIC_COLOR_blue_light
 
-jmp .done
+ jmp .done
 
 .green_light:
 
-mov rdi, kernel_video_color_sequence_green_light
-call library_string_compare
-jc .cyan_light
+ mov rdi, kernel_video_color_sequence_green_light
+ call library_string_compare
+ jc .cyan_light
 
-mov dword [kernel_video_color], STATIC_COLOR_green_light
+ mov dword [kernel_video_color], STATIC_COLOR_green_light
 
-jmp .done
+ jmp .done
 
 .cyan_light:
 
-mov rdi, kernel_video_color_sequence_cyan_light
-call library_string_compare
-jc .red_light
+ mov rdi, kernel_video_color_sequence_cyan_light
+ call library_string_compare
+ jc .red_light
 
-mov dword [kernel_video_color], STATIC_COLOR_cyan_light
+ mov dword [kernel_video_color], STATIC_COLOR_cyan_light
 
-jmp .done
+ jmp .done
 
 .red_light:
 
-mov rdi, kernel_video_color_sequence_red_light
-call library_string_compare
-jc .magenta_light
+ mov rdi, kernel_video_color_sequence_red_light
+ call library_string_compare
+ jc .magenta_light
 
-mov dword [kernel_video_color], STATIC_COLOR_red_light
+ mov dword [kernel_video_color], STATIC_COLOR_red_light
 
-jmp .done
+ jmp .done
 
 .magenta_light:
 
-mov rdi, kernel_video_color_sequence_magenta_light
-call library_string_compare
-jc .yellow
+ mov rdi, kernel_video_color_sequence_magenta_light
+ call library_string_compare
+ jc .yellow
 
-mov dword [kernel_video_color], STATIC_COLOR_magenta_light
+ mov dword [kernel_video_color], STATIC_COLOR_magenta_light
 
-jmp .done
+ jmp .done
 
 .yellow:
 
-mov rdi, kernel_video_color_sequence_yellow
-call library_string_compare
-jc .white
+ mov rdi, kernel_video_color_sequence_yellow
+ call library_string_compare
+ jc .white
 
-mov dword [kernel_video_color], STATIC_COLOR_yellow
+ mov dword [kernel_video_color], STATIC_COLOR_yellow
 
-jmp .done
+ jmp .done
 
 .white:
 
-mov rdi, kernel_video_color_sequence_white
-call library_string_compare
-jc .fail
+ mov rdi, kernel_video_color_sequence_white
+ call library_string_compare
+ jc .fail
 
-mov dword [kernel_video_color], STATIC_COLOR_white
+ mov dword [kernel_video_color], STATIC_COLOR_white
 
 .done:
 
-sub qword [rsp], STATIC_ASCII_SEQUENCE_length - 0x01
-add qword [rsp + STATIC_QWORD_SIZE_byte], STATIC_ASCII_SEQUENCE_length - 0x01
+ sub qword [rsp], STATIC_ASCII_SEQUENCE_length - 0x01
+ add qword [rsp + STATIC_QWORD_SIZE_byte], STATIC_ASCII_SEQUENCE_length - 0x01
 
 .fail:
 
-pop rcx
-pop rsi
-pop rdi
+ pop rcx
+ pop rsi
+ pop rdi
 
-jnc .continue
+ jnc .continue
 
 .no:
 
-push rcx
+ push rcx
 
-mov ecx, 1
-call kernel_video_char
+ mov ecx, 1
+ call kernel_video_char
 
-pop rcx
+ pop rcx
 
 .continue:
 
-dec rcx
-jnz .loop
+ dec rcx
+ jnz .loop
 
 .end:
 
-call kernel_video_cursor_enable
+ call kernel_video_cursor_enable
 
-pop rsi
-pop rdx
-pop rcx
-pop rbx
-pop rax
+ pop rsi
+ pop rdx
+ pop rcx
+ pop rbx
+ pop rax
 
-ret
+ ret
 
 kernel_video_char:
 
-push rax
-push rbx
-push rcx
-push rdx
-push rdi
+ push rax
+ push rbx
+ push rcx
+ push rdx
+ push rdi
 
-call kernel_video_cursor_disable
+ call kernel_video_cursor_disable
 
-macro_close kernel_video_semaphore, 0
+ macro_close kernel_video_semaphore, 0
 
-mov ebx, dword [kernel_video_cursor]
-mov edx, dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]
+ mov ebx, dword [kernel_video_cursor]
+ mov edx, dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]
 
-mov rdi, qword [kernel_video_pointer]
+ mov rdi, qword [kernel_video_pointer]
 
 .loop:
 
-cmp ax, STATIC_ASCII_NEW_LINE
-je .new_line
+ cmp ax, STATIC_ASCII_NEW_LINE
+ je .new_line
 
-cmp ax, STATIC_ASCII_BACKSPACE
-je .backspace
+ cmp ax, STATIC_ASCII_BACKSPACE
+ je .backspace
 
-call kernel_video_char_clean
+ call kernel_video_char_clean
 
-sub ax, STATIC_ASCII_SPACE
-call kernel_video_matrix
+ sub ax, STATIC_ASCII_SPACE
+ call kernel_video_matrix
 
-inc ebx
+ inc ebx
 
-add rdi, qword [kernel_font_width_byte]
+ add rdi, qword [kernel_font_width_byte]
 
-cmp ebx, dword [kernel_video_width_char]
-jb .continue
+ cmp ebx, dword [kernel_video_width_char]
+ jb .continue
 
-push rax
-push rdx
+ push rax
+ push rdx
 
-mov rax, qword [kernel_font_width_byte]
-mul rbx
-sub rdi, rax
-add rdi, qword [kernel_video_scanline_char]
+ mov rax, qword [kernel_font_width_byte]
+ mul rbx
+ sub rdi, rax
+ add rdi, qword [kernel_video_scanline_char]
 
-pop rdx
-pop rax
+ pop rdx
+ pop rax
 
-xor ebx, ebx
-inc edx
+ xor ebx, ebx
+ inc edx
 
 .row:
 
-cmp edx, dword [kernel_video_height_char]
-jb .continue
+ cmp edx, dword [kernel_video_height_char]
+ jb .continue
 
-dec edx
+ dec edx
 
-sub rdi, qword [kernel_video_scanline_char]
+ sub rdi, qword [kernel_video_scanline_char]
 
-call kernel_video_scroll
+ call kernel_video_scroll
 
 .continue:
 
-dec rcx
-jnz .loop
+ dec rcx
+ jnz .loop
 
-mov dword [kernel_video_cursor], ebx
-mov dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte], edx
+ mov dword [kernel_video_cursor], ebx
+ mov dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte], edx
 
-mov qword [kernel_video_pointer], rdi
+ mov qword [kernel_video_pointer], rdi
 
-mov byte [kernel_video_semaphore], STATIC_FALSE
+ mov byte [kernel_video_semaphore], STATIC_FALSE
 
-call kernel_video_cursor_enable
+ call kernel_video_cursor_enable
 
-pop rdi
-pop rdx
-pop rcx
-pop rbx
-pop rax
+ pop rdi
+ pop rdx
+ pop rcx
+ pop rbx
+ pop rax
 
-ret
+ ret
 
 .new_line:
 
-push rax
-push rdx
+ push rax
+ push rdx
 
-mov eax, ebx
-mul qword [kernel_font_width_pixel]
-shl rax, KERNEL_VIDEO_DEPTH_shift
-sub rdi, rax
+ mov eax, ebx
+ mul qword [kernel_font_width_pixel]
+ shl rax, KERNEL_VIDEO_DEPTH_shift
+ sub rdi, rax
 
-xor ebx, ebx
+ xor ebx, ebx
 
-add rdi, qword [kernel_video_scanline_char]
+ add rdi, qword [kernel_video_scanline_char]
 
-pop rdx
-inc rdx
+ pop rdx
+ inc rdx
 
-pop rax
+ pop rax
 
-jmp .row
+ jmp .row
 
 .backspace:
 
-test ebx, ebx
-jz .begin
+ test ebx, ebx
+ jz .begin
 
-dec ebx
+ dec ebx
 
-jmp .clear
+ jmp .clear
 
 .begin:
 
-test edx, edx
-jz .continue
+ test edx, edx
+ jz .continue
 
-mov ebx, dword [kernel_video_width_char]
-dec ebx
+ mov ebx, dword [kernel_video_width_char]
+ dec ebx
 
-dec edx
+ dec edx
 
-push rax
-push rdx
+ push rax
+ push rdx
 
-sub rdi, qword [kernel_video_scanline_char]
-mov rax, qword [kernel_font_width_byte]
-mul dword [kernel_video_width_char]
-add rdi, rax
+ sub rdi, qword [kernel_video_scanline_char]
+ mov rax, qword [kernel_font_width_byte]
+ mul dword [kernel_video_width_char]
+ add rdi, rax
 
-pop rdx
-pop rax
+ pop rdx
+ pop rax
 
 .clear:
 
-sub rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
+ sub rdi, KERNEL_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
 
-call kernel_video_char_clean
+ call kernel_video_char_clean
 
-jmp .continue
+ jmp .continue
 
 kernel_video_number:
 
-push rax
-push rdx
-push rbp
-push r8
-push r9
+ push rax
+ push rdx
+ push rbp
+ push r8
+ push r9
 
-call kernel_video_cursor_disable
+ call kernel_video_cursor_disable
 
-cmp bl, 2
-jb .error
-cmp bl, 36
-ja .error
+ cmp bl, 2
+ jb .error
+ cmp bl, 36
+ ja .error
 
-mov r8, rdx
-sub r8, 0x30
+ mov r8, rdx
+ sub r8, 0x30
 
-xor rdx, rdx
+ xor rdx, rdx
 
-mov rbp, rsp
+ mov rbp, rsp
 
 .loop:
 
-div rbx
+ div rbx
 
-push rdx
-dec rcx
+ push rdx
+ dec rcx
 
-xor rdx, rdx
+ xor rdx, rdx
 
-test rax, rax
-jnz .loop
+ test rax, rax
+ jnz .loop
 
-cmp rcx, STATIC_EMPTY
-jle .print
+ cmp rcx, STATIC_EMPTY
+ jle .print
 
 .prefix:
 
-push r8
+ push r8
 
-dec rcx
-jnz .prefix
+ dec rcx
+ jnz .prefix
 
 .print:
 
-mov ecx, 0x01
+ mov ecx, 0x01
 
-cmp rsp, rbp
-je .end
+ cmp rsp, rbp
+ je .end
 
-pop rax
+ pop rax
 
-add rax, 0x30
+ add rax, 0x30
 
-cmp al, 0x3A
-jb .no
+ cmp al, 0x3A
+ jb .no
 
-add al, 0x07
+ add al, 0x07
 
 .no:
 
-call kernel_video_char
+ call kernel_video_char
 
-jmp .print
+ jmp .print
 
 .error:
 
-stc
+ stc
 
 .end:
 
-call kernel_video_cursor_enable
+ call kernel_video_cursor_enable
 
-pop r9
-pop r8
-pop rbp
-pop rdx
-pop rax
+ pop r9
+ pop r8
+ pop rbp
+ pop rdx
+ pop rax
 
-ret
+ ret
 
 kernel_video_scroll:
 
-push rcx
-push rsi
-push rdi
+ push rcx
+ push rsi
+ push rdi
 
-call kernel_video_cursor_disable
+ call kernel_video_cursor_disable
 
-mov rcx, qword [kernel_video_size_byte]
-sub rcx, qword [kernel_video_scanline_char]
+ mov rcx, qword [kernel_video_size_byte]
+ sub rcx, qword [kernel_video_scanline_char]
 
-mov rdi, qword [kernel_video_framebuffer]
-mov rsi, rdi
-add rsi, qword [kernel_video_scanline_char]
-call kernel_memory_copy
+ mov rdi, qword [kernel_video_framebuffer]
+ mov rsi, rdi
+ add rsi, qword [kernel_video_scanline_char]
+ call kernel_memory_copy
 
-mov ecx, dword [kernel_video_height_char]
-dec ecx
-call kernel_video_line_drain
+ mov ecx, dword [kernel_video_height_char]
+ dec ecx
+ call kernel_video_line_drain
 
-call kernel_video_cursor_enable
+ call kernel_video_cursor_enable
 
-pop rdi
-pop rsi
-pop rcx
+ pop rdi
+ pop rsi
+ pop rcx
 
-ret
+ ret
 
 kernel_video_line_drain:
 
-push rax
-push rbx
-push rcx
-push rdx
-push rdi
+ push rax
+ push rbx
+ push rcx
+ push rdx
+ push rdi
 
-call kernel_video_cursor_disable
+ call kernel_video_cursor_disable
 
-mov rax, rcx
+ mov rax, rcx
 
-mov rcx, qword [kernel_video_scanline_char]
-mul rcx
-add rax, qword [kernel_video_framebuffer]
-mov rdi, rax
+ mov rcx, qword [kernel_video_scanline_char]
+ mul rcx
+ add rax, qword [kernel_video_framebuffer]
+ mov rdi, rax
 
-mov eax, STATIC_COLOR_BACKGROUND_default
-shr rcx, KERNEL_VIDEO_DEPTH_shift
-rep stosd
+ mov eax, STATIC_COLOR_BACKGROUND_default
+ shr rcx, KERNEL_VIDEO_DEPTH_shift
+ rep stosd
 
-call kernel_video_cursor_enable
+ call kernel_video_cursor_enable
 
-pop rdi
-pop rdx
-pop rcx
-pop rbx
-pop rax
+ pop rdi
+ pop rdx
+ pop rcx
+ pop rbx
+ pop rax
 
-ret
+ ret
 
 kernel_video_cursor_disable:
 
-inc qword [kernel_video_cursor_lock]
+ inc qword [kernel_video_cursor_lock]
 
-cmp qword [kernel_video_cursor_lock], STATIC_FALSE
-jne .ready
+ cmp qword [kernel_video_cursor_lock], STATIC_FALSE
+ jne .ready
 
-call kernel_video_cursor_switch
+ call kernel_video_cursor_switch
 
 .ready:
 
-ret
+ ret
 
 kernel_video_cursor_enable:
 
-cmp qword [kernel_video_cursor_lock], STATIC_EMPTY
-je .ready
+ cmp qword [kernel_video_cursor_lock], STATIC_EMPTY
+ je .ready
 
-dec qword [kernel_video_cursor_lock]
+ dec qword [kernel_video_cursor_lock]
 
-cmp qword [kernel_video_cursor_lock], STATIC_EMPTY
-jne .ready
+ cmp qword [kernel_video_cursor_lock], STATIC_EMPTY
+ jne .ready
 
-call kernel_video_cursor_switch
+ call kernel_video_cursor_switch
 
 .ready:
 
-ret
+ ret
 
 kernel_video_cursor_switch:
 
-push rax
-push rcx
-push rdi
+ push rax
+ push rcx
+ push rdi
 
-mov rax, qword [kernel_video_scanline_byte]
+ mov rax, qword [kernel_video_scanline_byte]
 
-mov rcx, KERNEL_FONT_HEIGHT_pixel
+ mov rcx, KERNEL_FONT_HEIGHT_pixel
 
-mov rdi, qword [kernel_video_pointer]
+ mov rdi, qword [kernel_video_pointer]
 
 .loop:
 
-not dword [rdi]
+ not dword [rdi]
 
-or byte [rdi + 0x03], STATIC_MAX_unsigned
+ or byte [rdi + 0x03], STATIC_MAX_unsigned
 
-add rdi, rax
+ add rdi, rax
 
-dec rcx
-jnz .loop
+ dec rcx
+ jnz .loop
 
 .end:
 
-pop rdi
-pop rcx
-pop rax
+ pop rdi
+ pop rcx
+ pop rax
 
-ret
+ ret
 

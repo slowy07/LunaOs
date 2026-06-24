@@ -72,219 +72,219 @@ DRIVER_IDE_ERROR_uncorrectble_data equ 01000000b
 DRIVER_IDE_ERROR_bad_block equ 10000000b
 
 struc DRIVER_IDE_STRUCTURE_DEVICE
-.channel resb 2
-.drive resb 1
-.size_sectors resb 8
-.SIZE:
+ .channel resb 2
+ .drive resb 1
+ .size_sectors resb 8
+ .SIZE:
 endstruc
 
 driver_ide_devices_count db STATIC_EMPTY
 
 align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 driver_ide_devices:
-times DRIVER_IDE_STRUCTURE_DEVICE.SIZE * 0x04 db STATIC_EMPTY
+ times DRIVER_IDE_STRUCTURE_DEVICE.SIZE * 0x04 db STATIC_EMPTY
 
 driver_ide_init_drive:
 
-push rcx
-push rax
-push rdi
-push rdx
+ push rcx
+ push rax
+ push rdi
+ push rdx
 
-add dx, DRIVER_IDE_REGISTER_drive_OR_head
-out dx, al
+ add dx, DRIVER_IDE_REGISTER_drive_OR_head
+ out dx, al
 
-call driver_ide_wait
+ call driver_ide_wait
 
-mov al, DRIVER_IDE_COMMAND_identify
-mov dx, word [rsp]
-add dx, DRIVER_IDE_REGISTER_command_OR_status
-out dx, al
+ mov al, DRIVER_IDE_COMMAND_identify
+ mov dx, word [rsp]
+ add dx, DRIVER_IDE_REGISTER_command_OR_status
+ out dx, al
 
-call driver_ide_wait
+ call driver_ide_wait
 
-in al, dx
+ in al, dx
 
-test al, al
-jz .end
+ test al, al
+ jz .end
 
-cmp al, STATIC_MAX_unsigned
-je .end
+ cmp al, STATIC_MAX_unsigned
+ je .end
 
-test al, DRIVER_IDE_STATUS_error
-jnz .end
+ test al, DRIVER_IDE_STATUS_error
+ jnz .end
 
-mov ecx, 256
-mov dx, word [rsp]
-add dx, DRIVER_IDE_REGISTER_data
-rep insw
+ mov ecx, 256
+ mov dx, word [rsp]
+ add dx, DRIVER_IDE_REGISTER_data
+ rep insw
 
-mov rdi, qword [rsp + STATIC_QWORD_SIZE_byte]
+ mov rdi, qword [rsp + STATIC_QWORD_SIZE_byte]
 
-mov eax, dword [rdi + DRIVER_IDE_IDENTIFY_command_sets]
-test eax, DRIVER_IDE_IDENTIFY_COMMAND_SETS_lba_extended
-jz .end
+ mov eax, dword [rdi + DRIVER_IDE_IDENTIFY_command_sets]
+ test eax, DRIVER_IDE_IDENTIFY_COMMAND_SETS_lba_extended
+ jz .end
 
-mov rcx, driver_ide_devices
+ mov rcx, driver_ide_devices
 
-mov dx, word [rsp]
-cmp dx, DRIVER_IDE_CHANNEL_PRIMARY
-je .primary
+ mov dx, word [rsp]
+ cmp dx, DRIVER_IDE_CHANNEL_PRIMARY
+ je .primary
 
-add rcx, DRIVER_IDE_STRUCTURE_DEVICE.SIZE << STATIC_MULTIPLE_BY_2_shift
+ add rcx, DRIVER_IDE_STRUCTURE_DEVICE.SIZE << STATIC_MULTIPLE_BY_2_shift
 
 .primary:
 
-mov al, byte [rsp + STATIC_QWORD_SIZE_byte * 0x02]
-cmp al, DRIVER_IDE_DRIVE_master
-je .master
+ mov al, byte [rsp + STATIC_QWORD_SIZE_byte * 0x02]
+ cmp al, DRIVER_IDE_DRIVE_master
+ je .master
 
-add rcx, DRIVER_IDE_STRUCTURE_DEVICE.SIZE
+ add rcx, DRIVER_IDE_STRUCTURE_DEVICE.SIZE
 
 .master:
 
-mov word [rcx + DRIVER_IDE_STRUCTURE_DEVICE.channel], dx
+ mov word [rcx + DRIVER_IDE_STRUCTURE_DEVICE.channel], dx
 
-mov byte [rcx + DRIVER_IDE_STRUCTURE_DEVICE.drive], al
+ mov byte [rcx + DRIVER_IDE_STRUCTURE_DEVICE.drive], al
 
-mov eax, dword [rdi + DRIVER_IDE_IDENTIFY_max_lba_extended]
-mov qword [rcx + DRIVER_IDE_STRUCTURE_DEVICE.size_sectors], rax
+ mov eax, dword [rdi + DRIVER_IDE_IDENTIFY_max_lba_extended]
+ mov qword [rcx + DRIVER_IDE_STRUCTURE_DEVICE.size_sectors], rax
 
-inc byte [driver_ide_devices_count]
+ inc byte [driver_ide_devices_count]
 
 .end:
 
-pop rdx
-pop rdi
-pop rax
-pop rcx
+ pop rdx
+ pop rdi
+ pop rax
+ pop rcx
 
-ret
+ ret
 
 driver_ide_wait:
 
-push rax
+ push rax
 
-mov rax, qword [driver_rtc_microtime]
-inc rax
+ mov rax, qword [driver_rtc_microtime]
+ inc rax
 
 .wait:
 
-cmp rax, qword [driver_rtc_microtime]
-jnb .wait
+ cmp rax, qword [driver_rtc_microtime]
+ jnb .wait
 
-pop rax
+ pop rax
 
-ret
+ ret
 
 driver_ide_init:
 
-push rax
-push rdx
-push rdi
+ push rax
+ push rdx
+ push rdi
 
-call kernel_memory_alloc_page
+ call kernel_memory_alloc_page
 
-mov al, DRIVER_IDE_CONTROL_nIEN
-mov dx, DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
-out dx, al
+ mov al, DRIVER_IDE_CONTROL_nIEN
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
+ out dx, al
 
-mov dx, DRIVER_IDE_CHANNEL_PRIMARY
-call driver_ide_pool
-jc .next
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY
+ call driver_ide_pool
+ jc .next
 
-mov al, DRIVER_IDE_CONTROL_SRST
-mov dx, DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
-out dx, al
+ mov al, DRIVER_IDE_CONTROL_SRST
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
+ out dx, al
 
-xor al, al
-out dx, al
+ xor al, al
+ out dx, al
 
-mov dx, DRIVER_IDE_CHANNEL_PRIMARY
-call driver_ide_pool
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY
+ call driver_ide_pool
 
-mov al, DRIVER_IDE_DRIVE_master
-mov dx, DRIVER_IDE_CHANNEL_PRIMARY
-call driver_ide_init_drive
+ mov al, DRIVER_IDE_DRIVE_master
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY
+ call driver_ide_init_drive
 
-mov al, DRIVER_IDE_DRIVE_slave
-mov dx, DRIVER_IDE_CHANNEL_PRIMARY
-call driver_ide_init_drive
+ mov al, DRIVER_IDE_DRIVE_slave
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY
+ call driver_ide_init_drive
 
 .next:
 
-mov al, DRIVER_IDE_CONTROL_nIEN
-mov dx, DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
-out dx, al
+ mov al, DRIVER_IDE_CONTROL_nIEN
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
+ out dx, al
 
-mov dx, DRIVER_IDE_CHANNEL_SECONDARY
-call driver_ide_pool
-jc .end
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY
+ call driver_ide_pool
+ jc .end
 
-mov al, DRIVER_IDE_CONTROL_SRST
-mov dx, DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
-out dx, al
+ mov al, DRIVER_IDE_CONTROL_SRST
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
+ out dx, al
 
-xor al, al
-out dx, al
+ xor al, al
+ out dx, al
 
-mov dx, DRIVER_IDE_CHANNEL_SECONDARY
-call driver_ide_pool
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY
+ call driver_ide_pool
 
-mov al, DRIVER_IDE_DRIVE_master
-mov dx, DRIVER_IDE_CHANNEL_SECONDARY
-call driver_ide_init_drive
+ mov al, DRIVER_IDE_DRIVE_master
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY
+ call driver_ide_init_drive
 
-mov al, DRIVER_IDE_DRIVE_slave
-mov dx, DRIVER_IDE_CHANNEL_SECONDARY
-call driver_ide_init_drive
+ mov al, DRIVER_IDE_DRIVE_slave
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY
+ call driver_ide_init_drive
 
 .end:
 
-call kernel_memory_release_page
+ call kernel_memory_release_page
 
-pop rdi
-pop rdx
-pop rax
+ pop rdi
+ pop rdx
+ pop rax
 
-ret
+ ret
 
 driver_ide_pool:
 
-push rax
-push rdx
+ push rax
+ push rdx
 
-add dx, DRIVER_IDE_REGISTER_channel_control_OR_altstatus
-in al, dx
-in al, dx
-in al, dx
-in al, dx
+ add dx, DRIVER_IDE_REGISTER_channel_control_OR_altstatus
+ in al, dx
+ in al, dx
+ in al, dx
+ in al, dx
 
-test al, al
-jz .error
+ test al, al
+ jz .error
 
-cmp al, STATIC_MAX_unsigned
-jne .wait
+ cmp al, STATIC_MAX_unsigned
+ jne .wait
 
 .error:
 
-stc
+ stc
 
-jmp .end
+ jmp .end
 
 .wait:
 
-in al, dx
-and al, DRIVER_IDE_STATUS_busy | DRIVER_IDE_STATUS_ready
-cmp al, DRIVER_IDE_STATUS_ready
-jne .wait
+ in al, dx
+ and al, DRIVER_IDE_STATUS_busy | DRIVER_IDE_STATUS_ready
+ cmp al, DRIVER_IDE_STATUS_ready
+ jne .wait
 
-clc
+ clc
 
 .end:
 
-pop rdx
-pop rax
+ pop rdx
+ pop rax
 
-ret
+ ret
 

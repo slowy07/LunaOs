@@ -125,8 +125,8 @@ STATIC_COLOR_yellow equ 0x00FFFF55
 STATIC_COLOR_white equ 0x00FFFFFF
 
 struc STATIC_STRUCTURE_BLOCK
-.data resb KERNEL_PAGE_SIZE_byte - STATIC_QWORD_SIZE_byte
-.link resb 8
-.SIZE:
+ .data resb KERNEL_PAGE_SIZE_byte - STATIC_QWORD_SIZE_byte
+ .link resb 8
+ .SIZE:
 endstruc
 

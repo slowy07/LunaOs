@@ -1,32 +1,32 @@
 library_string_digits:
 
-push rsi
-push rcx
+ push rsi
+ push rcx
 
 .loop:
 
-cmp byte [rsi], STATIC_ASCII_DIGIT_0
-jb .error
-cmp byte [rsi], STATIC_ASCII_DIGIT_9
-ja .error
+ cmp byte [rsi], STATIC_ASCII_DIGIT_0
+ jb .error
+ cmp byte [rsi], STATIC_ASCII_DIGIT_9
+ ja .error
 
-inc rsi
+ inc rsi
 
-dec rcx
-jnz .loop
+ dec rcx
+ jnz .loop
 
-clc
+ clc
 
-jmp .end
+ jmp .end
 
 .error:
 
-stc
+ stc
 
 .end:
 
-pop rcx
-pop rsi
+ pop rcx
+ pop rsi
 
-ret
+ ret
 

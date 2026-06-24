@@ -169,12 +169,12 @@ DRIVER_NIC_I82540EM_IP4AT_ADDR2 equ 0x5850
 DRIVER_NIC_I82540EM_IP4AT_ADDR3 equ 0x5858
 
 struc DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry
-.base_address resb 8
-.length resb 2
-.checksum resb 2
-.status resb 1
-.errors resb 1
-.special resb 2
+ .base_address resb 8
+ .length resb 2
+ .checksum resb 2
+ .status resb 1
+ .errors resb 1
+ .special resb 2
 endstruc
 
 driver_nic_i82540em_mmio_base_address dq STATIC_EMPTY
@@ -204,325 +204,325 @@ driver_nic_i82540em_string_irq_end:
 
 driver_nic_i82540em_irq:
 
-push rax
-push rbx
-push rcx
-push rdx
-push rsi
-pushf
+ push rax
+ push rbx
+ push rcx
+ push rdx
+ push rsi
+ pushf
 
-mov rsi, qword [driver_nic_i82540em_mmio_base_address]
-mov eax, dword [rsi + DRIVER_NIC_I82540EM_ICR_register]
+ mov rsi, qword [driver_nic_i82540em_mmio_base_address]
+ mov eax, dword [rsi + DRIVER_NIC_I82540EM_ICR_register]
 
-bt eax, DRIVER_NIC_I82540EM_ICR_register_flag_TXQE
-jnc .no_txqe
+ bt eax, DRIVER_NIC_I82540EM_ICR_register_flag_TXQE
+ jnc .no_txqe
 
-mov byte [driver_nic_i82540em_tx_queue_empty_semaphore], STATIC_TRUE
+ mov byte [driver_nic_i82540em_tx_queue_empty_semaphore], STATIC_TRUE
 
-jmp .end
+ jmp .end
 
 .no_txqe:
 
-bt eax, DRIVER_NIC_I82540EM_ICR_register_flag_RXT0
-jnc .received
+ bt eax, DRIVER_NIC_I82540EM_ICR_register_flag_RXT0
+ jnc .received
 
-mov rbx, qword [service_network_pid]
-test rbx, rbx
-jz .received
+ mov rbx, qword [service_network_pid]
+ test rbx, rbx
+ jz .received
 
-mov rsi, qword [driver_nic_i82540em_rx_base_address]
-movzx ecx, word [rsi + DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry.length]
-mov rsi, qword [rsi + DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry.base_address]
+ mov rsi, qword [driver_nic_i82540em_rx_base_address]
+ movzx ecx, word [rsi + DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry.length]
+ mov rsi, qword [rsi + DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry.base_address]
 
-call driver_nic_i82540em_rx_release
+ call driver_nic_i82540em_rx_release
 
-call kernel_ipc_insert
+ call kernel_ipc_insert
 
 .received:
 
-mov rsi, qword [driver_nic_i82540em_mmio_base_address]
-mov dword [rsi + DRIVER_NIC_I82540EM_RDH], 0x00
-mov dword [rsi + DRIVER_NIC_I82540EM_RDT], 0x01
+ mov rsi, qword [driver_nic_i82540em_mmio_base_address]
+ mov dword [rsi + DRIVER_NIC_I82540EM_RDH], 0x00
+ mov dword [rsi + DRIVER_NIC_I82540EM_RDT], 0x01
 
 .end:
 
-mov rax, qword [kernel_apic_base_address]
-mov dword [rax + KERNEL_APIC_EOI_register], STATIC_EMPTY
+ mov rax, qword [kernel_apic_base_address]
+ mov dword [rax + KERNEL_APIC_EOI_register], STATIC_EMPTY
 
-popf
-pop rsi
-pop rdx
-pop rcx
-pop rbx
-pop rax
+ popf
+ pop rsi
+ pop rdx
+ pop rcx
+ pop rbx
+ pop rax
 
-iretq
+ iretq
 
-macro_debug "driver_nic_i82540em_irq"
+ macro_debug "driver_nic_i82540em_irq"
 
 driver_nic_i82540em_rx_release:
 
-push rax
-push rdi
+ push rax
+ push rdi
 
-mov rax, qword [driver_nic_i82540em_rx_base_address]
+ mov rax, qword [driver_nic_i82540em_rx_base_address]
 
-call kernel_memory_alloc_page
-jc .end
+ call kernel_memory_alloc_page
+ jc .end
 
-mov qword [rax + DRIVER_NIC_I82540EM_TDESC_BASE_ADDRESS], rdi
+ mov qword [rax + DRIVER_NIC_I82540EM_TDESC_BASE_ADDRESS], rdi
 
 .end:
 
-pop rdi
-pop rax
+ pop rdi
+ pop rax
 
-ret
+ ret
 
-macro_debug "driver_nic_i82540em_rx_release"
+ macro_debug "driver_nic_i82540em_rx_release"
 
 driver_nic_i82540em_transfer:
 
-push rsi
-push rax
+ push rsi
+ push rax
 
 .wait:
 
-cmp byte [driver_nic_i82540em_tx_queue_empty_semaphore], STATIC_TRUE
-jne .wait
+ cmp byte [driver_nic_i82540em_tx_queue_empty_semaphore], STATIC_TRUE
+ jne .wait
 
-mov rsi, qword [driver_nic_i82540em_tx_base_address]
+ mov rsi, qword [driver_nic_i82540em_tx_base_address]
 
-mov qword [rsi + DRIVER_NIC_I82540EM_TDESC_BASE_ADDRESS], rdi
+ mov qword [rsi + DRIVER_NIC_I82540EM_TDESC_BASE_ADDRESS], rdi
 
-and eax, STATIC_WORD_mask
-add rax, DRIVER_NIC_I82540EM_TDESC_CMD_RS
-or rax, DRIVER_NIC_I82540EM_TDESC_CMD_IFCS
-or rax, DRIVER_NIC_I82540EM_TDESC_CMD_EOP
-mov qword [rsi + DRIVER_NIC_I82540EM_TDESC_LENGTH_AND_FLAGS], rax
+ and eax, STATIC_WORD_mask
+ add rax, DRIVER_NIC_I82540EM_TDESC_CMD_RS
+ or rax, DRIVER_NIC_I82540EM_TDESC_CMD_IFCS
+ or rax, DRIVER_NIC_I82540EM_TDESC_CMD_EOP
+ mov qword [rsi + DRIVER_NIC_I82540EM_TDESC_LENGTH_AND_FLAGS], rax
 
-mov byte [driver_nic_i82540em_tx_queue_empty_semaphore], STATIC_FALSE
+ mov byte [driver_nic_i82540em_tx_queue_empty_semaphore], STATIC_FALSE
 
-mov rax, qword [driver_nic_i82540em_mmio_base_address]
-mov dword [rax + DRIVER_NIC_I82540EM_TDH], 0x00
-mov dword [rax + DRIVER_NIC_I82540EM_TDT], 0x01
+ mov rax, qword [driver_nic_i82540em_mmio_base_address]
+ mov dword [rax + DRIVER_NIC_I82540EM_TDH], 0x00
+ mov dword [rax + DRIVER_NIC_I82540EM_TDT], 0x01
 
 .status:
 
-mov rax, DRIVER_NIC_I82540EM_TDESC_STATUS_DD
-test rax, qword [rsi + DRIVER_NIC_I82540EM_TDESC_LENGTH_AND_FLAGS]
-jz .status
+ mov rax, DRIVER_NIC_I82540EM_TDESC_STATUS_DD
+ test rax, qword [rsi + DRIVER_NIC_I82540EM_TDESC_LENGTH_AND_FLAGS]
+ jz .status
 
-pop rax
-pop rsi
+ pop rax
+ pop rsi
 
-ret
+ ret
 
-macro_debug "driver_nic_i82540em_transfer"
+ macro_debug "driver_nic_i82540em_transfer"
 
 driver_nic_i82540em:
 
-push rax
-push rbx
-push rcx
-push rsi
-push rdi
-push r11
+ push rax
+ push rbx
+ push rcx
+ push rsi
+ push rdi
+ push r11
 
-mov eax, DRIVER_PCI_REGISTER_bar0
-call driver_pci_read
+ mov eax, DRIVER_PCI_REGISTER_bar0
+ call driver_pci_read
 
-bt eax, DRIVER_PCI_REGISTER_FLAG_64_bit
-jnc .no
+ bt eax, DRIVER_PCI_REGISTER_FLAG_64_bit
+ jnc .no
 
-push rax
+ push rax
 
-mov eax, DRIVER_PCI_REGISTER_bar1
-call driver_pci_read
+ mov eax, DRIVER_PCI_REGISTER_bar1
+ call driver_pci_read
 
-mov dword [rsp + STATIC_DWORD_SIZE_byte], eax
+ mov dword [rsp + STATIC_DWORD_SIZE_byte], eax
 
-pop rax
+ pop rax
 
 .no:
 
-and al, 0xF0
-mov qword [driver_nic_i82540em_mmio_base_address], rax
+ and al, 0xF0
+ mov qword [driver_nic_i82540em_mmio_base_address], rax
 
-mov rsi, rax
+ mov rsi, rax
 
-mov eax, DRIVER_PCI_REGISTER_irq
-call driver_pci_read
+ mov eax, DRIVER_PCI_REGISTER_irq
+ call driver_pci_read
 
-mov byte [driver_nic_i82540em_irq_number], al
+ mov byte [driver_nic_i82540em_irq_number], al
 
-mov rax, qword [driver_nic_i82540em_mmio_base_address]
-mov rbx, KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
-mov rcx, 32
-mov r11, cr3
-call kernel_page_map_physical
+ mov rax, qword [driver_nic_i82540em_mmio_base_address]
+ mov rbx, KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
+ mov rcx, 32
+ mov r11, cr3
+ call kernel_page_map_physical
 
-mov dword [rsi + DRIVER_NIC_I82540EM_EERD], 0x00000001
-mov eax, dword [rsi + DRIVER_NIC_I82540EM_EERD]
-shr eax, STATIC_MOVE_HIGH_TO_AX_shift
+ mov dword [rsi + DRIVER_NIC_I82540EM_EERD], 0x00000001
+ mov eax, dword [rsi + DRIVER_NIC_I82540EM_EERD]
+ shr eax, STATIC_MOVE_HIGH_TO_AX_shift
 
-mov word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.0], ax
+ mov word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.0], ax
 
-mov dword [rsi + DRIVER_NIC_I82540EM_EERD], 0x00000101
-mov eax, dword [rsi + DRIVER_NIC_I82540EM_EERD]
-shr eax, STATIC_MOVE_HIGH_TO_AX_shift
+ mov dword [rsi + DRIVER_NIC_I82540EM_EERD], 0x00000101
+ mov eax, dword [rsi + DRIVER_NIC_I82540EM_EERD]
+ shr eax, STATIC_MOVE_HIGH_TO_AX_shift
 
-mov word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.2], ax
+ mov word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.2], ax
 
-mov dword [rsi + DRIVER_NIC_I82540EM_EERD], 0x00000201
-mov eax, dword [rsi + DRIVER_NIC_I82540EM_EERD]
-shr eax, STATIC_MOVE_HIGH_TO_AX_shift
+ mov dword [rsi + DRIVER_NIC_I82540EM_EERD], 0x00000201
+ mov eax, dword [rsi + DRIVER_NIC_I82540EM_EERD]
+ shr eax, STATIC_MOVE_HIGH_TO_AX_shift
 
-mov word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.4], ax
+ mov word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.4], ax
 
-mov dword [rsi + DRIVER_NIC_I82540EM_IMC], STATIC_MAX_unsigned
+ mov dword [rsi + DRIVER_NIC_I82540EM_IMC], STATIC_MAX_unsigned
 
-mov eax, dword [rsi + DRIVER_NIC_I82540EM_ICR_register]
+ mov eax, dword [rsi + DRIVER_NIC_I82540EM_ICR_register]
 
-call driver_nic_i82540em_setup
+ call driver_nic_i82540em_setup
 
-mov ecx, driver_nic_i82540em_string_end - driver_nic_i82540em_string
-mov rsi, driver_nic_i82540em_string
-call kernel_video_string
+ mov ecx, driver_nic_i82540em_string_end - driver_nic_i82540em_string
+ mov rsi, driver_nic_i82540em_string
+ call kernel_video_string
 
-mov bl, STATIC_NUMBER_SYSTEM_hexadecimal
+ mov bl, STATIC_NUMBER_SYSTEM_hexadecimal
 
-xor cl, cl
+ xor cl, cl
 
-mov dl, 6
+ mov dl, 6
 
-mov rsi, driver_nic_i82540em_mac_address
+ mov rsi, driver_nic_i82540em_mac_address
 
 .mac:
 
-lodsb
+ lodsb
 
-call kernel_video_number
+ call kernel_video_number
 
-dec dl
-jz .end
+ dec dl
+ jz .end
 
-mov eax, STATIC_ASCII_COLON
-mov cl, 1
-call kernel_video_char
+ mov eax, STATIC_ASCII_COLON
+ mov cl, 1
+ call kernel_video_char
 
-jmp .mac
+ jmp .mac
 
 .end:
 
-mov ecx, driver_nic_i82540em_string_irq_end - driver_nic_i82540em_string_irq
-mov rsi, driver_nic_i82540em_string_irq
-call kernel_video_string
+ mov ecx, driver_nic_i82540em_string_irq_end - driver_nic_i82540em_string_irq
+ mov rsi, driver_nic_i82540em_string_irq
+ call kernel_video_string
 
-movzx eax, byte [driver_nic_i82540em_irq_number]
-mov bl, STATIC_NUMBER_SYSTEM_decimal
-xor ecx, ecx
-call kernel_video_number
+ movzx eax, byte [driver_nic_i82540em_irq_number]
+ mov bl, STATIC_NUMBER_SYSTEM_decimal
+ xor ecx, ecx
+ call kernel_video_number
 
-mov eax, STATIC_ASCII_NEW_LINE
-mov cl, 1
-call kernel_video_char
+ mov eax, STATIC_ASCII_NEW_LINE
+ mov cl, 1
+ call kernel_video_char
 
-pop r11
-pop rdi
-pop rsi
-pop rcx
-pop rbx
-pop rax
+ pop r11
+ pop rdi
+ pop rsi
+ pop rcx
+ pop rbx
+ pop rax
 
-ret
+ ret
 
-macro_debug "driver_nic_i82540em"
+ macro_debug "driver_nic_i82540em"
 
 driver_nic_i82540em_setup:
 
-push rax
-push rdi
+ push rax
+ push rdi
 
-call kernel_memory_alloc_page
-call kernel_page_drain
+ call kernel_memory_alloc_page
+ call kernel_page_drain
 
-mov qword [driver_nic_i82540em_rx_base_address], rdi
+ mov qword [driver_nic_i82540em_rx_base_address], rdi
 
-mov dword [rsi + DRIVER_NIC_I82540EM_RDBAL], edi
-shr rdi, STATIC_MOVE_HIGH_TO_EAX_shift
-mov dword [rsi + DRIVER_NIC_I82540EM_RDBAH], edi
+ mov dword [rsi + DRIVER_NIC_I82540EM_RDBAL], edi
+ shr rdi, STATIC_MOVE_HIGH_TO_EAX_shift
+ mov dword [rsi + DRIVER_NIC_I82540EM_RDBAH], edi
 
-mov dword [rsi + DRIVER_NIC_I82540EM_RDLEN], DRIVER_NIC_I82540EM_RDLEN_default
-mov dword [rsi + DRIVER_NIC_I82540EM_RDH], 0x00
-mov dword [rsi + DRIVER_NIC_I82540EM_RDT], 0x01
+ mov dword [rsi + DRIVER_NIC_I82540EM_RDLEN], DRIVER_NIC_I82540EM_RDLEN_default
+ mov dword [rsi + DRIVER_NIC_I82540EM_RDH], 0x00
+ mov dword [rsi + DRIVER_NIC_I82540EM_RDT], 0x01
 
-call kernel_memory_alloc_page
+ call kernel_memory_alloc_page
 
-mov rax, qword [driver_nic_i82540em_rx_base_address]
-mov qword [rax], rdi
+ mov rax, qword [driver_nic_i82540em_rx_base_address]
+ mov qword [rax], rdi
 
-mov eax, DRIVER_NIC_I82540EM_RCTL_EN
+ mov eax, DRIVER_NIC_I82540EM_RCTL_EN
 
-or eax, DRIVER_NIC_I82540EM_RCTL_UPE
-or eax, DRIVER_NIC_I82540EM_RCTL_BAM
-or eax, DRIVER_NIC_I82540EM_RCTL_SECRC
+ or eax, DRIVER_NIC_I82540EM_RCTL_UPE
+ or eax, DRIVER_NIC_I82540EM_RCTL_BAM
+ or eax, DRIVER_NIC_I82540EM_RCTL_SECRC
 
-or eax, DRIVER_NIC_I82540EM_RCTL_MPE
-mov dword [rsi + DRIVER_NIC_I82540EM_RCTL], eax
+ or eax, DRIVER_NIC_I82540EM_RCTL_MPE
+ mov dword [rsi + DRIVER_NIC_I82540EM_RCTL], eax
 
-call kernel_memory_alloc_page
-call kernel_page_drain
+ call kernel_memory_alloc_page
+ call kernel_page_drain
 
-mov qword [driver_nic_i82540em_tx_base_address], rdi
+ mov qword [driver_nic_i82540em_tx_base_address], rdi
 
-mov dword [rsi + DRIVER_NIC_I82540EM_TDBAL], edi
-shr rdi, STATIC_MOVE_HIGH_TO_EAX_shift
-mov dword [rsi + DRIVER_NIC_I82540EM_TDBAH], edi
+ mov dword [rsi + DRIVER_NIC_I82540EM_TDBAL], edi
+ shr rdi, STATIC_MOVE_HIGH_TO_EAX_shift
+ mov dword [rsi + DRIVER_NIC_I82540EM_TDBAH], edi
 
-mov dword [rsi + DRIVER_NIC_I82540EM_TDLEN], DRIVER_NIC_I82540EM_TDLEN_default
-mov dword [rsi + DRIVER_NIC_I82540EM_TDH], 0x00
-mov dword [rsi + DRIVER_NIC_I82540EM_TDT], 0x00
+ mov dword [rsi + DRIVER_NIC_I82540EM_TDLEN], DRIVER_NIC_I82540EM_TDLEN_default
+ mov dword [rsi + DRIVER_NIC_I82540EM_TDH], 0x00
+ mov dword [rsi + DRIVER_NIC_I82540EM_TDT], 0x00
 
-mov eax, DRIVER_NIC_I82540EM_TCTL_EN
-or eax, DRIVER_NIC_I82540EM_TCTL_PSP
-or eax, DRIVER_NIC_I82540EM_TCTL_RTLC
-or eax, DRIVER_NIC_I82540EM_TCTL_CT
-or eax, DRIVER_NIC_I82540EM_TCTL_COLD
-mov dword [rsi + DRIVER_NIC_I82540EM_TCTL], eax
+ mov eax, DRIVER_NIC_I82540EM_TCTL_EN
+ or eax, DRIVER_NIC_I82540EM_TCTL_PSP
+ or eax, DRIVER_NIC_I82540EM_TCTL_RTLC
+ or eax, DRIVER_NIC_I82540EM_TCTL_CT
+ or eax, DRIVER_NIC_I82540EM_TCTL_COLD
+ mov dword [rsi + DRIVER_NIC_I82540EM_TCTL], eax
 
-mov eax, DRIVER_NIC_I82540EM_TIPG_IPGT_DEFAULT
-or eax, DRIVER_NIC_I82540EM_TIPG_IPGR1_DEFAULT
-or eax, DRIVER_NIC_I82540EM_TIPG_IPGR2_DEFAULT
-mov dword [rsi + DRIVER_NIC_I82540EM_TIPG], eax
+ mov eax, DRIVER_NIC_I82540EM_TIPG_IPGT_DEFAULT
+ or eax, DRIVER_NIC_I82540EM_TIPG_IPGR1_DEFAULT
+ or eax, DRIVER_NIC_I82540EM_TIPG_IPGR2_DEFAULT
+ mov dword [rsi + DRIVER_NIC_I82540EM_TIPG], eax
 
-mov eax, dword [rsi + DRIVER_NIC_I82540EM_CTRL]
-or eax, DRIVER_NIC_I82540EM_CTRL_SLU
-or eax, DRIVER_NIC_I82540EM_CTRL_ASDE
-and rax, ~DRIVER_NIC_I82540EM_CTRL_LRST
-and rax, ~DRIVER_NIC_I82540EM_CTRL_ILOS
-and rax, ~DRIVER_NIC_I82540EM_CTRL_VME
-and rax, DRIVER_NIC_I82540EM_CTRL_PHY_RST
-mov dword [rsi + DRIVER_NIC_I82540EM_CTRL], eax
+ mov eax, dword [rsi + DRIVER_NIC_I82540EM_CTRL]
+ or eax, DRIVER_NIC_I82540EM_CTRL_SLU
+ or eax, DRIVER_NIC_I82540EM_CTRL_ASDE
+ and rax, ~DRIVER_NIC_I82540EM_CTRL_LRST
+ and rax, ~DRIVER_NIC_I82540EM_CTRL_ILOS
+ and rax, ~DRIVER_NIC_I82540EM_CTRL_VME
+ and rax, DRIVER_NIC_I82540EM_CTRL_PHY_RST
+ mov dword [rsi + DRIVER_NIC_I82540EM_CTRL], eax
 
-movzx eax, byte [driver_nic_i82540em_irq_number]
-add al, KERNEL_IDT_IRQ_offset
-mov rbx, KERNEL_IDT_TYPE_irq
-mov rdi, driver_nic_i82540em_irq
-call kernel_idt_mount
+ movzx eax, byte [driver_nic_i82540em_irq_number]
+ add al, KERNEL_IDT_IRQ_offset
+ mov rbx, KERNEL_IDT_TYPE_irq
+ mov rdi, driver_nic_i82540em_irq
+ call kernel_idt_mount
 
-movzx ebx, byte [driver_nic_i82540em_irq_number]
-shl ebx, STATIC_MULTIPLE_BY_2_shift
-add ebx, KERNEL_IO_APIC_iowin
-call kernel_io_apic_connect
+ movzx ebx, byte [driver_nic_i82540em_irq_number]
+ shl ebx, STATIC_MULTIPLE_BY_2_shift
+ add ebx, KERNEL_IO_APIC_iowin
+ call kernel_io_apic_connect
 
-mov rdi, qword [driver_nic_i82540em_mmio_base_address]
-mov dword [rdi + DRIVER_NIC_I82540EM_IMS], 00000000000000011111011011011111b
+ mov rdi, qword [driver_nic_i82540em_mmio_base_address]
+ mov dword [rdi + DRIVER_NIC_I82540EM_IMS], 00000000000000011111011011011111b
 
-pop rdi
-pop rax
+ pop rdi
+ pop rax
 
-ret
+ ret
 
-macro_debug "driver_nic_i82540em_setup"
+ macro_debug "driver_nic_i82540em_setup"
 

@@ -9,26 +9,26 @@ kernel_io_apic_base_address dq STATIC_EMPTY
 
 kernel_io_apic_connect:
 
-push rax
-push rbx
-push rdi
+ push rax
+ push rbx
+ push rdi
 
-mov rdi, qword [kernel_io_apic_base_address]
+ mov rdi, qword [kernel_io_apic_base_address]
 
-add ebx, KERNEL_IO_APIC_iowin_low
-mov dword [rdi + KERNEL_IO_APIC_ioregsel], ebx
+ add ebx, KERNEL_IO_APIC_iowin_low
+ mov dword [rdi + KERNEL_IO_APIC_ioregsel], ebx
 
-mov dword [rdi + KERNEL_IO_APIC_iowin], eax
+ mov dword [rdi + KERNEL_IO_APIC_iowin], eax
 
-add ebx, KERNEL_IO_APIC_iowin_high - KERNEL_IO_APIC_iowin_low
-mov dword [rdi + KERNEL_IO_APIC_ioregsel], ebx
+ add ebx, KERNEL_IO_APIC_iowin_high - KERNEL_IO_APIC_iowin_low
+ mov dword [rdi + KERNEL_IO_APIC_ioregsel], ebx
 
-shr rax, STATIC_MOVE_HIGH_TO_EAX_shift
-mov dword [rdi + KERNEL_IO_APIC_iowin], eax
+ shr rax, STATIC_MOVE_HIGH_TO_EAX_shift
+ mov dword [rdi + KERNEL_IO_APIC_iowin], eax
 
-pop rdi
-pop rbx
-pop rax
+ pop rdi
+ pop rbx
+ pop rax
 
-ret
+ ret
 

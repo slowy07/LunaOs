@@ -1,61 +1,61 @@
 service_network_checksum:
 
-push rbx
-push rcx
-push rdi
+ push rbx
+ push rcx
+ push rdi
 
-xor ebx, ebx
-xchg rbx, rax
+ xor ebx, ebx
+ xchg rbx, rax
 
 .calculate:
 
-mov ax, word [rdi]
-rol ax, STATIC_REPLACE_AL_WITH_HIGH_shift
+ mov ax, word [rdi]
+ rol ax, STATIC_REPLACE_AL_WITH_HIGH_shift
 
-add rbx, rax
+ add rbx, rax
 
-add rdi, STATIC_WORD_SIZE_byte
+ add rdi, STATIC_WORD_SIZE_byte
 
-loop .calculate
+ loop .calculate
 
-mov ax, bx
-shr ebx, STATIC_MOVE_HIGH_TO_AX_shift
-add rax, rbx
+ mov ax, bx
+ shr ebx, STATIC_MOVE_HIGH_TO_AX_shift
+ add rax, rbx
 
-not ax
+ not ax
 
-pop rdi
-pop rcx
-pop rbx
+ pop rdi
+ pop rcx
+ pop rbx
 
-ret
+ ret
 
-macro_debug "service_network_checksum"
+ macro_debug "service_network_checksum"
 
 service_network_checksum_part:
 
-push rbx
-push rcx
-push rdi
+ push rbx
+ push rcx
+ push rdi
 
-xor ebx, ebx
+ xor ebx, ebx
 
 .calculate:
 
-mov bx, word [rdi]
-rol bx, STATIC_REPLACE_AL_WITH_HIGH_shift
+ mov bx, word [rdi]
+ rol bx, STATIC_REPLACE_AL_WITH_HIGH_shift
 
-add rax, rbx
+ add rax, rbx
 
-add rdi, STATIC_WORD_SIZE_byte
+ add rdi, STATIC_WORD_SIZE_byte
 
-loop .calculate
+ loop .calculate
 
-pop rdi
-pop rcx
-pop rbx
+ pop rdi
+ pop rcx
+ pop rbx
 
-ret
+ ret
 
-macro_debug "service_network_checksum_part"
+ macro_debug "service_network_checksum_part"
 

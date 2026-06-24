@@ -47,38 +47,38 @@ kernel_init_ap_count db STATIC_EMPTY
 kernel_init_apic_id_highest db STATIC_EMPTY
 
 kernel_init_services_list:
-dq service_tresher
-dq service_tx
-dq service_network
-dq service_http
+ dq service_tresher
+ dq service_tx
+ dq service_network
+ dq service_http
 
-dq STATIC_EMPTY
+ dq STATIC_EMPTY
 
 kernel_init_vfs_directory_structure:
-db 0x04
-db "/bin"
-db 0x04
-db "/dev"
+ db 0x04
+ db "/bin"
+ db 0x04
+ db "/dev"
 
-db STATIC_EMPTY
+ db STATIC_EMPTY
 
 kernel_init_vfs_files:
-dq kernel_init_vfs_file_init
-dq kernel_init_vfs_file_init_end - kernel_init_vfs_file_init
-db 9
-db "/bin/init"
+ dq kernel_init_vfs_file_init
+ dq kernel_init_vfs_file_init_end - kernel_init_vfs_file_init
+ db 9
+ db "/bin/init"
 
-dq kernel_init_vfs_file_shell
-dq kernel_init_vfs_file_shell_end - kernel_init_vfs_file_shell
-db 10
-db "/bin/shell"
+ dq kernel_init_vfs_file_shell
+ dq kernel_init_vfs_file_shell_end - kernel_init_vfs_file_shell
+ db 10
+ db "/bin/shell"
 
-dq kernel_init_vfs_file_hello
-dq kernel_init_vfs_file_hello_end - kernel_init_vfs_file_hello
-db 10
-db "/bin/wello"
+ dq kernel_init_vfs_file_hello
+ dq kernel_init_vfs_file_hello_end - kernel_init_vfs_file_hello
+ db 10
+ db "/bin/wello"
 
-dq STATIC_EMPTY
+ dq STATIC_EMPTY
 
 kernel_init_vfs_file_init incbin "build/init"
 kernel_init_vfs_file_init_end:
@@ -88,6 +88,6 @@ kernel_init_vfs_file_hello incbin "build/wello"
 kernel_init_vfs_file_hello_end:
 
 kernel_init_boot_file:
-incbin "build/boot"
+ incbin "build/boot"
 kernel_init_boot_file_end:
 

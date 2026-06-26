@@ -127,6 +127,8 @@ kernel_page_purge:
 
  ret
 
+ macro_debug "kernel_page_purge"
+
 kernel_page_drain:
 
  push rcx
@@ -137,8 +139,6 @@ kernel_page_drain:
  pop rcx
 
  ret
-
- macro_debug "kernel_page_drain"
 
 .proceed:
 
@@ -154,6 +154,9 @@ kernel_page_drain:
  pop rax
 
  ret
+
+ macro_debug "kernel_page_drain"
+
 
 kernel_page_drain_few:
 
@@ -232,8 +235,6 @@ kernel_page_map_physical:
  macro_debug "kernel_page_map_physical"
 
 kernel_page_map_logical:
-
- push rax
  push rcx
  push rdx
  push rdi
@@ -244,8 +245,10 @@ kernel_page_map_logical:
  push r13
  push r14
  push r15
+ push rax
 
  call kernel_page_prepare
+ jc .error
 
 .record:
 
@@ -253,6 +256,7 @@ kernel_page_map_logical:
  jb .exists
 
  call kernel_page_pml1
+ jc .error
 
 .exists:
 
@@ -267,7 +271,7 @@ kernel_page_map_logical:
  push rdi
 
  call kernel_memory_alloc_page
- jc .end
+ jc .error
 
  call kernel_page_drain
 
@@ -285,8 +289,15 @@ kernel_page_map_logical:
  dec rcx
  jnz .record
 
-.end:
+ jmp .end
 
+.error:
+ mov qword [rsp], rax
+
+ stc
+
+.end:
+ pop rax
  pop r15
  pop r14
  pop r13
@@ -297,23 +308,15 @@ kernel_page_map_logical:
  pop rdi
  pop rdx
  pop rcx
- pop rax
 
  ret
-
-.error:
-
- stc
-
- jmp .end
 
  macro_debug "kernel_page_map_logical"
 
 kernel_page_prepare:
-
- push rax
  push rcx
  push rdx
+ push rax
 
  mov rcx, KERNEL_PAGE_PML3_SIZE_byte
  xor rdx, rdx
@@ -335,9 +338,8 @@ kernel_page_prepare:
  jmp .pml3
 
 .no_pml3:
-
  call kernel_memory_alloc_page
- jc .end
+ jc .error
 
  call kernel_page_drain
 
@@ -376,7 +378,7 @@ kernel_page_prepare:
 .no_pml2:
 
  call kernel_memory_alloc_page
- jc .end
+ jc .error
 
  call kernel_page_drain
 
@@ -415,7 +417,7 @@ kernel_page_prepare:
 .no_pml1:
 
  call kernel_memory_alloc_page
- jc .end
+ jc .error
 
  call kernel_page_drain
 
@@ -443,11 +445,15 @@ kernel_page_prepare:
 
  mov rdi, r8
 
-.end:
+ jmp .end
 
+.error:
+ mov qword [rsp], rax
+
+.end:
+ pop rax
  pop rdx
  pop rcx
- pop rax
 
  ret
 
@@ -659,7 +665,6 @@ kernel_page_merge:
  macro_debug "kernel_page_merge"
 
 kernel_page_secure:
-
  push rax
 
  call kernel_memory_lock
@@ -679,7 +684,7 @@ kernel_page_secure:
  jmp .end
 
 .error:
-
+ mov qword [rsp], KERNEL_ERROR_PAGE_memory_low
  stc
 
 .end:

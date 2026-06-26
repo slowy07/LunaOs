@@ -20,11 +20,11 @@ kernel_memory_alloc_page:
 
 kernel_memory_alloc:
 
- push rax
  push rbx
  push rdx
  push rsi
  push rbp
+ push rax
  push rcx
 
  mov rax, STATIC_MAX_unsigned
@@ -67,7 +67,7 @@ kernel_memory_alloc:
  jmp .reload
 
 .error:
-
+ mov qword [rsp + STATIC_QWORD_SIZE_byte], KERNEL_ERROR_PAGE_memory_low
  stc
 
  jmp .end
@@ -105,15 +105,14 @@ kernel_memory_alloc:
  add rdi, KERNEL_BASE_address
 
 .end:
-
  mov byte [kernel_memory_lock_semaphore], STATIC_FALSE
 
  pop rcx
+ pop rax
  pop rbp
  pop rsi
  pop rdx
  pop rbx
- pop rax
 
  ret
 

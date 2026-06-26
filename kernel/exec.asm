@@ -1,12 +1,12 @@
 kernel_exec:
 
- push rax
  push rbx
  push rdx
  push rsi
  push rbp
  push r8
  push r11
+ push rax
  push rcx
  push rdi
 
@@ -15,6 +15,7 @@ kernel_exec:
 
  add rcx, 14
  call kernel_page_secure
+ jc .error
 
  mov rbp, rcx
 
@@ -26,15 +27,18 @@ kernel_exec:
  mov rax, KERNEL_MEMORY_HIGH_VIRTUAL_address
  mov ebx, KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write | KERNEL_PAGE_FLAG_user
  call kernel_page_map_logical
+ jc .error
 
  mov rax, (KERNEL_MEMORY_HIGH_VIRTUAL_address << STATIC_MULTIPLE_BY_2_shift) - KERNEL_PAGE_SIZE_byte
  mov rcx, KERNEL_PAGE_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
  call kernel_page_map_logical
+ jc .error
 
  mov rax, KERNEL_STACK_address
  mov rbx, KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
  mov rcx, KERNEL_STACK_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
  call kernel_page_map_logical
+ jc .error
 
  mov rsi, qword [kernel_page_pml4_address]
  mov rdi, r11
@@ -71,21 +75,29 @@ kernel_exec:
 
  mov ebx, KERNEL_TASK_FLAG_active
  call kernel_task_add
+ jc .error
 
  add qword [kernel_page_free_count], rbp
  sub qword [kernel_page_reserved_count], rbp
 
  mov qword [rsp + STATIC_QWORD_SIZE_byte], rcx
 
+.error:
+
+ mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x02], rax
+
+.end:
+
  pop rdi
  pop rcx
+ pop rax
  pop r11
  pop r8
  pop rbp
  pop rsi
  pop rdx
  pop rbx
- pop rax
 
  ret
 
+ macro_debug "kernel_exec"

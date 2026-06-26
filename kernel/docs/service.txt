@@ -15,7 +15,7 @@ KERNEL_SERVICE                    equ 0x40   (interrupt vector)
 KERNEL_SERVICE_PROCESS            equ 0x00
   KERNEL_SERVICE_PROCESS_exit     equ 0x0000  (exit current task)
   KERNEL_SERVICE_PROCESS_run      equ 0x0100  (exec a file)
-  KERNEL_SERVICE_PROCESS_pid      equ 0x0200  (get PID)
+  KERNEL_SERVICE_PROCESS_check    equ 0x0200  (check PID exists? was _pid)
 
 KERNEL_SERVICE_VIDEO              equ 0x01
   KERNEL_SERVICE_VIDEO_string     equ 0x0101  (print string)
@@ -23,15 +23,16 @@ KERNEL_SERVICE_VIDEO              equ 0x01
   KERNEL_SERVICE_VIDEO_char       equ 0x0301  (print char)
   KERNEL_SERVICE_VIDEO_clean      equ 0x0401  (clear screen)
   KERNEL_SERVICE_VIDEO_properties equ 0x0501  (get video props)
+  KERNEL_SERVICE_VIDEO_number     equ 0x0601  (print number)
 
 KERNEL_SERVICE_KEYBOARD           equ 0x02
   KERNEL_SERVICE_KEYBOARD_key     equ 0x0002  (read key)
 
+KERNEL_ERROR_PAGE_memory_low      equ 0x0001  (out of memory error code)
+
 DISPATCH TREE
 
 kernel_service (int 0x40)
-  |
-  +-- push rax
   |
   +-- cmp al, KERNEL_SERVICE_PROCESS (0x00)
   |     |
@@ -44,11 +45,18 @@ kernel_service (int 0x40)
   |           |     -> je  .process_run
   |           |           |
   |           |           +-- call kernel_vfs_path_resolve
-  |           |           +-- jc  .end (carry set on error)
+  |           |           +-- jc  .process_run_error
   |           |           +-- call kernel_vfs_file_find
-  |           |           +-- jc  .end
+  |           |           +-- jc  .process_run_error
   |           |           +-- call kernel_exec
-  |           |           +-- jmp .end
+  |           |           +-- jnc .end
+  |           |           |
+  |           |           +-- .process_run_error:
+  |           |           |     mov [rsp], rax  (return error code)
+  |           |           |     jmp .end
+  |           |           |
+  |           +-- cmp ax, KERNEL_SERVICE_PROCESS_check (0x0200)
+  |           |     -> je  .process_check -> kernel_task_pid_check
   |           |
   |           +-- else -> jmp .error (stc)
   |
@@ -67,6 +75,9 @@ kernel_service (int 0x40)
   |           |
   |           +-- cmp ax, KERNEL_SERVICE_VIDEO_clean (0x0401)
   |           |     -> je  .video_clean -> kernel_video_drain
+  |           |
+  |           +-- cmp ax, KERNEL_SERVICE_VIDEO_number (0x0601)
+  |           |     -> je  .video_number -> kernel_video_number(r8, bx, cx)
   |           |
   |           +-- else -> jmp .error (stc)
   |
@@ -106,6 +117,7 @@ interrupt stack before iretq pops them:
 The caller sees:
   - On success: CF=0 (jnc/jc check)
   - On error/unknown: CF=1 (stc)
+  - For PROCESS_run errors: RAX = error code (e.g. KERNEL_ERROR_PAGE_memory_low)
   - .video_cursor returns cursor position in RBX (not via flags)
   - .keyboard_key returns key scancode in AX on the stack
 
@@ -116,8 +128,14 @@ KERNEL_SERVICE_PROCESS_exit:
 
 KERNEL_SERVICE_PROCESS_run:
   Input: RSI = path string, RCX = path length
-  Output: CF=0 on success (new task created), CF=1 on error
+  Output: CF=0 on success (new task created), CF=1 on error, RAX = error code
   Calls: kernel_vfs_path_resolve, kernel_vfs_file_find, kernel_exec
+  Error: propagates error code from kernel_exec via .process_run_error
+
+KERNEL_SERVICE_PROCESS_check:
+  Input: ECX = PID to check
+  Output: CF=0 if PID exists and not closed, CF=1 if not found or closed
+  Calls: kernel_task_pid_check
 
 KERNEL_SERVICE_VIDEO_string:
   Input: RSI = string pointer, ECX = string length (cloberred to 0)
@@ -131,6 +149,10 @@ KERNEL_SERVICE_VIDEO_char:
 
 KERNEL_SERVICE_VIDEO_clean:
   Clears framebuffer and resets cursor. Calls kernel_video_drain.
+
+KERNEL_SERVICE_VIDEO_number:
+  Input: R8 = value, RBX = base (2-36), ECX = min digits
+  Calls: kernel_video_number
 
 KERNEL_SERVICE_KEYBOARD_key:
   Output: AX = scancode of next key from keyboard buffer

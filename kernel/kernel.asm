@@ -15,20 +15,30 @@ init:
 align KERNEL_PAGE_SIZE_byte, db STATIC_NOTHING
 
 clean:
-
- mov ecx, clean - $$
- call library_page_from_size
-
- mov rdi, KERNEL_BASE_address
- call kernel_memory_release
+; mov ecx, clean - $$
+; call library_page_from_size
+;
+; mov rdi, KERNEL_BASE_address
+; call kernel_memory_release
 
 kernel:
 
  mov ecx, kernel_init_exec_end - kernel_init_exec
  mov rsi, kernel_init_exec
  call kernel_vfs_path_resolve
+ jc .error
  call kernel_vfs_file_find
+ jc .error
  call kernel_exec
+ jnc .end
+
+.error:
+
+ mov ebx, STATIC_NUMBER_SYSTEM_decimal
+ xor ecx, ecx
+ call kernel_video_number
+
+.end:
 
  jmp $
 
@@ -46,6 +56,7 @@ kernel:
  %include "kernel/data.asm"
  %include "kernel/idt.asm"
  %include "kernel/task.asm"
+; %include "kernel/thread.asm"
  %include "kernel/vfs.asm"
  %include "kernel/exec.asm"
  %include "kernel/service.asm"
@@ -74,4 +85,3 @@ kernel:
  %include "library/string_word_next.asm"
 
 kernel_end:
-

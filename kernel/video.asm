@@ -118,6 +118,8 @@ kernel_video_matrix:
 
  ret
 
+ macro_debug "kernel_video_matrix"
+
 kernel_video_char_clean:
 
  push rax
@@ -157,6 +159,8 @@ kernel_video_char_clean:
 
  ret
 
+ macro_debug "kernel_video_char_clean"
+
 kernel_video_cursor_set:
 
  push rax
@@ -177,6 +181,8 @@ kernel_video_cursor_set:
  pop rax
 
  ret
+
+ macro_debug "kernel_video_cursor_set"
 
 kernel_video_string:
 
@@ -421,6 +427,8 @@ kernel_video_string:
 
  ret
 
+ macro_debug "kernel_video_string"
+
 kernel_video_char:
 
  push rax
@@ -564,6 +572,8 @@ kernel_video_char:
 
  jmp .continue
 
+ macro_debug "kernel_video_char"
+
 kernel_video_number:
 
  push rax
@@ -646,6 +656,8 @@ kernel_video_number:
 
  ret
 
+ macro_debug "kernel_video_number"
+
 kernel_video_scroll:
 
  push rcx
@@ -673,6 +685,8 @@ kernel_video_scroll:
  pop rcx
 
  ret
+
+ macro_debug "kernel_video_scroll"
 
 kernel_video_line_drain:
 
@@ -705,6 +719,8 @@ kernel_video_line_drain:
 
  ret
 
+ macro_debug "kernel_video_line_drain"
+
 kernel_video_cursor_disable:
 
  inc qword [kernel_video_cursor_lock]
@@ -717,6 +733,8 @@ kernel_video_cursor_disable:
 .ready:
 
  ret
+
+ macro_debug "kernel_video_cursor_disable"
 
 kernel_video_cursor_enable:
 
@@ -733,6 +751,8 @@ kernel_video_cursor_enable:
 .ready:
 
  ret
+
+ macro_debug "kernel_video_cursor_enable"
 
 kernel_video_cursor_switch:
 
@@ -764,4 +784,6 @@ kernel_video_cursor_switch:
  pop rax
 
  ret
+
+ macro_debug "kernel_video_cursor_switch"
 

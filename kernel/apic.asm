@@ -33,3 +33,4 @@ kernel_apic_id_get:
 
  ret
 
+ macro_debug "kernel_apic_id_get"

@@ -254,8 +254,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
               v
 +------------------------------+
 |   services.asm               |
-|   (tresher, tx, network,     |
-|    HTTP, shell)              |
+|   (tresher)                  |
 +------------------------------+
               |
               v
@@ -565,7 +564,7 @@ Task Flags:
 | **Drivers** | PS/2 keyboard/mouse, RTC, PCI enumeration, IDE ATA/ATAPI, Intel 82540EM Gigabit Ethernet |
 | **IPC** | Inter-process communication primitives |
 | **Font** | Bitmap font glyph data loaded from `kernel/font/setfonts.asm`, font name displayed at boot |
-| **Services** | Task reaper (tresher), network transmit (tx), network stack (IPv4/TCP/UDP/ICMP/ARP), HTTP server (port 80), interactive shell (clear, ip commands) |
+| **Services** | Task reaper (tresher) |
 
 ## References
 

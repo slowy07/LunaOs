@@ -48,9 +48,6 @@ kernel_init_apic_id_highest db STATIC_EMPTY
 
 kernel_init_services_list:
  dq service_tresher
- dq service_tx
- dq service_network
- dq service_http
 
  dq STATIC_EMPTY
 

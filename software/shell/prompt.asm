@@ -30,6 +30,18 @@ shell_prompt:
  jmp .end
 
 .no_clean:
+ cmp rbx, shell_command_exit_end - shell_command_exit
+ jne .no_exit
+
+ mov ecx, ebx
+ mov rdi, shell_command_exit
+ call library_string_compare
+ jc .no_exit
+
+ xor ax, ax
+ int KERNEL_SERVICE
+
+.no_exit:
  nop
 
 .end:

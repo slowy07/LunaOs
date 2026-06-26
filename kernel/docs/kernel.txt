@@ -6,7 +6,8 @@ OVERVIEW
 The main kernel file ties together all subsystems. After bootloader
 transfers control to 0x100000, it runs initialization in 32-bit mode,
 transitions to 64-bit long mode, completes hardware setup, then
-executes `/bin/init` as the first userspace process.
+executes `/bin/init` as the first userspace process. Error handling
+after exec prints the error code and halts.
 
 EXECUTION FLOW
 
@@ -32,24 +33,23 @@ EXECUTION FLOW
                                            |
                                            v
                                     +--------------+
-                                    | clean:       |
-                                    | free init    |
-                                    | code pages   |
-                                    +--------------+
-                                           |
-                                           v
-                                    +--------------+
                                     | kernel:      |
                                     | resolve      |
                                     | "/bin/init"  |
                                     | exec /bin/init|
                                     +--------------+
                                            |
-                                           v
-                                    +--------------+
-                                    | jmp $        |
-                                    | (idle halt)  |
-                                    +--------------+
+                                     +-----+------+
+                                     | SUCCESS?   |
+                                     +-----+------+
+                                       YES     NO
+                                         |      |
+                                         v      v
+                                    +-------+ +---------------------+
+                                    | jmp $ | | kernel_video_number |
+                                    | (idle)| | (print error code)  |
+                                    +-------+ | jmp $ (halt)        |
+                                              +---------------------+
 
 BOOT SEQUENCE DETAIL
 
@@ -64,7 +64,7 @@ Step 2: 64-bit init (kernel_init label):
   - video.asm: Display welcome banner + runtime resolution
   - font.asm: Display font name
   - memory.asm: Parse memory map, init bitmap, display RAM count
-  - acpi.asm: Find RSDP/RSDT/MADT, enumerate CPUs
+  - acpi.asm: Find RSDP/RSDT or XSDP/XSDT, enumerate CPUs
   - page.asm: Set up PML4, map kernel/stack/video/APIC
   - gdt.asm: Null, CS, DS, TSS descriptors
   - idt.asm: Exceptions (0-31), syscall (0x40 -> kernel_service), spurious (0xFF)
@@ -75,7 +75,7 @@ Step 2: 64-bit init (kernel_init label):
   - storage.asm: PCI IDE scan, reset, enumerate, VFS /dev/hd* knots
   - network.asm: PCI NIC detection, i82540EM init
   - task.asm: First kernel task, timer IRQ 0 mount
-  - services.asm: Start tresher, tx, network, HTTP kernel services
+  - services.asm: Start tresher kernel service (tx, network, HTTP removed)
 
 Step 3: Finalize:
   - call kernel_init_apic: Full APIC config, TICR = 1024Hz, EOI
@@ -83,17 +83,23 @@ Step 3: Finalize:
   - Wait for all APs (kernel_init_ap_count == kernel_apic_count)
   - Set kernel_init_semaphore = STATIC_FALSE (signals services to start)
 
-Step 4: clean: - release init code pages via kernel_memory_release
-
-Step 5: kernel: - jump to /bin/init exec:
+Step 4: kernel: - jump to /bin/init exec:
   mov ecx, kernel_init_exec_end - kernel_init_exec  ; length of "/bin/init"
   mov rsi, kernel_init_exec                          ; pointer to string
   call kernel_vfs_path_resolve                       ; find parent dir
+  jc .error                                          ; error -> print code
   call kernel_vfs_file_find                          ; find file knot
+  jc .error                                          ; error -> print code
   call kernel_exec                                   ; create ring-3 process
-  jmp $                                              ; idle if exec returns
+  jnc .end                                           ; success -> idle
 
-Step 6: CPU halts in jmp $ (idle loop).
+.error: print error code (decimal) via kernel_video_number, then halt
+
+Step 5: CPU halts in jmp $ (idle loop). If exec failed, error code
+is printed in decimal first.
+
+NOTE: The `clean:` step (release init code pages) and thread.asm
+include are currently commented out.
 
 MEMORY LAYOUT
 
@@ -109,9 +115,8 @@ MEMORY LAYOUT
 |                    |    - storage.asm, network.asm, task.asm
 |                    |    - services.asm, smp.asm
 +--------------------+  <-- align KERNEL_PAGE_SIZE_byte
-| clean:             |  Release init code pages
-+--------------------+
 | kernel:            |  resolve + exec /bin/init
+|  .error:           |  print error code if exec fails
 |  jmp $             |  idle loop fallthrough
 +--------------------+
 | kernel/macro/      |  close.asm, debug.asm, copy.asm
@@ -124,10 +129,10 @@ MEMORY LAYOUT
 | kernel/apic.asm    |  Local APIC
 | kernel/io_apic.asm |  IO-APIC
 | kernel/data.asm    |  GDT, TSS, IDT headers
-| kernel/idt.asm     |  Interrupt handlers
-| kernel/task.asm    |  Task scheduler
+| kernel/idt.asm     |  Interrupt handlers (exception strings)
+| kernel/task.asm    |  Task scheduler (debug semaphore)
 | kernel/vfs.asm     |  Virtual file system
-| kernel/exec.asm    |  Process execution
+| kernel/exec.asm    |  Process execution (error propagation)
 | kernel/service.asm |  Syscall dispatcher (vector 0x40)
 +--------------------+
 | kernel/font/       |  canele.asm (font bitmap data)
@@ -136,8 +141,7 @@ MEMORY LAYOUT
 |                    |  network/i82540em.asm,
 |                    |  storage/ide.asm
 +--------------------+
-| kernel/service/    |  tresher.asm, http.asm, tx.asm,
-|                    |  network.asm (+ arp, icmp, tcp, ...)
+| kernel/service/    |  tresher.asm
 +--------------------+
 | library/           |  input.asm, page_align_up.asm,
 |                    |  page_from_size.asm, string_*.asm
@@ -169,6 +173,7 @@ LOAD ORDER (in include sequence)
  [kernel/data.asm]
  [kernel/idt.asm]
  [kernel/task.asm]
+ [kernel/thread.asm]  (commented out)
  [kernel/vfs.asm]
  [kernel/exec.asm]
  [kernel/service.asm]
@@ -185,9 +190,6 @@ LOAD ORDER (in include sequence)
         |
         v
  [kernel/service/tresher.asm]
- [kernel/service/http.asm]
- [kernel/service/tx.asm]
- [kernel/service/network.asm]  (+ arp, icmp, tcp, checksum, config, data, wrap)
         |
         v
  [library/input.asm]

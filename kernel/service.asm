@@ -38,17 +38,31 @@ kernel_service:
  cmp ax, KERNEL_SERVICE_PROCESS_run
  je .process_run
 
+ cmp ax, KERNEL_SERVICE_PROCESS_check
+ je .process_check
+
  jmp kernel_service.error
 
 .process_run:
 
  call kernel_vfs_path_resolve
- jc kernel_service.end
+ jc .process_run_error
 
  call kernel_vfs_file_find
- jc kernel_service.end
+ jc .process_run_error
 
  call kernel_exec
+ jnc kernel_service.end
+
+.process_run_error:
+
+ mov qword [rsp], rax
+
+ jmp kernel_service.end
+
+.process_check:
+
+ call kernel_task_pid_check
 
  jmp kernel_service.end
 
@@ -65,6 +79,9 @@ kernel_service:
 
  cmp ax, KERNEL_SERVICE_VIDEO_clean
  je .video_clean
+
+ cmp ax, KERNEL_SERVICE_VIDEO_number
+ je .video_number
 
  jmp kernel_service.error
 
@@ -93,6 +110,13 @@ kernel_service:
 
  jmp kernel_service.end
 
+.video_number:
+
+ mov rax, r8
+ call kernel_video_number
+
+ jmp kernel_service.end
+
 .keyboard:
 
  cmp ax, KERNEL_SERVICE_KEYBOARD_key
@@ -104,3 +128,4 @@ kernel_service:
 
  jmp kernel_service.end
 
+ macro_debug "kernel_service"

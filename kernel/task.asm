@@ -41,6 +41,8 @@ struc KERNEL_STRUCTURE_TASK_IRETQ
  .ds resb 8
 endstruc
 
+kernel_task_debug_semaphore db STATIC_FALSE
+
 kernel_task_address dq STATIC_EMPTY
 kernel_task_active_list dq STATIC_EMPTY
 
@@ -48,7 +50,12 @@ kernel_task_pid_semaphore db STATIC_FALSE
 kernel_task_pid dq STATIC_EMPTY
 
 kernel_task:
+ cmp byte [kernel_task_debug_semaphore], STATIC_FALSE
+ je .no
 
+ xchg bx, bx
+
+.no:
  push rax
  push rdi
 
@@ -244,6 +251,7 @@ kernel_task_queue:
  lock bts word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_secured_bit
  jnc .found
 
+.omit:
  add rdi, KERNEL_STRUCTURE_TASK.SIZE
 
  dec rcx
@@ -326,6 +334,7 @@ kernel_task_pid_check:
  cmp dword [rdi + KERNEL_STRUCTURE_TASK.pid], ecx
  je .found
 
+.omit:
  add rdi, KERNEL_STRUCTURE_TASK.SIZE
 
  dec rax
@@ -344,6 +353,8 @@ kernel_task_pid_check:
  jmp .end
 
 .found:
+ cmp byte [rdi + KERNEL_STRUCTURE_TASK.flags], STATIC_EMPTY
+ je .omit
 
  bt word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_closed_bit
 

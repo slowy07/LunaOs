@@ -85,11 +85,10 @@ List format: array of dq pointers, terminated by dq STATIC_EMPTY
 Order  Module         Function
 -----  ------         --------
   1    service_tresher  Task reaper (reclaims closed task slots)
-  2    service_tx       Packet transmission queue
-  3    service_network  Network stack (ARP, ICMP, TCP, IPv4)
-  4    service_http     HTTP/1.1 server on port 80
 
 Services run as kernel tasks. Started sequentially in init/services.asm.
+Note: service_tx, service_network, and service_http were removed from
+the boot-time services list. Only tresher is started at boot.
 
 VFS DIRECTORY STRUCTURE (kernel_init_vfs_directory_structure)
 

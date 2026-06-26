@@ -6,7 +6,8 @@ OVERVIEW
 Loads and executes a flat binary userspace process from a VFS file
 knot. Creates an isolated address space using a dedicated PML4 table
 with ring-3 accessible code and ring-0-only stack. Sets up an iretq
-frame on the parent task's stack for ring-3 return.
+frame on the parent task's stack for ring-3 return. Propagates errors
+from page operations back to the caller via RAX + carry flag.
 
 PROCEDURE FLOW
 
@@ -16,13 +17,17 @@ kernel_exec(RDI=vfs_knot, R8=parent_task)
 | Step  | Operation                                                   |
 +-------+-------------------------------------------------------------+
 |  1    | rcx = file_size -> call library_page_from_size              |
-|  2    | rcx += 14 -> call kernel_page_secure (reserve pages)        |
+|  2    | rcx += 14 -> call kernel_page_secure                        |
+|      |              jc .error   (out of memory)                     |
 |  3    | call kernel_memory_alloc_page  (new PML4 page)              |
 |  4    | call kernel_page_drain         (zero it out)                |
 |  5    | Save PML4 ptr in r11                                        |
-|  6    | Map code at KERNEL_MEMORY_HIGH_VIRTUAL with user+rw flags   |
-|  7    | Map code+1 page at (HIGH_VIRTUAL << 1) - PAGE_SIZE           |
-|  8    | Map stack at KERNEL_STACK_address (kernel-only, rw)          |
+|  6    | Map code at KERNEL_MEMORY_HIGH_VIRTUAL                      |
+|      |   call kernel_page_map_logical -> jc .error                  |
+|  7    | Map code+1 page at (HIGH_VIRTUAL << 1) - PAGE_SIZE          |
+|      |   call kernel_page_map_logical -> jc .error                  |
+|  8    | Map stack at KERNEL_STACK_address                           |
+|      |   call kernel_page_map_logical -> jc .error                  |
 |  9    | Merge new PML4 with kernel mappings (kernel_page_merge)      |
 | 10    | Build iretq frame on parent task stack:                      |
 |       |    [RIP]   = KERNEL_MEMORY_HIGH_REAL_address (+0x00)        |
@@ -33,10 +38,18 @@ kernel_exec(RDI=vfs_knot, R8=parent_task)
 | 11    | Switch to new cr3 (r11)                                     |
 | 12    | Read VFS file into SOFTWARE_base_address                    |
 | 13    | Restore original cr3                                        |
-| 14    | call kernel_task_add(flags=KERNEL_TASK_FLAG_active)          |
+| 14    | call kernel_task_add(flags=KERNEL_TASK_FLAG_active)         |
+|      |   jc .error   (task table full)                             |
 | 15    | Release secured pages (free += rbp, reserved -= rbp)        |
-| 16    | Return PID in rcx via stack slot                             |
+| 16    | Return PID in rcx via stack slot                            |
+| 17    | On error: RAX = error code, CF = 1                          |
 +-------+-------------------------------------------------------------+
+
+REGISTER SAVE ORDER (push/pop)
+  push: rbx, rdx, rsi, rbp, r8, r11, rax, rcx, rdi
+  pop:  rdi, rcx, rax, r11, r8, rbp, rsi, rdx, rbx
+  Note: rax pushed last (first restore slot) — error code stored
+        at [rsp + 2*QWORD] for caller retrieval.
 
 PAGE TABLE HIERARCHY (4-level paging)
 
@@ -99,6 +112,11 @@ Inputs:
 
 Outputs:
   RCX - PID of the newly created process, or 0 on failure
+  RAX - Error code (on CF=1): KERNEL_ERROR_PAGE_memory_low or 0
+
+Error handling: every critical call (page_secure, page_map_logical,
+task_add) is followed by `jc .error` to propagate failures.
+On error, RAX is stored at [rsp + 2*QWORD] for the caller.
 
 Dependencies:
   library_page_from_size  - Convert byte size to page count

@@ -24,9 +24,7 @@ service_tresher:
  call kernel_page_release_pml.loop
 
 .pml4:
-
  mov rdi, r11
- call kernel_page_purge
  call kernel_memory_release_page
 
  dec qword [kernel_page_paged_count]

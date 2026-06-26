@@ -32,3 +32,4 @@ kernel_io_apic_connect:
 
  ret
 
+ macro_debug "kernel_io_apic_connect"

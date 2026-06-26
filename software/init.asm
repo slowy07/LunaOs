@@ -20,16 +20,35 @@ init:
  mov rsi, init_program_shell
  int KERNEL_SERVICE
 
- jmp $
+ jc .error
 
- mov ax, KERNEL_SERVICE_PROCESS_pid
+ mov ax, KERNEL_SERVICE_PROCESS_check
 
 .wait_for_shell:
 
  int KERNEL_SERVICE
  jnc .wait_for_shell
 
+ mov eax, KERNEL_SERVICE_VIDEO_clean
+ int KERNEL_SERVICE
+
  jmp init
+
+.error:
+ push rax
+
+ mov ax, KERNEL_SERVICE_VIDEO_string
+ mov ecx, init_string_error_end - init_string_error
+ mov rsi, init_string_error
+ int KERNEL_SERVICE
+
+ mov ax, KERNEL_SERVICE_VIDEO_number
+ mov ebx, STATIC_NUMBER_SYSTEM_decimal
+ xor ecx, ecx
+ pop r8
+ int KERNEL_SERVICE
+
+ jmp $
 
  %include "software/init/data.asm"
 

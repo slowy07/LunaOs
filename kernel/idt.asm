@@ -74,39 +74,7 @@ kernel_idt_update:
  macro_debug "kernel_idt_update"
 
 kernel_idt_exception_default:
-
- mov byte [kernel_task_debug_semaphore], STATIC_STRUCTURE_BLOCK
-
- mov ecx, kernel_idt_string_exception_default_end - kernel_idt_string_exception_default
- mov rsi, kernel_idt_string_exception_default
- call kernel_video_string
-
- mov r8, 32
-
- mov ebx, STATIC_NUMBER_SYSTEM_hexadecimal
-
- mov edx, STATIC_ASCII_DIGIT_0
-
- push rsp
-
-.loop:
-
- pop rax
- mov ecx, 0x10
- call kernel_video_number
-
- mov eax, STATIC_ASCII_NEW_LINE
- mov ecx, 1
- call kernel_video_char
-
- dec r8
- jnz .loop
-
- xchg bx,bx
-
- nop
-
- jmp $
+ jmp kernel_debug
 
  macro_debug "kernel_idt_exception_default"
 

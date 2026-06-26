@@ -30,6 +30,8 @@ struc KERNEL_STRUCTURE_TASK
  .knot resb 8
  .flags resb 2
  .stack resb 2
+ .length resb 1
+ .name resb 255
  .SIZE:
 endstruc
 

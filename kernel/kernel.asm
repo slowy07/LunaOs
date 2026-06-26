@@ -60,6 +60,7 @@ kernel:
  %include "kernel/vfs.asm"
  %include "kernel/exec.asm"
  %include "kernel/service.asm"
+ %include "kernel/debug.asm"
 
  %include "kernel/font/setfont.asm"
 

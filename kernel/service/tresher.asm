@@ -2,11 +2,11 @@ service_tresher:
 
  call service_tresher_search
 
- mov r11, qword [rsi + KERNEL_STRUCTURE_TASK.cr3]
+ mov r11, qword [rsi + KERNEL_TASK_STRUCTURE.cr3]
 
  mov rax, KERNEL_MEMORY_HIGH_VIRTUAL_address
 
- movzx ecx, word [rsi + KERNEL_STRUCTURE_TASK.stack]
+ movzx ecx, word [rsi + KERNEL_TASK_STRUCTURE.stack]
 
  mov rbx, rcx
  shl rbx, KERNEL_PAGE_SIZE_shift
@@ -14,7 +14,7 @@ service_tresher:
 
  call kernel_memory_release_foreign
 
- test word [rsi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_thread
+ test word [rsi + KERNEL_TASK_STRUCTURE.flags], KERNEL_TASK_FLAG_thread
  jz .pml4
 
  mov rbx, 4
@@ -29,7 +29,7 @@ service_tresher:
 
  dec qword [kernel_page_paged_count]
 
- mov word [rsi + KERNEL_STRUCTURE_TASK.flags], STATIC_EMPTY
+ mov word [rsi + KERNEL_TASK_STRUCTURE.flags], STATIC_EMPTY
 
  jmp service_tresher
 
@@ -43,14 +43,14 @@ service_tresher_search:
 
 .restart:
 
- mov rcx, STATIC_STRUCTURE_BLOCK.link / KERNEL_STRUCTURE_TASK.SIZE
+ mov rcx, STATIC_STRUCTURE_BLOCK.link / KERNEL_TASK_STRUCTURE.SIZE
 
 .next:
 
- test word [rsi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_closed
+ test word [rsi + KERNEL_TASK_STRUCTURE.flags], KERNEL_TASK_FLAG_closed
  jnz .found
 
- add rsi, KERNEL_STRUCTURE_TASK.SIZE
+ add rsi, KERNEL_TASK_STRUCTURE.SIZE
 
  dec rcx
  jnz .next

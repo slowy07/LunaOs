@@ -32,7 +32,7 @@ kernel_init_task:
  mov r11, qword [kernel_page_pml4_address]
  call kernel_task_add
 
- mov qword [rdi + KERNEL_STRUCTURE_TASK.knot], kernel_vfs_magicknot
+ mov qword [rdi + KERNEL_TASK_STRUCTURE.knot], kernel_vfs_magicknot
 
  mov rax, KERNEL_APIC_IRQ_number
  mov bx, KERNEL_IDT_TYPE_irq

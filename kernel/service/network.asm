@@ -10,7 +10,7 @@ service_network:
  xor ebp, ebp
 
  call kernel_task_active
- mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
+ mov rax, qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
  mov qword [service_network_pid], rax
 

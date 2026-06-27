@@ -27,7 +27,7 @@ kernel_ipc_insert:
  push rcx
 
  call kernel_task_active
- mov rdx, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
+ mov rdx, qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
  macro_close kernel_ipc_semaphore, 0
 
@@ -113,7 +113,7 @@ kernel_ipc_receive:
  je .empty
 
  call kernel_task_active
- mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
+ mov rax, qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
  mov rcx, KERNEL_IPC_ENTRY_limit
 

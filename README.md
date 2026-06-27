@@ -167,7 +167,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
               v
 +------------------------------+
 |   video.asm  -> Framebuffer  |
-|   (banner "LunaOS v1.90"     |
+|   (banner "LunaOS v1.100"    |
 |    + resolution display)     |
 +------------------------------+
               |
@@ -293,8 +293,8 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
               v
 +------------------------------+
 |   clean:                     |
-|   Free init code pages       |
-|   via kernel_memory_release  |
+|   (currently commented out)  |
+|   Init code pages retained   |
 +------------------------------+
 ```
 
@@ -564,7 +564,7 @@ Task Flags:
 | **Drivers** | PS/2 keyboard/mouse, RTC, PCI enumeration, IDE ATA/ATAPI, Intel 82540EM Gigabit Ethernet |
 | **IPC** | Inter-process communication primitives |
 | **Font** | Bitmap font glyph data loaded from `kernel/font/setfonts.asm`, font name displayed at boot |
-| **Services** | Task reaper (tresher) |
+| **Services** | Task reaper (tresher) — only service started at boot (tx, network, HTTP removed) |
 
 ## References
 

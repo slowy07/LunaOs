@@ -1,6 +1,52 @@
 kernel_debug_string_welcome db STATIC_COLOR_ASCII_MAGENTA_LIGHT, "ESC to enter debug mode", STATIC_ASCII_NEW_LINE
 kernel_debug_string_welcome_end:
 
+kernel_debug_string_process_name db STATIC_COLOR_ASCII_GRAY_LIGHT, "Process name: ", STATIC_COLOR_ASCII_WHITE
+kernel_debug_string_process_name_end:
+
+kernel_debug_string_rax db ""
+kernel_debug_string_rax_end:
+kernel_debug_string_rbx db ""
+kernel_debug_string_rbx_end:
+kernel_debug_string_rcx db ""
+kernel_debug_string_rcx_end:
+kernel_debug_string_rdx db ""
+kernel_debug_string_rdx_end:
+kernel_debug_string_rsi db ""
+kernel_debug_string_rsi_end:
+kernel_debug_string_rdi db ""
+kernel_debug_string_rdi_end:
+kernel_debug_string_rbp db ""
+kernel_debug_string_rbp_end:
+kernel_debug_string_rsp db ""
+kernel_debug_string_rsp_end:
+kernel_debug_string_r8 db ""
+kernel_debug_string_r8_end:
+kernel_debug_string_r9 db ""
+kernel_debug_string_r9_end:
+kernel_debug_string_r10 db ""
+kernel_debug_string_r10_end:
+kernel_debug_string_r11 db ""
+kernel_debug_string_r11_end:
+kernel_debug_string_r12 db ""
+kernel_debug_string_r12_end:
+kernel_debug_string_r13 db ""
+kernel_debug_string_r13_end:
+kernel_debug_string_r14 db ""
+kernel_debug_string_r14_end:
+kernel_debug_string_r15 db ""
+kernel_debug_string_r15_end:
+kernel_debug_string_eflags db  ""
+kernel_debug_string_eflags_end:
+kernel_debug_string_cr0 db ""
+kernel_debug_string_cr0_end:
+kernel_debug_string_cr2 db ""
+kernel_debug_string_cr2_end:
+kernel_debug_string_cr3 db ""
+kernel_debug_string_cr3_end:
+kernel_debug_string_cr4 db ""
+kernel_debug_string_cr4_end:
+
 kernel_debug:
  push rax
  push rbx
@@ -18,6 +64,8 @@ kernel_debug:
  push r14
  push r15
 
+ mov byte [kernel_task_debug_semaphore], STATIC_TRUE
+
  sti
 
  mov ecx, kernel_debug_string_welcome_end - kernel_debug_string_welcome
@@ -33,6 +81,17 @@ kernel_debug:
 
  call kernel_video_drain
  
+ mov ecx, kernel_debug_string_process_name_end - kernel_debug_string_process_name
+ mov rsi, kernel_debug_string_process_name
+ call kernel_video_string
+
+ call kernel_task_active
+
+ mov cl, byte [rdi + KERNEL_TASK_STRUCTURE.length]
+ mov rsi, rdi
+ add rsi, KERNEL_TASK_STRUCTURE.name
+ call kernel_video_string
+
  jmp $
 
  macro_debug "kernel_debug"

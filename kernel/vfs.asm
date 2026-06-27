@@ -126,7 +126,7 @@ kernel_vfs_path_resolve:
 
  call kernel_task_active
 
- mov rdi, qword [rdi + KERNEL_STRUCTURE_TASK.knot]
+ mov rdi, qword [rdi + KERNEL_TASK_STRUCTURE.knot]
 
  jmp .suffix
 

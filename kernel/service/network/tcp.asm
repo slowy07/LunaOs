@@ -389,7 +389,7 @@ service_network_tcp_port_assign:
  mul ecx
 
  call kernel_task_active
- mov rcx, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
+ mov rcx, qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
  mov rdi, qword [service_network_port_table]
  test rdi, rdi

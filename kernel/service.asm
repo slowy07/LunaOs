@@ -22,9 +22,9 @@ kernel_service:
 
  and ax, KERNEL_TASK_EFLAGS_cf | KERNEL_TASK_EFLAGS_zf
 
- and word [rsp + KERNEL_STRUCTURE_TASK_IRETQ.eflags + STATIC_QWORD_SIZE_byte], ~KERNEL_TASK_EFLAGS_cf
- and word [rsp + KERNEL_STRUCTURE_TASK_IRETQ.eflags + STATIC_QWORD_SIZE_byte], ~KERNEL_TASK_EFLAGS_zf
- or word [rsp + KERNEL_STRUCTURE_TASK_IRETQ.eflags + STATIC_QWORD_SIZE_byte], ax
+ and word [rsp + KERNEL_TASK_STRUCTURE_IRETQ.eflags + STATIC_QWORD_SIZE_byte], ~KERNEL_TASK_EFLAGS_cf
+ and word [rsp + KERNEL_TASK_STRUCTURE_IRETQ.eflags + STATIC_QWORD_SIZE_byte], ~KERNEL_TASK_EFLAGS_zf
+ or word [rsp + KERNEL_TASK_STRUCTURE_IRETQ.eflags + STATIC_QWORD_SIZE_byte], ax
 
  pop rax
 

@@ -6,7 +6,7 @@ service_tx_ipc_message:
 service_tx:
 
  call kernel_task_active
- mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
+ mov rax, qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
  mov qword [service_tx_pid], rax
 

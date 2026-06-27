@@ -21,7 +21,7 @@ KERNEL_TASK_FLAG_thread_bit equ 5
 KERNEL_TASK_STACK_address equ (KERNEL_MEMORY_HIGH_VIRTUAL_address << STATIC_MULTIPLE_BY_2_shift) - KERNEL_TASK_STACK_SIZE_byte
 KERNEL_TASK_STACK_SIZE_byte equ KERNEL_PAGE_SIZE_byte
 
-struc KERNEL_STRUCTURE_TASK
+struc KERNEL_TASK_STRUCTURE
  .cr3 resb 8
  .rsp resb 8
  .cpu resb 8
@@ -35,7 +35,7 @@ struc KERNEL_STRUCTURE_TASK
  .SIZE:
 endstruc
 
-struc KERNEL_STRUCTURE_TASK_IRETQ
+struc KERNEL_TASK_STRUCTURE_IRETQ
  .rip resb 8
  .cs resb 8
  .eflags resb 8
@@ -88,24 +88,24 @@ kernel_task:
  mov rbp, KERNEL_STACK_pointer
 FXSAVE64 [rbp]
 
- mov qword [rdi + KERNEL_STRUCTURE_TASK.rsp], rsp
+ mov qword [rdi + KERNEL_TASK_STRUCTURE.rsp], rsp
 
  push rax
 
  mov rax, cr3
- mov qword [rdi + KERNEL_STRUCTURE_TASK.cr3], rax
+ mov qword [rdi + KERNEL_TASK_STRUCTURE.cr3], rax
 
- mov qword [rdi + KERNEL_STRUCTURE_TASK.cpu], STATIC_EMPTY
+ mov qword [rdi + KERNEL_TASK_STRUCTURE.cpu], STATIC_EMPTY
 
- and word [rdi + KERNEL_STRUCTURE_TASK.flags], ~KERNEL_TASK_FLAG_processing
+ and word [rdi + KERNEL_TASK_STRUCTURE.flags], ~KERNEL_TASK_FLAG_processing
 
  movzx eax, di
  and ax, ~KERNEL_PAGE_mask
- mov rcx, KERNEL_STRUCTURE_TASK.SIZE
+ mov rcx, KERNEL_TASK_STRUCTURE.SIZE
  xor edx, edx
  div rcx
 
- mov ecx, STATIC_STRUCTURE_BLOCK.link / KERNEL_STRUCTURE_TASK.SIZE
+ mov ecx, STATIC_STRUCTURE_BLOCK.link / KERNEL_TASK_STRUCTURE.SIZE
 
  sub rcx, rax
 
@@ -120,7 +120,7 @@ FXSAVE64 [rbp]
 
 .ap_entry:
 
- mov ecx, STATIC_STRUCTURE_BLOCK.link / KERNEL_STRUCTURE_TASK.SIZE
+ mov ecx, STATIC_STRUCTURE_BLOCK.link / KERNEL_TASK_STRUCTURE.SIZE
 
  jmp .check
 
@@ -129,31 +129,31 @@ FXSAVE64 [rbp]
  dec ecx
  jz .block
 
- add rdi, KERNEL_STRUCTURE_TASK.SIZE
+ add rdi, KERNEL_TASK_STRUCTURE.SIZE
 
 .check:
 
- test word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_secured
+ test word [rdi + KERNEL_TASK_STRUCTURE.flags], KERNEL_TASK_FLAG_secured
  jz .next
 
- lock bts word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_processing_bit
+ lock bts word [rdi + KERNEL_TASK_STRUCTURE.flags], KERNEL_TASK_FLAG_processing_bit
  jc .next
 
- test word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_active
+ test word [rdi + KERNEL_TASK_STRUCTURE.flags], KERNEL_TASK_FLAG_active
  jnz .active
 
- and word [rdi + KERNEL_STRUCTURE_TASK.flags], ~KERNEL_TASK_FLAG_processing
+ and word [rdi + KERNEL_TASK_STRUCTURE.flags], ~KERNEL_TASK_FLAG_processing
 
  jmp .next
 
 .active:
 
- mov qword [rdi + KERNEL_STRUCTURE_TASK.cpu], rax
+ mov qword [rdi + KERNEL_TASK_STRUCTURE.cpu], rax
 
  mov qword [rsi + rbx], rdi
 
- mov rsp, qword [rdi + KERNEL_STRUCTURE_TASK.rsp]
- mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.cr3]
+ mov rsp, qword [rdi + KERNEL_TASK_STRUCTURE.rsp]
+ mov rax, qword [rdi + KERNEL_TASK_STRUCTURE.cr3]
  mov cr3, rax
 
  mov rbp, KERNEL_STACK_pointer
@@ -198,28 +198,28 @@ kernel_task_add:
 
  push rdi
 
- mov qword [rdi + KERNEL_STRUCTURE_TASK.cr3], r11
+ mov qword [rdi + KERNEL_TASK_STRUCTURE.cr3], r11
 
  mov rax, KERNEL_STACK_pointer - (STATIC_QWORD_SIZE_byte * 0x14)
- mov qword [rdi + KERNEL_STRUCTURE_TASK.rsp], rax
+ mov qword [rdi + KERNEL_TASK_STRUCTURE.rsp], rax
 
  call kernel_task_active
- mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.knot]
+ mov rax, qword [rdi + KERNEL_TASK_STRUCTURE.knot]
 
  pop rdi
 
- mov qword [rdi + KERNEL_STRUCTURE_TASK.knot], rax
+ mov qword [rdi + KERNEL_TASK_STRUCTURE.knot], rax
 
  call kernel_task_pid_get
 
- mov qword [rdi + KERNEL_STRUCTURE_TASK.pid], rcx
+ mov qword [rdi + KERNEL_TASK_STRUCTURE.pid], rcx
 
  mov rax, qword [driver_rtc_microtime]
- mov qword [rdi + KERNEL_STRUCTURE_TASK.time], rax
+ mov qword [rdi + KERNEL_TASK_STRUCTURE.time], rax
 
- or word [rdi + KERNEL_STRUCTURE_TASK.flags], bx
+ or word [rdi + KERNEL_TASK_STRUCTURE.flags], bx
 
- mov word [rdi + KERNEL_STRUCTURE_TASK.stack], KERNEL_STACK_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
+ mov word [rdi + KERNEL_TASK_STRUCTURE.stack], KERNEL_STACK_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
 
  mov qword [rsp], rdi
 
@@ -246,15 +246,15 @@ kernel_task_queue:
 
 .restart:
 
- mov rcx, STATIC_STRUCTURE_BLOCK.link / KERNEL_STRUCTURE_TASK.SIZE
+ mov rcx, STATIC_STRUCTURE_BLOCK.link / KERNEL_TASK_STRUCTURE.SIZE
 
 .next:
 
- lock bts word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_secured_bit
+ lock bts word [rdi + KERNEL_TASK_STRUCTURE.flags], KERNEL_TASK_FLAG_secured_bit
  jnc .found
 
 .omit:
- add rdi, KERNEL_STRUCTURE_TASK.SIZE
+ add rdi, KERNEL_TASK_STRUCTURE.SIZE
 
  dec rcx
  jnz .next
@@ -329,15 +329,15 @@ kernel_task_pid_check:
 
 .restart:
 
- mov rax, STATIC_STRUCTURE_BLOCK.link / KERNEL_STRUCTURE_TASK.SIZE
+ mov rax, STATIC_STRUCTURE_BLOCK.link / KERNEL_TASK_STRUCTURE.SIZE
 
 .next:
 
- cmp dword [rdi + KERNEL_STRUCTURE_TASK.pid], ecx
+ cmp dword [rdi + KERNEL_TASK_STRUCTURE.pid], ecx
  je .found
 
 .omit:
- add rdi, KERNEL_STRUCTURE_TASK.SIZE
+ add rdi, KERNEL_TASK_STRUCTURE.SIZE
 
  dec rax
  jnz .next
@@ -355,10 +355,10 @@ kernel_task_pid_check:
  jmp .end
 
 .found:
- cmp byte [rdi + KERNEL_STRUCTURE_TASK.flags], STATIC_EMPTY
+ cmp byte [rdi + KERNEL_TASK_STRUCTURE.flags], STATIC_EMPTY
  je .omit
 
- bt word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_closed_bit
+ bt word [rdi + KERNEL_TASK_STRUCTURE.flags], KERNEL_TASK_FLAG_closed_bit
 
 .end:
 
@@ -376,7 +376,7 @@ kernel_task_active_pid:
 
  call kernel_task_active
 
- mov rax, qword [rdi + KERNEL_STRUCTURE_TASK.pid]
+ mov rax, qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
  pop rdi
 
@@ -408,8 +408,8 @@ kernel_task_kill:
 
  call kernel_task_active
 
- and word [rdi + KERNEL_STRUCTURE_TASK.flags], ~KERNEL_TASK_FLAG_active
- or word [rdi + KERNEL_STRUCTURE_TASK.flags], KERNEL_TASK_FLAG_closed
+ and word [rdi + KERNEL_TASK_STRUCTURE.flags], ~KERNEL_TASK_FLAG_active
+ or word [rdi + KERNEL_TASK_STRUCTURE.flags], KERNEL_TASK_FLAG_closed
 
  jmp $
 

@@ -127,7 +127,7 @@ kernel_idt_interrupt_hardware:
 
 kernel_idt_interrupt_software:
 
- or word [rsp + KERNEL_STRUCTURE_TASK_IRETQ.eflags], KERNEL_TASK_EFLAGS_cf
+ or word [rsp + KERNEL_TASK_STRUCTURE_IRETQ.eflags], KERNEL_TASK_EFLAGS_cf
 
  iretq
 

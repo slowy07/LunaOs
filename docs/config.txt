@@ -81,6 +81,9 @@ MISC CONSTANTS
   STATIC_NUMBER_SYSTEM_decimal     = 0x0A
   STATIC_NUMBER_SYSTEM_hexadecimal = 0x10
 
+ERROR CODES
+  KERNEL_ERROR_PAGE_memory_low = 0x0001 (out of memory during page allocation)
+
 COLOR CONSTANTS (VGA text mode attributes)
   ASCII Colors (escape sequences for future terminal):
     STATIC_COLOR_ASCII_DEFAULT = STATIC_COLOR_ASCII_GREEN

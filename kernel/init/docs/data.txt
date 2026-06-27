@@ -48,7 +48,7 @@ VARIABLE LAYOUT (in assembly order)
 DISPLAY STRINGS (boot output, shown in order)
 
 Welcome:     kernel_init_string_welcome
-             "[green]Welcome to Luna OS![gray] (v1.95 x86_64)[newline]"
+             "[green]Welcome to Luna OS![gray] (v1.100 x86_64)[newline]"
 
 Video:       kernel_init_string_video
              "[green]::[default] Video resolution at [white]"
@@ -87,8 +87,8 @@ Order  Module         Function
   1    service_tresher  Task reaper (reclaims closed task slots)
 
 Services run as kernel tasks. Started sequentially in init/services.asm.
-Note: service_tx, service_network, and service_http were removed from
-the boot-time services list. Only tresher is started at boot.
+Only tresher is started at boot — service_tx, service_network, and
+service_http were removed from the boot-time services list.
 
 VFS DIRECTORY STRUCTURE (kernel_init_vfs_directory_structure)
 
@@ -122,7 +122,7 @@ EMBEDDED BINARY: kernel_init_boot_file
 
 BOOT OUTPUT SEQUENCE
 
-[green]Welcome to Luna OS![gray] (v1.95 x86_64)
+[green]Welcome to Luna OS![gray] (v1.100 x86_64)
 [green]::[default] Video resolution at [white]640x480
 [green]::[default] Font: [default]<font_name>
 [green]::[default] Available [white]2048000[default] KiB of RAM memory.

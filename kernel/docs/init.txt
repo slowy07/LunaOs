@@ -122,7 +122,7 @@ SMP Boot Check (top of init.asm):
        Mounts: timer interrupt handler (IRQ 0)
 
   21. kernel/init/services.asm
-       Start kernel services (tresher, tx, network, HTTP)
+       Start kernel services — only tresher at boot (tx, network, HTTP removed)
 
   22. kernel/init/smp.asm
       Copy boot trampoline (boot.asm) to 0x8000
@@ -158,7 +158,7 @@ Final Steps (after all init modules):
   - Wait for all APs: re-read kernel_init_ap_count on each
     iteration, compare against kernel_apic_count
   - Set kernel_init_semaphore to STATIC_FALSE (signals services to start)
-  - Jump to clean: (in kernel.asm) free init code pages via kernel_memory_release
+  - Jump to clean: (in kernel.asm) — currently commented out, init pages retained
 
 INITIALIZATION FLOW
 

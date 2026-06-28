@@ -40,7 +40,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 | `ipc.txt` | Inter-process communication |
 | `macro_close.txt` | Semaphore lock macro |
 | `macro_apic.txt` | APIC ID macro |
-| `debug.txt` | Debug mode handler (process name, register strings) |
+| `debug.txt` | Debug mode handler (register dump, process name, PID) |
 | `macro_debug.txt` | Debug logging macro |
 | `macro_copy.txt` | SIMD 256-byte memory copy macro |
 

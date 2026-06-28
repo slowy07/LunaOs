@@ -32,10 +32,10 @@ EXECUTION FLOW
                                     +--------------+
                                            |
                                            v
-                                    +--------------+
-                                    | kernel:      |
-                                    | resolve      |
-                                    | "/bin/init"  |
+                                    +---------------+
+                                    | kernel:       |
+                                    | resolve       |
+                                    | "/bin/init"   |
                                     | exec /bin/init|
                                     +--------------+
                                            |
@@ -121,7 +121,7 @@ MEMORY LAYOUT
 +--------------------+
 | kernel/macro/      |  close.asm, debug.asm, copy.asm
 +--------------------+
-| kernel/debug.asm   |  Debug mode handler (process name, reg strings)
+| kernel/debug.asm   |  Debug mode handler (register dump, process name, PID)
 +--------------------+
 | kernel/ipc.asm     |  Inter-process communication
 | kernel/panic.asm   |  Panic handler

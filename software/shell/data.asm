@@ -1,6 +1,6 @@
 shell_string_prompt_with_new_line db STATIC_ASCII_NEW_LINE
 shell_string_prompt db STATIC_COLOR_ASCII_RED_LIGHT
-shell_string_prompt_type db "# "
+shell_string_prompt_type db ">> "
 shell_string_prompt_type_end db STATIC_COLOR_ASCII_DEFAULT
 shell_string_prompt_end:
 

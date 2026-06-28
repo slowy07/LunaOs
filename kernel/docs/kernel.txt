@@ -121,6 +121,8 @@ MEMORY LAYOUT
 +--------------------+
 | kernel/macro/      |  close.asm, debug.asm, copy.asm
 +--------------------+
+| kernel/debug.asm   |  Debug mode handler (process name, reg strings)
++--------------------+
 | kernel/ipc.asm     |  Inter-process communication
 | kernel/panic.asm   |  Panic handler
 | kernel/page.asm    |  Page table management
@@ -163,6 +165,9 @@ LOAD ORDER (in include sequence)
  [macro/copy.asm]
         |
         v
+ [kernel/debug.asm]
+        |
+        v
  [kernel/ipc.asm]
  [kernel/panic.asm]
  [kernel/page.asm]
@@ -172,9 +177,9 @@ LOAD ORDER (in include sequence)
  [kernel/io_apic.asm]
  [kernel/data.asm]
  [kernel/idt.asm]
- [kernel/task.asm]
- [kernel/thread.asm]  (commented out)
- [kernel/vfs.asm]
+ [kernel/task.asm]     (KERNEL_TASK_STRUCTURE)
+  [kernel/thread.asm]  (commented out)
+  [kernel/vfs.asm]
  [kernel/exec.asm]
  [kernel/service.asm]
         |

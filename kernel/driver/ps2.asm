@@ -27,13 +27,12 @@ DRIVER_PS2_DEVICE_MOUSE_PACKET_OVERFLOW_x equ 6
 DRIVER_PS2_DEVICE_MOUSE_PACKET_OVERFLOW_y equ 7
 DRIVER_PS2_DEVICE_MOUSE_mask equ 0xFFFFFFFFFFFFFF00
 
-DRIVER_PS2_STATUS_BIT_OUTPUT_BUFFER equ 0
-DRIVER_PS2_STATUS_BIT_INPUT_BUFFER equ 1
-DRIVER_PS2_STATUS_BIT_SYSTEM_FLAG equ 2
-DRIVER_PS2_STATUS_BIT_COMMAND_DATA equ 3
-DRIVER_PS2_STATUS_BIT_SECOND_OUTPUT_BUFFER_FULL equ 5
-DRIVER_PS2_STATUS_BIT_TIMEOUT_ERROR equ 6
-DRIVER_PS2_STATUS_BIT_PARITY_ERROR equ 7
+DRIVER_PS2_STATUS_output equ 00000001b
+DRIVER_PS2_STATUS_input  equ 00000010b
+DRIVER_PS2_STATUS_system_flag equ 00000100b
+DRIVER_PS2_STATUS_command_data equ 00001000b
+DRIVER_PS2_STATUS_timeout equ 01000000b
+DRIVER_PS2_STATUS_parity equ 10000000b
 
 DRIVER_PS2_COMMAND_CONFIGURATION_GET equ 0x20
 DRIVER_PS2_COMMAND_CONFIGURATION_SET equ 0x60
@@ -357,10 +356,13 @@ driver_ps2_keyboard_shift_right_semaphore db STATIC_FALSE
 driver_ps2_keyboard_alt_semaphore db STATIC_FALSE
 driver_ps2_keyboard_capslock_semaphore db STATIC_FALSE
 
-driver_ps2_keyboard:
-
- push rax
+driver_ps2_keyboard_pull:
  push rsi
+
+ in al, DRIVER_PS2_PORT_COMMAND_OR_STATUS
+
+ test al, DRIVER_PS2_STATUS_output
+ jz .end
 
  xor eax, eax
  in al, DRIVER_PS2_PORT_DATA
@@ -406,8 +408,18 @@ driver_ps2_keyboard:
  mov ax, word [rsi + rax * STATIC_WORD_SIZE_byte]
 
 .save:
-
  call driver_ps2_keyboard_shift
+
+.end:
+ pop rsi
+ 
+ ret
+
+driver_ps2_keyboard:
+ push rax
+
+ call driver_ps2_keyboard_pull
+ jz .end
 
  call driver_ps2_keyboard_save
 
@@ -416,7 +428,6 @@ driver_ps2_keyboard:
  mov rax, qword [kernel_apic_base_address]
  mov dword [rax + KERNEL_APIC_EOI_register], STATIC_EMPTY
 
- pop rsi
  pop rax
 
  iretq

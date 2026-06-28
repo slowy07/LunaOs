@@ -40,6 +40,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 | `ipc.txt` | Inter-process communication |
 | `macro_close.txt` | Semaphore lock macro |
 | `macro_apic.txt` | APIC ID macro |
+| `debug.txt` | Debug mode handler (process name, register strings) |
 | `macro_debug.txt` | Debug logging macro |
 | `macro_copy.txt` | SIMD 256-byte memory copy macro |
 
@@ -526,19 +527,27 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 
 ```
 +-----------------------------------+
-|         KERNEL_STRUCTURE_TASK     |
+|        KERNEL_TASK_STRUCTURE      |
 +-----------------------------------+
 |  cr3      (8 bytes) - Page Table  |
 +-----------------------------------+
 |  rsp      (8 bytes) - Stack Ptr   |
 +-----------------------------------+
-|  pid      (8 bytes) - Process ID  |
-+-----------------------------------+
 |  cpu      (8 bytes) - CPU Core    |
++-----------------------------------+
+|  pid      (8 bytes) - Process ID  |
 +-----------------------------------+
 |  time     (8 bytes) - Creation    |
 +-----------------------------------+
+|  knot     (8 bytes) - VFS knot    |
++-----------------------------------+
 |  flags    (2 bytes) - Task Flags  |
++-----------------------------------+
+|  stack    (2 bytes) - Stack pages |
++-----------------------------------+
+|  length   (1 byte)  - Name length |
++-----------------------------------+
+|  name    (255 bytes) - Task name  |
 +-----------------------------------+
 
 Task Flags:

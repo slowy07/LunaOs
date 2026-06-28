@@ -59,6 +59,15 @@ DEBUG STRING CONSTANTS (used when %ifdef DEBUG is active)
   kernel_debug_string_icmp         - "ICMP|"
   Each constant is followed by a corresponding _end label for length calculation.
 
+DEBUG STRING CONSTANTS (kernel/debug.asm)
+  kernel_debug_string_welcome     - "ESC to enter debug mode"
+  kernel_debug_string_process_name - "Process name: "
+  Register name constants:
+    rax, rbx, rcx, rdx, rsi, rdi, rbp, rsp
+    r8-r15 (note: r15 string says "r14", same as data.asm)
+  Control register constants:
+    eflags, cr0, cr2, cr3, cr4
+
 NOTES
 These structures are initialized during boot:
 - GDT is set up in kernel/init/gdt.asm

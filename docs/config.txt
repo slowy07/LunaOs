@@ -36,6 +36,7 @@ SHIFT CONSTANTS (move bits)
 
 SIZE CONSTANTS
   STATIC_BYTE_mask      = 0xFF
+  STATIC_BYTE_LOW_mask  = 0x0F
   STATIC_BYTE_SIZE_byte = 1
   STATIC_WORD_SIZE_byte = 2
   STATIC_DWORD_SIZE_byte = 4

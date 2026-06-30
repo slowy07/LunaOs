@@ -60,21 +60,23 @@ DEBUG STRING CONSTANTS (used when %ifdef DEBUG is active)
   Each constant is followed by a corresponding _end label for length calculation.
 
 DEBUG STRING CONSTANTS (kernel/debug.asm)
-  kernel_debug_string_welcome       - colored "ESC to enter debug mode\n"
-  kernel_debug_string_process_name  - colored "Process name: PID: "
+  kernel_debug_string_welcome       - colored "ESC to enter debug mode"
+  kernel_debug_string_process_name  - colored "Process name " + gray "(PID)"
   kernel_debug_string_pid           - " ("
   kernel_debug_string_pid_close     - ")\n"
+  kernel_debug_string_eflags        - colored "Eflags: "
+  kernel_debug_string_memory        - "Address  Memory  Content\n" header
   Register name strings (colored, with leading \n except rax):
     rax, rbx, rcx, rdx, rsi, rdi, rbp, rsp
     r8-r15 (3-char names like "r8 " get extra space)
   Control register strings (colored, with leading \n):
     cr0, cr2, cr3, cr4
-  Note: eflags is in KERNEL_DEBUG_STRUCTURE_PRESERVED (no named string)
   Each constant is followed by a corresponding _end label for length calculation.
 
 STRUCT: KERNEL_DEBUG_STRUCTURE_PRESERVED
-  Matches the 17-register push order: rax, rbx, rcx, rdx, rsi, rdi, rbp,
-  r8-r15, eflags. Used by kernel_registers to display saved context.
+  16 registers in push order: rax, rbx, rcx, rdx, rsi, rdi, rbp,
+  r8-r15, eflags. (No .rsp — saved via pushf/iretq stack.)
+  Has .SIZE label. Used by kernel_debug_registers to display context.
 
 NOTES
 These structures are initialized during boot:

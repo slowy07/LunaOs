@@ -12,7 +12,6 @@ struc KERNEL_DEBUG_STRUCTURE_PRESERVED
  .rsi resb 8
  .rdi resb 8
  .rbp resb 8
- .rsp resb 8
  .r8 resb 8
  .r9 resb 8
  .r10 resb 8
@@ -22,19 +21,20 @@ struc KERNEL_DEBUG_STRUCTURE_PRESERVED
  .r14 resb 8
  .r15 resb 8
  .eflags resb 8
+ .SIZE:
 endstruc
 
-kernel_debug_string_welcome db STATIC_COLOR_ASCII_MAGENTA_LIGHT, "ESC to enter debug mode", STATIC_ASCII_NEW_LINE
+kernel_debug_string_welcome db STATIC_COLOR_ASCII_MAGENTA_LIGHT, "ESC to enter debug mode"
 kernel_debug_string_welcome_end:
-
-kernel_debug_string_process_name db STATIC_COLOR_ASCII_GRAY_LIGHT, "Process name: ", STATIC_COLOR_ASCII_GRAY, "PID", STATIC_COLOR_ASCII_GRAY_LIGHT, ": ", STATIC_COLOR_ASCII_WHITE
+kernel_debug_string_process_name db STATIC_COLOR_ASCII_GRAY_LIGHT, "Process name ", STATIC_COLOR_ASCII_GRAY, "(PID)", STATIC_COLOR_ASCII_GRAY_LIGHT, ": ", STATIC_COLOR_ASCII_WHITE
 kernel_debug_string_process_name_end:
-
 kernel_debug_string_pid db " ", STATIC_COLOR_ASCII_GRAY, "("
 kernel_debug_string_pid_end:
-
 kernel_debug_string_pid_close db ")", STATIC_ASCII_NEW_LINE
 kernel_debug_string_pid_close_end:
+
+kernel_debug_string_eflags db STATIC_COLOR_ASCII_GRAY_LIGHT, "Eflags: ", STATIC_COLOR_ASCII_WHITE
+kernel_debug_string_eflags_end:
 
 kernel_debug_string_rax db STATIC_COLOR_ASCII_GRAY_LIGHT, "rax ", STATIC_COLOR_ASCII_WHITE
 kernel_debug_string_rax_end:
@@ -77,6 +77,9 @@ kernel_debug_string_cr3_end:
 kernel_debug_string_cr4 db STATIC_ASCII_NEW_LINE, STATIC_COLOR_ASCII_GRAY_LIGHT, "cr4 ", STATIC_COLOR_ASCII_WHITE
 kernel_debug_string_cr4_end:
 
+kernel_debug_string_memory db STATIC_COLOR_ASCII_GRAY, "Address          Memory                                          Content", STATIC_COLOR_ASCII_GRAY_LIGHT, STATIC_ASCII_NEW_LINE
+kernel_debug_string_memory_end:
+
 kernel_debug:
  pushf
  push r15
@@ -96,28 +99,17 @@ kernel_debug:
  push rax
 
  call kernel_video_cursor_disable
-
- mov byte [kernel_task_debug_semaphore], STATIC_TRUE
-
  mov ecx, kernel_debug_string_welcome_end - kernel_debug_string_welcome
  mov rsi, kernel_debug_string_welcome
  call kernel_video_string
 
 .any:
- call driver_ps2_keyboard_pull
- jz .any
-
- cmp ax, STATIC_ASCII_ESCAPE
- jne .any
-
  call kernel_video_drain
-
  call kernel_task_active
- 
+
  mov ecx, kernel_debug_string_process_name_end - kernel_debug_string_process_name
  mov rsi, kernel_debug_string_process_name
  call kernel_video_string
-
  mov cl, byte [rdi + KERNEL_TASK_STRUCTURE.length]
  mov rsi, rdi
  add rsi, KERNEL_TASK_STRUCTURE.name
@@ -134,25 +126,104 @@ kernel_debug:
  mov rsi, kernel_debug_string_pid_close
  call kernel_video_string
 
- call kernel_registers
+ call kernel_debug_registers
+ mov rsi, qword [rsp + KERNEL_DEBUG_STRUCTURE_PRESERVED.SIZE]
 
+ cmp qword [rsp + KERNEL_DEBUG_STRUCTURE_PRESERVED.SIZE + KERNEL_TASK_STRUCTURE_IRETQ.cs], KERNEL_STRUCTURE_GDT.cs_ring0
+ je .rip
+ cmp qword [rsp + KERNEL_DEBUG_STRUCTURE_PRESERVED.SIZE + KERNEL_TASK_STRUCTURE_IRETQ.cs], KERNEL_STRUCTURE_GDT.cs_ring3
+ je .rip
+ mov rsi, qword [rsp + KERNEL_DEBUG_STRUCTURE_PRESERVED.SIZE + STATIC_QWORD_SIZE_byte]
+
+.rip:
+ call kernel_debug_memory
  jmp $
 
  macro_debug "kernel_debug"
 
-kernel_registers:
+kernel_debug_memory:
+ push rsi
+ mov r8, 0x10
+
+ mov dword [kernel_video_cursor.x], STATIC_EMPTY
+ mov dword [kernel_video_cursor.y], 18
+ call kernel_video_cursor_set
+ mov ecx, kernel_debug_string_memory_end - kernel_debug_string_memory
+ mov rsi, kernel_debug_string_memory
+ call kernel_video_string
+
+ mov rsi, qword [rsp]
+ and si, STATIC_WORD_mask - STATIC_BYTE_LOW_mask
+
+.row:
+ mov rax, rsi
+ mov bl, STATIC_NUMBER_SYSTEM_hexadecimal
+ mov ecx, STATIC_QWORD_DIGIT_length
+ mov edx, STATIC_ASCII_DIGIT_0
+ call kernel_video_number
+ push rsi
+ mov r9, 16
+
+.memory:
+ mov eax, STATIC_ASCII_SPACE
+ mov ecx, 0x01
+ call kernel_video_char
+ lodsb
+ mov cl, 0x02
+ call kernel_video_number
+ dec r9
+ jnz .memory
+
+ mov eax, STATIC_ASCII_SPACE
+ mov ecx, 0x01
+ call kernel_video_char
+ mov rsi, qword [rsp]
+ mov r9, 16
+
+.ascii:
+ lodsb
+ cmp al, STATIC_ASCII_SPACE
+ jb .hidden
+ cmp al, STATIC_ASCII_TILDE
+ jb .show
+
+.hidden:
+ mov al, STATIC_ASCII_DOT
+
+.show:
+ mov cl, 0x01
+ call kernel_video_char
+ dec r9
+ jnz .ascii
+
+ mov al, STATIC_ASCII_NEW_LINE
+ call kernel_video_char
+ pop rsi
+ add rsi, 0x10
+ dec r8
+ jnz .row
+
+ pop rsi
+ ret
+
+kernel_debug_registers:
  mov dword [kernel_video_cursor.x], STATIC_EMPTY
  mov dword [kernel_video_cursor.y], KERNEL_DEBUG_FLOW_offset
  call kernel_video_cursor_set
-
  mov bl, STATIC_NUMBER_SYSTEM_hexadecimal
-
  mov edx, STATIC_ASCII_DIGIT_0
 
  mov ecx, kernel_debug_string_rax_end - kernel_debug_string_rax
  mov rsi, kernel_debug_string_rax
  call kernel_video_string
  mov rax, qword [rsp + KERNEL_DEBUG_STRUCTURE_PRESERVED.rax + STATIC_QWORD_SIZE_byte]
+ mov ecx, STATIC_QWORD_DIGIT_length
+ call kernel_video_number
+
+ mov ecx, kernel_debug_string_rbx_end - kernel_debug_string_rbx
+ mov rsi, kernel_debug_string_rbx
+ call kernel_video_string
+ mov rax, qword [rsp + KERNEL_DEBUG_STRUCTURE_PRESERVED.rbx + STATIC_QWORD_SIZE_byte]
  mov ecx, STATIC_QWORD_DIGIT_length
  call kernel_video_number
 
@@ -247,6 +318,5 @@ kernel_registers:
  mov ecx, STATIC_QWORD_DIGIT_length
  call kernel_video_number
 
- jmp $
- 
+ ret
  macro_debug "kernel_registers"

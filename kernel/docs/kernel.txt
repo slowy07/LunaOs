@@ -98,8 +98,8 @@ Step 4: kernel: - jump to /bin/init exec:
 Step 5: CPU halts in jmp $ (idle loop). If exec failed, error code
 is printed in decimal first.
 
-NOTE: The `clean:` step (release init code pages) and thread.asm
-include are currently commented out.
+NOTE: The `clean:` label now triggers debug mode (cli + int 0x00).
+thread.asm include is currently commented out.
 
 MEMORY LAYOUT
 
@@ -121,7 +121,7 @@ MEMORY LAYOUT
 +--------------------+
 | kernel/macro/      |  close.asm, debug.asm, copy.asm
 +--------------------+
-| kernel/debug.asm   |  Debug mode handler (register dump, process name, PID)
+| kernel/debug.asm   |  Debug mode handler (regs dump, memory dump, PID)
 +--------------------+
 | kernel/ipc.asm     |  Inter-process communication
 | kernel/panic.asm   |  Panic handler

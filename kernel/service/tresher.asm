@@ -1,5 +1,4 @@
 service_tresher:
-
  call service_tresher_search
 
  mov r11, qword [rsi + KERNEL_TASK_STRUCTURE.cr3]
@@ -15,21 +14,17 @@ service_tresher:
  call kernel_memory_release_foreign
 
  test word [rsi + KERNEL_TASK_STRUCTURE.flags], KERNEL_TASK_FLAG_thread
- jz .pml4
+ jnz .pml4
 
- mov rbx, 4
- mov rcx, 1
- mov rdi, r11
- add rdi, KERNEL_PAGE_SIZE_byte - (256 * STATIC_QWORD_SIZE_byte)
- call kernel_page_release_pml.loop
+ mov rax, KERNEL_MEMORY_HIGH_VIRTUAL_address
+ xor ecx, ecx
+ call kernel_memory_release_foreign
 
 .pml4:
  mov rdi, r11
  call kernel_memory_release_page
 
  dec qword [kernel_page_paged_count]
-
- xchg bx, bx
 
  mov word [rsi + KERNEL_TASK_STRUCTURE.flags], STATIC_EMPTY
 

@@ -76,6 +76,20 @@ DEBUG STRING CONSTANTS (kernel/debug.asm)
     cr0, cr2, cr3, cr4
   Each constant is followed by a corresponding _end label for length calculation.
 
+ASSEMBLY TABLE (kernel/debug.asm)
+  kernel_debug_assembly_table: opcode lookup table for disassembly
+    Format per entry: opcode_len, mnemonic_len, opcode[1-4], "mnemonic"
+    Supported: xor, mov, jb, jnb, mov ecx/ebx, int, call, jmp
+    Terminated by STATIC_EMPTY byte
+
+FUNCTIONS (kernel/debug.asm - all annotated with macro_debug)
+  kernel_debug             - Entry point (pushf, task info, regs, memory, task/page info)
+  kernel_debug_assembly    - Disassembly (stub)
+  kernel_debug_page        - Display page allocator stats
+  kernel_debug_task        - Display task queue stats
+  kernel_debug_memory      - 16x16 hex+ASCII dump from kernel_memory_map_address
+  kernel_debug_registers   - Dump all preserved regs with colors
+
 STRUCT: KERNEL_DEBUG_STRUCTURE_PRESERVED
   16 registers in push order: rax, rbx, rcx, rdx, rsi, rdi, rbp,
   r8-r15, eflags. (No .rsp — saved via pushf/iretq stack.)

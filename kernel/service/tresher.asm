@@ -29,7 +29,13 @@ service_tresher:
 
  dec qword [kernel_page_paged_count]
 
+ xchg bx, bx
+
  mov word [rsi + KERNEL_TASK_STRUCTURE.flags], STATIC_EMPTY
+
+ dec qword [kernel_task_count]
+ 
+ inc qword [kernel_task_free]
 
  jmp service_tresher
 

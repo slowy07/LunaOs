@@ -158,7 +158,7 @@ Final Steps (after all init modules):
   - Wait for all APs: re-read kernel_init_ap_count on each
     iteration, compare against kernel_apic_count
   - Set kernel_init_semaphore to STATIC_FALSE (signals services to start)
-  - Jump to clean: (in kernel.asm) — triggers debug mode (cli + int 0x00)
+  - Jump to clean: (in kernel.asm) — currently commented out, init pages retained
 
 INITIALIZATION FLOW
 
@@ -321,8 +321,8 @@ INITIALIZATION FLOW
                v
     +-------------------------+
     | clean:                  |
-    | cli                     |
-    | int 0x00 (debug entry)  |
+    | Free init pages         |
+    | jmp kernel              |
     +-------------------------+
 
 ERROR HANDLING

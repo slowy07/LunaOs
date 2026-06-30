@@ -66,6 +66,9 @@ DEBUG STRING CONSTANTS (kernel/debug.asm)
   kernel_debug_string_pid_close     - ")\n"
   kernel_debug_string_eflags        - colored "Eflags: "
   kernel_debug_string_memory        - "Address  Memory  Content\n" header
+  kernel_debug_string_task           - "Task queue properties (Size/Task Count/Free)\n"
+  kernel_debug_string_separator      - gray "/" separator
+  kernel_debug_string_page           - "Pages (Total/Used/Free)\n"
   Register name strings (colored, with leading \n except rax):
     rax, rbx, rcx, rdx, rsi, rdi, rbp, rsp
     r8-r15 (3-char names like "r8 " get extra space)

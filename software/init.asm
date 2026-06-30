@@ -48,6 +48,8 @@ init:
  pop r8
  int KERNEL_SERVICE
 
+ int 0x00
+
  jmp $
 
  %include "software/init/data.asm"

@@ -10,17 +10,18 @@
 init:
 
  mov ax, KERNEL_SERVICE_VIDEO_string
- mov ecx, kernel_init_string_end - kernel_init_string
- mov rsi, kernel_init_string
+ mov ecx, init_string_logo_end - init_string_logo
+ mov rsi, init_string_logo
  int KERNEL_SERVICE
 
+.exec:
  mov ax, KERNEL_SERVICE_PROCESS_run
  mov ecx, init_program_shell_end - init_program_shell
  xor edx, edx
  mov rsi, init_program_shell
  int KERNEL_SERVICE
 
- jc .error
+ jc .exec
 
  mov ax, KERNEL_SERVICE_PROCESS_check
 

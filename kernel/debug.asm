@@ -94,6 +94,19 @@ kernel_debug_string_separator_end:
 kernel_debug_string_page db STATIC_COLOR_ASCII_GRAY_LIGHT, "Pages (Total / Used / Free)", STATIC_COLOR_ASCII_WHITE, STATIC_ASCII_NEW_LINE
 kernel_debug_string_page_end:
 
+kernel_debug_assembly_table:
+ db 0x02, 0x00, 0x31, 0xC9, 0x0C, "xor ecx, ecx"
+ db 0x02, 0x08, 0x48, 0xBE, 0x09, "mov rsi, "
+ db 0x01, 0x01, 0x72, 0x04, "jb +"
+ db 0x01, 0x01, 0x73, 0x05, "jnb +"
+ db 0x01, 0x04, 0xB9, 0x09, "mov ecx, "
+ db 0x01, 0x04, 0xBB, 0x09, "mov ebx, "
+ db 0x01, 0x01, 0xCD, 0x04, "int "
+ db 0x01, 0x04, 0xE8, 0x05, "call "
+ db 0x01, 0x01, 0xEB, 0x05, "jmp -"
+ db STATIC_EMPTY
+kernel_debug_assembly_table_end:
+
 kernel_debug:
  pushf
  push r15
@@ -160,6 +173,9 @@ kernel_debug:
 
  macro_debug "kernel_debug"
 
+kernel_debug_assembly:
+ ret
+
 kernel_debug_page:
  mov dword [kernel_video_cursor.x], KERNEL_DEBUG_PAGE_offset
  mov dword [kernel_video_cursor.y], KERNEL_DEBUG_PAGE_offset_in_row
@@ -194,6 +210,8 @@ kernel_debug_page:
  call kernel_video_number
 
  ret
+
+ macro_debug "kernel_debug_page"
 
 kernel_debug_task:
  mov dword [kernel_video_cursor.x], KERNEL_DEBUG_TASK_offset
@@ -235,6 +253,8 @@ kernel_debug_task:
 
  ret
 
+ macro_debug "kernel_debug_task"
+
 kernel_debug_memory:
  push rsi
  mov r8, 0x10
@@ -248,6 +268,8 @@ kernel_debug_memory:
 
  mov rsi, qword [rsp]
  and si, STATIC_WORD_mask - STATIC_BYTE_LOW_mask
+
+ mov rsi, qword [kernel_memory_map_address]
 
 .row:
  mov rax, rsi
@@ -299,6 +321,8 @@ kernel_debug_memory:
 
  pop rsi
  ret
+
+ macro_debug "kernel_debug_memory"
 
 kernel_debug_registers:
  mov dword [kernel_video_cursor.x], STATIC_EMPTY
@@ -413,4 +437,5 @@ kernel_debug_registers:
  call kernel_video_number
 
  ret
- macro_debug "kernel_registers"
+
+ macro_debug "kernel_debug_registers"

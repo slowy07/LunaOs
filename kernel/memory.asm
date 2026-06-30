@@ -19,7 +19,6 @@ kernel_memory_alloc_page:
  macro_debug "kernel_memory_alloc_page"
 
 kernel_memory_alloc:
-
  push rbx
  push rdx
  push rsi
@@ -81,18 +80,13 @@ kernel_memory_alloc:
  btr qword [rsi], rax
 
  test rbp, rbp
- jz .empty
+ jz .next
 
  dec rbp
  dec dword [kernel_page_reserved_count]
 
- jmp .next
-
-.empty:
-
- dec qword [kernel_page_free_count]
-
 .next:
+ dec qword [kernel_page_free_count]
 
  inc rax
 
@@ -254,6 +248,8 @@ kernel_memory_release_foreign:
  mov rcx, qword [rsp]
 
 .pml1:
+ cmp qword [r8], STATIC_EMPTY
+ je .pml1_omit
 
  mov rdi, qword [r8]
  and di, KERNEL_PAGE_mask
@@ -261,6 +257,7 @@ kernel_memory_release_foreign:
 
  mov qword [r8], STATIC_EMPTY
 
+.pml1_omit:
  add r8, STATIC_QWORD_SIZE_byte
  inc r12
 
@@ -279,6 +276,10 @@ kernel_memory_release_foreign:
  je .pml3
 
  mov r8, qword [r9]
+ 
+ test r8, r8
+ jz .pml2
+
  xor r8b, r8b
 
  xor r12, r12
@@ -294,6 +295,10 @@ kernel_memory_release_foreign:
  je .pml4
 
  mov r9, qword [r10]
+
+ test r9, r9
+ jz .pml3
+
  xor r9b, r9b
 
  xor r13, r13
@@ -309,6 +314,10 @@ kernel_memory_release_foreign:
  je .pml5
 
  mov r10, qword [r11]
+
+ test r10, r10
+ jz .pml4
+
  xor r10b, r10b
 
  xor r14, r14
@@ -316,14 +325,7 @@ kernel_memory_release_foreign:
  jmp .pml3
 
 .pml5:
- xchg bx,bx
-
- nop
- nop
- nop
- nop
-
- jmp $
+ stc
 
 .end:
 

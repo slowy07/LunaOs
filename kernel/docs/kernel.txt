@@ -121,7 +121,7 @@ MEMORY LAYOUT
 +--------------------+
 | kernel/macro/      |  close.asm, debug.asm, copy.asm
 +--------------------+
-| kernel/debug.asm   |  Debug mode handler (regs, memory, task, page info)
+| kernel/debug.asm   |  Debug mode handler (regs, memory, task, page, assembly stub)
 +--------------------+
 | kernel/ipc.asm     |  Inter-process communication
 | kernel/panic.asm   |  Panic handler

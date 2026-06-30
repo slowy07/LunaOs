@@ -1,8 +1,13 @@
 KERNEL_DEBUG_FLOW_offset equ 0x02
 KERNEL_DEBUG_REGISTER_offset equ 0x05
 KERNEL_DEBUG_CODE_offset equ 0x015
+KERNEL_DEBUG_TASK_offset equ 0x15
+KERNEL_DEBUG_PAGE_offset equ 0x15
+KERNEL_DEBUG_PAGE_offset_in_row equ 0x05
+KERNEL_DEBUG_TASK_offset_in_row equ 0x02
 KERNEL_DEBUG_STACK_offset equ 0x40
 KERNEL_DEBUG_MEMORY_offset equ 0x15
+
 
 struc KERNEL_DEBUG_STRUCTURE_PRESERVED
  .rax resb 8
@@ -80,6 +85,15 @@ kernel_debug_string_cr4_end:
 kernel_debug_string_memory db STATIC_COLOR_ASCII_GRAY, "Address          Memory                                          Content", STATIC_COLOR_ASCII_GRAY_LIGHT, STATIC_ASCII_NEW_LINE
 kernel_debug_string_memory_end:
 
+kernel_debug_string_task db STATIC_COLOR_ASCII_GRAY_LIGHT, "Task queue properties (Size [bytes] / Task Count / Free):", STATIC_COLOR_ASCII_WHITE, STATIC_ASCII_NEW_LINE
+kernel_debug_string_task_end:
+
+kernel_debug_string_separator db STATIC_COLOR_ASCII_GRAY, "/", STATIC_COLOR_ASCII_WHITE
+kernel_debug_string_separator_end:
+
+kernel_debug_string_page db STATIC_COLOR_ASCII_GRAY_LIGHT, "Pages (Total / Used / Free)", STATIC_COLOR_ASCII_WHITE, STATIC_ASCII_NEW_LINE
+kernel_debug_string_page_end:
+
 kernel_debug:
  pushf
  push r15
@@ -137,9 +151,89 @@ kernel_debug:
 
 .rip:
  call kernel_debug_memory
+
+ call kernel_debug_task
+
+ call kernel_debug_page
+
  jmp $
 
  macro_debug "kernel_debug"
+
+kernel_debug_page:
+ mov dword [kernel_video_cursor.x], KERNEL_DEBUG_PAGE_offset
+ mov dword [kernel_video_cursor.y], KERNEL_DEBUG_PAGE_offset_in_row
+ call kernel_video_cursor_set
+
+ mov ecx, kernel_debug_string_page_end - kernel_debug_string_page
+ mov rsi, kernel_debug_string_page
+ call kernel_video_string
+
+ mov dword [kernel_video_cursor.x], KERNEL_DEBUG_PAGE_offset
+ call kernel_video_cursor_set
+
+ mov rax, qword [kernel_page_total_count]
+ mov bl, STATIC_NUMBER_SYSTEM_decimal
+ xor ecx, ecx
+ call kernel_video_number
+
+ mov ecx, kernel_debug_string_separator_end - kernel_debug_string_separator
+ mov rsi, kernel_debug_string_separator
+ call kernel_video_string
+
+ sub rax, qword [kernel_page_free_count]
+ xor ecx, ecx
+ call kernel_video_number
+
+ mov ecx, kernel_debug_string_separator_end - kernel_debug_string_separator
+ mov rsi, kernel_debug_string_separator
+ call kernel_video_string
+ 
+ mov rax, qword [kernel_page_free_count]
+ xor ecx, ecx
+ call kernel_video_number
+
+ ret
+
+kernel_debug_task:
+ mov dword [kernel_video_cursor.x], KERNEL_DEBUG_TASK_offset
+ mov dword [kernel_video_cursor.y], KERNEL_DEBUG_TASK_offset_in_row
+ call kernel_video_cursor_set
+
+ mov ecx, kernel_debug_string_task_end - kernel_debug_string_task
+ mov rsi, kernel_debug_string_task
+ call kernel_video_string
+
+ mov dword [kernel_video_cursor.x], KERNEL_DEBUG_TASK_offset
+ call kernel_video_cursor_set
+
+ mov rax, qword [kernel_task_size_page]
+ mov rcx, rax
+ shl rax, STATIC_MULTIPLE_BY_PAGE_shift
+ shl rcx, STATIC_MULTIPLE_BY_QWORD_shift
+ sub rax, rcx
+
+ mov bl, STATIC_NUMBER_SYSTEM_decimal
+ xor ecx, ecx
+ call kernel_video_number
+
+ mov ecx, kernel_debug_string_separator_end - kernel_debug_string_separator
+ mov rsi, kernel_debug_string_separator
+ call kernel_video_string
+
+ mov rax, qword [kernel_task_count]
+ xor ecx, ecx
+ call kernel_video_number
+
+ mov ecx, kernel_debug_string_separator_end - kernel_debug_string_separator
+ mov rsi, kernel_debug_string_separator
+ call kernel_video_string
+
+ mov rax, qword [kernel_task_free]
+ xor ecx, ecx
+ call kernel_video_number
+
+ ret
 
 kernel_debug_memory:
  push rsi

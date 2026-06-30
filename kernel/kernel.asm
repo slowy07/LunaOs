@@ -15,8 +15,6 @@ init:
 align KERNEL_PAGE_SIZE_byte, db STATIC_NOTHING
 
 clean:
- cli
- int 0x00
 ; mov ecx, clean - $$
 ; call library_page_from_size
 ;

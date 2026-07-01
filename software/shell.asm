@@ -41,6 +41,18 @@ shell:
  call library_string_trim
  jc shell
 
+ push rcx
+
+ cmp rsi, shell_cache
+ je .begin
+
+ mov rdi, shell_cache
+ rep movsb
+
+.begin:
+ pop rcx
+
+ mov rsi, shell_cache
  call library_string_word_next
 
  jmp shell_prompt

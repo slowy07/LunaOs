@@ -20,4 +20,4 @@ debug:
 
 clean:
 	@echo "clearing"
-	rm -rf build/kernel && rm -rf build/luna_disk.raw
+	rm -rf build/kernel && rm -rf build/init && rm -rf build/shell && rm -rf build/wello && rm -rf build/boot && rm -rf build/luna_disk.raw 

@@ -11,6 +11,9 @@ kernel_service:
  cmp al, KERNEL_SERVICE_KEYBOARD
  je .keyboard
 
+ cmp al, KERNEL_SERVICE_VFS
+ je .vfs
+
 .error:
 
  stc
@@ -129,3 +132,27 @@ kernel_service:
  jmp kernel_service.end
 
  macro_debug "kernel_service"
+
+.vfs:
+ cmp ax, KERNEL_SERVICE_VFS_exist
+ jne kernel_service.error
+
+ xor eax, eax
+
+ push rcx
+ push rsi
+ push rdi
+
+ call kernel_vfs_path_resolve
+ je .vfs_exits_not
+
+ call kernel_vfs_file_find
+
+.vfs_exits_not:
+ mov qword [rsp], rax
+
+ pop rdi
+ pop rsi
+ pop rcx
+
+ jmp kernel_service.end

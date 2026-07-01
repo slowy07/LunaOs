@@ -7,17 +7,17 @@ service_tresher:
 
  movzx ecx, word [rsi + KERNEL_TASK_STRUCTURE.stack]
 
- mov rbx, rcx
- shl rbx, KERNEL_PAGE_SIZE_shift
- sub rax, rbx
+ shl rcx, KERNEL_PAGE_SIZE_shift
+ sub rax, rcx
 
+ shr rcx, KERNEL_PAGE_SIZE_shift
  call kernel_memory_release_foreign
 
  test word [rsi + KERNEL_TASK_STRUCTURE.flags], KERNEL_TASK_FLAG_thread
  jnz .pml4
 
  mov rax, KERNEL_MEMORY_HIGH_VIRTUAL_address
- xor ecx, ecx
+ mov rcx, STATIC_MAX_unsigned
  call kernel_memory_release_foreign
 
 .pml4:

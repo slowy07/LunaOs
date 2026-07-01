@@ -19,118 +19,28 @@ kernel_page_free_count dq STATIC_EMPTY
 kernel_page_reserved_count dq STATIC_EMPTY
 kernel_page_paged_count dq STATIC_EMPTY
 
-kernel_page_purge:
-
- push rbx
- push rcx
- push rdi
-
- mov bl, 0x04
-
- mov rdi, r11
-
-.recursion:
-
- dec bl
-
+kernel_page_empty:
+ push rax
  push rcx
 
- call kernel_page_purge.table
- jnc .purge
+ xor eax, eax
 
- test bl, bl
- jz .continue
-
- mov ecx, KERNEL_PAGE_RECORDS_amount
+ mov ecx, KERNEL_PAGE_RECORDS_amount - 0x01
 
 .loop:
-
- cmp qword [rdi], STATIC_EMPTY
- je .empty
-
- push rdi
-
- mov rdi, qword [rdi]
- and di, KERNEL_PAGE_mask
-
- call kernel_page_purge.recursion
-
- pop rdi
-
-.empty:
-
- add rdi, STATIC_QWORD_SIZE_byte
-
- dec ecx
+ or rax, qword [rdi + rcx * STATIC_QWORD_SIZE_byte]
+ 
+ dec cx
  jnz .loop
 
-.continue:
+ test rax, rax
 
  pop rcx
-
- inc bl
-
- cmp bl, 0x04
- je .end
+ pop rax
 
  ret
-
-.purge:
-
- test rdi, r11
- jz .end
-
- call kernel_memory_release_page
-
- mov rdi, qword [rsp + STATIC_QWORD_SIZE_byte * 0x02]
- mov qword [rdi], STATIC_EMPTY
-
- jmp .continue
-
-.end:
-
- pop rdi
- pop rcx
- pop rbx
-
- ret
-
-.table:
-
- push rcx
- push rdi
-
- mov ecx, KERNEL_PAGE_RECORDS_amount
-
-.table_check:
-
- cmp qword [rdi], STATIC_EMPTY
- jne .table_not_empty
-
- add rdi, STATIC_QWORD_SIZE_byte
-
- dec ecx
- jnz .table_check
-
- clc
-
- jmp .table_end
-
-.table_not_empty:
-
- stc
-
-.table_end:
-
- pop rdi
- pop rcx
-
- ret
-
- macro_debug "kernel_page_purge"
 
 kernel_page_drain:
-
  push rcx
 
  mov rcx, KERNEL_PAGE_SIZE_byte
@@ -696,76 +606,3 @@ kernel_page_secure:
  ret
 
  macro_debug "kernel_page_secure"
-
-kernel_page_release_pml:
-
- dec rbx
- mov rcx, KERNEL_PAGE_RECORDS_amount
-
- cmp rbx, 0x01
- je .continue
-
-.loop:
-
- push rcx
- push rdi
-
- cmp qword [rdi], STATIC_EMPTY
- je .empty
-
- mov rdi, qword [rdi]
- and di, KERNEL_PAGE_mask
-
- push rdi
-
- call kernel_page_release_pml
-
- pop rdi
-
- call kernel_memory_release_page
-
- dec qword [kernel_page_paged_count]
-
- inc rbx
-
-.empty:
-
- pop rdi
- pop rcx
-
- add rdi, STATIC_QWORD_SIZE_byte
-
- dec rcx
- jnz .loop
-
-.end:
-
- ret
-
-.continue:
-
- cmp qword [rdi], STATIC_EMPTY
- jne .after
-
-.next:
- add rdi, STATIC_QWORD_SIZE_byte
- dec rcx
- jnz .continue
-
- ret
-
-.after:
-
- push rdi
-
- mov rdi, qword [rdi]
- and di, KERNEL_PAGE_mask
-
- call kernel_memory_release_page
-
- pop rdi
-
- jmp .next
-
- macro_debug "kernel_page_release_pml1"
-

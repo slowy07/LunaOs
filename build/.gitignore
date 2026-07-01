@@ -2,3 +2,5 @@ kernel
 boot
 luna_disk.raw
 kernel.list
+init
+shell

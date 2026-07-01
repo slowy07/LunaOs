@@ -248,6 +248,9 @@ kernel_memory_release_foreign:
  mov rcx, qword [rsp]
 
 .pml1:
+ test rcx, rcx
+ jz .end
+
  cmp qword [r8], STATIC_EMPTY
  je .pml1_omit
 
@@ -258,23 +261,32 @@ kernel_memory_release_foreign:
  mov qword [r8], STATIC_EMPTY
 
 .pml1_omit:
+ dec rcx
+
  add r8, STATIC_QWORD_SIZE_byte
  inc r12
-
- dec rcx
- jz .end
 
  cmp r12, KERNEL_PAGE_RECORDS_amount
  jne .pml1
 
-.pml2:
+.pml2_entry:
+ mov rdi, qword [r9]
+ and di, KERNEL_PAGE_mask
+ call kernel_page_empty
+ jnz .pml2
 
+ call kernel_memory_release_page
+
+ mov qword [r9], STATIC_EMPTY
+
+.pml2:
  add r9, STATIC_QWORD_SIZE_byte
  inc r13
 
  cmp r13, KERNEL_PAGE_RECORDS_amount
- je .pml3
+ je .pml3_entry
 
+.pml2_record:
  mov r8, qword [r9]
  
  test r8, r8
@@ -286,14 +298,25 @@ kernel_memory_release_foreign:
 
  jmp .pml1
 
+.pml3_entry:
+ mov rdi, qword [r10]
+ and di, KERNEL_PAGE_mask
+ call kernel_page_empty
+ jnz .pml3
+
+ call kernel_memory_release_page
+
+ mov qword [r10], STATIC_EMPTY
+
 .pml3:
 
  add r10, STATIC_QWORD_SIZE_byte
  inc r14
 
  cmp r14, KERNEL_PAGE_RECORDS_amount
- je .pml4
+ je .pml4_entry
 
+.pml3_record:
  mov r9, qword [r10]
 
  test r9, r9
@@ -303,10 +326,19 @@ kernel_memory_release_foreign:
 
  xor r13, r13
 
- jmp .pml2
+ jmp .pml2_record
+
+.pml4_entry:
+ mov rdi, qword [r11]
+ and di, KERNEL_PAGE_mask
+ call kernel_page_empty
+ jnz .pml4
+
+ call kernel_memory_release_page
+
+ mov qword [r11], STATIC_EMPTY
 
 .pml4:
-
  add r11, STATIC_QWORD_SIZE_byte
  inc r15
 
@@ -322,7 +354,7 @@ kernel_memory_release_foreign:
 
  xor r14, r14
 
- jmp .pml3
+ jmp .pml3_record
 
 .pml5:
  stc

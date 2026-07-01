@@ -1,5 +1,4 @@
 kernel_exec:
-
  push rbx
  push rdx
  push rsi
@@ -9,10 +8,6 @@ kernel_exec:
  push rax
  push rcx
  push rdi
-
- xchg bx, bx
-
- mov rax, qword [kernel_page_free_count]
 
  mov rcx, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.size]
  call library_page_from_size
@@ -85,9 +80,6 @@ kernel_exec:
  sub qword [kernel_page_reserved_count], rbp
 
  mov qword [rsp + STATIC_QWORD_SIZE_byte], rcx
-
- xchg bx, bx
- mov rax, qword [kernel_page_free_count]
 
  jmp .end
 

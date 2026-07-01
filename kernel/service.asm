@@ -47,17 +47,25 @@ kernel_service:
  jmp kernel_service.error
 
 .process_run:
+ push rsi
+ push rdi
+ push rcx
 
+ xor eax, eax
  call kernel_vfs_path_resolve
- jc .process_run_error
+ jc .process_run_end
 
  call kernel_vfs_file_find
- jc .process_run_error
+ jc .process_run_end
 
  call kernel_exec
- jnc kernel_service.end
 
-.process_run_error:
+ mov qword [rsp], rcx
+
+.process_run_end:
+ pop rcx
+ pop rdi
+ pop rsi
 
  mov qword [rsp], rax
 
@@ -149,10 +157,10 @@ kernel_service:
  call kernel_vfs_file_find
 
 .vfs_exits_not:
- mov qword [rsp], rax
-
  pop rdi
  pop rsi
  pop rcx
+
+ mov qword [rsp], rax
 
  jmp kernel_service.end

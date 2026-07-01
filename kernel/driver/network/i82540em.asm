@@ -197,7 +197,7 @@ driver_nic_i82540em_vlan dw STATIC_EMPTY
 driver_nic_i82540em_rx_count dq STATIC_EMPTY
 driver_nic_i82540em_tx_count dq STATIC_EMPTY
 
-driver_nic_i82540em_string db STATIC_COLOR_ASCII_GREEN_LIGHT, "::", STATIC_COLOR_ASCII_DEFAULT, " Network controller:", STATIC_ASCII_NEW_LINE, " Intel 82540EM, MAC ", STATIC_COLOR_ASCII_WHITE
+driver_nic_i82540em_string db STATIC_COLOR_ASCII_GREEN_LIGHT, "--", STATIC_COLOR_ASCII_DEFAULT, " Network controller:", STATIC_ASCII_NEW_LINE, " Intel 82540EM, MAC ", STATIC_COLOR_ASCII_WHITE
 driver_nic_i82540em_string_end:
 driver_nic_i82540em_string_irq db STATIC_COLOR_ASCII_DEFAULT, ", IRQ ", STATIC_COLOR_ASCII_WHITE
 driver_nic_i82540em_string_irq_end:

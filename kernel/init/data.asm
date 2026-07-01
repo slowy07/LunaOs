@@ -17,17 +17,17 @@ kernel_init_string_error_ioapic_end:
 
 kernel_init_string_welcome db STATIC_COLOR_ASCII_GREEN_LIGHT, "Welcome to Luna OS!", STATIC_COLOR_ASCII_GRAY, " (v", KERNEL_version, ".", KERNEL_revision, " ", KERNEL_architecture, ")", STATIC_ASCII_NEW_LINE
 kernel_init_string_welcome_end:
-kernel_init_string_video db STATIC_COLOR_ASCII_GREEN_LIGHT, "::", STATIC_COLOR_ASCII_DEFAULT, " Video resolution at ", STATIC_COLOR_ASCII_WHITE
+kernel_init_string_video db STATIC_COLOR_ASCII_GREEN_LIGHT, "--", STATIC_COLOR_ASCII_DEFAULT, " Video resolution at ", STATIC_COLOR_ASCII_WHITE
 kernel_init_string_video_end:
 kernel_init_string_video_separator db STATIC_COLOR_ASCII_DEFAULT, "x", STATIC_COLOR_ASCII_WHITE
 kernel_init_string_video_separator_end:
-kernel_init_string_video_font db STATIC_COLOR_ASCII_GREEN_LIGHT, "::", STATIC_COLOR_ASCII_DEFAULT, " Font: ", STATIC_COLOR_ASCII_DEFAULT
+kernel_init_string_video_font db STATIC_COLOR_ASCII_GREEN_LIGHT, "--", STATIC_COLOR_ASCII_DEFAULT, " Font: ", STATIC_COLOR_ASCII_DEFAULT
 kernel_init_string_video_font_end:
-kernel_init_string_memory_size db STATIC_COLOR_ASCII_GREEN_LIGHT, "::", STATIC_COLOR_ASCII_DEFAULT, " Available ", STATIC_COLOR_ASCII_WHITE
+kernel_init_string_memory_size db STATIC_COLOR_ASCII_GREEN_LIGHT, "--", STATIC_COLOR_ASCII_DEFAULT, " Available ", STATIC_COLOR_ASCII_WHITE
 kernel_init_string_memory_size_end:
 kernel_init_string_memory_format db STATIC_COLOR_ASCII_DEFAULT, " KiB of RAM memory.", STATIC_ASCII_NEW_LINE
 kernel_init_string_memory_format_end:
-kernel_init_string_storage_ide db STATIC_COLOR_ASCII_GREEN_LIGHT, "::", STATIC_COLOR_ASCII_DEFAULT, " IDE storage devices:", STATIC_ASCII_NEW_LINE
+kernel_init_string_storage_ide db STATIC_COLOR_ASCII_GREEN_LIGHT, "--", STATIC_COLOR_ASCII_DEFAULT, " IDE storage devices:", STATIC_ASCII_NEW_LINE
 kernel_init_string_storage_ide_end:
 kernel_init_string_storage_ide_hd db " "
 kernel_init_string_storage_ide_hd_path db "/dev/hd"

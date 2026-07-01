@@ -12,12 +12,12 @@ SERVICE IDS (from kernel/config.asm)
 
 KERNEL_SERVICE                    equ 0x40   (interrupt vector)
 
-KERNEL_SERVICE_PROCESS            equ 0x00
+KERNEL_SERVICE_PROCESS            equ 0x0000
   KERNEL_SERVICE_PROCESS_exit     equ 0x0000  (exit current task)
   KERNEL_SERVICE_PROCESS_run      equ 0x0100  (exec a file)
-  KERNEL_SERVICE_PROCESS_check    equ 0x0200  (check PID exists? was _pid)
+  KERNEL_SERVICE_PROCESS_check    equ 0x0200  (check PID exists)
 
-KERNEL_SERVICE_VIDEO              equ 0x01
+KERNEL_SERVICE_VIDEO              equ 0x0001
   KERNEL_SERVICE_VIDEO_string     equ 0x0101  (print string)
   KERNEL_SERVICE_VIDEO_cursor     equ 0x0201  (get cursor pos)
   KERNEL_SERVICE_VIDEO_char       equ 0x0301  (print char)
@@ -25,8 +25,15 @@ KERNEL_SERVICE_VIDEO              equ 0x01
   KERNEL_SERVICE_VIDEO_properties equ 0x0501  (get video props)
   KERNEL_SERVICE_VIDEO_number     equ 0x0601  (print number)
 
-KERNEL_SERVICE_KEYBOARD           equ 0x02
+KERNEL_SERVICE_KEYBOARD           equ 0x0002
   KERNEL_SERVICE_KEYBOARD_key     equ 0x0002  (read key)
+
+KERNEL_SERVICE_VFS                equ 0x0003
+  KERNEL_SERVICE_VFS_exist        equ 0x0003  (check file exists)
+    Input: RSI = path string, RCX = path length
+    Output: CF=1 if not found, CF=0 if exists
+    Calls: kernel_vfs_path_resolve, kernel_vfs_file_find
+    Note: resolves from current working directory
 
 KERNEL_ERROR_PAGE_memory_low      equ 0x0001  (out of memory error code)
 

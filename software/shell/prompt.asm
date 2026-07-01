@@ -27,7 +27,7 @@ shell_prompt:
  mov ax, KERNEL_SERVICE_VIDEO_clean
  int KERNEL_SERVICE
 
- jmp .end
+ jmp shell
 
 .no_clean:
  cmp rbx, shell_command_exit_end - shell_command_exit
@@ -42,9 +42,34 @@ shell_prompt:
  int KERNEL_SERVICE
 
 .no_exit:
- nop
+ mov ax, KERNEL_SERVICE_VFS_exist
+ add r8, shell_exec_path_end - shell_exec_path
+ mov rcx, r8
+ mov rsi, shell_exec_path
+ int KERNEL_SERVICE
+ jc .error
+
+ mov ax, KERNEL_SERVICE_VIDEO_char
+ mov ecx, 0x01
+ mov dx, STATIC_ASCII_NEW_LINE
+ int KERNEL_SERVICE
+ jc .end
+
+ mov ax, KERNEL_SERVICE_PROCESS_check
+
+.wait_for_end:
+ int KERNEL_SERVICE
+ jnc .wait_for_end
 
 .end:
+
+ jmp shell
+
+.error:
+ mov ax, KERNEL_SERVICE_VIDEO_string
+ mov ecx, shell_command_unknown_end - shell_command_unknown
+ mov rsi, shell_command_unknown
+ int KERNEL_SERVICE
 
  jmp shell
 

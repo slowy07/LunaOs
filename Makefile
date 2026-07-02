@@ -1,7 +1,8 @@
 all:
 	nasm -f bin software/init.asm -o build/init
-	nasm -f bin software/shell.asm -o build/shell
+	nasm -f bin software/free.asm -o build/free
 	nasm -f bin software/wello.asm -o build/wello
+	nasm -f bin software/shell.asm -o build/shell
 	nasm -f bin kernel/init/boot.asm -o build/boot
 	nasm -f bin kernel/kernel.asm -o build/kernel -dMULTIBOOT_VIDEO_WIDTH_pixel=640 -dMULTIBOOT_VIDEO_HEIGHT_pixel=480
 	nasm -f bin luna/luna.asm -o build/luna_disk.raw -dMULTIBOOT_VIDEO_WIDTH_pixel=640 -dMULTIBOOT_VIDEO_HEIGHT_pixel=480

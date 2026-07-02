@@ -42,7 +42,6 @@ shell_prompt:
  int KERNEL_SERVICE
 
 .no_exit:
- xchg bx, bx
  mov ax, KERNEL_SERVICE_VFS_exist
  add r8, shell_exec_path_end - shell_exec_path
  mov rcx, r8

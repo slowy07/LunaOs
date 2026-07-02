@@ -42,6 +42,7 @@ STRING CONSTANTS
   kernel_string_new_line - ASCII new line (0x0A)
   kernel_string_dot    - ASCII dot (0x2E)
   kernel_string_welcome - Blue color escape + "welcome cik!" (blue colored via STATIC_COLOR_ASCII_BLUE_LIGHT)
+  kernel_init_string_name - "luna" (kernel name from %define KERNEL_name)
 
 EXEC
   kernel_init_exec     - "/bin/init" (path to initial userspace executable)

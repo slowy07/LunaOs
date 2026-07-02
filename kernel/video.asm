@@ -162,10 +162,11 @@ kernel_video_char_clean:
  macro_debug "kernel_video_char_clean"
 
 kernel_video_cursor_set:
-
  push rax
  push rcx
  push rdx
+
+ call kernel_video_cursor_disable
 
  mov eax, dword [kernel_video_cursor.y]
  mul qword [kernel_video_scanline_char]
@@ -177,6 +178,8 @@ kernel_video_cursor_set:
 
  add rax, qword [kernel_video_framebuffer]
  mov qword [kernel_video_pointer], rax
+
+ call kernel_video_cursor_enable
 
  pop rdx
  pop rcx
@@ -585,6 +588,8 @@ kernel_video_number:
  push r9
 
  call kernel_video_cursor_disable
+
+ and ebx, STATIC_BYTE_mask
 
  cmp bl, 2
  jb .error

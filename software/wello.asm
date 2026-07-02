@@ -7,16 +7,16 @@
 
 [ORG SOFTWARE_base_address]
 
-hello:
+wello:
 
  mov ax, KERNEL_SERVICE_VIDEO_string
- mov ecx, hello_string_end - hello_string
- mov rsi, hello_string
+ mov ecx, wello_string_end - wello_string
+ mov rsi, wello_string
  int KERNEL_SERVICE
 
  xor ax, ax
  int KERNEL_SERVICE
 
-hello_string db "Test Wello Cik from software"
-hello_string_end:
+wello_string db "Test Wello Cik from software"
+wello_string_end:
 

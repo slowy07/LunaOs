@@ -138,6 +138,7 @@ kernel_vfs_magicknot
             |    +-- ["init", regular file, data chain -> blocks]
             |    +-- ["shell", regular file, data chain -> blocks]
             |    +-- ["wello", regular file, data chain -> blocks]
+ |    +-- ["free", regular file, data chain -> blocks]
             |
             +-- ["dev", directory, id_or_data -> /dev child page]
                  |
@@ -156,4 +157,4 @@ INIT-TIME FILE PRELOADING (kernel/init/vfs.asm)
     3. Create file knot (kernel_vfs_file_touch, type = regular)
     4. Write data (kernel_vfs_file_append)
 
-  Preloaded files: /bin/init, /bin/shell, /bin/wello
+  Preloaded files: /bin/init, /bin/shell, /bin/wello, /bin/free

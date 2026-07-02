@@ -24,6 +24,9 @@ KERNEL_SERVICE_VIDEO              equ 0x0001
   KERNEL_SERVICE_VIDEO_clean      equ 0x0401  (clear screen)
   KERNEL_SERVICE_VIDEO_properties equ 0x0501  (get video props)
   KERNEL_SERVICE_VIDEO_number     equ 0x0601  (print number)
+  KERNEL_SERVICE_VIDEO_cursor_set equ 0x0701  (set cursor position)
+    Input: RBX = packed cursor position (x:low, y:high word)
+    Calls: kernel_video_cursor_set
 
 KERNEL_SERVICE_KEYBOARD           equ 0x0002
   KERNEL_SERVICE_KEYBOARD_key     equ 0x0002  (read key)
@@ -34,6 +37,11 @@ KERNEL_SERVICE_VFS                equ 0x0003
     Output: CF=1 if not found, CF=0 if exists
     Calls: kernel_vfs_path_resolve, kernel_vfs_file_find
     Note: resolves from current working directory
+
+KERNEL_SERVICE_SYSTEM             equ 0x0004
+  KERNEL_SERVICE_SYSTEM_memory    equ 0x0004  (get memory stats)
+    Output: R8 = total pages, R9 = free pages, R10 = paged count
+    No error possible
 
 KERNEL_ERROR_PAGE_memory_low      equ 0x0001  (out of memory error code)
 

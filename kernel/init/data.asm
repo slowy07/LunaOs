@@ -1,3 +1,6 @@
+kernel_init_string_name db KERNEL_name
+kernel_init_string_name_end:
+
 kernel_init_string_error_memory db "Init: Memory map, error."
 kernel_init_string_error_memory_end:
 kernel_init_string_error_memory_low db "Not enough memory."
@@ -48,6 +51,8 @@ kernel_init_apic_id_highest db STATIC_EMPTY
 
 kernel_init_services_list:
  dq service_tresher
+ ; db 7
+ ; db "tresher"
 
  dq STATIC_EMPTY
 
@@ -70,10 +75,15 @@ kernel_init_vfs_files:
  db 10
  db "/bin/shell"
 
- dq kernel_init_vfs_file_hello
- dq kernel_init_vfs_file_hello_end - kernel_init_vfs_file_hello
+ dq kernel_init_vfs_file_wello
+ dq kernel_init_vfs_file_wello_end - kernel_init_vfs_file_wello
  db 10
  db "/bin/wello"
+
+ dq kernel_init_vfs_file_free
+ dq kernel_init_vfs_file_free_end - kernel_init_vfs_file_free
+ db 9
+ db "/bin/free"
 
  dq STATIC_EMPTY
 
@@ -81,8 +91,10 @@ kernel_init_vfs_file_init incbin "build/init"
 kernel_init_vfs_file_init_end:
 kernel_init_vfs_file_shell incbin "build/shell"
 kernel_init_vfs_file_shell_end:
-kernel_init_vfs_file_hello incbin "build/wello"
-kernel_init_vfs_file_hello_end:
+kernel_init_vfs_file_wello incbin "build/wello"
+kernel_init_vfs_file_wello_end:
+kernel_init_vfs_file_free incbin "build/free"
+kernel_init_vfs_file_free_end:
 
 kernel_init_boot_file:
  incbin "build/boot"

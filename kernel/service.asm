@@ -14,6 +14,9 @@ kernel_service:
  cmp al, KERNEL_SERVICE_VFS
  je .vfs
 
+ cmp al, KERNEL_SERVICE_SYSTEM
+ je .system
+
 .error:
 
  stc
@@ -51,7 +54,6 @@ kernel_service:
  push rdi
  push rcx
 
- xor eax, eax
  call kernel_vfs_path_resolve
  jc .process_run_end
 
@@ -94,6 +96,9 @@ kernel_service:
  cmp ax, KERNEL_SERVICE_VIDEO_number
  je .video_number
 
+ cmp ax, KERNEL_SERVICE_VIDEO_cursor_set
+ je .video_cursor_set
+
  jmp kernel_service.error
 
 .video_string:
@@ -125,6 +130,13 @@ kernel_service:
 
  mov rax, r8
  call kernel_video_number
+
+ jmp kernel_service.end
+
+.video_cursor_set:
+ mov qword [kernel_video_cursor], rbx
+
+ call kernel_video_cursor_set
 
  jmp kernel_service.end
 
@@ -162,5 +174,15 @@ kernel_service:
  pop rcx
 
  mov qword [rsp], rax
+
+ jmp kernel_service.end
+
+.system:
+ cmp ax, KERNEL_SERVICE_SYSTEM_memory
+ jne kernel_service.error
+
+ mov r8, qword [kernel_page_total_count]
+ mov r9, qword [kernel_page_free_count]
+ mov r19, qword [kernel_page_paged_count]
 
  jmp kernel_service.end

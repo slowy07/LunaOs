@@ -55,12 +55,14 @@ kernel_task_pid_semaphore db STATIC_FALSE
 kernel_task_pid dq STATIC_EMPTY
 
 kernel_task:
+
  cmp byte [kernel_task_debug_semaphore], STATIC_FALSE
  je .no
 
- xchg bx, bx
+ xchg bx ,bx
 
 .no:
+
  push rax
  push rdi
 
@@ -89,7 +91,7 @@ kernel_task:
  mov rdi, qword [rsi + rbx]
 
  mov rbp, KERNEL_STACK_pointer
-FXSAVE64 [rbp]
+ FXSAVE64 [rbp]
 
  mov qword [rdi + KERNEL_TASK_STRUCTURE.rsp], rsp
 
@@ -160,7 +162,7 @@ FXSAVE64 [rbp]
  mov cr3, rax
 
  mov rbp, KERNEL_STACK_pointer
-FXRSTOR64 [rbp]
+ FXRSTOR64 [rbp]
 
  pop r15
  pop r14
@@ -194,6 +196,7 @@ kernel_task_add:
 
  push rax
  push rsi
+ push rcx
  push rdi
 
  call kernel_task_queue
@@ -217,6 +220,8 @@ kernel_task_add:
 
  mov qword [rdi + KERNEL_TASK_STRUCTURE.pid], rcx
 
+ xchg rcx, qword [rsp + STATIC_QWORD_SIZE_byte]
+
  mov rax, qword [driver_rtc_microtime]
  mov qword [rdi + KERNEL_TASK_STRUCTURE.time], rax
 
@@ -226,11 +231,18 @@ kernel_task_add:
 
  mov qword [rsp], rdi
 
+ mov byte [rdi + KERNEL_TASK_STRUCTURE.length], cl
+
+ and ecx, STATIC_BYTE_mask
+ add rdi, KERNEL_TASK_STRUCTURE.name
+ rep movsb
+
  clc
 
 .end:
 
  pop rdi
+ pop rcx
  pop rsi
  pop rax
 
@@ -259,7 +271,6 @@ kernel_task_queue:
  lock bts word [rdi + KERNEL_TASK_STRUCTURE.flags], KERNEL_TASK_FLAG_secured_bit
  jnc .found
 
-.omit:
  add rdi, KERNEL_TASK_STRUCTURE.SIZE
 
  dec rcx
@@ -295,7 +306,9 @@ kernel_task_queue:
  jmp .end
 
 .found:
+
  dec qword [kernel_task_free]
+
  inc qword [kernel_task_count]
 
  mov qword [rsp], rdi
@@ -343,10 +356,11 @@ kernel_task_pid_check:
 
 .next:
 
- cmp dword [rdi + KERNEL_TASK_STRUCTURE.pid], ecx
+ cmp qword [rdi + KERNEL_TASK_STRUCTURE.pid], rcx
  je .found
 
 .omit:
+
  add rdi, KERNEL_TASK_STRUCTURE.SIZE
 
  dec rax
@@ -365,6 +379,7 @@ kernel_task_pid_check:
  jmp .end
 
 .found:
+
  cmp byte [rdi + KERNEL_TASK_STRUCTURE.flags], STATIC_EMPTY
  je .omit
 

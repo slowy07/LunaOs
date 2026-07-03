@@ -22,6 +22,7 @@ library_input:
 
  mov ax, KERNEL_SERVICE_KEYBOARD_key
  int KERNEL_SERVICE
+
  jz .loop
 
  cmp ax, STATIC_ASCII_BACKSPACE
@@ -35,6 +36,7 @@ library_input:
 
  cmp ax, STATIC_ASCII_SPACE
  jb .loop
+
  cmp ax, STATIC_ASCII_TILDE
  ja .loop
 

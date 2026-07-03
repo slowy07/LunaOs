@@ -34,6 +34,7 @@
  lidt [kernel_idt_header]
 
 .wait:
+
  mov al, STATIC_TRUE
  lock xchg byte [kernel_init_ap_semaphore], al
  test al, al

@@ -7,7 +7,10 @@ kernel_init_string_error_memory_low db "Not enough memory."
 kernel_init_string_error_memory_low_end:
 kernel_init_string_acpi_search db "Looking for a RSDP/XSDP table, "
 kernel_init_string_acpi_search_end:
-kernel_init_string_acpi_search_found: db "found.", STATIC_ASCII_NEW_LINE
+
+kernel_init_string_acpi_search_found:
+ db "found.", STATIC_ASCII_NEW_LINE
+
 kernel_init_string_acpi_search_found_end:
 kernel_init_string_error_acpi db "not found."
 kernel_init_string_error_acpi_end:
@@ -32,7 +35,7 @@ kernel_init_string_memory_format db STATIC_COLOR_ASCII_DEFAULT, " KiB of RAM mem
 kernel_init_string_memory_format_end:
 kernel_init_string_storage_ide db STATIC_COLOR_ASCII_GREEN_LIGHT, "--", STATIC_COLOR_ASCII_DEFAULT, " IDE storage devices:", STATIC_ASCII_NEW_LINE
 kernel_init_string_storage_ide_end:
-kernel_init_string_storage_ide_hd db " "
+kernel_init_string_storage_ide_hd db "   "
 kernel_init_string_storage_ide_hd_path db "/dev/hd"
 kernel_init_string_storage_ide_hd_letter db "a"
 kernel_init_string_storage_ide_hd_end:
@@ -51,8 +54,8 @@ kernel_init_apic_id_highest db STATIC_EMPTY
 
 kernel_init_services_list:
  dq service_tresher
- ; db 7
- ; db "tresher"
+ db 7
+ db "tresher"
 
  dq STATIC_EMPTY
 

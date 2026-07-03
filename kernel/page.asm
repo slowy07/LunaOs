@@ -20,6 +20,7 @@ kernel_page_reserved_count dq STATIC_EMPTY
 kernel_page_paged_count dq STATIC_EMPTY
 
 kernel_page_empty:
+
  push rax
  push rcx
 
@@ -28,10 +29,11 @@ kernel_page_empty:
  mov ecx, KERNEL_PAGE_RECORDS_amount - 0x01
 
 .loop:
+
  or rax, qword [rdi + rcx * STATIC_QWORD_SIZE_byte]
- 
+
  dec cx
- jnz .loop
+ jns .loop
 
  test rax, rax
 
@@ -41,6 +43,7 @@ kernel_page_empty:
  ret
 
 kernel_page_drain:
+
  push rcx
 
  mov rcx, KERNEL_PAGE_SIZE_byte
@@ -66,7 +69,6 @@ kernel_page_drain:
  ret
 
  macro_debug "kernel_page_drain"
-
 
 kernel_page_drain_few:
 
@@ -145,6 +147,7 @@ kernel_page_map_physical:
  macro_debug "kernel_page_map_physical"
 
 kernel_page_map_logical:
+
  push rcx
  push rdx
  push rdi
@@ -202,11 +205,13 @@ kernel_page_map_logical:
  jmp .end
 
 .error:
+
  mov qword [rsp], rax
 
  stc
 
 .end:
+
  pop rax
  pop r15
  pop r14
@@ -224,6 +229,7 @@ kernel_page_map_logical:
  macro_debug "kernel_page_map_logical"
 
 kernel_page_prepare:
+
  push rcx
  push rdx
  push rax
@@ -248,6 +254,7 @@ kernel_page_prepare:
  jmp .pml3
 
 .no_pml3:
+
  call kernel_memory_alloc_page
  jc .error
 
@@ -358,9 +365,11 @@ kernel_page_prepare:
  jmp .end
 
 .error:
+
  mov qword [rsp], rax
 
 .end:
+
  pop rax
  pop rdx
  pop rcx
@@ -575,6 +584,7 @@ kernel_page_merge:
  macro_debug "kernel_page_merge"
 
 kernel_page_secure:
+
  push rax
 
  call kernel_memory_lock
@@ -594,7 +604,9 @@ kernel_page_secure:
  jmp .end
 
 .error:
+
  mov qword [rsp], KERNEL_ERROR_PAGE_memory_low
+
  stc
 
 .end:
@@ -606,3 +618,4 @@ kernel_page_secure:
  ret
 
  macro_debug "kernel_page_secure"
+

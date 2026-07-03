@@ -42,6 +42,7 @@ KERNEL_SERVICE_SYSTEM             equ 0x0004
   KERNEL_SERVICE_SYSTEM_memory    equ 0x0004  (get memory stats)
     Output: R8 = total pages, R9 = free pages, R10 = paged count
     No error possible
+    Note: previously returned paged count in R19, now in R10
 
 KERNEL_ERROR_PAGE_memory_low      equ 0x0001  (out of memory error code)
 
@@ -58,7 +59,7 @@ kernel_service (int 0x40)
   |           |
   |           +-- cmp ax, KERNEL_SERVICE_PROCESS_run   (0x0100)
   |           |     -> je  .process_run
-  |           |           |
+  |           |           |   push rsi, rdi, rcx (save regs)
   |           |           +-- call kernel_vfs_path_resolve
   |           |           +-- jc  .process_run_error
   |           |           +-- call kernel_vfs_file_find
@@ -143,9 +144,12 @@ KERNEL_SERVICE_PROCESS_exit:
 
 KERNEL_SERVICE_PROCESS_run:
   Input: RSI = path string, RCX = path length
-  Output: CF=0 on success (new task created), CF=1 on error, RAX = error code
+  Output: CF=0 on success (new task created, PID in RCX), CF=1 on error,
+          RAX = error code
   Calls: kernel_vfs_path_resolve, kernel_vfs_file_find, kernel_exec
   Error: propagates error code from kernel_exec via .process_run_error
+  Note: pushes rsi/rdi/rcx on entry, restores them before return
+        (so caller's regs are preserved except on error path)
 
 KERNEL_SERVICE_PROCESS_check:
   Input: ECX = PID to check

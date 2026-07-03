@@ -50,6 +50,7 @@ kernel_service:
  jmp kernel_service.error
 
 .process_run:
+
  push rsi
  push rdi
  push rcx
@@ -65,6 +66,7 @@ kernel_service:
  mov qword [rsp], rcx
 
 .process_run_end:
+
  pop rcx
  pop rdi
  pop rsi
@@ -134,6 +136,7 @@ kernel_service:
  jmp kernel_service.end
 
 .video_cursor_set:
+
  mov qword [kernel_video_cursor], rbx
 
  call kernel_video_cursor_set
@@ -154,6 +157,7 @@ kernel_service:
  macro_debug "kernel_service"
 
 .vfs:
+
  cmp ax, KERNEL_SERVICE_VFS_exist
  jne kernel_service.error
 
@@ -164,11 +168,12 @@ kernel_service:
  push rdi
 
  call kernel_vfs_path_resolve
- je .vfs_exits_not
+ jc .vfs_exist_not
 
  call kernel_vfs_file_find
 
-.vfs_exits_not:
+.vfs_exist_not:
+
  pop rdi
  pop rsi
  pop rcx
@@ -178,11 +183,13 @@ kernel_service:
  jmp kernel_service.end
 
 .system:
+
  cmp ax, KERNEL_SERVICE_SYSTEM_memory
  jne kernel_service.error
 
  mov r8, qword [kernel_page_total_count]
  mov r9, qword [kernel_page_free_count]
- mov r19, qword [kernel_page_paged_count]
+ mov r10, qword [kernel_page_paged_count]
 
  jmp kernel_service.end
+

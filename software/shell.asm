@@ -50,6 +50,7 @@ shell:
  rep movsb
 
 .begin:
+
  pop rcx
 
  mov rsi, shell_cache
@@ -59,7 +60,6 @@ shell:
 
  %include "software/shell/data.asm"
  %include "software/shell/prompt.asm"
-
  %include "library/input.asm"
  %include "library/string_trim.asm"
  %include "library/string_word_next.asm"

@@ -19,6 +19,7 @@ kernel_memory_alloc_page:
  macro_debug "kernel_memory_alloc_page"
 
 kernel_memory_alloc:
+
  push rbx
  push rdx
  push rsi
@@ -66,7 +67,9 @@ kernel_memory_alloc:
  jmp .reload
 
 .error:
+
  mov qword [rsp + STATIC_QWORD_SIZE_byte], KERNEL_ERROR_PAGE_memory_low
+
  stc
 
  jmp .end
@@ -86,6 +89,7 @@ kernel_memory_alloc:
  dec dword [kernel_page_reserved_count]
 
 .next:
+
  dec qword [kernel_page_free_count]
 
  inc rax
@@ -99,6 +103,7 @@ kernel_memory_alloc:
  add rdi, KERNEL_BASE_address
 
 .end:
+
  mov byte [kernel_memory_lock_semaphore], STATIC_FALSE
 
  pop rcx
@@ -248,6 +253,7 @@ kernel_memory_release_foreign:
  mov rcx, qword [rsp]
 
 .pml1:
+
  test rcx, rcx
  jz .end
 
@@ -261,6 +267,7 @@ kernel_memory_release_foreign:
  mov qword [r8], STATIC_EMPTY
 
 .pml1_omit:
+
  dec rcx
 
  add r8, STATIC_QWORD_SIZE_byte
@@ -270,6 +277,7 @@ kernel_memory_release_foreign:
  jne .pml1
 
 .pml2_entry:
+
  mov rdi, qword [r9]
  and di, KERNEL_PAGE_mask
  call kernel_page_empty
@@ -277,9 +285,12 @@ kernel_memory_release_foreign:
 
  call kernel_memory_release_page
 
+ dec qword [kernel_page_paged_count]
+
  mov qword [r9], STATIC_EMPTY
 
 .pml2:
+
  add r9, STATIC_QWORD_SIZE_byte
  inc r13
 
@@ -287,8 +298,9 @@ kernel_memory_release_foreign:
  je .pml3_entry
 
 .pml2_record:
+
  mov r8, qword [r9]
- 
+
  test r8, r8
  jz .pml2
 
@@ -299,12 +311,15 @@ kernel_memory_release_foreign:
  jmp .pml1
 
 .pml3_entry:
+
  mov rdi, qword [r10]
  and di, KERNEL_PAGE_mask
  call kernel_page_empty
  jnz .pml3
 
  call kernel_memory_release_page
+
+ dec qword [kernel_page_paged_count]
 
  mov qword [r10], STATIC_EMPTY
 
@@ -317,6 +332,7 @@ kernel_memory_release_foreign:
  je .pml4_entry
 
 .pml3_record:
+
  mov r9, qword [r10]
 
  test r9, r9
@@ -329,6 +345,7 @@ kernel_memory_release_foreign:
  jmp .pml2_record
 
 .pml4_entry:
+
  mov rdi, qword [r11]
  and di, KERNEL_PAGE_mask
  call kernel_page_empty
@@ -336,9 +353,12 @@ kernel_memory_release_foreign:
 
  call kernel_memory_release_page
 
+ dec qword [kernel_page_paged_count]
+
  mov qword [r11], STATIC_EMPTY
 
 .pml4:
+
  add r11, STATIC_QWORD_SIZE_byte
  inc r15
 
@@ -357,6 +377,7 @@ kernel_memory_release_foreign:
  jmp .pml3_record
 
 .pml5:
+
  stc
 
 .end:
@@ -401,4 +422,6 @@ kernel_memory_copy:
  pop rcx
 
  ret
+
+ macro_debug "kernel_memory_copy"
 

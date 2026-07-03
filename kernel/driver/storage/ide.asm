@@ -82,6 +82,7 @@ driver_ide_devices_count db STATIC_EMPTY
 
 align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 driver_ide_devices:
+
  times DRIVER_IDE_STRUCTURE_DEVICE.SIZE * 0x04 db STATIC_EMPTY
 
 driver_ide_init_drive:
@@ -196,7 +197,6 @@ driver_ide_init:
  mov al, DRIVER_IDE_CONTROL_SRST
  mov dx, DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
  out dx, al
-
  xor al, al
  out dx, al
 
@@ -224,7 +224,6 @@ driver_ide_init:
  mov al, DRIVER_IDE_CONTROL_SRST
  mov dx, DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
  out dx, al
-
  xor al, al
  out dx, al
 

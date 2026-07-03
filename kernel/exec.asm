@@ -1,4 +1,5 @@
 kernel_exec:
+
  push rbx
  push rdx
  push rsi
@@ -20,6 +21,8 @@ kernel_exec:
 
  call kernel_memory_alloc_page
  call kernel_page_drain
+
+ inc qword [kernel_page_paged_count]
 
  mov r11, rdi
 
@@ -73,6 +76,8 @@ kernel_exec:
  mov cr3, rax
 
  mov ebx, KERNEL_TASK_FLAG_active
+ movzx ecx, byte [rsi + KERNEL_VFS_STRUCTURE_KNOT.length]
+ add rsi, KERNEL_VFS_STRUCTURE_KNOT.name
  call kernel_task_add
  jc .error
 
@@ -102,3 +107,4 @@ kernel_exec:
  ret
 
  macro_debug "kernel_exec"
+

@@ -7,6 +7,7 @@ library_string_digits:
 
  cmp byte [rsi], STATIC_ASCII_DIGIT_0
  jb .error
+
  cmp byte [rsi], STATIC_ASCII_DIGIT_9
  ja .error
 

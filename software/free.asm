@@ -8,6 +8,7 @@
 [ORG SOFTWARE_base_address]
 
 free:
+
  mov ax, KERNEL_SERVICE_VIDEO_string
  mov ecx, free_string_table_end - free_string_table
  mov rsi, free_string_table
@@ -50,6 +51,7 @@ free:
  int KERNEL_SERVICE
 
 free_column_fill:
+
  push rax
  push rcx
  push rbx
@@ -72,3 +74,4 @@ free_column_fill:
  ret
 
  %include "software/free/data.asm"
+

@@ -80,13 +80,19 @@ kernel_init_semaphore        -- (in kernel/data.asm) Global init done flag
 
 SERVICES LIST (kernel_init_services_list)
 
-List format: array of dq pointers, terminated by dq STATIC_EMPTY
+List format: array of KERNEL_INIT_STRUCTURE_SERVICE triples, terminated
+by dq STATIC_EMPTY:
 
-Order  Module         Function
------  ------         --------
-  1    service_tresher  Task reaper (reclaims closed task slots)
+  +0x00  .pointer  resb 8   -- entry point
+  +0x08  .length   resb 1   -- name string length
+  +0x09  .name:             -- name string (variable)
+
+Order  Module         Name       Function
+-----  ------         ----       --------
+  1    service_tresher "tresher"  Task reaper (reclaims closed task slots)
 
 Services run as kernel tasks. Started sequentially in init/services.asm.
+The name string is passed to kernel_task_add for task identification.
 Only tresher is started at boot — service_tx, service_network, and
 service_http were removed from the boot-time services list.
 

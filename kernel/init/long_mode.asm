@@ -60,13 +60,12 @@ align 0x08
 kernel_init_table_gdt_64bit:
 
  dq STATIC_EMPTY
-
  dq 0000000000100000100110000000000000000000000000000000000000000000b
-
  dq 0000000000100000100100100000000000000000000000000000000000000000b
 kernel_init_table_gdt_64bit_end:
 
 kernel_init_header_gdt_64bit:
+
  dw kernel_init_table_gdt_64bit_end - kernel_init_table_gdt_64bit - 0x01
  dd kernel_init_table_gdt_64bit
 

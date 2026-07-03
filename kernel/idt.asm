@@ -6,8 +6,10 @@ KERNEL_IDT_TYPE_isr equ 0xEF00
 
 kernel_idt_string_exception_default db STATIC_ASCII_NEW_LINE, STATIC_COLOR_ASCII_RED_LIGHT, "IDT: exception default", STATIC_ASCII_NEW_LINE
 kernel_idt_string_exception_default_end:
+
 kernel_idt_string_exception_gpf db STATIC_ASCII_NEW_LINE, STATIC_COLOR_ASCII_RED_LIGHT, "IDT: exception general protection fault", STATIC_ASCII_NEW_LINE
 kernel_idt_string_exception_gpf_end:
+
 kernel_idt_string_exception_page_fault db STATIC_ASCII_NEW_LINE, STATIC_COLOR_ASCII_RED_LIGHT, "IDT: exception page fault", STATIC_ASCII_NEW_LINE
 kernel_idt_string_exception_page_fault_end:
 
@@ -74,6 +76,7 @@ kernel_idt_update:
  macro_debug "kernel_idt_update"
 
 kernel_idt_exception_default:
+
  jmp kernel_debug
 
  macro_debug "kernel_idt_exception_default"
@@ -84,7 +87,7 @@ kernel_idt_exception_general_protection_fault:
  mov rsi, kernel_idt_string_exception_gpf
  call kernel_video_string
 
- xchg bx,bx
+ xchg bx ,bx
 
  nop
  nop
@@ -102,7 +105,7 @@ kernel_idt_exception_page_fault:
  mov rsi, kernel_idt_string_exception_page_fault
  call kernel_video_string
 
- xchg bx,bx
+ xchg bx ,bx
 
  nop
  nop
@@ -138,3 +141,4 @@ kernel_idt_spurious_interrupt:
  iretq
 
  macro_debug "kernel_idt_spurious_interrupt"
+

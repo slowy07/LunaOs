@@ -187,11 +187,8 @@ driver_nic_i82540em_tx_queue_empty_semaphore db STATIC_TRUE
 driver_nic_i82540em_promiscious_mode_semaphore db STATIC_FALSE
 
 driver_nic_i82540em_ipv4_address db 10, 0, 0, 64
-
 driver_nic_i82540em_ipv4_mask db 255, 255, 255, 0
-
 driver_nic_i82540em_ipv4_gateway db 10, 0, 0, 1
-
 driver_nic_i82540em_vlan dw STATIC_EMPTY
 
 driver_nic_i82540em_rx_count dq STATIC_EMPTY
@@ -365,19 +362,16 @@ driver_nic_i82540em:
  mov dword [rsi + DRIVER_NIC_I82540EM_EERD], 0x00000001
  mov eax, dword [rsi + DRIVER_NIC_I82540EM_EERD]
  shr eax, STATIC_MOVE_HIGH_TO_AX_shift
-
  mov word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.0], ax
 
  mov dword [rsi + DRIVER_NIC_I82540EM_EERD], 0x00000101
  mov eax, dword [rsi + DRIVER_NIC_I82540EM_EERD]
  shr eax, STATIC_MOVE_HIGH_TO_AX_shift
-
  mov word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.2], ax
 
  mov dword [rsi + DRIVER_NIC_I82540EM_EERD], 0x00000201
  mov eax, dword [rsi + DRIVER_NIC_I82540EM_EERD]
  shr eax, STATIC_MOVE_HIGH_TO_AX_shift
-
  mov word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.4], ax
 
  mov dword [rsi + DRIVER_NIC_I82540EM_IMC], STATIC_MAX_unsigned
@@ -467,7 +461,6 @@ driver_nic_i82540em_setup:
  or eax, DRIVER_NIC_I82540EM_RCTL_UPE
  or eax, DRIVER_NIC_I82540EM_RCTL_BAM
  or eax, DRIVER_NIC_I82540EM_RCTL_SECRC
-
  or eax, DRIVER_NIC_I82540EM_RCTL_MPE
  mov dword [rsi + DRIVER_NIC_I82540EM_RCTL], eax
 

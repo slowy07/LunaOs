@@ -14,7 +14,7 @@ KERNEL_VFS_STRUCTURE_MAGICKNOT (16 bytes):
 +0x00: .root  qword  -- pointer to root directory KNOT
 +0x08: .size  qword  -- size (always 1 for magicknot)
 
-KERNEL_VFS_STRUCTURE_KNOT (33 + 16 = 49 bytes):
+KERNEL_VFS_STRUCTURE_KNOT (33 + 255 = 288 bytes):
 Offset  Size  Field         Description
 ------  ----  -----         -----------
 +0x00   8     .id_or_data   For dir: pointer to child page; for block dev: parent knot
@@ -23,10 +23,10 @@ Offset  Size  Field         Description
 +0x11   2     .flags        File flags (save, reserved)
 +0x13   8     .time_modified Microsecond timestamp of last modification
 +0x1B   1     .length       Length of filename in bytes
-+0x1C   16    .name         Filename (fixed 16-byte buffer)
-+0x2C   --    .SIZE         = 49 bytes per knot slot
++0x1C   255   .name         Filename (fixed 255-byte buffer, was 16)
++0x11B  --    .SIZE         = 283 bytes per knot slot
 
-Per page: floor((4096 - 8) / 49) = 83 knot slots + 8 byte link ptr
+Per page: floor((4096 - 8) / 283) = 14 knot slots + 8 byte link ptr
            STATIC_STRUCTURE_BLOCK.link = 8 bytes at top of page
 
 FILE TYPES (bitmask in .type field)

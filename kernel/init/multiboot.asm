@@ -25,6 +25,7 @@ endstruc
 
 align 0x04
 multiboot_header:
+
  dd MULTIBOOT_HEADER_MAGIC
  dd MULTIBOOT_HEADER_FLAG_default
  dd MULTIBOOT_HEADER_CHECKSUM

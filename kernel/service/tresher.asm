@@ -1,4 +1,5 @@
 service_tresher:
+
  call service_tresher_search
 
  mov r11, qword [rsi + KERNEL_TASK_STRUCTURE.cr3]
@@ -21,6 +22,7 @@ service_tresher:
  call kernel_memory_release_foreign
 
 .pml4:
+
  mov rdi, r11
  call kernel_memory_release_page
 
@@ -29,7 +31,7 @@ service_tresher:
  mov word [rsi + KERNEL_TASK_STRUCTURE.flags], STATIC_EMPTY
 
  dec qword [kernel_task_count]
- 
+
  inc qword [kernel_task_free]
 
  jmp service_tresher

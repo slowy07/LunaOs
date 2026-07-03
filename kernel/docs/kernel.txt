@@ -75,7 +75,7 @@ Step 2: 64-bit init (kernel_init label):
   - storage.asm: PCI IDE scan, reset, enumerate, VFS /dev/hd* knots
   - network.asm: PCI NIC detection, i82540EM init
   - task.asm: First kernel task, timer IRQ 0 mount
-  - services.asm: Start tresher kernel service (tx, network, HTTP removed)
+  - services.asm: Start tresher kernel service (tx, network, HTTP also started)
 
 Step 3: Finalize:
   - call kernel_init_apic: Full APIC config, TICR = 1024Hz, EOI
@@ -99,7 +99,7 @@ Step 5: CPU halts in jmp $ (idle loop). If exec failed, error code
 is printed in decimal first.
 
 NOTE: The `clean:` step (release init code pages) and thread.asm
-include are currently commented out.
+include have been removed entirely.
 
 MEMORY LAYOUT
 
@@ -143,7 +143,8 @@ MEMORY LAYOUT
 |                    |  network/i82540em.asm,
 |                    |  storage/ide.asm
 +--------------------+
-| kernel/service/    |  tresher.asm
+| kernel/service/    |  tresher.asm, http.asm, tx.asm,
+|                    |  network.asm (+ arp, icmp, tcp, checksum, config, data, wrap)
 +--------------------+
 | library/           |  input.asm, page_align_up.asm,
 |                    |  page_from_size.asm, string_*.asm
@@ -177,9 +178,8 @@ LOAD ORDER (in include sequence)
  [kernel/io_apic.asm]
  [kernel/data.asm]
  [kernel/idt.asm]
- [kernel/task.asm]     (KERNEL_TASK_STRUCTURE)
-  [kernel/thread.asm]  (commented out)
-  [kernel/vfs.asm]
+ [kernel/task.asm]     (KERNEL_TASK_STRUCTURE, task naming)
+ [kernel/vfs.asm]
  [kernel/exec.asm]
  [kernel/service.asm]
         |
@@ -195,6 +195,9 @@ LOAD ORDER (in include sequence)
         |
         v
  [kernel/service/tresher.asm]
+ [kernel/service/http.asm]
+ [kernel/service/tx.asm]
+ [kernel/service/network.asm]
         |
         v
  [library/input.asm]

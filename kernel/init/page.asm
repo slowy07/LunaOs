@@ -9,7 +9,6 @@ kernel_init_page:
  inc qword [kernel_page_paged_count]
 
  mov eax, KERNEL_BASE_address
-
  mov bx, KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
  mov rcx, qword [kernel_page_total_count]
  mov r11, rdi

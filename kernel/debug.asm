@@ -1,13 +1,12 @@
 KERNEL_DEBUG_FLOW_offset equ 0x02
 KERNEL_DEBUG_REGISTER_offset equ 0x05
-KERNEL_DEBUG_CODE_offset equ 0x015
+KERNEL_DEBUG_CODE_offset equ 0x15
 KERNEL_DEBUG_TASK_offset equ 0x15
 KERNEL_DEBUG_PAGE_offset equ 0x15
 KERNEL_DEBUG_PAGE_offset_in_row equ 0x05
 KERNEL_DEBUG_TASK_offset_in_row equ 0x02
 KERNEL_DEBUG_STACK_offset equ 0x40
 KERNEL_DEBUG_MEMORY_offset equ 0x15
-
 
 struc KERNEL_DEBUG_STRUCTURE_PRESERVED
  .rax resb 8
@@ -85,13 +84,13 @@ kernel_debug_string_cr4_end:
 kernel_debug_string_memory db STATIC_COLOR_ASCII_GRAY, "Address          Memory                                          Content", STATIC_COLOR_ASCII_GRAY_LIGHT, STATIC_ASCII_NEW_LINE
 kernel_debug_string_memory_end:
 
-kernel_debug_string_task db STATIC_COLOR_ASCII_GRAY_LIGHT, "Task queue properties (Size [bytes] / Task Count / Free):", STATIC_COLOR_ASCII_WHITE, STATIC_ASCII_NEW_LINE
+kernel_debug_string_task db STATIC_COLOR_ASCII_GRAY_LIGHT, "Task queue properties (Size [Bytes]/Task Count/Free):", STATIC_COLOR_ASCII_WHITE, STATIC_ASCII_NEW_LINE
 kernel_debug_string_task_end:
 
 kernel_debug_string_separator db STATIC_COLOR_ASCII_GRAY, "/", STATIC_COLOR_ASCII_WHITE
 kernel_debug_string_separator_end:
 
-kernel_debug_string_page db STATIC_COLOR_ASCII_GRAY_LIGHT, "Pages (Total / Used / Free)", STATIC_COLOR_ASCII_WHITE, STATIC_ASCII_NEW_LINE
+kernel_debug_string_page db STATIC_COLOR_ASCII_GRAY_LIGHT, "Pages (Total/Used/Free)", STATIC_COLOR_ASCII_WHITE, STATIC_ASCII_NEW_LINE
 kernel_debug_string_page_end:
 
 kernel_debug_assembly_table:
@@ -204,7 +203,7 @@ kernel_debug_page:
  mov ecx, kernel_debug_string_separator_end - kernel_debug_string_separator
  mov rsi, kernel_debug_string_separator
  call kernel_video_string
- 
+
  mov rax, qword [kernel_page_free_count]
  xor ecx, ecx
  call kernel_video_number
@@ -439,3 +438,4 @@ kernel_debug_registers:
  ret
 
  macro_debug "kernel_debug_registers"
+

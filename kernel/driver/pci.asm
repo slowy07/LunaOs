@@ -26,9 +26,7 @@ driver_pci_find_vendor_and_device:
  push rax
 
  xor ebx, ebx
-
  xor ecx, ecx
-
  xor edx, edx
 
 .next:
@@ -92,9 +90,7 @@ driver_pci_find_class_and_subclass:
  push rax
 
  xor ebx, ebx
-
  xor ecx, ecx
-
  xor edx, edx
 
 .next:

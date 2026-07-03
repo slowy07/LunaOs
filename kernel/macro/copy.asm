@@ -1,5 +1,4 @@
-%MACRO macro_copy 0
-
+ %MACRO macro_copy 0
 align STATIC_DWORD_SIZE_byte
 
  prefetchnta [rsi + 256]
@@ -44,5 +43,5 @@ align STATIC_DWORD_SIZE_byte
  movntdq [rdi + 0xD0], xmm13
  movntdq [rdi + 0xE0], xmm14
  movntdq [rdi + 0xF0], xmm15
-%ENDMACRO
+ %ENDMACRO
 

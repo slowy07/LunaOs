@@ -21,28 +21,30 @@ kernel_exec(RDI=vfs_knot, R8=parent_task)
 |      |              jc .error   (out of memory)                     |
 |  3    | call kernel_memory_alloc_page  (new PML4 page)              |
 |  4    | call kernel_page_drain         (zero it out)                |
-|  5    | Save PML4 ptr in r11                                        |
-|  6    | Map code at KERNEL_MEMORY_HIGH_VIRTUAL                      |
+|  5    | inc qword [kernel_page_paged_count]  (track allocation)     |
+|  6    | Save PML4 ptr in r11                                        |
+|  7    | Map code at KERNEL_MEMORY_HIGH_VIRTUAL                      |
 |      |   call kernel_page_map_logical -> jc .error                  |
-|  7    | Map code+1 page at (HIGH_VIRTUAL << 1) - PAGE_SIZE          |
+|  8    | Map code+1 page at (HIGH_VIRTUAL << 1) - PAGE_SIZE          |
 |      |   call kernel_page_map_logical -> jc .error                  |
-|  8    | Map stack at KERNEL_STACK_address                           |
+|  9    | Map stack at KERNEL_STACK_address                           |
 |      |   call kernel_page_map_logical -> jc .error                  |
-|  9    | Merge new PML4 with kernel mappings (kernel_page_merge)      |
-| 10    | Build iretq frame on parent task stack:                      |
+| 10    | Merge new PML4 with kernel mappings (kernel_page_merge)      |
+| 11    | Build iretq frame on parent task stack:                      |
 |       |    [RIP]   = KERNEL_MEMORY_HIGH_REAL_address (+0x00)        |
 |       |    [CS]    = GDT.cs_ring3 | 0x03                 (+0x08)    |
 |       |    [RFLAGS]= KERNEL_TASK_EFLAGS_default          (+0x10)    |
 |       |    [RSP]   = 0                                    (+0x18)    |
 |       |    [SS]    = GDT.ds_ring3 | 0x03                 (+0x20)    |
-| 11    | Switch to new cr3 (r11)                                     |
-| 12    | Read VFS file into SOFTWARE_base_address                    |
-| 13    | Restore original cr3                                        |
-| 14    | call kernel_task_add(flags=KERNEL_TASK_FLAG_active)         |
+| 12    | Switch to new cr3 (r11)                                     |
+| 13    | Read VFS file into SOFTWARE_base_address                    |
+| 14    | Restore original cr3                                        |
+| 15    | call kernel_task_add(flags, name_len=ECX, name=RSI)         |
+|       |   (name length and ptr come from VFS knot knot.length/knot.name)
 |      |   jc .error   (task table full)                             |
-| 15    | Release secured pages (free += rbp, reserved -= rbp)        |
-| 16    | Return PID in rcx via stack slot                            |
-| 17    | On error: RAX = error code, CF = 1                          |
+| 16    | Release secured pages (free += rbp, reserved -= rbp)        |
+| 17    | Return PID in rcx via stack slot                            |
+| 18    | On error: RAX = error code, CF = 1                          |
 +-------+-------------------------------------------------------------+
 
 REGISTER SAVE ORDER (push/pop)
@@ -119,11 +121,11 @@ task_add) is followed by `jc .error` to propagate failures.
 On error, RAX is stored at [rsp + 2*QWORD] for the caller.
 
 Dependencies:
-  library_page_from_size  - Convert byte size to page count
-  kernel_page_secure      - Reserve physical pages
-  kernel_memory_alloc_page- Allocate a zeroed PML4 page
-  kernel_page_drain       - Zero a page (after allocation)
-  kernel_page_map_logical - Map a virtual address range
-  kernel_page_merge       - Copy kernel PML4 entries into new table
-  kernel_vfs_file_read    - Read file contents into memory
-  kernel_task_add         - Register process with scheduler
+  library_page_from_size    - Convert byte size to page count
+  kernel_page_secure        - Reserve physical pages
+  kernel_memory_alloc_page  - Allocate a zeroed PML4 page
+  kernel_page_drain         - Zero a page (after allocation)
+  kernel_page_map_logical   - Map a virtual address range
+  kernel_page_merge         - Copy kernel PML4 entries into new table
+  kernel_vfs_file_read      - Read file contents into memory
+  kernel_task_add           - Register process with scheduler (name from VFS knot)

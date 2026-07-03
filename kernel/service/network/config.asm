@@ -118,9 +118,11 @@ struc SERVICE_NETWORK_STRUCTURE_FRAME_TCP
  .flags resb 0x01
  .window_size resb 0x02
  .checksum_and_urgent_pointer:
+
  .checksum resb 0x02
  .urgent_pointer resb 0x02
  .SIZE:
+
  .options:
 endstruc
 

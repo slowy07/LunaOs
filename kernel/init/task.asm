@@ -29,6 +29,8 @@ kernel_init_task:
  mov qword [rsi + rax], rdi
 
  mov ebx, KERNEL_TASK_FLAG_active | KERNEL_TASK_FLAG_secured | KERNEL_TASK_FLAG_processing
+ mov ecx, kernel_init_string_name_end - kernel_init_string_name
+ mov rsi, kernel_init_string_name
  mov r11, qword [kernel_page_pml4_address]
  call kernel_task_add
 

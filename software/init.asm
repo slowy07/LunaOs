@@ -20,7 +20,6 @@ init:
  xor edx, edx
  mov rsi, init_program_shell
  int KERNEL_SERVICE
-
  jc .exec
 
  mov ax, KERNEL_SERVICE_PROCESS_check
@@ -30,7 +29,7 @@ init:
  int KERNEL_SERVICE
  jnc .wait_for_shell
 
- mov eax, KERNEL_SERVICE_VIDEO_clean
+ mov ax, KERNEL_SERVICE_VIDEO_clean
  int KERNEL_SERVICE
 
  jmp init

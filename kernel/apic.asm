@@ -25,7 +25,7 @@ kernel_apic_size dq STATIC_EMPTY
 
 kernel_apic_count db STATIC_EMPTY
 
- kernel_apic_id_table times 0x0100 db STATIC_EMPTY
+kernel_apic_id_table times 0x0100 db STATIC_EMPTY
 
 kernel_apic_id_get:
 
@@ -34,3 +34,4 @@ kernel_apic_id_get:
  ret
 
  macro_debug "kernel_apic_id_get"
+

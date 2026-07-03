@@ -18,3 +18,4 @@ shell_command_exit_end:
 
 shell_command_unknown db STATIC_ASCII_NEW_LINE, STATIC_COLOR_ASCII_RED_LIGHT, "unknown commands", STATIC_ASCII_NEW_LINE
 shell_command_unknown_end:
+

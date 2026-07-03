@@ -29,7 +29,7 @@ service_network:
  cmp word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.type], SERVICE_NETWORK_FRAME_ETHERNET_TYPE_ip
  je service_network_ip
 
- xchg bx,bx
+ xchg bx ,bx
 
 .end:
 

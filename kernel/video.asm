@@ -20,8 +20,12 @@ kernel_video_color_background dd STATIC_COLOR_BACKGROUND_default
 
 kernel_video_cursor_lock dq STATIC_EMPTY
 kernel_video_cursor:
-.x: dd STATIC_EMPTY
-.y: dd STATIC_EMPTY
+
+.x:
+ dd STATIC_EMPTY
+
+.y:
+ dd STATIC_EMPTY
 
 kernel_video_color_sequence_default db STATIC_COLOR_ASCII_DEFAULT
 kernel_video_color_sequence_black db STATIC_COLOR_ASCII_BLACK
@@ -47,6 +51,8 @@ kernel_video_drain:
  push rcx
  push rdi
 
+ call kernel_video_cursor_disable
+
  mov eax, dword [kernel_video_color_background]
  mov rcx, qword [kernel_video_size_pixel]
  mov rdi, qword [kernel_video_framebuffer]
@@ -56,11 +62,15 @@ kernel_video_drain:
 
  call kernel_video_cursor_set
 
+ call kernel_video_cursor_enable
+
  pop rdi
  pop rcx
  pop rax
 
  ret
+
+ macro_debug "kernel_video_drain"
 
 kernel_video_matrix:
 
@@ -162,6 +172,7 @@ kernel_video_char_clean:
  macro_debug "kernel_video_char_clean"
 
 kernel_video_cursor_set:
+
  push rax
  push rcx
  push rdx

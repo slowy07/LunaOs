@@ -1,6 +1,7 @@
 service_tx_pid dq STATIC_EMPTY
 
 service_tx_ipc_message:
+
  times KERNEL_IPC_STRUCTURE_LIST.SIZE db STATIC_EMPTY
 
 service_tx:

@@ -28,7 +28,7 @@ DRIVER_PS2_DEVICE_MOUSE_PACKET_OVERFLOW_y equ 7
 DRIVER_PS2_DEVICE_MOUSE_mask equ 0xFFFFFFFFFFFFFF00
 
 DRIVER_PS2_STATUS_output equ 00000001b
-DRIVER_PS2_STATUS_input  equ 00000010b
+DRIVER_PS2_STATUS_input equ 00000010b
 DRIVER_PS2_STATUS_system_flag equ 00000100b
 DRIVER_PS2_STATUS_command_data equ 00001000b
 DRIVER_PS2_STATUS_timeout equ 01000000b
@@ -214,7 +214,7 @@ driver_ps2_keyboard_matrix_low dw STATIC_EMPTY
  db "'", 0x00
  db "`", 0x00
  dw DRIVER_PS2_KEYBOARD_PRESS_SHIFT_LEFT
- db "\", 0x00
+ db "\",	0x00
  db "z", 0x00
  db "x", 0x00
  db "c", 0x00
@@ -357,6 +357,7 @@ driver_ps2_keyboard_alt_semaphore db STATIC_FALSE
 driver_ps2_keyboard_capslock_semaphore db STATIC_FALSE
 
 driver_ps2_keyboard_pull:
+
  push rsi
 
  in al, DRIVER_PS2_PORT_COMMAND_OR_STATUS
@@ -408,14 +409,17 @@ driver_ps2_keyboard_pull:
  mov ax, word [rsi + rax * STATIC_WORD_SIZE_byte]
 
 .save:
+
  call driver_ps2_keyboard_shift
 
 .end:
+
  pop rsi
- 
+
  ret
 
 driver_ps2_keyboard:
+
  push rax
 
  call driver_ps2_keyboard_pull

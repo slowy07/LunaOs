@@ -14,7 +14,9 @@ library_string_to_integer:
 .loop:
 
  movzx eax, byte [rsi + rcx - 0x01]
+
  sub al, STATIC_ASCII_DIGIT_0
+
  mul rbx
 
  add r8, rax

@@ -16,3 +16,4 @@ kernel_panic:
  jmp $
 
  macro_debug "kernel_panic"
+

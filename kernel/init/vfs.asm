@@ -3,6 +3,7 @@ struc KERNEL_INIT_STRUCTURE_VFS_FILE
  .size resb 8
  .length resb 1
  .path:
+
  .SIZE:
 endstruc
 

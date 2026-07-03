@@ -4,8 +4,8 @@ DRIVER_PS2_KEYBOARD_IO_APIC_register equ KERNEL_IO_APIC_iowin + (DRIVER_PS2_KEYB
 DRIVER_PS2_MOUSE_IRQ_number equ 0x0C
 DRIVER_PS2_MOUSE_IO_APIC_register equ KERNEL_IO_APIC_iowin + (DRIVER_PS2_MOUSE_IRQ_number * 0x02)
 
-DRIVER_PS2_PORT_COMMAND_OR_STATUS equ 0x64
 DRIVER_PS2_PORT_DATA equ 0x60
+DRIVER_PS2_PORT_COMMAND_OR_STATUS equ 0x64
 
 DRIVER_PS2_DEVICE_ID_GET equ 0xF2
 DRIVER_PS2_DEVICE_SET_SAMPLE_RATE equ 0xF3
@@ -31,6 +31,7 @@ DRIVER_PS2_STATUS_output equ 00000001b
 DRIVER_PS2_STATUS_input equ 00000010b
 DRIVER_PS2_STATUS_system_flag equ 00000100b
 DRIVER_PS2_STATUS_command_data equ 00001000b
+DRIVER_PS2_STATUS_output_second equ 00100000b
 DRIVER_PS2_STATUS_timeout equ 01000000b
 DRIVER_PS2_STATUS_parity equ 10000000b
 
@@ -113,6 +114,14 @@ DRIVER_PS2_KEYBOARD_PRESS_INSERT equ 0xE052
 DRIVER_PS2_KEYBOARD_PRESS_DELETE equ 0xE053
 DRIVER_PS2_KEYBOARD_PRESS_WIN_LEFT equ 0xE058
 DRIVER_PS2_KEYBOARD_PRESS_MOUSE_RIGHT equ 0xE05D
+
+align STATIC_QWORD_SIZE_byte, db STATIC_EMPTY
+driver_ps2_mouse_position:
+ driver_ps2_mouse_x dd STATIC_EMPTY
+ driver_ps2_mouse_y dd STATIC_EMPTY
+ driver_ps2_mouse_type db STATIC_EMPTY
+ driver_ps2_mouse_packet db STATIC_EMPTY
+ driver_ps2_mouse_state dw STATIC_EMPTY
 
 DRIVER_PS2_KEYBOARD_RELEASE_BACKSPACE equ DRIVER_PS2_KEYBOARD_key_release + DRIVER_PS2_KEYBOARD_PRESS_BACKSPACE
 DRIVER_PS2_KEYBOARD_RELEASE_TAB equ DRIVER_PS2_KEYBOARD_key_release + DRIVER_PS2_KEYBOARD_PRESS_TAB
@@ -356,6 +365,105 @@ driver_ps2_keyboard_shift_right_semaphore db STATIC_FALSE
 driver_ps2_keyboard_alt_semaphore db STATIC_FALSE
 driver_ps2_keyboard_capslock_semaphore db STATIC_FALSE
 
+driver_ps2_mouse:
+ push rax
+ push rbx
+ push rdx
+
+ in al, DRIVER_PS2_PORT_COMMAND_OR_STATUS
+ test al, DRIVER_PS2_STATUS_output_second
+ jz .end
+
+ xor eax, eax
+ in al, DRIVER_PS2_PORT_DATA
+
+ mov ebx, dword [driver_ps2_mouse_x]
+ mov edx, dword [driver_ps2_mouse_y]
+
+ cmp byte [driver_ps2_mouse_packet], STATIC_TRUE
+ jne .no_status
+
+ bt ax, DRIVER_PS2_DEVICE_MOUSE_PACKET_ALWAYS_ONE_bit
+ jnc .end
+
+ bt ax, DRIVER_PS2_DEVICE_MOUSE_PACKET_OVERFLOW_x
+ jc .end
+
+ bt ax, DRIVER_PS2_DEVICE_MOUSE_PACKET_OVERFLOW_y
+ jc .end
+
+ mov byte [driver_ps2_mouse_state], al
+
+ inc byte [driver_ps2_mouse_packet]
+ 
+ jmp .end
+
+.no_status:
+ cmp byte [driver_ps2_mouse_packet], STATIC_FALSE
+ jne .no_x
+
+ inc byte [driver_ps2_mouse_packet]
+
+ bt word [driver_ps2_mouse_state], DRIVER_PS2_DEVICE_MOUSE_PACKET_X_SIGNED_bit
+ jnc .x_unsigned
+
+ neg al
+
+ sub ebx, eax
+ jns .ready
+
+ xor ebx, ebx
+
+ jmp .ready
+
+.x_unsigned:
+ add ebx, eax
+
+ cmp ebx, dword [kernel_video_width_pixel]
+ jb .ready
+
+ mov ebx, dword [kernel_video_width_pixel]
+
+ jmp .ready
+
+.no_x:
+ mov byte [driver_ps2_mouse_packet], STATIC_TRUE
+
+ bt word [driver_ps2_mouse_state], DRIVER_PS2_DEVICE_MOUSE_PACKET_Y_SIGNED_bit
+ jnc .y_unsigned
+
+ neg al
+
+ add edx, eax
+
+ cmp edx, dword [kernel_video_height_pixel]
+ jb .ready
+
+ mov edx, dword [kernel_video_height_pixel]
+ dec edx
+
+ jmp .ready
+
+.y_unsigned:
+ sub edx, eax
+ jns .ready
+
+ xor edx, edx
+
+.ready:
+ mov dword [driver_ps2_mouse_x], ebx
+ mov dword [driver_ps2_mouse_x], edx
+
+.end:
+ mov rax, qword [kernel_apic_base_address]
+ mov dword [rax + KERNEL_APIC_EOI_register], STATIC_EMPTY
+
+ pop rdx
+ pop rbx
+ pop rax
+
+ iretq
+ 
 driver_ps2_keyboard_pull:
 
  push rsi

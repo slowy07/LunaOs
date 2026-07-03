@@ -82,10 +82,18 @@ SMP Boot Check (top of init.asm):
       Connects: IRQ 8 to IO-APIC
       Enables interrupts (sti) — moved from init.asm
 
-  15. kernel/init/ps2.asm
-      Initialize PS/2 keyboard controller
-      Configures: scan code set, interrupt enable
-      Note: Does NOT connect to IO-APIC (missing in code)
+   15. kernel/init/ps2.asm
+      Initialize PS/2 mouse and keyboard
+      Mouse init (before keyboard):
+        1. Drain stale data from controller
+        2. Get configuration byte, enable second port interrupt,
+           clear second port clock disable
+        3. Reset mouse device, wait for ACK + self-test success,
+           read mouse type ID (standard/wheel/5-button)
+        4. Set default settings, enable packet streaming
+        5. Mount IRQ 12 handler (driver_ps2_mouse) to IDT + IO-APIC
+      Keyboard init (after mouse):
+        6. Mount IRQ 1 handler (driver_ps2_keyboard) to IDT + IO-APIC
 
   16. kernel/init/ipc.asm
       Initialize IPC message pool
@@ -249,8 +257,13 @@ INITIALIZATION FLOW
 +-----------+-------------+
             |
             v
-+-------------------------+
- | ps2.asm                 |
+ +---------------------------+
+ | ps2.asm (mouse + kbd)    |
+ | Mouse init (IRQ 12):     |
+ |   reset, set defaults,   |
+ |   enable packets, mount  |
+ | Keyboard init (IRQ 1):   |
+ |   mount to IDT + IO-APIC |
  +-----------+-------------+
              |
              v

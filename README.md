@@ -57,6 +57,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 | `gdt.txt` | GDT initialization |
 | `idt.txt` | IDT initialization |
 | `rtc.txt` | RTC timer setup (1024 Hz, sti enabled here) |
+| `ps2.txt` | PS/2 mouse + keyboard init (reset, config, IRQ 12 + IRQ 1) |
 | `task.txt` | Scheduler startup |
 | `ipc.txt` | IPC initialization |
 | `panic.txt` | Panic handler setup |
@@ -79,7 +80,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 |------|-------------|
 | `driver_docs.txt` | RTC driver |
 | `ide.txt` | IDE ATA/ATAPI storage driver |
-| `ps2.txt` | PS/2 keyboard/mouse (interrupt flow, scan codes, I/O ports) |
+| `ps2.txt` | PS/2 keyboard (interrupt flow, scan codes, I/O ports) + mouse (3-byte packet parsing, position tracking with bounds clamping) |
 | `pci.txt` | PCI enumeration |
 | `network/i82540em.txt` | Intel 82540EM Gigabit Ethernet |
 
@@ -217,8 +218,11 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
               |
               v
 +------------------------------+
-|   ps2.asm  -> Kbd/Mouse init |
-|   (IRQ1/IRQ12)               |
+|   ps2.asm  -> Mouse init     |
+|   (reset, config, enable     |
+|    packets, mount IRQ 12)    |
+|   -> Keyboard init           |
+|   (mount IRQ 1)              |
 +------------------------------+
               |
               v
@@ -570,7 +574,7 @@ Task Flags:
 | **Scheduling** | Round-robin scheduler driven by RTC at 1024 Hz, per-task flags (active, closed, daemon, processing, secured, thread) |
 | **APIC** | Local APIC for timer interrupts, IO-APIC for device interrupt routing |
 | **SMP** | Multi-processor boot via 16-bit real mode trampoline (`boot.asm`), AP wake through IPI, per-CPU GDT TSS entries |
-| **Drivers** | PS/2 keyboard/mouse, RTC, PCI enumeration, IDE ATA/ATAPI, Intel 82540EM Gigabit Ethernet |
+| **Drivers** | PS/2 keyboard (scan codes, shift/capslock) + mouse (3-byte packet parsing, signed/unsigned movement, screen bounds clamping), RTC, PCI enumeration, IDE ATA/ATAPI, Intel 82540EM Gigabit Ethernet |
 | **IPC** | Inter-process communication primitives |
 | **Font** | Bitmap font glyph data loaded from `kernel/font/setfonts.asm`, font name displayed at boot |
 | **Services** | Task reaper (tresher) — only service started at boot (tx, network, HTTP removed) |

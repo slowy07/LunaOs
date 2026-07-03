@@ -1,0 +1,94 @@
+PS/2 MOUSE + KEYBOARD INITIALIZATION
+File: kernel/init/ps2.asm
+Author: arfy slowy
+
+OVERVIEW
+Boot-time initialization of PS/2 controller, mouse device, and keyboard
+controller. Initializes the mouse first (IRQ 12), then the keyboard (IRQ 1),
+mounting both interrupt handlers to the IDT and IO-APIC.
+
+PROCEDURE FLOW
+
+kernel_init_ps2
+  |
+  +-- Step 1: Drain stale data
+  |     call driver_ps2_check_dummy_answer_or_dump
+  |     Flush any leftover bytes in the output buffer
+  |
+  +-- Step 2: Get controller configuration
+  |     DRIVER_PS2_COMMAND_CONFIGURATION_GET (0x20)
+  |     -> answer byte in AL
+  |
+  +-- Step 3: Enable second port (mouse) interrupt
+  |     DRIVER_PS2_COMMAND_CONFIGURATION_SET (0x60)
+  |     Set bit 1 (second port IRQ enable)
+  |     Clear bit 5 (second port clock disable)
+  |
+  +-- Step 4: Reset mouse device
+  |     DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND (0xD4)
+  |     -> DRIVER_PS2_DEVICE_RESET (0xFF)
+  |     Wait for: ACK (0xFA), self-test success (0xAA), type ID
+  |     Store type in driver_ps2_mouse_type
+  |       0x00 = standard, 0x03 = wheel, 0x04 = 5-button
+  |
+  +-- Step 5: Set defaults
+  |     DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND (0xD4)
+  |     -> DRIVER_PS2_DEVICE_SET_DEFAULT (0xF6)
+  |     Wait for ACK (0xFA)
+  |
+  +-- Step 6: Enable packet streaming
+  |     DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND (0xD4)
+  |     -> DRIVER_PS2_DEVICE_PACKETS_ENABLE (0xF4)
+  |     Wait for ACK (0xFA)
+  |
+  +-- Step 7: Mount mouse IRQ handler
+  |     Vector = KERNEL_IDT_IRQ_offset + 0x0C (IRQ 12)
+  |     Handler = driver_ps2_mouse
+  |     call kernel_idt_mount
+  |     call kernel_io_apic_connect
+  |
+  +-- Step 8: Mount keyboard IRQ handler
+        Vector = KERNEL_IDT_IRQ_offset + 0x01 (IRQ 1)
+        Handler = driver_ps2_keyboard
+        call kernel_idt_mount
+        call kernel_io_apic_connect
+
+ERROR HANDLING
+  On any step after reset that does not receive ACK (0xFA), jumps to
+  .error which halts (jmp $). No recovery is attempted.
+
+DATA FLOW
+
+init/ps2.asm                     driver/ps2.asm
++----------------------+         +-----------------------+
+| Configuration:       | --->   | driver_ps2_mouse_type  |
+| reset + read type    |         | (db) - mouse device ID |
++----------------------+         +-----------------------+
+        |
+        | (IDT + IO-APIC mount)
+        v
++----------------------+         +-----------------------+
+| driver_ps2_mouse     | --->   | driver_ps2_mouse_x     |
+| (IRQ 12 handler)     |         | driver_ps2_mouse_y     |
+| 3-byte packet parse  |         | driver_ps2_mouse_packet|
+| EOI + iretq          |         | driver_ps2_mouse_state |
++----------------------+         +-----------------------+
+        |
+        v
++----------------------+
+| driver_ps2_keyboard  |
+| (IRQ 1 handler)      |
+| scan code decode     |
+| shift/capslock       |
+| EOI + iretq          |
++----------------------+
+
+DEPENDENCIES
+
+Called from:   kernel/init.asm (step 15, after rtc, before ipc)
+Depends on:    driver_ps2_check_dummy_answer_or_dump,
+               driver_ps2_send_command_receive_answer,
+               driver_ps2_send_command, driver_ps2_send_answer_or_ask_device,
+               driver_ps2_receive_answer,
+               kernel_idt_mount, kernel_io_apic_connect
+Constants:     DRIVER_PS2_* (defined in kernel/driver/ps2.asm)

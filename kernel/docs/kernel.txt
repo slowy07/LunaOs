@@ -23,9 +23,10 @@ EXECUTION FLOW
                                     | video, font, |
                                     | memory, acpi,|
                                     | page, gdt,   |
-                                    | idt, rtc,    |
-                                    | ps2, ipc,    |
-                                    | vfs, storage,|
+                                     | idt, rtc,    |
+                                     | ps2 (mouse+   |
+                                     |   kbd), ipc,  |
+                                     | vfs, storage,|
                                     | network,     |
                                     | task, svcs,  |
                                     | smp          |
@@ -69,7 +70,7 @@ Step 2: 64-bit init (kernel_init label):
   - gdt.asm: Null, CS, DS, TSS descriptors
   - idt.asm: Exceptions (0-31), syscall (0x40 -> kernel_service), spurious (0xFF)
   - rtc.asm: 1024Hz periodic timer, IRQ 8, sti
-  - ps2.asm: Keyboard controller init
+  - ps2.asm: PS/2 mouse + keyboard init (mouse IRQ 12, keyboard IRQ 1)
   - ipc.asm: IPC message pool allocation
   - vfs.asm: Root magicknot, /bin + /dev dirs, preload init/shell/wello/free
   - storage.asm: PCI IDE scan, reset, enumerate, VFS /dev/hd* knots

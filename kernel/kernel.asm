@@ -52,7 +52,7 @@ kernel:
  %include "kernel/exec.asm"
  %include "kernel/service.asm"
  %include "kernel/debug.asm"
- %include "kernel/font/setfont.asm"
+ %include "kernel/font/jetbrains.asm"
  %include "kernel/driver/rtc.asm"
  %include "kernel/driver/ps2.asm"
  %include "kernel/driver/pci.asm"

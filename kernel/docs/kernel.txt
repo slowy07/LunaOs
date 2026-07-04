@@ -138,7 +138,7 @@ MEMORY LAYOUT
 | kernel/exec.asm    |  Process execution (error propagation)
 | kernel/service.asm |  Syscall dispatcher (vector 0x40)
 +--------------------+
-| kernel/font/       |  canele.asm (font bitmap data)
+| kernel/font/       |  jetbrains.asm (font bitmap data, 6x12px)
 +--------------------+
 | kernel/driver/     |  rtc.asm, ps2.asm, pci.asm,
 |                    |  network/i82540em.asm,

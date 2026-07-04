@@ -1,7 +1,10 @@
 kernel
 boot
+init
 luna_disk.raw
 kernel.list
-init
+
+# software
 shell
 wello
+free

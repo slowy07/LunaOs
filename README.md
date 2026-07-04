@@ -576,7 +576,7 @@ Task Flags:
 | **SMP** | Multi-processor boot via 16-bit real mode trampoline (`boot.asm`), AP wake through IPI, per-CPU GDT TSS entries |
 | **Drivers** | PS/2 keyboard (scan codes, shift/capslock) + mouse (3-byte packet parsing, signed/unsigned movement, screen bounds clamping), RTC, PCI enumeration, IDE ATA/ATAPI, Intel 82540EM Gigabit Ethernet |
 | **IPC** | Inter-process communication primitives |
-| **Font** | Bitmap font glyph data loaded from `kernel/font/setfonts.asm`, font name displayed at boot |
+| **Font** | Bitmap font glyph data loaded from `kernel/font/jetbrains.asm`, font name displayed at boot |
 | **Services** | Task reaper (tresher) — only service started at boot (tx, network, HTTP removed) |
 
 ## References

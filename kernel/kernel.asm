@@ -13,29 +13,19 @@ init:
 align KERNEL_PAGE_SIZE_byte, db STATIC_NOTHING
 
 clean:
+ mov ecx, clean - $$
+ mov rdi, KERNEL_BASE_address
+ call library_page_from_size
+ call kernel_memory_release
 
 kernel:
+ call kernel_task_active
 
- mov ecx, kernel_init_exec_end - kernel_init_exec
- mov rsi, kernel_init_exec
- call kernel_vfs_path_resolve
- jc .error
- call kernel_vfs_file_find
- jc .error
- call kernel_exec
- jnc .end
-
-.error:
-
- mov ebx, STATIC_NUMBER_SYSTEM_decimal
- xor ecx, ecx
- call kernel_video_number
-
-.end:
-
+ mov word [rdi + KERNEL_TASK_STRUCTURE.flags], STATIC_EMPTY
+ 
  jmp $
 
- %include "kernel/macro/close.asm"
+ %include "kernel/macro/lock.asm"
  %include "kernel/macro/debug.asm"
  %include "kernel/macro/copy.asm"
  %include "kernel/ipc.asm"
@@ -62,6 +52,8 @@ kernel:
  %include "kernel/service/http.asm"
  %include "kernel/service/tx.asm"
  %include "kernel/service/network.asm"
+ %include "kernel/service/desu.asm"
+ %include "library/color.asm"
  %include "library/input.asm"
  %include "library/page_align_up.asm"
  %include "library/page_from_size.asm"

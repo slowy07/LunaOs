@@ -379,7 +379,7 @@ service_network_tcp_port_assign:
  push rdx
  push rdi
 
- macro_close service_network_port_semaphore, 0
+ macro_lock service_network_port_semaphore, 0
 
  cmp cx, 512
  jnb .error

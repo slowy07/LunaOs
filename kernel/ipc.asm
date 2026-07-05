@@ -29,7 +29,7 @@ kernel_ipc_insert:
  call kernel_task_active
  mov rdx, qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
- macro_close kernel_ipc_semaphore, 0
+ macro_lock kernel_ipc_semaphore, 0
 
 .wait:
 

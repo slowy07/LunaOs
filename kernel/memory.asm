@@ -119,7 +119,7 @@ kernel_memory_alloc:
 
 kernel_memory_lock:
 
- macro_close kernel_memory_lock_semaphore, 0
+ macro_lock kernel_memory_lock_semaphore, 0
 
  ret
 

@@ -129,8 +129,8 @@ SMP Boot Check (top of init.asm):
        Creates: first kernel task
        Mounts: timer interrupt handler (IRQ 0)
 
-  21. kernel/init/services.asm
-       Start kernel services — only tresher at boot (tx, network, HTTP removed)
+   21. kernel/init/services.asm
+        Start kernel services — tresher and desu at boot (tx, network, HTTP removed)
 
   22. kernel/init/smp.asm
       Copy boot trampoline (boot.asm) to 0x8000
@@ -165,8 +165,9 @@ Final Steps (after all init modules):
   Note: sti was moved from here to init/rtc.asm (step 14)
   - Wait for all APs: re-read kernel_init_ap_count on each
     iteration, compare against kernel_apic_count
-  - Set kernel_init_semaphore to STATIC_FALSE (signals services to start)
-  - Jump to clean: (in kernel.asm) — currently commented out, init pages retained
+   - Set kernel_init_semaphore to STATIC_FALSE (signals services to start)
+   - Jump to clean: (in kernel.asm) — releases init code pages via kernel_memory_release,
+     then enters idle loop (kernel_task_active + jmp $)
 
 INITIALIZATION FLOW
 
@@ -297,9 +298,10 @@ INITIALIZATION FLOW
  +-----------+-------------+
              |
              v
- +-------------------------+
- | services.asm            |
- +-----------+-------------+
+  +-------------------------+
+  | services.asm            |
+  | (tresher, desu)         |
+  +-----------+-------------+
             |
             v
  +-------------------------+
@@ -328,15 +330,23 @@ INITIALIZATION FLOW
                |
                v
    +-------------------------+
-   | init_semaphore = FALSE  |
-   +-----------+-------------+
-               |
-               v
-    +-------------------------+
-    | clean:                  |
-    | Free init pages         |
-    | jmp kernel              |
-    +-------------------------+
+    | init_semaphore = FALSE  |
+    +-----------+-------------+
+                |
+                v
+     +-------------------------+
+     | clean:                  |
+     | kernel_memory_release   |
+     | (frees init code pages) |
+     +-----------+-------------+
+                 |
+                 v
+     +-------------------------+
+     | kernel:                 |
+     | kernel_task_active      |
+     | set task flags          |
+     | jmp $ (idle loop)       |
+     +-------------------------+
 
 ERROR HANDLING
 Each init module checks for errors and calls kernel_init_panic_* on failure.

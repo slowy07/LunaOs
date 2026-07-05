@@ -1,0 +1,54 @@
+DESU - DESKTOP ENVIRONMENT SERVICE
+File: kernel/service/desu.asm
+Author: arfy slowy
+
+OVERVIEW
+Desktop environment service providing a composited graphical interface
+with window management, mouse cursor, and object-based rendering.
+
+LOOP
+
+service_desu:
+  init.asm -> allocate lists, create framebuffer/workbench/cursor objects
+.loop:
+  call service_desu_cursor         - handle mouse input, object selection
+  call service_desu_object_flush   - mark changed objects for redraw
+  call service_desu_cursor_flush   - redraw cursor if dirty
+  call service_desu_fill           - composite all fill operations
+  jmp .loop
+
+SUBFILES
+
+| File | Description |
+|------|-------------|
+| config.asm | Constants: object flags, structure definitions, limits |
+| data.asm | Global state: semaphores, object/fill/zone lists, cursor bitmap |
+| init.asm | Allocate framebuffer, workbench, cursor; create object lists |
+| cursor.asm | Mouse tracking, LMB/RMB click handling, object drag |
+| object.asm | Object insert/remove, hide, flush, find by position/ID |
+| fill.asm | Register fill regions, composite to framebuffer with clipping |
+| zone.asm | Dirty-region tracking and occlusion culling |
+| keyboard.asm | Keyboard input handling (Alt key state) |
+| sleep.asm | Idle loop when no objects present |
+| panic.asm | Out-of-memory panic handler |
+| gfx/cursor.data | Binary cursor pixel data (12x19 ARGB) |
+
+OBJECT FLAGS
+
+  visible   bit 0 - object is rendered
+  flush     bit 1 - object needs redraw
+  fixed_xy  bit 2 - position locked
+  fixed_z   bit 3 - z-order locked (cannot be raised)
+  fragile   bit 4 - hidden on LMB click (popup behavior)
+  pointer   bit 5 - mouse cursor object (singleton)
+  arbiter   bit 6 - privileged object (bypasses z-ordering)
+
+RENDERING PIPELINE
+
+  1. Cursor processes mouse deltas, updates cursor position
+  2. Object flush marks dirty objects for zone update
+  3. Zone system tracks damaged screen regions, splits them
+     around opaque occluding objects
+  4. Fill list is composited to framebuffer with per-pixel
+     alpha blending (pixels with alpha=0xFF are opaque,
+     alpha=0x00 are transparent)

@@ -400,7 +400,7 @@ kernel_vfs_knot_prepare:
 
  push rcx
 
- macro_close kernel_vfs_semaphore, 0
+ macro_lock kernel_vfs_semaphore, 0
 
  mov rdi, qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.id_or_data]
 

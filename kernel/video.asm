@@ -455,7 +455,7 @@ kernel_video_char:
 
  call kernel_video_cursor_disable
 
- macro_close kernel_video_semaphore, 0
+ macro_lock kernel_video_semaphore, 0
 
  mov ebx, dword [kernel_video_cursor]
  mov edx, dword [kernel_video_cursor + STATIC_DWORD_SIZE_byte]

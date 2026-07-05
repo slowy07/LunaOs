@@ -1,0 +1,43 @@
+MACRO LOCK - SEMAPHORE LOCK
+File: kernel/macro/lock.asm
+Author: arfy slowy
+
+OVERVIEW
+Spinlock semaphore macro. Replaces the former macro_close (renamed for
+clarity). Atomically acquires a lock on a byte-aligned memory location
+using lock xchg.
+
+USAGE
+
+ macro_lock address, offset
+
+Parameters:
+  address - base address of the semaphore byte
+  offset  - byte offset from address (typically 0)
+
+IMPLEMENTATION
+
+ %MACRO macro_lock 2
+ push rax
+
+.1:
+ mov al, STATIC_TRUE
+ lock xchg byte [%1 + %2], al
+ test al, al
+ jz .1
+
+ pop rax
+ %ENDMACRO
+
+The macro spins (busy-waits) until the semaphore byte is STATIC_FALSE,
+then atomically sets it to STATIC_TRUE. Uses lock xchg to guarantee
+atomicity across all cores.
+
+CALLERS
+  kernel_ipc_semaphore     in kernel/ipc.asm
+  kernel_memory_lock_semaphore  in kernel/memory.asm
+  kernel_video_semaphore   in kernel/video.asm
+  kernel_task_pid_semaphore in kernel/task.asm
+  kernel_vfs_semaphore     in kernel/vfs.asm
+  service_network_port_semaphore in kernel/service/network/tcp.asm
+  Various service and library locks

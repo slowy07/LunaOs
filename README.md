@@ -38,7 +38,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 | `apic.txt` | Local APIC |
 | `io_apic.txt` | IO-APIC |
 | `ipc.txt` | Inter-process communication |
-| `macro_close.txt` | Semaphore lock macro |
+| `macro_lock.txt` | Semaphore lock macro |
 | `macro_apic.txt` | APIC ID macro |
 | `debug.txt` | Debug mode handler (register dump, process name, PID) |
 | `macro_debug.txt` | Debug logging macro |
@@ -74,6 +74,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 | `http.txt` | HTTP server service (port 80, IPC receive loop) |
 | `tx.txt` | Network transmit service |
 | `tresher.txt` | Task reaper service |
+| `desu.txt` | Desktop environment service (compositor, window management, mouse cursor) |
 
 ### Drivers (`kernel/driver/`)
 | File | Description |
@@ -92,6 +93,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 | `string_digits.txt` | String digit validation |
 | `string_cut.txt` | String trimming |
 | `string_to_integer.txt` | ASCII to integer conversion |
+| `color.txt` | Alpha blending and color inversion |
 
 
 ## Boot Process
@@ -259,7 +261,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
               v
 +------------------------------+
 |   services.asm               |
-|   (tresher)                  |
+|   (tresher, desu)            |
 +------------------------------+
               |
               v
@@ -298,8 +300,9 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
               v
 +------------------------------+
 |   clean:                     |
-|   (currently commented out)  |
-|   Init code pages retained   |
+|   Release init code pages    |
+|   Call kernel_task_active    |
+|   Loop in idle (jmp $)      |
 +------------------------------+
 ```
 
@@ -557,7 +560,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 Task Flags:
   bit 0: active     - Task is running
   bit 1: closed     - Task terminated
-  bit 2: daemon     - Background task
+  bit 2: service    - Service task
   bit 3: processing - Currently executing
   bit 4: secured    - Task slot locked
   bit 5: thread     - Thread (no own page table)
@@ -571,13 +574,14 @@ Task Flags:
 | **Paging** | 4-level page tables (PML4 → PDPT → PD → PT), 4 KB / 2 MB pages |
 | **Memory** | Bitmap-based physical page allocator, SIMD-accelerated memory copy (`macro_copy`, 256 B/iter, prefetchnta + movdqa + movntdq) |
 | **ACPI** | RSDP v1/v2 detection, RSDT (32-bit) and XSDT (64-bit) support, MADT parsing for LAPIC/IO-APIC enumeration |
-| **Scheduling** | Round-robin scheduler driven by RTC at 1024 Hz, per-task flags (active, closed, daemon, processing, secured, thread) |
+| **Scheduling** | Round-robin scheduler driven by RTC at 1024 Hz, per-task flags (active, closed, service, processing, secured, thread) |
 | **APIC** | Local APIC for timer interrupts, IO-APIC for device interrupt routing |
 | **SMP** | Multi-processor boot via 16-bit real mode trampoline (`boot.asm`), AP wake through IPI, per-CPU GDT TSS entries |
 | **Drivers** | PS/2 keyboard (scan codes, shift/capslock) + mouse (3-byte packet parsing, signed/unsigned movement, screen bounds clamping), RTC, PCI enumeration, IDE ATA/ATAPI, Intel 82540EM Gigabit Ethernet |
 | **IPC** | Inter-process communication primitives |
 | **Font** | Bitmap font glyph data loaded from `kernel/font/jetbrains.asm`, font name displayed at boot |
-| **Services** | Task reaper (tresher) — only service started at boot (tx, network, HTTP removed) |
+| **Services** | Task reaper (tresher), desktop environment (desu) — started at boot |
+| **Color** | ARGB alpha blending (`library_color_alpha`) and alpha inversion (`library_color_alpha_invert`) |
 
 ## References
 

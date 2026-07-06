@@ -4,9 +4,9 @@ service_desu:
  %include "kernel/service/desu/init.asm"
 
 .loop:
- call service_desu_cursor
  call service_desu_object
  call service_desu_fill
+ call service_desu_cursor
 
  jmp .loop
 

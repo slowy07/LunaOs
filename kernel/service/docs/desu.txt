@@ -11,26 +11,38 @@ LOOP
 service_desu:
   init.asm -> allocate lists, create framebuffer/workbench/cursor objects
 .loop:
-  call service_desu_cursor         - track mouse position, update zone
   call service_desu_object         - flush dirty objects to zone
   call service_desu_fill           - composite all fill operations
+  call service_desu_cursor         - track mouse, fill cursor on top
   jmp .loop
 
 SUBFILES
 
 | File | Description |
 |------|-------------|
-| config.asm | Constants: object flags, structure definitions, limits |
-| data.asm | Global state: semaphores, object/fill/zone lists, cursor bitmap |
-| init.asm | Allocate framebuffer, workbench, cursor; create object lists |
-| cursor.asm | Mouse tracking, zone update, inline fill |
-| object.asm | Object insert/remove, hide, flush (service_desu_object), find by position/ID |
-| fill.asm | Fill insert by register/object, composite to framebuffer with clipping |
-| zone.asm | Dirty-region tracking, occlusion culling, direct fill insert, zone list reset |
+| config.asm | Constants: object flags, structure definitions, limits (OBJECT_EXTRA: size+flags only) |
+| data.asm | Global state: semaphores, object/fill/zone lists, cursor bitmap, tmp test object |
+| init.asm | Invert cursor alpha, allocate lists, fill workbench bg, insert workbench + tmp test object |
+| cursor.asm | Mouse tracking, zone update, inline fill, mark cursor flush after render |
+| object.asm | Object insert (simplified, no arbiter/ID), flush (service_desu_object) |
+| fill.asm | Fill insert by register/object, overflow check, composite to framebuffer with clipping |
+| zone.asm | Dirty-region tracking, occlusion culling, screen bounds clipping, direct fill insert, zone list reset |
 | keyboard.asm | Keyboard input handling (Alt key state) |
 | sleep.asm | Idle loop when no objects present |
 | panic.asm | Out-of-memory panic handler |
 | gfx/cursor.data | Binary cursor pixel data (12x19 ARGB) |
+
+OBJECT STRUCTURE
+
+SERVICE_DESU_STRUCTURE_OBJECT:
+  field  - x, y, width, height (4 x 8 bytes)
+  address- pixel data pointer (8 bytes)
+
+SERVICE_DESU_STRUCTURE_OBJECT_EXTRA:
+  size   - byte count of pixel data (8 bytes)
+  flags  - object flags (8 bytes)
+
+Note: id, pid, length, name fields removed from EXTRA.
 
 OBJECT FLAGS
 
@@ -44,22 +56,29 @@ OBJECT FLAGS
 
 RENDERING PIPELINE
 
-  1. Cursor processes mouse deltas, updates cursor position,
-     registers zone region, and directly inserts cursor fill
-  2. Object flush (service_desu_object) marks dirty objects
+  1. Object flush (service_desu_object) marks dirty objects
      into the zone system
-  3. Zone system splits damaged regions around opaque objects,
-     inserts fills for each visible region, then resets zone list
-  4. Fill list is composited to framebuffer with per-pixel
+  2. Zone system splits damaged regions around opaque objects
+     with screen bounds clipping, inserts fills, clears zone
+     object after processing, resets list at end
+  3. Fill list is composited to framebuffer with per-pixel
      alpha blending (pixels with alpha=0xFF are opaque,
      alpha=0x00 are transparent)
+  4. Cursor runs last — tracks mouse, updates position,
+     registers zone, fills inline, marks flush flag
 
 NOTES
 
-  - Mouse button handling (LMB/RMB click, object selection,
-    drag) has been removed from cursor.asm. Object interaction
-    logic is handled externally.
-  - service_desu_cursor_flush removed — cursor is now filled
-    inline at the end of service_desu_cursor.
-  - Init calls library_color_alpha_invert on cursor pixel data
-    to convert from stored format to render format.
+  - Object interaction removed entirely: hide, find, find_by_id,
+    move_top, lock, remove, and arbiter/privileged PID logic
+    deleted from object.asm. Insert is now a simple append.
+  - Cursor renders last (on top of all objects) due to loop order:
+    object → fill → cursor.
+  - Zone loop restructured with .entry/.loop pattern; zone object
+    cleared to STATIC_EMPTY before advancing to next entry.
+  - Zone now clips regions against screen bounds
+    (left ≥ 0, top ≥ 0, right ≤ width, bottom ≤ height).
+  - Overflow panics added to fill and zone inserts
+    (xchg bx, bx + jmp $ at limit).
+  - Init fills workbench with dark background (0x00101010)
+    and creates a tmp test object (red 32x32 square).

@@ -41,8 +41,12 @@ service_desu_fill_insert_by_object:
  push rsi
 
  cmp qword [service_desu_fill_list_records], SERVICE_DESU_FILL_LIST_limit
- je .end
+ jne .insert
 
+ xchg bx, bx
+ jmp $
+
+.insert:
  mov rax, SERVICE_DESU_STRUCTURE_FILL.SIZE
  mul qword [service_desu_fill_list_records]
 
@@ -87,8 +91,8 @@ service_desu_fill:
 
  mov rcx, qword [service_desu_fill_list_records]
 
- cmp rcx, STATIC_EMPTY
- je .end
+ test rcx, rcx
+ jz .end
 
  mov rsi, qword [service_desu_fill_list_address]
 
@@ -136,8 +140,6 @@ service_desu_fill:
  sub r11, rax
 
 .ready:
- xchg bx, bx
-
  mov rsi, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.object]
 
  mov r12, r10

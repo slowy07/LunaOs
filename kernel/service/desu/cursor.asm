@@ -33,6 +33,8 @@ service_desu_cursor:
  call service_desu_fill_insert_by_object
  call service_desu_fill
 
+ or qword [service_desu_object_cursor + SERVICE_DESU_STRUCTURE_OBJECT.SIZE + SERVICE_DESU_STRUCTURE_OBJECT_EXTRA.flags], SERVICE_DESU_OBJECT_FLAG_flush
+
 .end:
  pop r11
  pop r10

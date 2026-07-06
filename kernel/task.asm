@@ -62,7 +62,14 @@ kernel_task:
  xchg bx ,bx
 
 .no:
+ cmp byte [rsp + STATIC_QWORD_SIZE_byte], KERNEL_STRUCTURE_GDT.cs_ring0
+ je .cs
 
+ add rsp, STATIC_QWORD_SIZE_byte
+ 
+ jmp .no
+
+.cs:
  push rax
  push rdi
 

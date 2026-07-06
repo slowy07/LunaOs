@@ -1,6 +1,5 @@
 service_desu_zone_insert_by_object:
  push rax
- push rcx
  push rdx
  push rsi
  push rdi
@@ -9,13 +8,13 @@ service_desu_zone_insert_by_object:
  macro_lock service_desu_zone_semaphore, 0
 
  cmp qword [service_desu_zone_list_records], SERVICE_DESU_ZONE_LIST_limit
- jne .no
+ jb .insert
 
  xchg bx, bx
 
  jmp $
 
-.no:
+.insert:
  mov eax, SERVICE_DESU_STRUCTURE_ZONE.SIZE
  mul qword [service_desu_zone_list_records]
  
@@ -37,7 +36,6 @@ service_desu_zone_insert_by_object:
  pop rsi
  pop rdi
  pop rdx
- pop rcx
  pop rax
 
  ret
@@ -46,7 +44,6 @@ service_desu_zone_insert_by_object:
 
 service_desu_zone_insert_by_register:
  push rax
- push rcx
  push rdx
  push rsi
  push rdi
@@ -54,12 +51,12 @@ service_desu_zone_insert_by_register:
  macro_lock service_desu_zone_semaphore, 0
 
  cmp qword [service_desu_zone_list_records], SERVICE_DESU_ZONE_LIST_limit
- je .no
+ jb .insert
 
  xchg bx, bx
  jmp $
 
-.no:
+.insert:
  mov eax, SERVICE_DESU_STRUCTURE_ZONE.SIZE
  mul qword [service_desu_zone_list_records]
 
@@ -81,7 +78,6 @@ service_desu_zone_insert_by_register:
  pop rdi
  pop rsi
  pop rdx
- pop rcx
  pop rax
 
  ret
@@ -107,10 +103,13 @@ service_desu_zone:
 
  mov rdi, qword [service_desu_zone_list_address]
 
- sub rdi, SERVICE_DESU_STRUCTURE_ZONE.SIZE
+ jmp .entry
 
 .loop:
+ mov qword [rdi + SERVICE_DESU_STRUCTURE_ZONE.object], STATIC_EMPTY
  add rdi, SERVICE_DESU_STRUCTURE_ZONE.SIZE
+
+.entry:
  cmp qword [rdi + SERVICE_DESU_STRUCTURE_ZONE.object], STATIC_EMPTY
  je .end
 
@@ -165,6 +164,11 @@ service_desu_zone:
  jle .object
 
 .left:
+ cmp r8, STATIC_EMPTY
+ jge .left_positive
+ xor r8, r8
+
+.left_positive:
  cmp r8, r12
  jge .up
 
@@ -184,6 +188,12 @@ service_desu_zone:
  mov r8, r12
 
 .up:
+ cmp r9, STATIC_EMPTY
+ jge .up_positive
+ 
+ xor r9, r9
+
+.up_positive:
  cmp r9, r12
  jge .right
 
@@ -203,47 +213,50 @@ service_desu_zone:
  mov r9, r13
 
 .right:
+ cmp r10, qword [kernel_video_width_pixel]
+ jle .right_positive
+ 
+ mov r10, qword [kernel_video_width_pixel]
+
+.right_positive:
  cmp r10, r14
  jle .down
 
- mov r10, r14
- sub r10, r8
+ sub r10, r14
 
  push r8
 
  mov r8, r14
 
- sub r11, r9
-
  call service_desu_zone_insert_by_register
 
  pop r8
 
- add r11, r9
-
  mov r10, r14
 
 .down:
- cmp r11, r15
- jle .remove
+ cmp r11, qword [kernel_video_height_pixel]
+ jle .down_positive
 
- mov r11, r15
- sub r11, r9
+ mov r11, qword [kernel_video_height_pixel]
+
+.down_positive:
+ cmp r11, r15
+ jle .cursor
+
+ sub r11, r15
 
  push r9
 
  mov r9, r15
 
- sub r10, r8
-
  call service_desu_zone_insert_by_register
 
  pop r9
 
- add r10, r8
-
  mov r11, r15
 
+.cursor:
  cmp qword [rdi + SERVICE_DESU_STRUCTURE_ZONE.object], service_desu_object_cursor
  jne .loop
 
@@ -251,9 +264,6 @@ service_desu_zone:
  sub r10, r8
  sub r11, r9
  call service_desu_fill_insert_by_register
-
-.remove:
- mov qword [rdi + SERVICE_DESU_STRUCTURE_ZONE.object], STATIC_EMPTY
 
  jmp .loop
 

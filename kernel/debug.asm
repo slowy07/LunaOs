@@ -107,6 +107,7 @@ kernel_debug_assembly_table:
 kernel_debug_assembly_table_end:
 
 kernel_debug:
+ xchg bx, bx
  pushf
  push r15
  push r14

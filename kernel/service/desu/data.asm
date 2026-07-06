@@ -47,10 +47,9 @@ service_desu_object_cursor:
  dq 12
  dq 19
  dq service_desu_object_cursor.data
- dq STATIC_EMPTY
 
 .extra:
- dq (12 * 19) << KERNEL_VIDEO_DEPTH_shift
+ dq service_desu_object_cursor.end - service_desu_object_cursor.data
  dq SERVICE_DESU_OBJECT_FLAG_pointer | SERVICE_DESU_OBJECT_FLAG_flush | SERVICE_DESU_OBJECT_FLAG_visible
 
 .data:
@@ -75,6 +74,15 @@ service_desu_object_cursor:
  dd 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF000000, 0x00000000, 0x00000000, 0x00000000
 
 .end:
+
+service_desu_object_tmp:
+ dq 0
+ dq 32
+ dq 32
+ dq STATIC_EMPTY
+.extra:
+ dq 4096
+ dq STATIC_EMPTY
 
 service_desu_object_lock_level db STATIC_FALSE
 

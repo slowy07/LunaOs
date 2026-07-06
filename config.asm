@@ -1,3 +1,5 @@
+%define DEBUG
+
 KERNEL_PAGE_mask equ 0xF000
 
 KERNEL_PAGE_SIZE_byte equ 0x1000

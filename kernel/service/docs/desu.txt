@@ -75,10 +75,13 @@ NOTES
     (service_desu_object_up via insert+remove), and dragging
     moves the selected object (service_desu_object_move)
     with old/new zone regions registered for redraw.
-  - service_desu_object_move splits movement into X and Y
-    offset components, handles left/right/up direction,
-    and calls zone + fill at end to flush changes.
-  - Cursor uses r14/r15 for delta tracking instead of r10/r11.
+  - service_desu_object_move: saves original x in r12, width in r13;
+    sign check uses cmp + jl (not bt + jc); position updated via add
+    at end using delta registers r14/r15; calls zone only (fill
+    happens in main loop).
+  - Cursor uses r14/r15 for delta tracking instead of r10/r11;
+    service_desu_object_move caches list address in rbx, avoids
+    rax/rcx save/restore.
   - Loop order: object → cursor → fill (fill always last).
   - Zone loop uses .entry/.loop pattern; zone object cleared
     before advancing; screen bounds clipping applied

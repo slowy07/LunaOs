@@ -107,7 +107,10 @@ service_desu_zone:
 
  mov rdi, qword [service_desu_zone_list_address]
 
+ sub rdi, SERVICE_DESU_STRUCTURE_ZONE.SIZE
+
 .loop:
+ add rdi, SERVICE_DESU_STRUCTURE_ZONE.SIZE
  cmp qword [rdi + SERVICE_DESU_STRUCTURE_ZONE.object], STATIC_EMPTY
  je .end
 
@@ -119,13 +122,13 @@ service_desu_zone:
  add r11, r9
 
  cmp r8, qword [kernel_video_width_pixel]
- jge .next
+ jge .loop
  cmp r9, qword [kernel_video_height_pixel]
- jge .next
+ jge .loop
  cmp r10, STATIC_EMPTY
- jle .next
+ jle .loop
  cmp r11, STATIC_EMPTY
- jle .next
+ jle .loop
 
  mov eax, SERVICE_DESU_STRUCTURE_OBJECT.SIZE + SERVICE_DESU_STRUCTURE_OBJECT_EXTRA.SIZE
  mul qword [service_desu_object_list_records]
@@ -241,39 +244,21 @@ service_desu_zone:
 
  mov r11, r15
 
- jmp .remove
-
-.refill:
- mov qword [rdi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.x], r8
- mov qword [rdi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.y], r9
- sub r10, r8
- mov qword [rdi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.width], r10
- sub r11, r9
- mov qword [rdi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.height], r11
- mov qword [rdi + SERVICE_DESU_STRUCTURE_OBJECT.address], rsi
- xchg rdi, rsi
- call service_desu_fill_register
-
- xchg rdi, rdi
-
- jmp .next
+ cmp qword [rdi + SERVICE_DESU_STRUCTURE_ZONE.object], service_desu_object_cursor
+ jne .loop
 
 .fill:
- mov rsi, rdi
- call service_desu_fill_register
-
- jmp .next
+ sub r10, r8
+ sub r11, r9
+ call service_desu_fill_insert_by_register
 
 .remove:
- test bl, al
- jnz .refill
-
-.next:
- add rdi, SERVICE_DESU_STRUCTURE_ZONE.SIZE
+ mov qword [rdi + SERVICE_DESU_STRUCTURE_ZONE.object], STATIC_EMPTY
 
  jmp .loop
 
 .end:
+ mov qword [service_desu_zone_list_records], STATIC_EMPTY
  mov byte [service_desu_object_semaphore], STATIC_FALSE
 
  pop r15

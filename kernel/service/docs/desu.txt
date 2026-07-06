@@ -11,9 +11,8 @@ LOOP
 service_desu:
   init.asm -> allocate lists, create framebuffer/workbench/cursor objects
 .loop:
-  call service_desu_cursor         - handle mouse input, object selection
-  call service_desu_object_flush   - mark changed objects for redraw
-  call service_desu_cursor_flush   - redraw cursor if dirty
+  call service_desu_cursor         - track mouse position, update zone
+  call service_desu_object         - flush dirty objects to zone
   call service_desu_fill           - composite all fill operations
   jmp .loop
 
@@ -24,10 +23,10 @@ SUBFILES
 | config.asm | Constants: object flags, structure definitions, limits |
 | data.asm | Global state: semaphores, object/fill/zone lists, cursor bitmap |
 | init.asm | Allocate framebuffer, workbench, cursor; create object lists |
-| cursor.asm | Mouse tracking, LMB/RMB click handling, object drag |
-| object.asm | Object insert/remove, hide, flush, find by position/ID |
-| fill.asm | Register fill regions, composite to framebuffer with clipping |
-| zone.asm | Dirty-region tracking and occlusion culling |
+| cursor.asm | Mouse tracking, zone update, inline fill |
+| object.asm | Object insert/remove, hide, flush (service_desu_object), find by position/ID |
+| fill.asm | Fill insert by register/object, composite to framebuffer with clipping |
+| zone.asm | Dirty-region tracking, occlusion culling, direct fill insert, zone list reset |
 | keyboard.asm | Keyboard input handling (Alt key state) |
 | sleep.asm | Idle loop when no objects present |
 | panic.asm | Out-of-memory panic handler |
@@ -45,10 +44,22 @@ OBJECT FLAGS
 
 RENDERING PIPELINE
 
-  1. Cursor processes mouse deltas, updates cursor position
-  2. Object flush marks dirty objects for zone update
-  3. Zone system tracks damaged screen regions, splits them
-     around opaque occluding objects
+  1. Cursor processes mouse deltas, updates cursor position,
+     registers zone region, and directly inserts cursor fill
+  2. Object flush (service_desu_object) marks dirty objects
+     into the zone system
+  3. Zone system splits damaged regions around opaque objects,
+     inserts fills for each visible region, then resets zone list
   4. Fill list is composited to framebuffer with per-pixel
      alpha blending (pixels with alpha=0xFF are opaque,
      alpha=0x00 are transparent)
+
+NOTES
+
+  - Mouse button handling (LMB/RMB click, object selection,
+    drag) has been removed from cursor.asm. Object interaction
+    logic is handled externally.
+  - service_desu_cursor_flush removed — cursor is now filled
+    inline at the end of service_desu_cursor.
+  - Init calls library_color_alpha_invert on cursor pixel data
+    to convert from stored format to render format.

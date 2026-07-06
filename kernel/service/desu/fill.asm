@@ -1,9 +1,44 @@
-service_desu_fill_register:
+service_desu_fill_insert_by_register:
+ push rax
+ push rdx
+ push rdi
+
+ cmp qword [service_desu_fill_list_records], SERVICE_DESU_FILL_LIST_limit
+ jne .insert
+
+ xchg bx, bx
+ jmp $
+
+.insert:
+ mov rax, SERVICE_DESU_STRUCTURE_FILL.SIZE
+ mul qword [service_desu_fill_list_records]
+
+ mov rdi, qword [service_desu_fill_list_address]
+ add rdi, rax
+
+ mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.x], r8
+ mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.y], r9
+ mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.width], r10
+ mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.height], r11
+
+ mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.object], rsi
+
+ inc qword [service_desu_fill_list_records]
+ 
+ pop rdi
+ pop rdx
+ pop rax
+
+ ret
+
+ macro_debug "service_desu_fill_insert_by_register"
+
+service_desu_fill_insert_by_object:
  push rax
  push rcx
  push rdx
- push rsi
  push rdi
+ push rsi
 
  cmp qword [service_desu_fill_list_records], SERVICE_DESU_FILL_LIST_limit
  je .end
@@ -14,14 +49,19 @@ service_desu_fill_register:
  mov rdi, qword [service_desu_fill_list_address]
  add rdi, rax
 
- mov rcx, SERVICE_DESU_STRUCTURE_FILL.SIZE >> STATIC_DIVIDE_BY_8_shift
- rep movsq
+ movsq
+ movsq
+ movsq
+ movsq
+
+ mov rax, qword [rsp]
+ mov qword [rdi], rax
 
  inc qword [service_desu_fill_list_records]
 
 .end:
- pop rdi
  pop rsi
+ pop rdi
  pop rdx
  pop rcx
  pop rax
@@ -56,66 +96,49 @@ service_desu_fill:
  push rcx
  push rsi
 
- mov r8, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.x]
- mov r9, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.y]
- mov r10, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.width]
- mov r11, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.height]
+ mov r8, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.x]
+ mov r9, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.y]
+ mov r10, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.width]
+ mov r11, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.height]
 
- mov rax, r8
- cmp rax, qword [kernel_video_width_pixel]
- jge .leave
-
- add rax, r10
- cmp rax, STATIC_EMPTY
- jl .leave
-
- mov rax, r9
- cmp rax, qword [kernel_video_height_pixel]
- jge .leave
-
- add rax, r11
- cmp rax, STATIC_EMPTY
- jl .leave
-
+.left:
  bt r8, STATIC_WORD_BIT_sign
- jnc .left_passive
+ jnc .top
 
- not r8
- inc r8
- sub r10, r8
+ add r10, r8
 
  xor r8, r8
 
-.left_passive:
+.top:
  bt r9, STATIC_WORD_BIT_sign
- jnc .top_passive
+ jnc .right
 
- not r9
- inc r9
- sub r11, r9
+ add r11, r9
 
  xor r9, r9
 
-.top_passive:
+.right:
  mov rax, r8
  add rax, r10
  cmp rax, qword [kernel_video_width_pixel]
- jb .right_passive
+ jb .down
 
  sub rax, qword [kernel_video_width_pixel]
  sub r10, rax
 
-.right_passive:
+.down:
  mov rax, r9
  add rax, r11
  cmp rax, qword [kernel_video_height_pixel]
- jb .bottom_passive
+ jb .ready
 
  sub rax, qword [kernel_video_height_pixel]
  sub r11, rax
 
-.bottom_passive:
- mov rsi, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.address]
+.ready:
+ xchg bx, bx
+
+ mov rsi, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.object]
 
  mov r12, r10
  shl r12, KERNEL_VIDEO_DEPTH_shift
@@ -203,4 +226,4 @@ service_desu_fill:
 
  ret
 
- macro_debug "service desu fill"
+ macro_debug "service_desu_fill"

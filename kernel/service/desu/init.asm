@@ -22,6 +22,10 @@ call kernel_memory_alloc_page
 call kernel_page_drain
 mov qword [service_desu_zone_list_address], rdi
 
+mov ecx, service_desu_object_cursor.end - service_desu_object_cursor.data
+mov rsi, service_desu_object_cursor.data
+call library_color_alpha_invert
+
 mov rsi, service_desu_object_workbench
 
 mov qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.SIZE + SERVICE_DESU_STRUCTURE_OBJECT_EXTRA.size], rcx

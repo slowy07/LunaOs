@@ -171,7 +171,7 @@ service_desu_object_move_top:
 
  macro_debug "service desu object move top"
 
-service_desu_object_flush:
+service_desu_object:
  push rbx
  push rsi
 

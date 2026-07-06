@@ -5,8 +5,8 @@ service_desu:
 
 .loop:
  call service_desu_object
- call service_desu_fill
  call service_desu_cursor
+ call service_desu_fill
 
  jmp .loop
 

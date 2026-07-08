@@ -94,7 +94,7 @@ service_desu_object_find:
  push rsi
 
  cmp qword [service_desu_object_list_records], STATIC_EMPTY
- je .error ; nie
+ je .error
 
  mov rcx, qword [service_desu_object_list_records]
 
@@ -111,7 +111,7 @@ service_desu_object_find:
  jz .fail
 
  cmp r8, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.x]
- jl .fail ; nie
+ jl .fail
 
  cmp r9, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.y]
  jl .fail
@@ -221,6 +221,8 @@ service_desu_object_move:
  test r14, r14
  jz .y
 
+ add qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.x], r14
+
  cmp r14, STATIC_EMPTY
  jl .to_left
 
@@ -256,6 +258,8 @@ service_desu_object_move:
  test r15, r15
  jz .ready
 
+ add qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.y], r15
+
  cmp r15, STATIC_EMPTY
  jl .to_up
 
@@ -284,17 +288,15 @@ service_desu_object_move:
  sub r11, r15
 
 .ready:
+ xchg bx, bx
  call service_desu_zone
+
+
+ or qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.SIZE + SERVICE_DESU_STRUCTURE_OBJECT_EXTRA.flags], SERVICE_DESU_OBJECT_FLAG_flush
 
 .end:
  pop r15
  pop r14
-
- add qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.x], r14
- add qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.y], r15
-
- or qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.SIZE + SERVICE_DESU_STRUCTURE_OBJECT_EXTRA.flags], SERVICE_DESU_OBJECT_FLAG_flush
-
  pop r13
  pop r12
  pop r11

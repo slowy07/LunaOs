@@ -77,7 +77,7 @@ NOTES
     with old/new zone regions registered for redraw.
   - service_desu_object_move: saves original x in r12, width in r13;
     sign check uses cmp + jl (not bt + jc); position updated via add
-    at end using delta registers r14/r15; calls zone only (fill
+    before zone computation (not deferred); calls zone only (fill
     happens in main loop).
   - Cursor uses r14/r15 for delta tracking instead of r10/r11;
     service_desu_object_move caches list address in rbx, avoids

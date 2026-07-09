@@ -10,6 +10,12 @@ service_desu_fill_insert_by_register:
  cmp qword [rdi + SERVICE_DESU_STRUCTURE_FILL.object], STATIC_EMPTY
  jne .next
 
+ cmp r10, STATIC_EMPTY
+ jge .ok
+
+ xchg bx, bx
+
+.ok:
  mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.x], r8
  mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.y], r9
  mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.width], r10
@@ -121,27 +127,26 @@ service_desu_fill:
  mov r14, qword [service_desu_object_framebuffer + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.width]
  shl r14, KERNEL_VIDEO_DEPTH_shift
 
+ mov rdi, r8
+ shl rdi, KERNEL_VIDEO_DEPTH_shift
+ 
+ mov rax, r14
+ mul r9
 
- mov rax, r9
- sub rax, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.y]
- mul qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.width]
- shl rax, KERNEL_VIDEO_DEPTH_shift
- mov r15, rax
-
- mov rax, r8
- sub rax, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.x]
- shl rax, KERNEL_VIDEO_DEPTH_shift
- add r15, rax
- add r15, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.address]
-
- mov rax, r9
- mul qword [kernel_video_scanline_byte]
- mov rdi, rax
- shl r8, KERNEL_VIDEO_DEPTH_shift
- add rdi, r8
+ add rdi, rax
  add rdi, qword [service_desu_object_framebuffer + SERVICE_DESU_STRUCTURE_OBJECT.address]
 
- mov rsi, r15
+ sub r8, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.x]
+ sub r9, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.y]
+
+ mov rax, r9
+ 
+ mul r13
+ shl r8, KERNEL_VIDEO_DEPTH_shift
+
+ mov rsi, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.address]
+ add rsi, rax
+ add rsi, r8
 
 .row:
  mov rcx, r10
@@ -176,9 +181,9 @@ service_desu_fill:
  pop rsi
  pop rcx
 
-.next:
  mov qword [rsi + SERVICE_DESU_STRUCTURE_FILL.object], STATIC_EMPTY
 
+.next:
  add rsi, SERVICE_DESU_STRUCTURE_FILL.SIZE
 
  dec rcx

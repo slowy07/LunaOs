@@ -288,9 +288,7 @@ service_desu_object_move:
  sub r11, r15
 
 .ready:
- xchg bx, bx
  call service_desu_zone
-
 
  or qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.SIZE + SERVICE_DESU_STRUCTURE_OBJECT_EXTRA.flags], SERVICE_DESU_OBJECT_FLAG_flush
 

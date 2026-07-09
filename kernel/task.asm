@@ -55,7 +55,7 @@ kernel_task_pid_semaphore db STATIC_FALSE
 kernel_task_pid dq STATIC_EMPTY
 
 kernel_task:
-
+ cli
  cmp byte [kernel_task_debug_semaphore], STATIC_FALSE
  je .no
 
@@ -186,7 +186,6 @@ kernel_task:
  pop rbx
 
 .leave:
-
  mov rdi, qword [kernel_apic_base_address]
  mov dword [rdi + KERNEL_APIC_TICR_register], DRIVER_RTC_Hz
 
@@ -194,6 +193,8 @@ kernel_task:
 
  pop rdi
  pop rax
+
+ sti
 
  iretq
 

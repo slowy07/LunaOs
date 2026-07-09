@@ -10,12 +10,6 @@ service_desu_fill_insert_by_register:
  cmp qword [rdi + SERVICE_DESU_STRUCTURE_FILL.object], STATIC_EMPTY
  jne .next
 
- cmp r10, STATIC_EMPTY
- jge .ok
-
- xchg bx, bx
-
-.ok:
  mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.x], r8
  mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.y], r9
  mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.width], r10
@@ -117,6 +111,30 @@ service_desu_fill:
  mov r10, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.width]
  mov r11, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.height]
 
+ cmp r8, STATIC_EMPTY
+ jnl .x_positive
+
+ xor r8, r8
+
+.x_positive:
+ cmp r9, STATIC_EMPTY
+ jnl .y_positive
+
+ xor r9, r9
+
+.y_positive:
+ cmp r10, qword [kernel_video_width_pixel]
+ jbe .x_inside
+
+ mov r10, qword [kernel_video_width_pixel]
+
+.x_inside:
+ cmp r11, qword [kernel_video_height_pixel]
+ jbe .y_inside
+
+ mov r11, qword [kernel_video_height_pixel]
+
+.y_inside:
  mov rsi, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.object]
 
  mov r12, r10

@@ -23,10 +23,10 @@ SUBFILES
 | config.asm | Constants: object flags, structure definitions, limits (OBJECT_EXTRA: size+flags only) |
 | data.asm | Global state: semaphores, object/zone lists, cursor bitmap, tmp test objects (16x16 + 16x16 green) |
 | init.asm | Invert cursor alpha, allocate lists, fill workbench bg, insert workbench + tmp test objects (red + green) |
-| cursor.asm | Mouse tracking, LMB click (find + raise z), drag (move), zone update, inline fill |
+| cursor.asm | Mouse tracking, LMB click (find + raise z), drag (move), zone update, inline fill (stores pos from delta r14/r15) |
 | object.asm | Object insert (simplified), flush (service_desu_object), find, remove, up (raise z), move (drag) |
-| fill.asm | Fill insert by register/object (linear scan for empty slot), composite with absolute framebuffer address + relative object offset |
-| zone.asm | Dirty-region tracking, occlusion culling, screen bounds clipping, direct fill insert, zone list reset |
+| fill.asm | Fill insert by register/object (linear scan for empty slot), screen bounds clipping, composite with absolute fb + relative object offset |
+| zone.asm | Dirty-region tracking, occlusion culling, direct fill insert, zone list reset (no clipping — handled by fill) |
 | keyboard.asm | Keyboard input handling (Alt key state) |
 | sleep.asm | Idle loop when no objects present |
 | panic.asm | Out-of-memory panic handler |
@@ -61,9 +61,9 @@ RENDERING PIPELINE
   2. Cursor runs — tracks mouse deltas, handles LMB click
      (find object, raise z-order via up), handles drag
      (move old/new zone regions), queue cursor fill
-  3. Zone system clips regions to screen bounds, splits damaged
-     regions around opaque objects, inserts fills, clears zone
-     object after processing, resets list at end
+  3. Zone system splits damaged regions around opaque objects,
+     inserts fills, clears zone object after processing,
+     resets list at end
   4. Fill list is composited to framebuffer with per-pixel
      alpha blending (pixels with alpha=0xFF are opaque,
      alpha=0x00 are transparent); each slot cleared to
@@ -80,21 +80,16 @@ NOTES
     sign check uses cmp + jl (not bt + jc); position updated via add
     before zone computation (not deferred); calls zone only (fill
     happens in main loop).
-  - Cursor uses r14/r15 for delta tracking instead of r10/r11;
-    service_desu_object_move caches list address in rbx, avoids
-    rax/rcx save/restore.
+  - Cursor stores position using r14/r15 (delta registers) instead of
+    r8/r9 (absolute mouse coordinates).
   - Loop order: object → cursor → fill (fill always last).
   - Zone loop uses .entry/.loop pattern; zone object cleared
-    before advancing; screen bounds clipping applied
-    (left ≥ 0, top ≥ 0, right ≤ width, bottom ≤ height).
-  - Fill address calculation refactored: computes absolute framebuffer
-    destination (x + y * scanline) and relative object source offset
-    separately, instead of the previous offset-from-origin approach.
-  - Fill overflow check: panics if width (r10) is negative
-    (xchg bx, bx before insert).
-  - Zone now clips regions to screen bounds at entry
-    (left ≥ 0, top ≥ 0, right ≤ width, bottom ≤ height) before
-    occlusion culling — clipping fully removed from fill.
+    before advancing. Screen clipping removed from zone — now handled
+    by fill (clips x/y to ≥ 0, width/height to ≤ screen dimensions).
+  - Fill address calculation: absolute framebuffer destination
+    (x + y * fb_width) and relative object source offset
+    (x - obj.x, y - obj.y) computed separately.
+  - Fill overflow check removed from fill_insert_by_register.
   - service_desu_object_tmp resized from 32x32 to 16x16; new
     service_desu_object_another (16x16 green) added for testing.
   - Removed xchg bx, bx debug breakpoint from object_move .ready.

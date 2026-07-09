@@ -1,20 +1,14 @@
 service_desu_fill_insert_by_register:
- push rax
- push rdx
+ push rcx
  push rdi
 
- cmp qword [service_desu_fill_list_records], SERVICE_DESU_FILL_LIST_limit
- jne .insert
-
- xchg bx, bx
- jmp $
-
-.insert:
- mov rax, SERVICE_DESU_STRUCTURE_FILL.SIZE
- mul qword [service_desu_fill_list_records]
+ mov ecx, SERVICE_DESU_FILL_LIST_limit
 
  mov rdi, qword [service_desu_fill_list_address]
- add rdi, rax
+
+.loop:
+ cmp qword [rdi + SERVICE_DESU_STRUCTURE_FILL.object], STATIC_EMPTY
+ jne .next
 
  mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.x], r8
  mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.y], r9
@@ -23,11 +17,20 @@ service_desu_fill_insert_by_register:
 
  mov qword [rdi + SERVICE_DESU_STRUCTURE_FILL.object], rsi
 
- inc qword [service_desu_fill_list_records]
- 
+ jmp .end
+
+.next:
+ add rdi, SERVICE_DESU_STRUCTURE_FILL.SIZE
+
+ dec rcx
+ jnz .loop
+
+ xchg bx, bx
+ jmp $
+
+.end:
  pop rdi
- pop rdx
- pop rax
+ pop rcx
 
  ret
 
@@ -36,19 +39,14 @@ service_desu_fill_insert_by_register:
 service_desu_fill_insert_by_object:
  push rax
  push rcx
- push rdx
  push rdi
  push rsi
 
- cmp qword [service_desu_fill_list_records], SERVICE_DESU_FILL_LIST_limit
- jne .insert
+ mov ecx, SERVICE_DESU_FILL_LIST_limit
 
- xchg bx, bx
- jmp $
-
-.insert:
- mov rax, SERVICE_DESU_STRUCTURE_FILL.SIZE
- mul qword [service_desu_fill_list_records]
+.loop:
+ cmp qword [rdi + SERVICE_DESU_STRUCTURE_FILL.object], STATIC_EMPTY
+ jne .next
 
  mov rdi, qword [service_desu_fill_list_address]
  add rdi, rax
@@ -61,18 +59,26 @@ service_desu_fill_insert_by_object:
  mov rax, qword [rsp]
  mov qword [rdi], rax
 
- inc qword [service_desu_fill_list_records]
+ jmp .end
+
+.next:
+ add rdi, SERVICE_DESU_STRUCTURE_FILL.SIZE
+
+ dec rcx
+ jnz .loop
+
+ xchg bx, bx
+ jmp $
 
 .end:
  pop rsi
  pop rdi
- pop rdx
  pop rcx
  pop rax
 
  ret
 
- macro_debug "service desu fill insert"
+ macro_debug "service_desu_fill_insert"
 
 service_desu_fill:
  push rax
@@ -88,11 +94,6 @@ service_desu_fill:
  push r13
  push r14
  push r15
-
- mov rcx, qword [service_desu_fill_list_records]
-
- test rcx, rcx
- jz .end
 
  mov rsi, qword [service_desu_fill_list_address]
 
@@ -210,8 +211,6 @@ service_desu_fill:
  jnz .loop
 
 .end:
- mov qword [service_desu_fill_list_records], STATIC_EMPTY
-
  pop r15
  pop r14
  pop r13

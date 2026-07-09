@@ -25,7 +25,7 @@ SUBFILES
 | init.asm | Invert cursor alpha, allocate lists, fill workbench bg, insert workbench + tmp test object |
 | cursor.asm | Mouse tracking, LMB click (find + raise z), drag (move), zone update, inline fill |
 | object.asm | Object insert (simplified), flush (service_desu_object), find, remove, up (raise z), move (drag) |
-| fill.asm | Fill insert by register/object, overflow check, composite to framebuffer with clipping |
+| fill.asm | Fill insert by register/object (linear scan for empty slot), composite to framebuffer with clipping |
 | zone.asm | Dirty-region tracking, occlusion culling, screen bounds clipping, direct fill insert, zone list reset |
 | keyboard.asm | Keyboard input handling (Alt key state) |
 | sleep.asm | Idle loop when no objects present |

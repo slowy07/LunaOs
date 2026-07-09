@@ -95,9 +95,14 @@ service_desu_fill:
  push r14
  push r15
 
+ mov ecx, SERVICE_DESU_FILL_LIST_limit
+
  mov rsi, qword [service_desu_fill_list_address]
 
 .loop:
+ cmp qword [rsi + SERVICE_DESU_STRUCTURE_FILL.object], STATIC_EMPTY
+ je .next
+
  push rcx
  push rsi
 
@@ -106,41 +111,6 @@ service_desu_fill:
  mov r10, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.width]
  mov r11, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.height]
 
-.left:
- bt r8, STATIC_WORD_BIT_sign
- jnc .top
-
- add r10, r8
-
- xor r8, r8
-
-.top:
- bt r9, STATIC_WORD_BIT_sign
- jnc .right
-
- add r11, r9
-
- xor r9, r9
-
-.right:
- mov rax, r8
- add rax, r10
- cmp rax, qword [kernel_video_width_pixel]
- jb .down
-
- sub rax, qword [kernel_video_width_pixel]
- sub r10, rax
-
-.down:
- mov rax, r9
- add rax, r11
- cmp rax, qword [kernel_video_height_pixel]
- jb .ready
-
- sub rax, qword [kernel_video_height_pixel]
- sub r11, rax
-
-.ready:
  mov rsi, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.object]
 
  mov r12, r10
@@ -148,8 +118,9 @@ service_desu_fill:
 
  mov r13, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.width]
  shl r13, KERNEL_VIDEO_DEPTH_shift
+ mov r14, qword [service_desu_object_framebuffer + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.width]
+ shl r14, KERNEL_VIDEO_DEPTH_shift
 
- mov r14, qword [kernel_video_scanline_byte]
 
  mov rax, r9
  sub rax, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.field + SERVICE_DESU_STRUCTURE_FIELD.y]
@@ -205,7 +176,10 @@ service_desu_fill:
  pop rsi
  pop rcx
 
- add rsi, SERVICE_DESU_STRUCTURE_OBJECT.SIZE
+.next:
+ mov qword [rsi + SERVICE_DESU_STRUCTURE_FILL.object], STATIC_EMPTY
+
+ add rsi, SERVICE_DESU_STRUCTURE_FILL.SIZE
 
  dec rcx
  jnz .loop

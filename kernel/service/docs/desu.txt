@@ -21,11 +21,11 @@ SUBFILES
 | File | Description |
 |------|-------------|
 | config.asm | Constants: object flags, structure definitions, limits (OBJECT_EXTRA: size+flags only) |
-| data.asm | Global state: semaphores, object/fill/zone lists, cursor bitmap, tmp test object |
+| data.asm | Global state: semaphores, object/zone lists, cursor bitmap, tmp test object (fill_list_records removed) |
 | init.asm | Invert cursor alpha, allocate lists, fill workbench bg, insert workbench + tmp test object |
 | cursor.asm | Mouse tracking, LMB click (find + raise z), drag (move), zone update, inline fill |
 | object.asm | Object insert (simplified), flush (service_desu_object), find, remove, up (raise z), move (drag) |
-| fill.asm | Fill insert by register/object (linear scan for empty slot), composite to framebuffer with clipping |
+| fill.asm | Fill insert by register/object (linear scan for empty slot), composite to framebuffer (no clipping — handled by zone) |
 | zone.asm | Dirty-region tracking, occlusion culling, screen bounds clipping, direct fill insert, zone list reset |
 | keyboard.asm | Keyboard input handling (Alt key state) |
 | sleep.asm | Idle loop when no objects present |
@@ -66,7 +66,8 @@ RENDERING PIPELINE
      object after processing, resets list at end
   4. Fill list is composited to framebuffer with per-pixel
      alpha blending (pixels with alpha=0xFF are opaque,
-     alpha=0x00 are transparent)
+     alpha=0x00 are transparent); each slot cleared to
+     STATIC_EMPTY after render
 
 NOTES
 
@@ -86,6 +87,9 @@ NOTES
   - Zone loop uses .entry/.loop pattern; zone object cleared
     before advancing; screen bounds clipping applied
     (left ≥ 0, top ≥ 0, right ≤ width, bottom ≤ height).
-  - Overflow panics on fill/zone inserts (xchg bx, bx + jmp $).
+  - Fill loop iterates fixed-size array (SERVICE_DESU_FILL_LIST_limit),
+    skipping empty slots and clearing them after render. Screen clipping
+    removed from fill — fully delegated to zone system.
+  - service_desu_fill_list_records removed from data.asm (no longer used).
   - Init fills workbench with dark background (0x00101010)
     and creates a tmp test object (red 32x32 square).

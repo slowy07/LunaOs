@@ -90,9 +90,10 @@ kernel_init_semaphore        -- (in kernel/data.asm) Global init done flag
  Order  Module         Name       Function
  -----  ------         ----       --------
    1    service_tresher "tresher"  Task reaper (reclaims closed task slots)
+   2    service_desu   "desu"     Desktop environment (compositor, windows, mouse)
 
  Services run as kernel tasks. Started sequentially in init/services.asm.
- Only tresher is started at boot — desu, service_tx, service_network,
+ tresher and desu are started at boot — service_tx, service_network,
  and service_http were removed from the boot-time services list.
 
 VFS DIRECTORY STRUCTURE (kernel_init_vfs_directory_structure)

@@ -130,7 +130,7 @@ SMP Boot Check (top of init.asm):
        Mounts: timer interrupt handler (IRQ 0)
 
    21. kernel/init/services.asm
-         Start kernel services — only tresher (desu removed from auto-start)
+         Start kernel services — tresher and desu at boot (tx, network, HTTP removed)
 
    22. kernel/init/serial.asm
         Initialize serial port COM1 (115200 baud, 8N1, FIFO enabled)

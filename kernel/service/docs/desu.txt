@@ -6,9 +6,7 @@ OVERVIEW
 Desktop environment service providing a composited graphical interface
 with window management, mouse cursor, and object-based rendering.
 
-NOTE: DESU was removed from kernel_init_services_list (not auto-started
-at boot). Currently only started manually or via init exec. To re-enable
-auto-start, add the service_desu entry back in kernel/init/data.asm.
+Auto-started at boot via kernel_init_services_list (after tresher).
 
 LOOP
 
@@ -26,8 +24,8 @@ SUBFILES
 | File | Description |
 |------|-------------|
 | config.asm | Constants: object flags, structure definitions, limits (OBJECT_EXTRA: size+flags only) |
-| data.asm | Global state: semaphores, object/zone lists, cursor bitmap, tmp test objects (16x16 red + green, 1024 bytes each) |
-| init.asm | Invert cursor alpha, allocate lists, fill workbench bg, insert workbench + tmp test objects (red + green) |
+| data.asm | Global state: semaphores, object/zone lists, cursor bitmap, lock level, keyboard alt state |
+| init.asm | Invert cursor alpha, allocate zone list (page-level), create cursor and workbench objects |
 | cursor.asm | Mouse tracking, LMB click (find + raise z), drag (move), zone update, inline fill (stores pos from delta r14/r15) |
 | object.asm | Object insert (simplified), flush (service_desu_object), find, remove, up (raise z), move (drag) |
 | fill.asm | Fill insert by register/object (linear scan for empty slot), screen bounds clipping (two's complement), composite to framebuffer |
@@ -96,8 +94,6 @@ NOTES
     via add/sub; source offset calculation removed (render from
     object buffer start).
   - Fill overflow check removed from fill_insert_by_register.
-  - service_desu_object_tmp resized from 32x32 to 16x16; new
-    service_desu_object_another (16x16 green) added for testing.
-  - Removed xchg bx, bx debug breakpoint from object_move .ready.
-  - Init creates two test objects: red (position 0,0) and green
-    (position 16,16), both 16x16.
+   - Test objects (service_desu_object_tmp / service_desu_object_another)
+     removed from data.asm and init.asm. Init no longer creates workbench
+     background or test objects — only zone list allocation remains.

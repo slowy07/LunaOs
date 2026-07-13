@@ -78,23 +78,22 @@ kernel_init_smp_semaphore    -- BSP vs AP path selector (FALSE=BSP, TRUE=AP)
 kernel_init_ap_semaphore     -- AP boot synchronization barrier
 kernel_init_semaphore        -- (in kernel/data.asm) Global init done flag
 
-SERVICES LIST (kernel_init_services_list)
+ SERVICES LIST (kernel_init_services_list)
 
-List format: array of KERNEL_INIT_STRUCTURE_SERVICE triples, terminated
-by dq STATIC_EMPTY:
+ List format: array of KERNEL_INIT_STRUCTURE_SERVICE triples, terminated
+ by dq STATIC_EMPTY:
 
-  +0x00  .pointer  resb 8   -- entry point
-  +0x08  .length   resb 1   -- name string length
-  +0x09  .name:             -- name string (variable)
+   +0x00  .pointer  resb 8   -- entry point
+   +0x08  .length   resb 1   -- name string length
+   +0x09  .name:             -- name string (variable)
 
-Order  Module         Name       Function
------  ------         ----       --------
-  1    service_tresher "tresher"  Task reaper (reclaims closed task slots)
+ Order  Module         Name       Function
+ -----  ------         ----       --------
+   1    service_tresher "tresher"  Task reaper (reclaims closed task slots)
 
-Services run as kernel tasks. Started sequentially in init/services.asm.
-The name string is passed to kernel_task_add for task identification.
-Only tresher is started at boot — service_tx, service_network, and
-service_http were removed from the boot-time services list.
+ Services run as kernel tasks. Started sequentially in init/services.asm.
+ Only tresher is started at boot — desu, service_tx, service_network,
+ and service_http were removed from the boot-time services list.
 
 VFS DIRECTORY STRUCTURE (kernel_init_vfs_directory_structure)
 

@@ -6,8 +6,9 @@ OVERVIEW
 The main kernel file ties together all subsystems. After bootloader
 transfers control to 0x100000, it runs initialization in 32-bit mode,
 transitions to 64-bit long mode, completes hardware setup, then
-enters the idle loop. Init code pages are released and the kernel
-task is marked active before halting in `jmp $`.
+attempts to exec `/bin/init` as the first userspace process. Init
+code pages are released before the exec call. Falls through to idle
+loop on return.
 
 EXECUTION FLOW
 
@@ -33,14 +34,24 @@ EXECUTION FLOW
                                     +--------------+
                                            |
                                            v
-                                     +---------------+
-                                     | kernel:       |
-                                     | call          |
-                                     | kernel_task_  |
-                                     | active        |
-                                     | set task flags|
-                                     | jmp $ (idle)  |
-                                     +---------------+
+                                      +------------------+
+                                      | clean:           |
+                                      | kernel_memory_   |
+                                      | release(init)    |
+                                      +------------------+
+                                             |
+                                             v
+                                      +------------------+
+                                      | kernel:          |
+                                      | resolve "/bin/init"|
+                                      | vfs_path_resolve |
+                                      | vfs_file_find    |
+                                      | kernel_exec      |
+                                      | kernel_task_     |
+                                      |   active         |
+                                      | set task flags   |
+                                      | jmp $ (idle)     |
+                                      +------------------+
 
 BOOT SEQUENCE DETAIL
 
@@ -80,13 +91,22 @@ Step 4: clean: - release init code pages:
   call library_page_from_size    ; convert to page count
   call kernel_memory_release     ; free pages
 
-Step 5: kernel: - enter idle loop:
+Step 5: kernel: - try exec /bin/init:
+  mov ecx, kernel_init_exec_end - kernel_init_exec  ; length
+  mov rsi, kernel_init_exec                          ; string ptr
+  call kernel_vfs_path_resolve                       ; find dir
+  call kernel_vfs_file_find                          ; find file
+  call kernel_exec                                   ; spawn process
+  ; no error handling — falls through on failure
+
+Step 6: set task active and idle:
   call kernel_task_active        ; mark current task as active
   mov word [rdi + KERNEL_TASK_STRUCTURE.flags], STATIC_EMPTY
   jmp $                          ; idle forever
 
 CPU halts in jmp $ (idle loop). The kernel task remains active
-so the scheduler keeps ticking.
+so the scheduler keeps ticking. Note: CS ring0 spin loop in
+kernel_task removed.
 
 MEMORY LAYOUT
 
@@ -103,7 +123,8 @@ MEMORY LAYOUT
 |                    |    - services.asm, smp.asm
 +--------------------+  <-- align KERNEL_PAGE_SIZE_byte
 | clean:             |  release init pages via kernel_memory_release
-| kernel:            |  call kernel_task_active, jmp $ idle
+| kernel:            |  resolve & exec /bin/init, kernel_task_active,
+|                    |  set flags, jmp $ idle
 +--------------------+
 | kernel/macro/      |  lock.asm, debug.asm, copy.asm
 +--------------------+
@@ -213,4 +234,4 @@ KERNEL_STACK_address        KERNEL_MEMORY_HIGH_VIRTUAL - 2 pages
 KERNEL_STACK_pointer        KERNEL_MEMORY_HIGH_VIRTUAL - 1 page
 SOFTWARE_base_address       0xFFFF800000000000  (userspace code = high-half real)
 
-(no kernel_init_exec — kernel no longer spawns userspace)
+kernel_init_exec            "/bin/init"          (first userspace process path)

@@ -6,6 +6,10 @@ OVERVIEW
 Desktop environment service providing a composited graphical interface
 with window management, mouse cursor, and object-based rendering.
 
+NOTE: DESU was removed from kernel_init_services_list (not auto-started
+at boot). Currently only started manually or via init exec. To re-enable
+auto-start, add the service_desu entry back in kernel/init/data.asm.
+
 LOOP
 
 service_desu:

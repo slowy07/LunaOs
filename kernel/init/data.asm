@@ -57,10 +57,6 @@ kernel_init_services_list:
  db 7
  db "tresher"
 
- dq service_desu
- db 4
- db "desu"
-
  dq STATIC_EMPTY
 
 kernel_init_vfs_directory_structure:

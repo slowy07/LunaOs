@@ -13,6 +13,7 @@ service_desu:
 .loop:
   call service_desu_object         - flush dirty objects to zone
   call service_desu_cursor         - track mouse, LMB click/drag, raise z
+  call service_desu_zone           - process zone, split regions, insert fills
   call service_desu_fill           - composite all fill operations
   jmp .loop
 
@@ -21,11 +22,11 @@ SUBFILES
 | File | Description |
 |------|-------------|
 | config.asm | Constants: object flags, structure definitions, limits (OBJECT_EXTRA: size+flags only) |
-| data.asm | Global state: semaphores, object/zone lists, cursor bitmap, tmp test objects (16x16 + 16x16 green) |
+| data.asm | Global state: semaphores, object/zone lists, cursor bitmap, tmp test objects (16x16 red + green, 1024 bytes each) |
 | init.asm | Invert cursor alpha, allocate lists, fill workbench bg, insert workbench + tmp test objects (red + green) |
 | cursor.asm | Mouse tracking, LMB click (find + raise z), drag (move), zone update, inline fill (stores pos from delta r14/r15) |
 | object.asm | Object insert (simplified), flush (service_desu_object), find, remove, up (raise z), move (drag) |
-| fill.asm | Fill insert by register/object (linear scan for empty slot), screen bounds clipping, composite with absolute fb + relative object offset |
+| fill.asm | Fill insert by register/object (linear scan for empty slot), screen bounds clipping (two's complement), composite to framebuffer |
 | zone.asm | Dirty-region tracking, occlusion culling, direct fill insert, zone list reset (no clipping — handled by fill) |
 | keyboard.asm | Keyboard input handling (Alt key state) |
 | sleep.asm | Idle loop when no objects present |
@@ -63,7 +64,7 @@ RENDERING PIPELINE
      (move old/new zone regions), queue cursor fill
   3. Zone system splits damaged regions around opaque objects,
      inserts fills, clears zone object after processing,
-     resets list at end
+     resets list at end (called explicitly in main loop)
   4. Fill list is composited to framebuffer with per-pixel
      alpha blending (pixels with alpha=0xFF are opaque,
      alpha=0x00 are transparent); each slot cleared to
@@ -82,13 +83,14 @@ NOTES
     happens in main loop).
   - Cursor stores position using r14/r15 (delta registers) instead of
     r8/r9 (absolute mouse coordinates).
-  - Loop order: object → cursor → fill (fill always last).
+  - Loop order: object → cursor → zone → fill (zone called explicitly).
   - Zone loop uses .entry/.loop pattern; zone object cleared
     before advancing. Screen clipping removed from zone — now handled
-    by fill (clips x/y to ≥ 0, width/height to ≤ screen dimensions).
-  - Fill address calculation: absolute framebuffer destination
-    (x + y * fb_width) and relative object source offset
-    (x - obj.x, y - obj.y) computed separately.
+    by fill (two's complement for negative, add/sub for overflow).
+  - Fill clipping refactored: negative x/y handled via
+    bt + not + inc + sub (two's complement), right/bottom overflow
+    via add/sub; source offset calculation removed (render from
+    object buffer start).
   - Fill overflow check removed from fill_insert_by_register.
   - service_desu_object_tmp resized from 32x32 to 16x16; new
     service_desu_object_another (16x16 green) added for testing.

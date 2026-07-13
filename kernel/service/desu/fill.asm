@@ -111,28 +111,42 @@ service_desu_fill:
  mov r10, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.width]
  mov r11, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.field + SERVICE_DESU_STRUCTURE_FIELD.height]
 
- cmp r8, STATIC_EMPTY
- jnl .x_positive
+ bt r8, STATIC_QWORD_BIT_sign
+ jnc .x_positive
+
+ not r8
+ inc r8
+ sub r10, r8
 
  xor r8, r8
 
 .x_positive:
- cmp r9, STATIC_EMPTY
- jnl .y_positive
+ bt r9, STATIC_QWORD_BIT_sign
+ jnc .y_positive
+
+ not r9
+ inc r9
+ sub r11, r9
 
  xor r9, r9
 
 .y_positive:
- cmp r10, qword [kernel_video_width_pixel]
- jbe .x_inside
+ mov rax, r8
+ add rax, r10
+ cmp rax, qword [kernel_video_width_pixel]
+ jb .x_inside
 
- mov r10, qword [kernel_video_width_pixel]
+ sub rax, qword [kernel_video_width_pixel]
+ sub r10, rax
 
 .x_inside:
- cmp r11, qword [kernel_video_height_pixel]
- jbe .y_inside
+ mov rax, r9
+ add rax, r11
+ cmp rax, qword [kernel_video_height_pixel]
+ jb .y_inside
 
- mov r11, qword [kernel_video_height_pixel]
+ sub rax, qword [kernel_video_height_pixel]
+ sub r11, rax
 
 .y_inside:
  mov rsi, qword [rsi + SERVICE_DESU_STRUCTURE_FILL.object]
@@ -163,8 +177,6 @@ service_desu_fill:
  shl r8, KERNEL_VIDEO_DEPTH_shift
 
  mov rsi, qword [rsi + SERVICE_DESU_STRUCTURE_OBJECT.address]
- add rsi, rax
- add rsi, r8
 
 .row:
  mov rcx, r10

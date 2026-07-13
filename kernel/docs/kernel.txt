@@ -127,7 +127,8 @@ MEMORY LAYOUT
 +--------------------+
 | kernel/driver/     |  rtc.asm, ps2.asm, pci.asm,
 |                    |  network/i82540em.asm,
-|                    |  storage/ide.asm
+|                    |  storage/ide.asm,
+|                    |  serial.asm (COM1 init + string send)
 +--------------------+
 | kernel/service/    |  tresher.asm, http.asm, tx.asm,
 |                    |  network.asm (+ arp, icmp, tcp, checksum, config, data, wrap),
@@ -180,6 +181,7 @@ LOAD ORDER (in include sequence)
  [kernel/driver/pci.asm]
  [kernel/driver/network/i82540em.asm]
  [kernel/driver/storage/ide.asm]
+ [kernel/driver/serial.asm]
         |
         v
  [kernel/service/tresher.asm]

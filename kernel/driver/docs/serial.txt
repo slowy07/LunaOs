@@ -1,0 +1,40 @@
+SERIAL - COM1 PORT DRIVER
+File: kernel/driver/serial.asm
+Author: arfy slowy
+
+OVERVIEW
+Initializes COM1 serial port at 115200 baud, 8 data bits, 1 stop bit,
+no parity (8N1), with FIFO enabled (trigger level 14 bytes). Provides
+blocking string output over serial.
+
+FUNCTIONS
+
+driver_serial:
+  Initialize COM1:
+    - Disable interrupts (IER = 0x00)
+    - Set DLAB, divisor = 0x0003 (115200 baud)
+    - 8N1 (LCR = 0x03)
+    - Enable FIFO, trigger 14 bytes (FCR = 0xC7)
+
+driver_serial_send:
+  Send null-terminated string to COM1.
+  Input:  RBP = pointer to string (null-terminated)
+  Blocks until transmitter holding register is empty before
+  each byte.
+
+driver_serial_ready:
+  Wait for transmitter to be ready.
+  Polls line status register bit 5 (THR empty) and bit 6 (TEMT).
+  Returns when both are set.
+
+REGISTERS
+
+  COM1 base: 0x03F8
+  +0: data / divisor low
+  +1: interrupt enable / divisor high
+  +2: interrupt identification / FIFO control
+  +3: line control / DLAB
+  +4: modem control
+  +5: line status
+  +6: modem status
+  +7: scratch

@@ -1,0 +1,15 @@
+SERIAL - COM1 INITIALIZATION
+File: kernel/init/serial.asm
+Author: arfy slowy
+
+OVERVIEW
+Initializes the COM1 serial port during kernel boot.
+Called after services start, before APIC and SMP init.
+
+IMPLEMENTATION
+
+kernel_init_serial:
+  call driver_serial
+
+Simply invokes the serial driver init routine to configure
+COM1 at 115200 baud, 8N1, with FIFO enabled.

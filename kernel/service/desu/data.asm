@@ -80,7 +80,7 @@ service_desu_object_tmp:
  dq 16
  dq STATIC_EMPTY
 .extra:
- dq 4096
+ dq 1024
  dq STATIC_EMPTY
 
 service_desu_object_another:
@@ -89,7 +89,7 @@ service_desu_object_another:
  dq 16
  dq STATIC_EMPTY
 .extra:
- dq 4096
+ dq 1024
  dq STATIC_EMPTY
 
 service_desu_object_lock_level db STATIC_FALSE

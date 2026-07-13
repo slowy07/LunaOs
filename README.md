@@ -62,6 +62,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 | `ipc.txt` | IPC initialization |
 | `panic.txt` | Panic handler setup |
 | `data.txt` | Data/strings initialization |
+| `serial.txt` | COM1 serial port initialization |
 
 ### Kernel Services (`kernel/service/docs/`)
 | File | Description |
@@ -84,6 +85,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 | `ps2.txt` | PS/2 keyboard (interrupt flow, scan codes, I/O ports) + mouse (3-byte packet parsing, position tracking with bounds clamping) |
 | `pci.txt` | PCI enumeration |
 | `network/i82540em.txt` | Intel 82540EM Gigabit Ethernet |
+| `serial.txt` | COM1 serial port (115200 baud, 8N1, FIFO, string send) |
 
 ### Library (`library/docs/`)
 | File | Description |

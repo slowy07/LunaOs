@@ -49,6 +49,8 @@ kernel_init:
 
  %include "kernel/init/services.asm"
 
+ %include "kernel/init/serial.asm"
+
  call kernel_init_apic
 
  mov dword [rsi + KERNEL_APIC_TICR_register], DRIVER_RTC_Hz

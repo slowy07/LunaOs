@@ -132,7 +132,11 @@ SMP Boot Check (top of init.asm):
    21. kernel/init/services.asm
         Start kernel services — tresher and desu at boot (tx, network, HTTP removed)
 
-  22. kernel/init/smp.asm
+   22. kernel/init/serial.asm
+        Initialize serial port COM1 (115200 baud, 8N1, FIFO enabled)
+        Calls: driver_serial
+
+   23. kernel/init/smp.asm
       Copy boot trampoline (boot.asm) to 0x8000
       Set kernel_init_smp_semaphore to STATIC_TRUE
       Send INIT IPI to all APs (ICR = 0x00004500)
@@ -298,15 +302,21 @@ INITIALIZATION FLOW
  +-----------+-------------+
              |
              v
-  +-------------------------+
-  | services.asm            |
-  | (tresher, desu)         |
-  +-----------+-------------+
-            |
-            v
- +-------------------------+
- | Final: call             |
- | kernel_init_apic        |
+   +-------------------------+
+   | services.asm            |
+   | (tresher, desu)         |
+   +-----------+-------------+
+               |
+               v
+   +-------------------------+
+   | serial.asm              |
+   | (COM1 init)             |
+   +-----------+-------------+
+               |
+               v
+   +-------------------------+
+   | Final: call             |
+   | kernel_init_apic        |
  | Set TICR = DRIVER_RTC_Hz|
  | Send EOI                |
  | (sti now in rtc.asm)   |

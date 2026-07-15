@@ -61,6 +61,10 @@ kernel_init_services_list:
  db 4
  db "desu"
 
+ dq service_workbench
+ db 17
+ db "service_workbench"
+
  dq STATIC_EMPTY
 
 kernel_init_vfs_directory_structure:

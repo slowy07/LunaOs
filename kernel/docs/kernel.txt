@@ -72,7 +72,7 @@ Step 2: 64-bit init (kernel_init label):
   - storage.asm: PCI IDE scan, reset, enumerate, VFS /dev/hd* knots
   - network.asm: PCI NIC detection, i82540EM init
   - task.asm: First kernel task, timer IRQ 0 mount
-   - services.asm: Start tresher + desu kernel services (tx, network, HTTP also started)
+   - services.asm: Start tresher + desu + workbench kernel services (tx, network, HTTP also started)
 
 Step 3: Finalize:
   - call kernel_init_apic: Full APIC config, TICR = 1024Hz, EOI
@@ -140,10 +140,12 @@ MEMORY LAYOUT
 | kernel/service/    |  tresher.asm, http.asm, tx.asm,
 |                    |  network.asm (+ arp, icmp, tcp, checksum, config, data, wrap),
 |                    |  desu.asm (+ config, cursor, data, fill, gfx, init,
-|                    |  keyboard, object, panic, sleep, zone)
+|                    |  keyboard, object, panic, sleep, zone),
+|                    |  workbench_service.asm (+ config, data, init)
 +--------------------+
 | library/           |  color.asm, input.asm, page_align_up.asm,
-|                    |  page_from_size.asm, string_*.asm
+|                    |  page_from_size.asm, string_*.asm,
+|                    |  bosu.asm (+ config, font)
 +--------------------+
 kernel_end:
 
@@ -195,10 +197,11 @@ LOAD ORDER (in include sequence)
  [kernel/service/http.asm]
  [kernel/service/tx.asm]
  [kernel/service/network.asm]
- [kernel/service/desu.asm]
+  [kernel/service/desu.asm]
+  [kernel/service/workbench_service.asm]    # includes bosu.asm internally
         |
         v
- [library/color.asm]
+  [library/color.asm]
  [library/input.asm]
  [library/page_align_up.asm]
  [library/page_from_size.asm]

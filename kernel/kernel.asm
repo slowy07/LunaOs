@@ -54,6 +54,7 @@ kernel:
  %include "kernel/service/tx.asm"
  %include "kernel/service/network.asm"
  %include "kernel/service/desu.asm"
+ %include "kernel/service/workbench_service.asm"
  %include "library/color.asm"
  %include "library/input.asm"
  %include "library/page_align_up.asm"

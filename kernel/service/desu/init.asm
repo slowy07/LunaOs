@@ -26,3 +26,8 @@ call kernel_memory_alloc_page
 call kernel_page_drain
 mov qword [service_desu_zone_list_address], rdi
 
+mov byte [service_desu_semaphore], STATIC_TRUE
+
+.wait:
+cmp qword [service_desu_object_list_records], STATIC_EMPTY
+je .wait

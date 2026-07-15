@@ -76,6 +76,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 | `tx.txt` | Network transmit service |
 | `tresher.txt` | Task reaper service |
 | `desu.txt` | Desktop environment service (compositor, window management, mouse cursor) |
+| `workbench.txt` | Workbench service (desktop background, menu bar) |
 
 ### Drivers (`kernel/driver/`)
 | File | Description |
@@ -96,6 +97,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 | `string_cut.txt` | String trimming |
 | `string_to_integer.txt` | ASCII to integer conversion |
 | `color.txt` | Alpha blending and color inversion |
+| `bosu.txt` | BOSU library (font constants, bitmap font data) |
 
 
 ## Key Systems
@@ -112,7 +114,7 @@ qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 
 | **Drivers** | PS/2 keyboard (scan codes, shift/capslock) + mouse (3-byte packet parsing, signed/unsigned movement, screen bounds clamping), RTC, PCI enumeration, IDE ATA/ATAPI, Intel 82540EM Gigabit Ethernet |
 | **IPC** | Inter-process communication primitives |
 | **Font** | Bitmap font glyph data loaded from `kernel/font/jetbrains.asm`, font name displayed at boot |
-| **Services** | Task reaper (tresher) + desktop environment (desu) — started at boot |
+| **Services** | Task reaper (tresher) + desktop environment (desu) + workbench — started at boot |
 | **Color** | ARGB alpha blending (`library_color_alpha`) and alpha inversion (`library_color_alpha_invert`) |
 
 ## References

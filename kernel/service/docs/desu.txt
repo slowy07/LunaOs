@@ -6,12 +6,14 @@ OVERVIEW
 Desktop environment service providing a composited graphical interface
 with window management, mouse cursor, and object-based rendering.
 
-Auto-started at boot via kernel_init_services_list (after tresher).
+Auto-started at boot via kernel_init_services_list (after tresher,
+before workbench). Workbench background is now handled by the separate
+service_workbench service.
 
 LOOP
 
 service_desu:
-  init.asm -> allocate lists, create framebuffer/workbench/cursor objects
+  init.asm -> alloc zone list, set semaphore, wait for objects
 .loop:
   call service_desu_object         - flush dirty objects to zone
   call service_desu_cursor         - track mouse, LMB click/drag, raise z
@@ -24,8 +26,8 @@ SUBFILES
 | File | Description |
 |------|-------------|
 | config.asm | Constants: object flags, structure definitions, limits (OBJECT_EXTRA: size+flags only) |
-| data.asm | Global state: semaphores, object/zone lists, cursor bitmap, lock level, keyboard alt state |
-| init.asm | Invert cursor alpha, allocate zone list (page-level), create cursor and workbench objects |
+| data.asm | Global state: semaphores (desu, object, fill, zone, mouse buttons, object_id), object/zone lists, cursor bitmap, framebuffer object, keyboard alt state |
+| init.asm | Invert cursor alpha, allocate zone list (page-level), set service_desu_semaphore, wait for objects |
 | cursor.asm | Mouse tracking, LMB click (find + raise z), drag (move), zone update, inline fill (stores pos from delta r14/r15) |
 | object.asm | Object insert (simplified), flush (service_desu_object), find, remove, up (raise z), move (drag) |
 | fill.asm | Fill insert by register/object (linear scan for empty slot), screen bounds clipping (two's complement), composite to framebuffer |
@@ -94,6 +96,7 @@ NOTES
     via add/sub; source offset calculation removed (render from
     object buffer start).
   - Fill overflow check removed from fill_insert_by_register.
-   - Test objects (service_desu_object_tmp / service_desu_object_another)
-     removed from data.asm and init.asm. Init no longer creates workbench
-     background or test objects — only zone list allocation remains.
+   - Test objects removed. Workbench background object moved to
+     separate service_workbench (kernel/service/workbench_service.asm).
+     DESU init now only allocates zone list, sets semaphore, and
+     waits for service_desu_object_list_records to be non-empty.

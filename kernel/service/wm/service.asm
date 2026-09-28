@@ -6,7 +6,7 @@
 ;	rsi - wskaźnik do właściwości obiektu
 kernel_wm_irq:
 	; menedżer gotów na przetwarzenie zgłoszeń?
-	cmp	byte [kernel_wm_semaphore],	STATIC_FALSE
+	cmp	byte [rel kernel_wm_semaphore],	STATIC_FALSE
 	je	kernel_wm_irq	; nie, czekaj
 
 	; zachowaj oryginalne rejestry
@@ -159,7 +159,7 @@ kernel_wm_irq:
 	call	kernel_wm_object_insert
 
 	; oznacz obiekt jako aktywny
-	mov	qword [kernel_wm_object_active_pointer],	rsi
+	mov	qword [rel kernel_wm_object_active_pointer],	rsi
 
 	; zachowaj wskaźnik do przestrzeni procesu
 	mov	rsi,	rdi
@@ -194,7 +194,7 @@ kernel_wm_irq:
 	; pozycjonuj obiekt domyślnie na środku przestrzeni roboczej
 
 	; oś X
-	mov	ax,	word [kernel_video_width_pixel]
+	mov	ax,	word [rel kernel_video_width_pixel]
 	mov	bx,	word [rdx + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width]
 	shr	ax,	STATIC_DIVIDE_BY_2_shift
 	shr	bx,	STATIC_DIVIDE_BY_2_shift
@@ -202,7 +202,7 @@ kernel_wm_irq:
 	mov	word [rdx + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.x],	ax
 
 	; oś Y
-	mov	ax,	word [kernel_video_height_pixel]
+	mov	ax,	word [rel kernel_video_height_pixel]
 	mov	bx,	word [rdx + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.height]
 	shr	ax,	STATIC_DIVIDE_BY_2_shift
 	shr	bx,	STATIC_DIVIDE_BY_2_shift
@@ -258,8 +258,8 @@ kernel_wm_irq:
 	rep	movsb
 
 	; zachowaj czas ostatniej modyfikacji listy
-	mov	rax,	qword [driver_rtc_microtime]
-	mov	qword [kernel_wm_object_list_modify_time],	rax
+	mov	rax,	qword [rel driver_rtc_microtime]
+	mov	qword [rel kernel_wm_object_list_modify_time],	rax
 
 	; koniec procedury
 	jmp	.window_flags_end

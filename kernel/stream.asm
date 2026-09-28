@@ -122,7 +122,7 @@ kernel_stream:
 	push	rsi
 
 	; początek tablicy strumieni
-	mov	rsi,	qword [kernel_stream_address]
+	mov	rsi,	qword [rel kernel_stream_address]
 
 	; zablokuj dostęp do modyfikacji tablicy strumieni
 	macro_lock	kernel_stream_semaphore, 0
@@ -151,7 +151,7 @@ kernel_stream:
 	mov	rsi,	qword [rsi + STATIC_STRUCTURE_BLOCK.link]
 
 	; całkowity koniec tablicy strumieni?
-	cmp	rsi,	qword [kernel_stream_address]
+	cmp	rsi,	qword [rel kernel_stream_address]
 	jne	.search	; nie
 
 	; przygotuj rozszerzenie tablicy
@@ -210,7 +210,7 @@ kernel_stream:
 
 .end:
 	; odblokuj dostęp do modyfikacji tablicy strumieni
-	mov	byte [kernel_stream_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_stream_semaphore],	STATIC_FALSE
 
 	; przywróć oryginalne rejestry
 	pop	rsi

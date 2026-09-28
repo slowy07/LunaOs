@@ -3,7 +3,7 @@
 ;===============================================================================
 kernel_init_task:
 	; pobierz najwyższy identyfikator Local APIC
-	movzx	ecx,	byte [kernel_init_apic_id_highest]
+	movzx	ecx,	byte [rel kernel_init_apic_id_highest]
 	inc	cx	; zmień system liczenia od 1 (zwykle liczymy od 0)
 
 	; zamień identyfikator na rozmiar listy aktywnych zadań poszczególnych procesorów logicznych w Bajtach
@@ -18,7 +18,7 @@ kernel_init_task:
 
 	; zachowaj adres listy aktywnych zadań
 	call	kernel_page_drain_few	; wyczyść przestrzeń
-	mov	qword [kernel_task_active_list],	rdi
+	mov	qword [rel kernel_task_active_list],	rdi
 
 	; ustaw wskaźnik na początek listy aktywnych zadań
 	mov	rsi,	rdi
@@ -32,7 +32,7 @@ kernel_init_task:
 	call	kernel_page_drain
 
 	; zapamiętaj adres początku kolejki zadań
-	mov	qword [kernel_task_address],	rdi
+	mov	qword [rel kernel_task_address],	rdi
 
 	; połącz koniec kolejki z początkiem (RoundRobin)
 	mov	qword [rdi + STATIC_STRUCTURE_BLOCK.link],	rdi
@@ -50,7 +50,7 @@ kernel_init_task:
 	mov	ebx,	KERNEL_TASK_FLAG_active | KERNEL_TASK_FLAG_secured | KERNEL_TASK_FLAG_processing
 	mov	ecx,	kernel_init_string_name_end - kernel_init_string_name
 	mov	rsi,	kernel_init_string_name
-	mov	r11,	qword [kernel_page_pml4_address]
+	mov	r11,	qword [rel kernel_page_pml4_address]
 	call	kernel_task_add
 
 	; ustaw katalog roboczy jądra systemu na /

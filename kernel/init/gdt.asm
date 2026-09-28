@@ -22,7 +22,7 @@ kernel_init_gdt:
 
 	; wyczyść tablicę GDT i zachowaj jej adres
 	call	kernel_page_drain
-	mov	qword [kernel_gdt_header + KERNEL_STRUCTURE_GDT_HEADER.address],	rdi
+	mov	qword [rel kernel_gdt_header + KERNEL_STRUCTURE_GDT_HEADER.address],	rdi
 
 	; utwórz deskryptor NULL
 	xor	eax,	eax
@@ -46,10 +46,10 @@ kernel_init_gdt:
 
 	; zachowaj adres pośredni pierwszego deskryptora TSS
 	and	di,	~STATIC_PAGE_mask
-	mov	word [kernel_gdt_tss_bsp_selector],	di
+	mov	word [rel kernel_gdt_tss_bsp_selector],	di
 
 	; utwórz N deskryptorów TSS dla procesorów logicznych
-	mov	cx,	word [kernel_apic_count]
+	mov	cx,	word [rel kernel_apic_count]
 	mov	rsi,	kernel_apic_id_table
 
 .loop:
@@ -61,9 +61,9 @@ kernel_init_gdt:
 	shl	eax,	STATIC_MULTIPLE_BY_16_shift
 
 	; ustaw wskaźnik na docelowy deskryptor TSS procesora logicznego
-	mov	rdi,	qword [kernel_gdt_header + KERNEL_STRUCTURE_GDT_HEADER.address]
+	mov	rdi,	qword [rel kernel_gdt_header + KERNEL_STRUCTURE_GDT_HEADER.address]
 	add	rdi,	rax
-	add	di,	word [kernel_gdt_tss_bsp_selector]
+	add	di,	word [rel kernel_gdt_tss_bsp_selector]
 
 	; rozmiar tablicy Task State Segment w Bajtach
 	mov	ax,	kernel_gdt_tss_table_end - kernel_gdt_tss_table
@@ -104,10 +104,10 @@ kernel_init_gdt:
 	jnz	.loop	; tak
 
 	; przeładuj Globalną Tablicę Deskryptorów
-	lgdt	[kernel_gdt_header]
+	lgdt	[rel kernel_gdt_header]
 
 	; załaduj deskryptor Task State Segment
-	ltr	word [kernel_gdt_tss_bsp_selector]
+	ltr	word [rel kernel_gdt_tss_bsp_selector]
 
 	; zresetuj deskryptory niewykorzystywane
 	mov	fs,	ax

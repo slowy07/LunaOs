@@ -1,7 +1,7 @@
 ;===============================================================================
 
 	; procesor logiczny?
-	cmp	byte [kernel_init_smp_semaphore],	STATIC_FALSE
+	cmp	byte [rel kernel_init_smp_semaphore],	STATIC_FALSE
 	je	kernel_init	; nie
 
 	; ;-----------------------------------------------------------------------
@@ -126,11 +126,11 @@ kernel_init:
 
 .wait:
 	; pobierz ilość działających procesorów logicznych
-	mov	al,	byte [kernel_init_ap_count]
+	mov	al,	byte [rel kernel_init_ap_count]
 	inc	al	; procesor BSP nie jest liczony jako logiczny
 
 	; wszystkie procesory logiczne zostały zainicjowane?
-	cmp	al,	byte [kernel_apic_count]
+	cmp	al,	byte [rel kernel_apic_count]
 	jne	.wait	; nie, czekaj
 
 	;-----------------------------------------------------------------------
@@ -138,7 +138,7 @@ kernel_init:
 	;-----------------------------------------------------------------------
 
 	; poinformuj o zakończeniu inicjalizacji
-	mov	byte [kernel_init_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_init_semaphore],	STATIC_FALSE
 
 ; wyrównaj pozycję kodu do pełnej strony
 align	STATIC_PAGE_SIZE_byte,	db	STATIC_NOTHING

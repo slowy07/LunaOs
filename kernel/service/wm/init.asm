@@ -2,7 +2,7 @@
 
 	; pobierz własny PID
 	call	kernel_task_active_pid
-	mov	qword [kernel_wm_pid],	rax
+	mov	qword [rel kernel_wm_pid],	rax
 
 	; odwróć kanała alfa obiektu kursora
 	mov	ecx,	kernel_wm_object_cursor.end - kernel_wm_object_cursor.data
@@ -10,41 +10,41 @@
 	macro_library	LIBRARY_STRUCTURE_ENTRY.color_alpha_invert
 
 	; pobierz rozmiar przestrzeni pamięci karty graficznej w pikselach i Bajtach
-	mov	bx,	word [kernel_video_width_pixel]
-	mov	cx,	word [kernel_video_height_pixel]
-	mov	edx,	dword [kernel_video_size_byte]
+	mov	bx,	word [rel kernel_video_width_pixel]
+	mov	cx,	word [rel kernel_video_height_pixel]
+	mov	edx,	dword [rel kernel_video_size_byte]
 
 	; aktualizuj właściwości bufora
-	mov	word [kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width],	bx
-	mov	word [kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.height],	cx
-	mov	dword [kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.size],	edx
+	mov	word [rel kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width],	bx
+	mov	word [rel kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.height],	cx
+	mov	dword [rel kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.size],	edx
 
 	; dla większej wydajności w wirtualizacji, rezygnujemy z podwójnego buforowania
 	; buforem będzie dla nasz bezpośrednio przestrzeń pamięci karty graficznej
-	mov	rdi,	qword [kernel_video_base_address]
+	mov	rdi,	qword [rel kernel_video_base_address]
 
 	; zachowaj wskaźnik początku przestrzeni bufora
-	mov	qword [kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.address],	rdi
+	mov	qword [rel kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.address],	rdi
 
 	; przygotuj przestrzeń dla listy obiektów
 	call	kernel_memory_alloc_page
 	call	kernel_page_drain	; wyczyść
-	mov	qword [kernel_wm_object_list_address],	rdi
+	mov	qword [rel kernel_wm_object_list_address],	rdi
 
 	; przygotuj przestrzeń dla tablicy obiektów
 	call	kernel_memory_alloc_page
 	call	kernel_page_drain	; wyczyść
-	mov	qword [kernel_wm_object_table_address],	rdi
+	mov	qword [rel kernel_wm_object_table_address],	rdi
 
 	; przygotuj przestrzeń dla listy wypełnień
 	call	kernel_memory_alloc_page
 	call	kernel_page_drain	; wyczyść
-	mov	qword [kernel_wm_fill_list_address],	rdi
+	mov	qword [rel kernel_wm_fill_list_address],	rdi
 
 	; przygotuj przestrzeń dla listy stref
 	call	kernel_memory_alloc_page
 	call	kernel_page_drain	; wyczyść
-	mov	qword [kernel_wm_zone_list_address],	rdi
+	mov	qword [rel kernel_wm_zone_list_address],	rdi
 
 	; podłącz procedurę obsługi "systemu zarządzania oknami"
 	mov	rax,	KERNEL_WM_IRQ
@@ -53,9 +53,9 @@
 	call	kernel_idt_mount
 
 	; menedżer okien zainicjowany
-	mov	byte [kernel_wm_semaphore],	STATIC_TRUE
+	mov	byte [rel kernel_wm_semaphore],	STATIC_TRUE
 
 .wait:
 	; zarejestrowano na liście obiekty?
-	cmp	qword [kernel_wm_object_list_length],	STATIC_EMPTY
+	cmp	qword [rel kernel_wm_object_list_length],	STATIC_EMPTY
 	je	.wait	; nie, czekaj

@@ -14,7 +14,7 @@ kernel_wm_object_insert:
 	push	rsi
 
 	; lista posiada wolne elementy?
-	cmp	qword [kernel_wm_object_list_length],	KERNEL_WM_OBJECT_LIST_limit
+	cmp	qword [rel kernel_wm_object_list_length],	KERNEL_WM_OBJECT_LIST_limit
 	je	.error	; brak miejsca
 
 	; znajdź wolny rekord w tablicy
@@ -41,10 +41,10 @@ kernel_wm_object_insert:
 	macro_lock	kernel_wm_object_semaphore,	0
 
 	; ilość elementów listy obiektów
-	mov	rcx,	qword [kernel_wm_object_list_length]
+	mov	rcx,	qword [rel kernel_wm_object_list_length]
 
 	; ustaw wskaźnik na początek listy obiektów
-	mov	rsi,	qword [kernel_wm_object_list_address]
+	mov	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
 	; pobierz wskaźnik obiektu przechowywany w elemencie listy obiektów
@@ -109,10 +109,10 @@ kernel_wm_object_insert:
 	mov	qword [rsp],	rax
 
 	; zarejestowano obiekt na liście
-	inc	qword [kernel_wm_object_list_length]
+	inc	qword [rel kernel_wm_object_list_length]
 
 	; zwolnij dostęp do modyfikacji listy obiektów
-	mov	byte [kernel_wm_object_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_wm_object_semaphore],	STATIC_FALSE
 
 	; koniec procedury
 	jmp	.end
@@ -144,7 +144,7 @@ kernel_wm_object_table_entry:
 	push	rdi
 
 	; ustaw wskaźnik na początek tablicy obiektów
-	mov	rsi,	qword [kernel_wm_object_table_address]
+	mov	rsi,	qword [rel kernel_wm_object_table_address]
 
 .block:
 	; ilość obiektów na blok danych tablicy obiektów
@@ -173,7 +173,7 @@ kernel_wm_object_table_entry:
 
 .continue:
 	; załaduj następny blok danych tablicy obiektów
-	mov	rsi,	qword [STATIC_STRUCTURE_BLOCK.link]
+	mov	rsi,	qword [abs STATIC_STRUCTURE_BLOCK.link]
 
 	; kontynuuj przetwarzanie
 	jmp	.block
@@ -218,7 +218,7 @@ kernel_wm_object:
 	push	rsi
 
 	; ustaw wskaźnik na początek listy obiektów
-	mov	rsi,	qword [kernel_wm_object_list_address]
+	mov	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
 	; pobierz wskaźnik obiektu z listy
@@ -249,7 +249,7 @@ kernel_wm_object:
 	and	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	~KERNEL_WM_OBJECT_FLAG_flush & ~KERNEL_WM_OBJECT_FLAG_undraw
 
 	; wymuś aktualizacje obiektu kursora
-	or	word [kernel_wm_object_cursor + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
+	or	word [rel kernel_wm_object_cursor + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
 
 	; kontynuuj
 	jmp	.loop
@@ -300,11 +300,11 @@ kernel_wm_object_by_pid:
 	push	rsi
 
 	; na liście znajdują się obiekty?
-	cmp	qword [kernel_wm_object_list_length],	STATIC_EMPTY
+	cmp	qword [rel kernel_wm_object_list_length],	STATIC_EMPTY
 	je	.error	; nie
 
 	; przeszukaj listę obiektów
-	mov	rsi,	qword [kernel_wm_object_list_address]
+	mov	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
 	; pobierz wskaźnik do rekordu tablicy obiektów
@@ -352,11 +352,11 @@ kernel_wm_object_by_id:
 	push	rsi
 
 	; na liście znajdują się obiekty?
-	cmp	qword [kernel_wm_object_list_length],	STATIC_EMPTY
+	cmp	qword [rel kernel_wm_object_list_length],	STATIC_EMPTY
 	je	.error	; nie
 
 	; pobierz wskaźnik początku listy obiektów
-	mov	rsi,	qword [kernel_wm_object_list_address]
+	mov	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
 	; pobierz wskaźnik obiektu z listy
@@ -401,13 +401,13 @@ kernel_wm_object_id_get:
 	macro_lock	kernel_wm_object_id_semaphore,	0
 
 	; pobierz wolny identyfikator
-	mov	rcx,	qword [kernel_wm_object_id]
+	mov	rcx,	qword [rel kernel_wm_object_id]
 
 	; przygotuj następny
-	inc	qword [kernel_wm_object_id]
+	inc	qword [rel kernel_wm_object_id]
 
 	; zwolnij dostęp do procedury
-	mov	byte [kernel_wm_object_id_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_wm_object_id_semaphore],	STATIC_FALSE
 
 	; powrót z procedury
 	ret
@@ -428,21 +428,21 @@ kernel_wm_object_find:
 	push	rsi
 
 	; na liście znajdują się elementy?
-	cmp	qword [kernel_wm_object_list_length],	STATIC_EMPTY
+	cmp	qword [rel kernel_wm_object_list_length],	STATIC_EMPTY
 	je	.error	; nie
 
 	; ustaw wskaźnik na ostatni element listy obiektów
-	mov	rsi,	qword [kernel_wm_object_list_length]
+	mov	rsi,	qword [rel kernel_wm_object_list_length]
 	shl	rsi,	KERNEL_WM_OBJECT_LIST_ENTRY_SIZE_shift
 	; zamień na adres bezpośredni
-	add	rsi,	qword [kernel_wm_object_list_address]
+	add	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
 	; ustaw wskaźnik na element do sprawdzenia
 	sub	rsi,	KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.SIZE
 
 	; koniec listy obiektów?
-	cmp	rsi,	qword [kernel_wm_object_list_address]
+	cmp	rsi,	qword [rel kernel_wm_object_list_address]
 	jb	.error	; tak
 
 	; pobierz wskaźnik do obiektu z elementu listy
@@ -512,11 +512,11 @@ kernel_wm_object_up:
 	macro_lock	kernel_wm_object_semaphore,	0
 
 	; przesunięcie elementu na liście obiektów, nie jest równoznaczne z modyfikacją rekordu w tablicy obiektów
-	push	qword [kernel_wm_object_list_modify_time]
+	push	qword [rel kernel_wm_object_list_modify_time]
 
 	; odszukaj element opisujący rekord tablicy obiektów
-	mov	rcx,	qword [kernel_wm_object_list_length]
-	mov	rdi,	qword [kernel_wm_object_list_address]
+	mov	rcx,	qword [rel kernel_wm_object_list_length]
+	mov	rdi,	qword [rel kernel_wm_object_list_address]
 
 .search:
 	; znaleziono?
@@ -567,10 +567,10 @@ kernel_wm_object_up:
 
 .end:
 	; przywróć oryginalny czas ostatniej modyfikacji listy obiektów
-	pop	qword [kernel_wm_object_list_modify_time]
+	pop	qword [rel kernel_wm_object_list_modify_time]
 
 	; zwolnij dostęp do modyfikacji listy obiektów
-	mov	byte [kernel_wm_object_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_wm_object_semaphore],	STATIC_FALSE
 
 	; przywróć oryginalny rejestr
 	pop	rsi
@@ -596,8 +596,8 @@ kernel_wm_object_remove:
 	macro_lock	kernel_wm_object_semaphore,	0
 
 	; odszukaj wskaźnik w elemencie listy obiektów
-	mov	rcx,	qword [kernel_wm_object_list_length]
-	mov	rdi,	qword [kernel_wm_object_list_address]
+	mov	rcx,	qword [rel kernel_wm_object_list_length]
+	mov	rdi,	qword [rel kernel_wm_object_list_address]
 
 .search:
 	; znaleziono element?
@@ -627,14 +627,14 @@ kernel_wm_object_remove:
 
 .end:
 	; ilość rekordów na liście
-	dec	qword [kernel_wm_object_list_length]
+	dec	qword [rel kernel_wm_object_list_length]
 
 	; zachowaj czas ostatniej modyfikacji listy
-	mov	rcx,	qword [driver_rtc_microtime]
-	mov	qword [kernel_wm_object_list_modify_time],	rcx
+	mov	rcx,	qword [rel driver_rtc_microtime]
+	mov	qword [rel kernel_wm_object_list_modify_time],	rcx
 
 	; zwolnij dostęp do modyfikacji listy obiektów
-	mov	byte [kernel_wm_object_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_wm_object_semaphore],	STATIC_FALSE
 
 	; przywróć oryginalne rejestry
 	pop	rdi
@@ -664,10 +664,10 @@ kernel_wm_object_move:
 	push	r15
 
 	; ustaw wskaźnik na wybrany obiekt
-	mov	rsi,	qword [kernel_wm_object_selected_pointer]
+	mov	rsi,	qword [rel kernel_wm_object_selected_pointer]
 
 	; pobierz wskaźnik domyślnego obiektu wypełniającego strefę
-	mov	rdi,	qword [kernel_wm_object_table_address]
+	mov	rdi,	qword [rel kernel_wm_object_table_address]
 
 	; obiekt można przemieszczać?
 	test	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_fixed_xy
@@ -805,7 +805,7 @@ kernel_wm_object_hide_fragile:
 	push	rsi
 
 	; ustaw wskaźnik na początek listy obiektów
-	mov	rsi,	qword [kernel_wm_object_list_address]
+	mov	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
 	; pobierz z elementu wskaźnik do rekordu tablicy obiektów
@@ -848,13 +848,13 @@ kernel_wm_object_id_new:
 	macro_lock	kernel_wm_object_id_semaphore,	0
 
 	; pobierz wolny identyfikator
-	mov	rcx,	qword [kernel_wm_object_id]
+	mov	rcx,	qword [rel kernel_wm_object_id]
 
 	; przygotuj następny
-	inc	qword [kernel_wm_object_id]
+	inc	qword [rel kernel_wm_object_id]
 
 	; zwolnij dostęp do procedury
-	mov	byte [kernel_wm_object_id_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_wm_object_id_semaphore],	STATIC_FALSE
 
 	; powrót z procedury
 	ret

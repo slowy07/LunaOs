@@ -20,7 +20,7 @@ kernel_io_apic_connect:
 	push	rdi
 
 	; ustaw wskaźnik na przestrzeń tablicy I/O APIC
-	mov	rdi,	qword [kernel_io_apic_base_address]
+	mov	rdi,	qword [rel kernel_io_apic_base_address]
 
 	; młodsza część rejestru
 	add	ebx,	KERNEL_IO_APIC_iowin_low

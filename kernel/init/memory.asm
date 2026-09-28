@@ -32,15 +32,15 @@ kernel_init_memory:
 	shr	rcx,	STATIC_DIVIDE_BY_PAGE_shift	; resztę z dzielenia porzucamy (niepełna strona jest bezużyteczna)
 
 	; zachowaj informację o ilości dostępnych stron (całkowitej i aktualnej)
-	mov	qword [kernel_page_total_count],	rcx
-	mov	qword [kernel_page_free_count],	rcx
+	mov	qword [rel kernel_page_total_count],	rcx
+	mov	qword [rel kernel_page_free_count],	rcx
 
 	; binarną mapę pamięci tworzymy za kodem jądra systemu
 	mov	rdi,	kernel_end
 	call	library_page_align_up
 
 	; zachowaj adres binarnej mapy pamięci jądra systemu
-	mov	qword [kernel_memory_map_address],	rdi
+	mov	qword [rel kernel_memory_map_address],	rdi
 
 	; zamień ilość stron na "zestawy" po 8 bitów
 	shr	rcx,	STATIC_DIVIDE_BY_8_shift	; w tym przypadku możemy stracić do 7 stron
@@ -61,7 +61,7 @@ kernel_init_memory:
 	rep	stosb
 
 	; zachowaj adres końca binarnej mapy pamięci
-	mov	qword [kernel_memory_map_address_end],	rdi
+	mov	qword [rel kernel_memory_map_address_end],	rdi
 
 	; oznacz te strony jako zajęte, w których znajduje się kod jądra systemu i binarna mapa pamięci
 
@@ -72,5 +72,5 @@ kernel_init_memory:
 
 	; oznacz N pierwszych stron w binarnej mapie pamięci jako zajęte
 	mov	rcx,	rdi
-	mov	rsi,	qword [kernel_memory_map_address]
+	mov	rsi,	qword [rel kernel_memory_map_address]
 	call	kernel_memory_secure

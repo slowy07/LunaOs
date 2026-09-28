@@ -19,7 +19,7 @@ service_network:
 	mov	rax,	qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
 	; zachowaj informacje o własnym PID dla pozostałych procesów
-	mov	qword [service_network_pid],	rax
+	mov	qword [rel service_network_pid],	rax
 
 .loop:
 	; pobierz wiadomość do nas
@@ -87,7 +87,7 @@ service_network_transfer:
 	push	rsi
 
 	; usługa wysyłania danych przez interfejs sieciowy gotowa?
-	mov	rbx,	qword [service_tx_pid]
+	mov	rbx,	qword [rel service_tx_pid]
 	test	rbx,	rbx
 	jz	.error	; usługa nie gotowa
 

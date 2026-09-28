@@ -212,7 +212,7 @@ driver_nic_i82540em_irq:
 	pushf
 
 	; pobierz status kontrolera
-	mov	rsi,	qword [driver_nic_i82540em_mmio_base_address]
+	mov	rsi,	qword [rel driver_nic_i82540em_mmio_base_address]
 	mov	eax,	dword [rsi + DRIVER_NIC_I82540EM_ICR_register]
 
 	; opróżniono kolejkę deskryptorów wychodzących?
@@ -220,7 +220,7 @@ driver_nic_i82540em_irq:
 	jnc	.no_txqe	; nie
 
 	; kolejka deskryptorów pusta
-	mov	byte [driver_nic_i82540em_tx_queue_empty_semaphore],	STATIC_TRUE
+	mov	byte [rel driver_nic_i82540em_tx_queue_empty_semaphore],	STATIC_TRUE
 
 	; koniec obsługi przerwania
 	jmp	.end
@@ -231,12 +231,12 @@ driver_nic_i82540em_irq:
 	jnc	.received
 
 	; przekaż przestrzeń z zawartością pakietu to usługi sieciowej
-	mov	rbx,	qword [service_network_pid]
+	mov	rbx,	qword [rel service_network_pid]
 	test	rbx,	rbx
 	jz	.received	; usługa sieciowa nie jest jeszcze dostępna, zignoruj przychodzący pakiet
 
 	; pobierz z deskryptora pakietów przychodzących interfejsu sieciowego adres i rozmiar danych bufora przechowującego pakiet
-	mov	rsi,	qword [driver_nic_i82540em_rx_base_address]
+	mov	rsi,	qword [rel driver_nic_i82540em_rx_base_address]
 	movzx	ecx,	word [rsi + DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry.length]
 	mov	rsi,	qword [rsi + DRIVER_NIC_I82540EM_STRUCTURE_RCTL_RDESC_entry.base_address]
 
@@ -248,13 +248,13 @@ driver_nic_i82540em_irq:
 
 .received:
 	; poinformuj kontroler o zakończeniu przetwarzania pakietu
-	mov	rsi,	qword [driver_nic_i82540em_mmio_base_address]
+	mov	rsi,	qword [rel driver_nic_i82540em_mmio_base_address]
 	mov	dword [rsi + DRIVER_NIC_I82540EM_RDH],	0x00
 	mov	dword [rsi + DRIVER_NIC_I82540EM_RDT],	0x01
 
 .end:
 	; poinformuj APIC o obsłużeniu przerwania sprzętowego
-	mov	rax,	qword [kernel_apic_base_address]
+	mov	rax,	qword [rel kernel_apic_base_address]
 	mov	dword [rax + KERNEL_APIC_EOI_register],	STATIC_EMPTY
 
 	; przywróć oryginalne rejestry
@@ -281,7 +281,7 @@ driver_nic_i82540em_rx_release:
 	push	rdi
 
 	; ustaw wskaźnik na pierwszy deskryptor
-	mov	rax,	qword [driver_nic_i82540em_rx_base_address]
+	mov	rax,	qword [rel driver_nic_i82540em_rx_base_address]
 
 	; przygotuj nową przestrzeń
 	call	kernel_memory_alloc_page
@@ -311,11 +311,11 @@ driver_nic_i82540em_transfer:
 
 .wait:
 	; kolejka na interfejsie sieciowym pusta?
-	cmp	byte [driver_nic_i82540em_tx_queue_empty_semaphore],	STATIC_TRUE
+	cmp	byte [rel driver_nic_i82540em_tx_queue_empty_semaphore],	STATIC_TRUE
 	jne	.wait	; nie, czekaj na zwolnienie
 
 	; ustaw wskaźnik na deskryptor bufora
-	mov	rsi,	qword [driver_nic_i82540em_tx_base_address]
+	mov	rsi,	qword [rel driver_nic_i82540em_tx_base_address]
 
 	; wskaź pakiet do wysłania
 	mov	qword [rsi + DRIVER_NIC_I82540EM_TDESC_BASE_ADDRESS],	rdi
@@ -328,10 +328,10 @@ driver_nic_i82540em_transfer:
 	mov	qword [rsi + DRIVER_NIC_I82540EM_TDESC_LENGTH_AND_FLAGS],	rax
 
 	; kolejka deskryptorów uzupełniona
-	mov	byte [driver_nic_i82540em_tx_queue_empty_semaphore],	STATIC_FALSE
+	mov	byte [rel driver_nic_i82540em_tx_queue_empty_semaphore],	STATIC_FALSE
 
 	; poinformuj o 1 deskryptorze do przetworzenia, wskazując względny początek i jego koniec
-	mov	rax,	qword [driver_nic_i82540em_mmio_base_address]
+	mov	rax,	qword [rel driver_nic_i82540em_mmio_base_address]
 	mov	dword [rax + DRIVER_NIC_I82540EM_TDH],	0x00
 	mov	dword [rax + DRIVER_NIC_I82540EM_TDT],	0x01
 
@@ -388,7 +388,7 @@ driver_nic_i82540em:
 .no:
 	; zachowaj adres przestrzeni kontrolera
 	and	al,	0xF0	; usuń flagi
-	mov	qword [driver_nic_i82540em_mmio_base_address],	rax
+	mov	qword [rel driver_nic_i82540em_mmio_base_address],	rax
 
 	; ustaw wskaźnik na początek przestrzeni kontrolera
 	mov	rsi,	rax
@@ -398,10 +398,10 @@ driver_nic_i82540em:
 	call	driver_pci_read
 
 	; zachowaj numer przerwania kontrolera
-	mov	byte [driver_nic_i82540em_irq_number],	al
+	mov	byte [rel driver_nic_i82540em_irq_number],	al
 
 	; mapuj przestrzeń kontrolera do tablic stronicowania jądra systemu
-	mov	rax,	qword [driver_nic_i82540em_mmio_base_address]
+	mov	rax,	qword [rel driver_nic_i82540em_mmio_base_address]
 	mov	rbx,	KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
 	mov	rcx,	32	; dokumentacja, strona: 88/410, tabelka: 4-2 // The memory register space is 128K bytes. //
 	mov	r11,	cr3
@@ -415,21 +415,21 @@ driver_nic_i82540em:
 	mov	eax,	dword [rsi + DRIVER_NIC_I82540EM_EERD]
 	shr	eax,	STATIC_MOVE_HIGH_TO_AX_shift
 	; zachowaj
-	mov	word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.0],	ax
+	mov	word [rel driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.0],	ax
 
 	; odczytaj zawartość rejestru pod adresem 0x01
 	mov	dword [rsi + DRIVER_NIC_I82540EM_EERD],	0x00000101
 	mov	eax,	dword [rsi + DRIVER_NIC_I82540EM_EERD]
 	shr	eax,	STATIC_MOVE_HIGH_TO_AX_shift
 	; zachowaj
-	mov	word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.2],	ax
+	mov	word [rel driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.2],	ax
 
 	; odczytaj zawartość rejestru pod adresem 0x02
 	mov	dword [rsi + DRIVER_NIC_I82540EM_EERD],	0x00000201
 	mov	eax,	dword [rsi + DRIVER_NIC_I82540EM_EERD]
 	shr	eax,	STATIC_MOVE_HIGH_TO_AX_shift
 	; zachowaj
-	mov	word [driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.4],	ax
+	mov	word [rel driver_nic_i82540em_mac_address + SERVICE_NETWORK_STRUCTURE_MAC.4],	ax
 
  	; wyłącz wszystkie typy przerwań na kontrolerze
 	mov	dword [rsi + DRIVER_NIC_I82540EM_IMC],	STATIC_MAX_unsigned	; dokumentacja, strona 312/410
@@ -474,7 +474,7 @@ driver_nic_i82540em_setup:
 	call	kernel_page_drain
 
 	; zachowaj informacje o adresie tablicy deskryptorów
-	mov	qword [driver_nic_i82540em_rx_base_address],	rdi
+	mov	qword [rel driver_nic_i82540em_rx_base_address],	rdi
 
 	; załaduj adres tablicy deskryptorów do kontrolera
 	mov	dword [rsi + DRIVER_NIC_I82540EM_RDBAL],	edi
@@ -492,7 +492,7 @@ driver_nic_i82540em_setup:
 	call	kernel_memory_alloc_page
 
 	; wstaw do pierwszego rekordu w tablicy deskryptorów
-	mov	rax,	qword [driver_nic_i82540em_rx_base_address]
+	mov	rax,	qword [rel driver_nic_i82540em_rx_base_address]
 	mov	qword [rax],	rdi
 
 	; konfiguruj rejestr pakietów przychodzących
@@ -516,7 +516,7 @@ driver_nic_i82540em_setup:
 	call	kernel_page_drain
 
 	; zachowaj informacje o adresie tablicy deskryptorów
-	mov	qword [driver_nic_i82540em_tx_base_address],	rdi
+	mov	qword [rel driver_nic_i82540em_tx_base_address],	rdi
 
 	; załaduj adres tablicy deskryptorów do kontrolera
 	mov	dword [rsi + DRIVER_NIC_I82540EM_TDBAL],	edi
@@ -560,21 +560,21 @@ driver_nic_i82540em_setup:
 	mov	dword [rsi + DRIVER_NIC_I82540EM_CTRL],	eax
 
 	; podłącz procedurę obsługi kontrolera sieciowego
-	movzx	eax,	byte [driver_nic_i82540em_irq_number]
+	movzx	eax,	byte [rel driver_nic_i82540em_irq_number]
 	add	al,	KERNEL_IDT_IRQ_offset
 	mov	rbx,	KERNEL_IDT_TYPE_irq
 	mov	rdi,	driver_nic_i82540em_irq
 	call	kernel_idt_mount
 
 	; ustaw wektor przerwania z tablicy IDT w kontrolerze I/O APIC
-	movzx	ebx,	byte [driver_nic_i82540em_irq_number]
+	movzx	ebx,	byte [rel driver_nic_i82540em_irq_number]
 	shl	ebx,	STATIC_MULTIPLE_BY_2_shift
 	add	ebx,	KERNEL_IO_APIC_iowin
 	call	kernel_io_apic_connect
 
 	; włącz przerwania kontrolera
 	; dokumentacja, strona 311/410, podpunkt 13.4.20
-	mov	rdi,	qword [driver_nic_i82540em_mmio_base_address]
+	mov	rdi,	qword [rel driver_nic_i82540em_mmio_base_address]
 	mov	dword [rdi + DRIVER_NIC_I82540EM_IMS],	00000000000000011111011011011111b
 
 	; przywróć oryginalne rejestry

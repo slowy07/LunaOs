@@ -60,7 +60,7 @@ kernel_gc:
 	call	kernel_memory_release_page	; zwolnij przestrzeń tablicy PML4
 
 	; strona odzyskana z tablic stronicowania
-	dec	qword [kernel_page_paged_count]
+	dec	qword [rel kernel_page_paged_count]
 
 .child:
 	; odszukaj proces potomny lub wątek rodzica
@@ -79,10 +79,10 @@ kernel_gc:
 	mov	word [rsi + KERNEL_TASK_STRUCTURE.flags],	STATIC_EMPTY
 
 	; ilość zadań w kolejce
-	dec	qword [kernel_task_count]
+	dec	qword [rel kernel_task_count]
 
 	; ilość dostępnych rekordów w kolejce zadań
-	inc	qword [kernel_task_free]
+	inc	qword [rel kernel_task_free]
 
 	; szukaj nowego procesu do zwolnienia
 	jmp	kernel_gc
@@ -97,7 +97,7 @@ kernel_gc_search:
 	push	rcx
 
 	; przeszukaj od początku kolejkę za zamkniętym wpisem
-	mov	rsi,	qword [kernel_task_address]
+	mov	rsi,	qword [rel kernel_task_address]
 
 .restart:
 	; ilość wpisów na blok danych kolejki zadań

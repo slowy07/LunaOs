@@ -24,7 +24,7 @@ service_network_arp:
 	jne	.omit	; nie
 
 	; czy zapytanie dotyczy naszego adresu IP?
-	mov	eax,	dword [driver_nic_i82540em_ipv4_address]
+	mov	eax,	dword [rel driver_nic_i82540em_ipv4_address]
 	cmp	eax,	dword [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_ARP.target_ip]
 	jne	.omit	; nie
 
@@ -52,7 +52,7 @@ service_network_arp:
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_ARP.target_ip],	eax
 
 	; uzupełnij ramki ARP i Ethernet o adres MAC kontrolera sieciowego
-	mov	rax,	qword [driver_nic_i82540em_mac_address]
+	mov	rax,	qword [rel driver_nic_i82540em_mac_address]
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.source],	eax
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_ARP.source_mac],	eax
 	shr	rax,	STATIC_MOVE_HIGH_TO_EAX_shift

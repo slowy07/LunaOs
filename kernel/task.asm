@@ -83,7 +83,7 @@ kernel_task:
 	shl	rbx,	STATIC_MULTIPLE_BY_8_shift
 
 	; pobierz wskaźnik do aktywnego zadania
-	mov	rsi,	qword [kernel_task_active_list]
+	mov	rsi,	qword [rel kernel_task_active_list]
 	mov	rdi,	qword [rsi + rbx]
 
 	; zachowaj rejestry "zmiennoprzecinkowe"
@@ -101,7 +101,7 @@ kernel_task:
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.cr3],	rax
 
 	; pobierz niewykorzystana ilość czasu procesora
-	mov	rax,	qword [kernel_apic_base_address]
+	mov	rax,	qword [rel kernel_apic_base_address]
 	mov	ecx,	dword [rax + KERNEL_APIC_TCCR_register]
 	mov	dword [rdi + KERNEL_TASK_STRUCTURE.apic],	ecx
 
@@ -204,7 +204,7 @@ kernel_task:
 
 .leave:
 	; wywołaj przerwanie czasowe po upłynięciu (jednej jednostki czasu) cdn.
-	mov	rdi,	qword [kernel_apic_base_address]
+	mov	rdi,	qword [rel kernel_apic_base_address]
 	mov	dword [rdi + KERNEL_APIC_TICR_register],	DRIVER_RTC_Hz
 
 	; poinformuj APIC o obsłużeniu aktualnego przerwania sprzętowego
@@ -238,7 +238,7 @@ kernel_task_child:
 	mov	rax,	qword [rsi + KERNEL_TASK_STRUCTURE.pid]
 
 	; przeszukaj od początku kolejkę za procesem potomnym
-	mov	rdi,	qword [kernel_task_address]
+	mov	rdi,	qword [rel kernel_task_address]
 
 .restart:
 	; ilość wpisów na blok danych kolejki zadań
@@ -272,7 +272,7 @@ kernel_task_child:
 	mov	rdi,	qword [rdi + STATIC_STRUCTURE_BLOCK.link]
 
 	; powróciliśmy na początek kolejki?
-	cmp	rdi,	qword [kernel_task_address]
+	cmp	rdi,	qword [rel kernel_task_address]
 	jne	.restart	; nie
 
 	; flaga, błąd
@@ -341,7 +341,7 @@ kernel_task_add:
 	xchg	rcx,	qword [rsp + STATIC_QWORD_SIZE_byte]
 
 	; zachowaj w wpisie zadania, czas jego uruchomienia
-	mov	rax,	qword [driver_rtc_microtime]
+	mov	rax,	qword [rel driver_rtc_microtime]
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.time],	rax
 
 	; domyślny rozmiar stosu
@@ -385,7 +385,7 @@ kernel_task_queue:
 	push	rdi
 
 	; przeszukaj od początku kolejkę za wolnym rekordem
-	mov	rdi,	qword [kernel_task_address]
+	mov	rdi,	qword [rel kernel_task_address]
 
 .restart:
 	; ilość wpisów na blok danych kolejki zadań
@@ -411,7 +411,7 @@ kernel_task_queue:
 	mov	rdi,	qword [rdi + STATIC_STRUCTURE_BLOCK.link]
 
 	; powróciliśmy na początek kolejki?
-	cmp	rdi,	qword [kernel_task_address]
+	cmp	rdi,	qword [rel kernel_task_address]
 	jne	.restart	; nie
 
 	; przygotuj następny blok do rozszerzenia kolejki
@@ -423,11 +423,11 @@ kernel_task_queue:
 	mov	qword [rsi + STATIC_STRUCTURE_BLOCK.link],	rdi
 
 	; połącz koniec kolejki z początkiem
-	mov	rsi,	qword [kernel_task_address]
+	mov	rsi,	qword [rel kernel_task_address]
 	mov	qword [rdi + STATIC_STRUCTURE_BLOCK.link],	rsi
 
 	; rozmiar kolejki zadań rozszerzono o 1 stronę
-	inc	qword [kernel_task_size_page]
+	inc	qword [rel kernel_task_size_page]
 
 	; zablokuj nowy wpis
 	jmp	.next
@@ -443,10 +443,10 @@ kernel_task_queue:
 
 .found:
 	; ilość dostępnych rekordów w kolejce zadań
-	dec	qword [kernel_task_free]
+	dec	qword [rel kernel_task_free]
 
 	; ilość zadań w kolejce
-	inc	qword [kernel_task_count]
+	inc	qword [rel kernel_task_count]
 
 	; zwróć adres kolejki i wolnego wpisu
 	mov	qword [rsp],	rdi
@@ -472,15 +472,15 @@ kernel_task_pid_get:
 
 .next:
 	; pobierz unikalny numer PID
-	mov	rcx,	qword [kernel_task_pid]
-	inc	qword [kernel_task_pid]
+	mov	rcx,	qword [rel kernel_task_pid]
+	inc	qword [rel kernel_task_pid]
 
 	; PID unikalny?
 	call	kernel_task_pid_check
 	jnc	.next	; nie, pobierz następny
 
 	; zwolnij dostęp do podprocedury
-	mov	byte [kernel_task_pid_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_task_pid_semaphore],	STATIC_FALSE
 
 	; powrót z podprocedury
 	ret
@@ -499,7 +499,7 @@ kernel_task_pid_check:
 	push	rdi
 
 	; przeszukaj kolejkę od początku
-	mov	rdi,	qword [kernel_task_address]
+	mov	rdi,	qword [rel kernel_task_address]
 
 .restart:
 	; ilość wpisów na blok danych kolejki zadań
@@ -523,7 +523,7 @@ kernel_task_pid_check:
 	mov	rdi,	qword [rdi + STATIC_STRUCTURE_BLOCK.link]
 
 	; powróciliśmy na początek kolejki?
-	cmp	rdi,	qword [kernel_task_address]
+	cmp	rdi,	qword [rel kernel_task_address]
 	jne	.restart	; nie
 
 .error:
@@ -591,7 +591,7 @@ kernel_task_active:
 
 	; ustaw wskaźnik na pozycje zadania procesora logicznego
 	shl	rax,	STATIC_MULTIPLE_BY_8_shift
-	mov	rdi,	qword [kernel_task_active_list]
+	mov	rdi,	qword [rel kernel_task_active_list]
 	mov	rdi,	qword [rdi + rax]
 
 	; włącz wywłaszczanie

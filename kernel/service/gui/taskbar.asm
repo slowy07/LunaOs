@@ -9,19 +9,19 @@ kernel_gui_taskbar_reload:
 	push	rdi
 
 	; lista obiektów została zmodyfikowana?
-	mov	rax,	qword [kernel_wm_object_list_modify_time]
-	cmp	qword [kernel_gui_window_taskbar_modify_time],	rax
+	mov	rax,	qword [rel kernel_wm_object_list_modify_time]
+	cmp	qword [rel kernel_gui_window_taskbar_modify_time],	rax
 	je	.end	; nie
 
 	; zablokuj dostęp do modyfikacji listy obiektów
 	macro_lock	kernel_wm_object_semaphore,	0
 
 	; nasz numer PID
-	mov	rcx,	qword [kernel_gui_pid]
+	mov	rcx,	qword [rel kernel_gui_pid]
 
 	; zarejestruj okna na liście w kolejności ich pojawiania się
-	mov	rsi,	qword [kernel_wm_object_list_address]
-	mov	rdi,	qword [kernel_gui_taskbar_list_address]
+	mov	rsi,	qword [rel kernel_wm_object_list_address]
+	mov	rdi,	qword [rel kernel_gui_taskbar_list_address]
 
 .loop:
 	; pobierz wskaźnik rekordu tablicy obiektów
@@ -50,7 +50,7 @@ kernel_gui_taskbar_reload:
 	mov	rax,	qword [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.id]
 
 	; ilość identyfikatorów okien na liście
-	mov	rcx,	qword [kernel_gui_taskbar_list_count]
+	mov	rcx,	qword [rel kernel_gui_taskbar_list_count]
 
 	; lista jest pusta?
 	test	rcx,	rcx
@@ -73,7 +73,7 @@ kernel_gui_taskbar_reload:
 	stosq
 
 	; ilość zarejestrowanych okien
-	inc	qword [kernel_gui_taskbar_list_count]
+	inc	qword [rel kernel_gui_taskbar_list_count]
 
 .insert_end:
 	; przywróć oryginale rejestry
@@ -88,8 +88,8 @@ kernel_gui_taskbar_reload:
 	push	rbx
 
 	; przeszukaj całą listę identyfikatorów za nieistniejącymi oknami
-	mov	rcx,	qword [kernel_gui_taskbar_list_count]
-	mov	rdi,	qword [kernel_gui_taskbar_list_address]
+	mov	rcx,	qword [rel kernel_gui_taskbar_list_count]
+	mov	rdi,	qword [rel kernel_gui_taskbar_list_address]
 
 .remove_loop:
 	; lista identyfokatorów jest pusta?
@@ -115,7 +115,7 @@ kernel_gui_taskbar_reload:
 	pop	rcx
 
 	; ilość zarejestrowanych identyfikatorów
-	dec	qword [kernel_gui_taskbar_list_count]
+	dec	qword [rel kernel_gui_taskbar_list_count]
 
 	; kontynuuj
 	jmp	.remove_step_by
@@ -141,7 +141,7 @@ kernel_gui_taskbar_reload:
 	call	.remove
 
 	; zwolnij dostęp do modyfikacji listy obiektów
-	mov	byte [kernel_wm_object_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_wm_object_semaphore],	STATIC_FALSE
 
 .end:
 	; przywróć oryginalne rejestry
@@ -187,7 +187,7 @@ kernel_gui_taskbar_event:
 	or	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_undraw
 
 	; przwtwórz raz jeszcze taskbar
-	mov	qword [kernel_gui_window_taskbar_modify_time],	STATIC_EMPTY
+	mov	qword [rel kernel_gui_window_taskbar_modify_time],	STATIC_EMPTY
 
 .end:
 	; przywróć oryginalne rejestry
@@ -214,8 +214,8 @@ kernel_gui_taskbar:
 	call	kernel_gui_taskbar_reload
 
 	; lista obiektów została zmodyfikowana?
-	mov	rax,	qword [kernel_wm_object_list_modify_time]
-	cmp	qword [kernel_gui_window_taskbar_modify_time],	rax
+	mov	rax,	qword [rel kernel_wm_object_list_modify_time]
+	cmp	qword [rel kernel_gui_window_taskbar_modify_time],	rax
 	je	.end	; nie
 
 	; zablokuj dostęp do modyfikacji listy obiektów
@@ -223,7 +223,7 @@ kernel_gui_taskbar:
 
 	; wylicz niezbędny rozmiar przestrzeni łańcucha do wypisania wszystkich elementów paska zadań
 	mov	eax,	LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.SIZE + LIBRARY_BOSU_WINDOW_NAME_length
-	mov	rcx,	qword [kernel_gui_taskbar_list_count]
+	mov	rcx,	qword [rel kernel_gui_taskbar_list_count]
 	inc	rcx	; element czyszczący przestrzeń
 	mul	rcx
 
@@ -231,7 +231,7 @@ kernel_gui_taskbar:
 	push	rax
 
 	; pobierz aktualny rozmiar przestrzeni łańcucha w stronach
-	mov	rcx,	qword [kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.size]
+	mov	rcx,	qword [rel kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.size]
 
 	; aktualny rozmiar łańcucha jest wystarczający?
 	shl	rcx,	STATIC_PAGE_SIZE_shift
@@ -243,7 +243,7 @@ kernel_gui_taskbar:
 	jz	.new	; tak, zarejestruj nową
 
 	; zwolnij aktualną przestrzeń łańcucha
-	mov	rdi,	qword [kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.address]
+	mov	rdi,	qword [rel kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.address]
 	call	kernel_memory_release
 
 .new:
@@ -253,18 +253,18 @@ kernel_gui_taskbar:
 	call	kernel_memory_alloc
 
 	; zachowaj nowy wskaźnik przestrzeni łańcucha
-	mov	qword [kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.address],	rdi
+	mov	qword [rel kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.address],	rdi
 
 .enough:
 	; pobierz aktualny wskaźnik przestrzeni łańcucha
-	mov	rdi,	qword [kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.address]
+	mov	rdi,	qword [rel kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.address]
 
 	;-----------------------------------------------------------------------
 
 	; wylicz domyślną szerokość jednego elementu uwzględniająć dostępną przestrzeń paska zadań
-	movzx	eax,	word [kernel_gui_window_taskbar + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
-	sub	ax,	word [kernel_gui_window_taskbar.element_label_clock + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
-	mov	rcx,	qword [kernel_gui_taskbar_list_count]
+	movzx	eax,	word [rel kernel_gui_window_taskbar + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
+	sub	ax,	word [rel kernel_gui_window_taskbar.element_label_clock + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
+	mov	rcx,	qword [rel kernel_gui_taskbar_list_count]
 	xor	edx,	edx
 
 	; brak otwartych okien?
@@ -283,7 +283,7 @@ kernel_gui_taskbar:
 	xor	edx,	edx
 
 	; sprawdź wszystkie okna od początku listy
-	mov	r8,	qword [kernel_gui_taskbar_list_address]
+	mov	r8,	qword [rel kernel_gui_taskbar_list_address]
 
 	; brak elementów do wygenerowania?
 	test	rcx,	rcx
@@ -369,13 +369,13 @@ kernel_gui_taskbar:
 .ready:
 	; aktualizuj rozmiar przestrzeni łańcucha
 	pop	rax
-	mov	word [kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.size],	ax
+	mov	word [rel kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.size],	ax
 
 	; zakończ listę elementów łańcucha pustym rekordem
 	mov	byte [rdi + LIBRARY_BOSU_STRUCTURE_TYPE.set],	LIBRARY_BOSU_ELEMENT_TYPE_none
 
 	; zwolnij dostęp do modyfikacji listy obiektów
-	mov	byte [kernel_wm_object_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_wm_object_semaphore],	STATIC_FALSE
 
 	; przetwórz wszystkie elementy w łańcuchu
 	mov	rsi,	kernel_gui_window_taskbar.element_chain_0
@@ -388,8 +388,8 @@ kernel_gui_taskbar:
 	int	KERNEL_WM_IRQ
 
 	; zatwierdź czas ostatniej modyfikacji listy okien
-	mov	rax,	qword [kernel_wm_object_list_modify_time]
-	mov	qword [kernel_gui_window_taskbar_modify_time],	rax
+	mov	rax,	qword [rel kernel_wm_object_list_modify_time]
+	mov	qword [rel kernel_gui_window_taskbar_modify_time],	rax
 
 .end:
 	; przywróć oryginalne rejestry

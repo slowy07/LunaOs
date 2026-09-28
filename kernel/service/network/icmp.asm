@@ -79,7 +79,7 @@ service_network_icmp:
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_IP.destination_address],	eax
 
 	; zwróć nasz adres IPv4
-	mov	eax,	dword [driver_nic_i82540em_ipv4_address]
+	mov	eax,	dword [rel driver_nic_i82540em_ipv4_address]
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_IP.source_address],	eax
 
 	; wyczyść starą sumę kontrolną ramki IPv4

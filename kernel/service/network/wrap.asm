@@ -13,7 +13,7 @@ service_network_ethernet_wrap:
 	mov	qword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.target],	rax
 
 	; adres MAC nadawcy
-	mov	rax,	qword [driver_nic_i82540em_mac_address]
+	mov	rax,	qword [rel driver_nic_i82540em_mac_address]
 	mov	qword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.source],	rax
 
 	; typ protokołu
@@ -68,7 +68,7 @@ service_network_ip_wrap:
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.checksum],	STATIC_EMPTY
 
 	; ustaw nadawcę (ja)
-	mov	eax,	dword [driver_nic_i82540em_ipv4_address]
+	mov	eax,	dword [rel driver_nic_i82540em_ipv4_address]
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.source_address],	eax
 
 	; ustaw adresata

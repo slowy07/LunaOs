@@ -11,7 +11,7 @@ kernel_init_storage:
 	call	driver_ide_init
 
 	; znaleziono jakiekolwiek nośniki danych?
-	cmp	byte [driver_ide_devices_count],	STATIC_EMPTY
+	cmp	byte [rel driver_ide_devices_count],	STATIC_EMPTY
 	je	.ide_end	; nie
 
 	; maksymalna ilość urządzeń IDE
@@ -54,7 +54,7 @@ kernel_init_storage:
 
 .ide_next:
 	; następna litera nośnika
-	inc	byte [kernel_init_string_storage_ide_hd_letter]
+	inc	byte [rel kernel_init_string_storage_ide_hd_letter]
 
 	; przesuń wskaźnik na następny wpis
 	add	rdi,	DRIVER_IDE_STRUCTURE_DEVICE.SIZE

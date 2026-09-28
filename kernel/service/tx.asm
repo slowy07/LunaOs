@@ -12,7 +12,7 @@ service_tx:
 	mov	rax,	qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
 	; udostepnij własny PID dla pozostałych procesów
-	mov	qword [service_tx_pid],	rax
+	mov	qword [rel service_tx_pid],	rax
 
 .loop:
 	; pobierz wiadomość

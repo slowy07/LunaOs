@@ -55,7 +55,7 @@ kernel_init_ps2:
 	; pobierz identyfikator urządzenia
 	;-----------------------------------------------------------------------
 	call	driver_ps2_receive_answer
-	mov	byte [driver_ps2_mouse_type],	al
+	mov	byte [rel driver_ps2_mouse_type],	al
 
 	;-----------------------------------------------------------------------
 	; ustaw urządzenie na wartości domyślne

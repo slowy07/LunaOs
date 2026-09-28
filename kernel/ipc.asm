@@ -31,13 +31,13 @@ kernel_ipc_insert:
 	macro_lock	kernel_ipc_semaphore, 0
 
 	; pobierz aktualny czas systemu
-	mov	rax,	qword [driver_rtc_microtime]
+	mov	rax,	qword [rel driver_rtc_microtime]
 
 	; ilość dostępnych wpisów na liście
 	mov	rcx,	KERNEL_IPC_ENTRY_limit
 
 	; ustaw wskaźnik na początek listy
-	mov	rdi,	qword [kernel_ipc_base_address]
+	mov	rdi,	qword [rel kernel_ipc_base_address]
 
 .loop:
 	; wpis przeterminowany?
@@ -52,7 +52,7 @@ kernel_ipc_insert:
 	jnz	.loop	; tak
 
 	; zwolnij dostęp do listy komunikatów
-	mov	byte [kernel_ipc_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_ipc_semaphore],	STATIC_FALSE
 
 	; sprawdź raz jeszcze
 	jmp	.retry
@@ -99,14 +99,14 @@ kernel_ipc_insert:
 
 .end:
 	; ilość wiadomości na liście
-	inc	qword [kernel_ipc_entry_count]
+	inc	qword [rel kernel_ipc_entry_count]
 
 	; ustaw czas przedawnienia wiadomości
 	add	rax,	KERNEL_IPC_TTL_default
 	mov	qword [rdi + KERNEL_IPC_STRUCTURE.ttl],	rax
 
 	; zwolnij dostęp
-	mov	byte [kernel_ipc_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_ipc_semaphore],	STATIC_FALSE
 
 	; przywróć oryginalne rejestry
 	pop	rcx
@@ -134,7 +134,7 @@ kernel_ipc_receive:
 	push	rdi
 
 	; istnieją komunikaty na liście?
-	cmp	qword [kernel_ipc_entry_count],	STATIC_EMPTY
+	cmp	qword [rel kernel_ipc_entry_count],	STATIC_EMPTY
 	je	.empty	; nie
 
 	; pobierz PID procesu wywołującego
@@ -144,10 +144,10 @@ kernel_ipc_receive:
 	mov	rcx,	KERNEL_IPC_ENTRY_limit
 
 	; ustaw wskaźnik na początek listy
-	mov	rsi,	qword [kernel_ipc_base_address]
+	mov	rsi,	qword [rel kernel_ipc_base_address]
 
 	; pobierz aktualny czas systemu
-	mov	rdi,	qword [driver_rtc_microtime]
+	mov	rdi,	qword [rel driver_rtc_microtime]
 
 .loop:
 	; wpis dla procesu?
@@ -185,7 +185,7 @@ kernel_ipc_receive:
 	mov	qword [rsi - KERNEL_IPC_STRUCTURE.SIZE],	STATIC_EMPTY
 
 	; ilość komunikatów na liście
-	dec	qword [kernel_ipc_entry_count]
+	dec	qword [rel kernel_ipc_entry_count]
 
 	; flaga, sukces
 	clc

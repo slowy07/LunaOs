@@ -3,14 +3,14 @@
 ;===============================================================================
 kernel_init_smp:
 	; dostępny jest tylko jeden procesor logiczny?
-	cmp	word [kernel_apic_count],	STATIC_TRUE
+	cmp	word [rel kernel_apic_count],	STATIC_TRUE
 	jbe	.finish	; tak, pomiń inicjalizacje pozostałych
 
 	; mapuj przestrzeń pamięci kodu inicjalizującego procesory logiczne
 	mov	eax,	0x7000	; 0x0000:0x7000
 	mov	bx,	KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
 	mov	ecx,	kernel_init_boot_file_end - kernel_init_boot_file
-	mov	r11,	qword [kernel_page_pml4_address]
+	mov	r11,	qword [rel kernel_page_pml4_address]
 	call	library_page_from_size
 	call	kernel_page_map_physical
 
@@ -21,10 +21,10 @@ kernel_init_smp:
 	rep	movsb
 
 	; otwórz docelową ścieżkę dla procesorów logicznych w procedurach inicjalizacyjnych
-	mov	byte [kernel_init_smp_semaphore],	STATIC_TRUE
+	mov	byte [rel kernel_init_smp_semaphore],	STATIC_TRUE
 
 	; pobierz identyfikator procesora BSP
-	mov	rdi,	qword [kernel_apic_base_address]
+	mov	rdi,	qword [rel kernel_apic_base_address]
 	mov	eax,	dword [rdi + KERNEL_APIC_ID_register]
 	shr	eax,	24	; przesuń bity z 24..31 do 0..7
 
@@ -35,7 +35,7 @@ kernel_init_smp:
 	mov	rsi,	kernel_apic_id_table
 
 	; ilość procesorów logicznych
-	mov	cx,	word [kernel_apic_count]
+	mov	cx,	word [rel kernel_apic_count]
 
 .init:
  	; koniec procesorów logicznych do wybudzenia?
@@ -65,12 +65,12 @@ kernel_init_smp:
 
 .init_done:
  	; odczekaj około 10ms
- 	mov	rax,	qword [driver_rtc_microtime]
+ 	mov	rax,	qword [rel driver_rtc_microtime]
  	add	rax,	10
 
  .init_wait_for_ipi:
  	; upłynął czas?
- 	cmp	rax,	qword [driver_rtc_microtime]
+ 	cmp	rax,	qword [rel driver_rtc_microtime]
  	ja	.init_wait_for_ipi	; nie
 
 	; wskaż wszystkim procesorom logicznym adres rozpoczęcia pracy
@@ -79,7 +79,7 @@ kernel_init_smp:
 	mov	rsi,	kernel_apic_id_table
 
 	; ilość procesorów logicznych
-	mov	cx,	word [kernel_apic_count]
+	mov	cx,	word [rel kernel_apic_count]
 
 .start:
  	; koniec procesorów logicznych?

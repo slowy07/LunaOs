@@ -9,36 +9,36 @@
 	;-----------------------------------------------------------------------
 
 	; załaduj Globalną Tablicę Deskryptorów
-	lgdt	[kernel_gdt_header]
+	lgdt	[rel kernel_gdt_header]
 
 	;-----------------------------------------------------------------------
 	; TSS
 	;-----------------------------------------------------------------------
 
 	; pobierz identyfikator procesora logicznego
-	mov	rax,	qword [kernel_apic_base_address]
+	mov	rax,	qword [rel kernel_apic_base_address]
 	mov	dword [rax + KERNEL_APIC_TP_register],	STATIC_EMPTY
 	mov	eax,	dword [rax + KERNEL_APIC_ID_register]
 	shr	eax,	24	; przesuń bity z 24..31 do 0..7
 
 	; załaduj deskryptor Task State Segment dla danego procesora logicznego
 	shl	eax,	STATIC_MULTIPLE_BY_16_shift	; oblicz prdesunięcie w tablicy GDT dla selektora TSS
-	add	ax,	word [kernel_gdt_tss_bsp_selector]	; koryguj prdesunięcie względem deskryptora procesora BSP
-	mov	word [kernel_gdt_tss_cpu_selector],	ax
-	ltr	word [kernel_gdt_tss_cpu_selector]
+	add	ax,	word [rel kernel_gdt_tss_bsp_selector]	; koryguj prdesunięcie względem deskryptora procesora BSP
+	mov	word [rel kernel_gdt_tss_cpu_selector],	ax
+	ltr	word [rel kernel_gdt_tss_cpu_selector]
 
 	;-----------------------------------------------------------------------
 	; IDT
 	;-----------------------------------------------------------------------
 
 	; załaduj Tablicę Deskryptorów Przerwań
-	lidt	[kernel_idt_header]
+	lidt	[rel kernel_idt_header]
 
 	;=======================================================================
 	; TYLKO JEDEN PROCESOR LOGICZNY NA RAZ MOŻE PRZETWARZAĆ PONIŻSZĄ PROCEDURĘ STRONICOWANIA
 .wait:	;=======================================================================
 	mov	al,	STATIC_TRUE
-	lock	xchg	byte [kernel_init_ap_semaphore],	al
+	xchg	byte [rel kernel_init_ap_semaphore],	al
 	test	al,	al	; sprawdź czy uzyskano dostęp
 	jz	.wait	; blokada, spróbuj raz jeszcze
 	;=======================================================================
@@ -48,7 +48,7 @@
 	;-----------------------------------------------------------------------
 
 	; ustaw tymczasowo wskaźnik na tablice stronicowania procesora BSP
-	mov	rax,	qword [kernel_page_pml4_address]
+	mov	rax,	qword [rel kernel_page_pml4_address]
 	mov	cr3,	rax
 
 	; ustaw tymczasowy wskaźnik szczytu stosu dla procesora logicznego
@@ -62,7 +62,7 @@
 	call	kernel_page_drain
 
 	; strona wykorzystana do tablic stronicowania
-	inc	qword [kernel_page_paged_count]
+	inc	qword [rel kernel_page_paged_count]
 
 	; przygotuj osobny stos/kontekstu dla procesora logicznego
 	mov	rax,	KERNEL_STACK_address
@@ -73,7 +73,7 @@
 	call	kernel_page_map_logical
 
 	; mapuj pozostałą przestrzeń pamięci na podstawie procesora BSP
-	mov	rsi,	qword [kernel_page_pml4_address]
+	mov	rsi,	qword [rel kernel_page_pml4_address]
 	call	kernel_page_merge
 
 	; przeładuj stronicowanie procesora logicznego
@@ -84,7 +84,7 @@
 	mov	rsp,	KERNEL_STACK_pointer
 
 	; zwolnij dostęp do procedury
-	mov	byte [kernel_init_ap_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_init_ap_semaphore],	STATIC_FALSE
 
 	;-----------------------------------------------------------------------
 	; APIC
@@ -104,13 +104,13 @@
 	; ustaw wskaźnik na pozycje aktualnego zadania dla procesora logicznego
 	mov	rbx,	rax
 	shl	rbx,	STATIC_MULTIPLE_BY_8_shift
-	mov	rsi,	qword [kernel_task_active_list]
+	mov	rsi,	qword [rel kernel_task_active_list]
 
 	; ustaw wskaźnik na początek kolejki zadań
-	mov	rdi,	qword [kernel_task_address]
+	mov	rdi,	qword [rel kernel_task_address]
 
 	; procesor logiczny zainicjowany
-	inc	byte [kernel_init_ap_count]
+	inc	byte [rel kernel_init_ap_count]
 
 	; przydziel pierwsze zadanie dla procesora logicznego
 	jmp	kernel_task.ap_entry

@@ -15,7 +15,7 @@ kernel_gui_ipc:
 	jc	.end	; brak wiadomości
 
 	; wiadomość od menedżera okien?
-	mov	rax,	qword [kernel_wm_pid]
+	mov	rax,	qword [rel kernel_wm_pid]
 	cmp	qword [rdi + KERNEL_IPC_STRUCTURE.pid_source],	rax
 	jne	.no_desu	; nie, zignoruj
 

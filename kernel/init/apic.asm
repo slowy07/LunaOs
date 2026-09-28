@@ -3,7 +3,7 @@
 ;===============================================================================
 kernel_init_apic:
 	; pobierz adres tablicy Local ACPI
-	mov	rsi,	qword [kernel_apic_base_address]
+	mov	rsi,	qword [rel kernel_apic_base_address]
 
 	; wyłącz Task Priority i Priority Sub-Class
 	mov	dword [rsi + KERNEL_APIC_TP_register],	STATIC_EMPTY

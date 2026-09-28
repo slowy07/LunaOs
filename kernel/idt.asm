@@ -23,7 +23,7 @@ kernel_idt_mount:
 
 	; oblicz prdesunięcie do rekordu numeru przerwania
 	shl	rdi,	STATIC_MULTIPLE_BY_16_shift
-	add	rdi,	qword [kernel_idt_header + KERNEL_STRUCTURE_IDT_HEADER.address]
+	add	rdi,	qword [rel kernel_idt_header + KERNEL_STRUCTURE_IDT_HEADER.address]
 
 	; procedura obsługi przerwania
 	mov	rcx,	1	; podłącz procedurę obsługi pod jeden rekord
@@ -148,7 +148,7 @@ kernel_idt_interrupt_hardware:
 	push	rdi
 
 	; poinformuj APIC o obsłużeniu aktualnego przerwania sprzętowego
-	mov	rdi,	qword [kernel_apic_base_address]
+	mov	rdi,	qword [rel kernel_apic_base_address]
 	mov	dword [rdi + KERNEL_APIC_EOI_register],	STATIC_EMPTY
 
 	; przywróć oryginalne rejestry

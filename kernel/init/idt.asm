@@ -12,7 +12,7 @@ kernel_init_idt:
 
 	; wyczyść tablicę IDT i zachowaj jej adres
 	call	kernel_page_drain
-	mov	qword [kernel_idt_header + KERNEL_STRUCTURE_IDT_HEADER.address],	rdi
+	mov	qword [rel kernel_idt_header + KERNEL_STRUCTURE_IDT_HEADER.address],	rdi
 
 	;-----------------------------------------------------------------------
 	; domyślna obsługa wyjątków procesora
@@ -63,4 +63,4 @@ kernel_init_idt:
 
 	;-----------------------------------------------------------------------
 	; załaduj Tablicę Deskryptorów Przerwań
-	lidt	[kernel_idt_header]
+	lidt	[rel kernel_idt_header]

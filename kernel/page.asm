@@ -86,7 +86,7 @@ kernel_page_purge:
 	call	kernel_memory_release_page
 
 	; zwolniono tablicę stronicowania
-	dec	qword [kernel_page_paged_count]
+	dec	qword [rel kernel_page_paged_count]
 
 	; usuń rekord z tablicy PML2
 	mov	qword [r9],	STATIC_EMPTY
@@ -124,7 +124,7 @@ kernel_page_purge:
 	call	kernel_memory_release_page
 
 	; zwolniono tablicę stronicowania
-	dec	qword [kernel_page_paged_count]
+	dec	qword [rel kernel_page_paged_count]
 
 	; usuń rekord z tablicy PML3
 	mov	qword [r10],	STATIC_EMPTY
@@ -162,7 +162,7 @@ kernel_page_purge:
 	call	kernel_memory_release_page
 
 	; zwolniono tablicę stronicowania
-	dec	qword [kernel_page_paged_count]
+	dec	qword [rel kernel_page_paged_count]
 
 	; usuń rekord z tablicy PML4
 	mov	qword [r11],	STATIC_EMPTY
@@ -777,7 +777,7 @@ kernel_page_prepare:
 	or	word [r11],	bx	; ustaw właściwości rekordu tablicy PML4
 
 	; strona wykorzystana do tablic stronicowania
-	inc	qword [kernel_page_paged_count]
+	inc	qword [rel kernel_page_paged_count]
 
 .pml3:
 	; ustaw numer i wskaźnik rekordu w tablicy PML4 na następny
@@ -827,7 +827,7 @@ kernel_page_prepare:
 	or	word [r10],	bx	; ustaw właściwości rekordu tablicy PML3
 
 	; strona wykorzystana do tablic stronicowania
-	inc	qword [kernel_page_paged_count]
+	inc	qword [rel kernel_page_paged_count]
 
 .pml2:
 	; ustaw numer i wskaźnik rekordu w tablicy PML3 na następny
@@ -877,7 +877,7 @@ kernel_page_prepare:
 	or	word [r9],	bx	; ustaw właściwości rekordu tablicy PML2
 
 	; strona wykorzystana do tablic stronicowania
-	inc	qword [kernel_page_paged_count]
+	inc	qword [rel kernel_page_paged_count]
 
 .pml1:
 	; ustaw numer i wskaźnik rekordu w tablicy PML3 na następny
@@ -975,7 +975,7 @@ kernel_page_pml1:
 	mov	qword [r9],	rdi
 
 	; strona wykorzystana do tablic stronicowania
-	inc	qword [kernel_page_paged_count]
+	inc	qword [rel kernel_page_paged_count]
 
 .pml2_continue:
 	; usuń właściwości rekordu tablicy PML2
@@ -1024,7 +1024,7 @@ kernel_page_pml1:
 	mov	qword [r10],	rdi
 
 	; strona wykorzystana do tablic stronicowania
-	inc	qword [kernel_page_paged_count]
+	inc	qword [rel kernel_page_paged_count]
 
 .pml3_continue:
 	; usuń właściwości rekordu tablicy PML3
@@ -1073,7 +1073,7 @@ kernel_page_pml1:
 	mov	qword [r11],	rdi
 
 	; strona wykorzystana do tablic stronicowania
-	inc	qword [kernel_page_paged_count]
+	inc	qword [rel kernel_page_paged_count]
 
 .pml4_continue:
 	; usuń właściwości rekordu tablicy PML4
@@ -1240,8 +1240,8 @@ kernel_page_secure:
 	call	kernel_memory_lock
 
 	; istnieją dostępne strony?
-	mov	rax,	qword [kernel_page_free_count]
-	sub	rax,	qword [kernel_page_reserved_count]
+	mov	rax,	qword [rel kernel_page_free_count]
+	sub	rax,	qword [rel kernel_page_reserved_count]
 	jz	.error	; nie
 
 	; pozostało wystarczająco?
@@ -1249,8 +1249,8 @@ kernel_page_secure:
 	jb	.error	; nie
 
 	; zarezerwuj
-	sub	qword [kernel_page_free_count],	rcx
-	add	qword [kernel_page_reserved_count],	rcx
+	sub	qword [rel kernel_page_free_count],	rcx
+	add	qword [rel kernel_page_reserved_count],	rcx
 
 	; flaga, sukces
 	clc
@@ -1267,7 +1267,7 @@ kernel_page_secure:
 
 .end:
 	; odblokuj
-	mov	byte [kernel_memory_lock_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_memory_lock_semaphore],	STATIC_FALSE
 
 	; przywróć oryginalne rejestry
 	pop	rax

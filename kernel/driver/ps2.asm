@@ -392,12 +392,12 @@ driver_ps2_mouse:
 	in	al,	DRIVER_PS2_PORT_DATA
 
 	; pobierz aktualną pozycję na osi X i Y
-	mov	bx,	word [driver_ps2_mouse_x]
-	mov	dx,	word [driver_ps2_mouse_y]
+	mov	bx,	word [rel driver_ps2_mouse_x]
+	mov	dx,	word [rel driver_ps2_mouse_y]
 
 	;-----------------------------------------------------------------------
 	; status?
-	cmp	byte [driver_ps2_mouse_packet],	STATIC_TRUE
+	cmp	byte [rel driver_ps2_mouse_packet],	STATIC_TRUE
 	jne	.no_status	; nie
 
 	; pakiet statusu zawiera "zawsze włączony" bit?
@@ -413,10 +413,10 @@ driver_ps2_mouse:
 	jc	.end	; tak, porzuć pakiet
 
 	; zachowaj status kontrolera
-	mov	byte [driver_ps2_mouse_state],	al
+	mov	byte [rel driver_ps2_mouse_state],	al
 
 	; następny pakiet to prdesunięcie na osi X
-	inc	byte [driver_ps2_mouse_packet]
+	inc	byte [rel driver_ps2_mouse_packet]
 
 	; koniec obsługi przerwania
 	jmp	.end
@@ -425,14 +425,14 @@ driver_ps2_mouse:
 	;-----------------------------------------------------------------------
 
 	; prdesunięcie na osi X?
-	cmp	byte [driver_ps2_mouse_packet],	STATIC_FALSE
+	cmp	byte [rel driver_ps2_mouse_packet],	STATIC_FALSE
 	jne	.no_x	; nie
 
 	; następny pakiet to prdesunięcie na osi Y
-	inc	byte [driver_ps2_mouse_packet]
+	inc	byte [rel driver_ps2_mouse_packet]
 
 	; wartość z znakiem?
-	bt	word [driver_ps2_mouse_state],	DRIVER_PS2_DEVICE_MOUSE_PACKET_X_SIGNED_bit
+	bt	word [rel driver_ps2_mouse_state],	DRIVER_PS2_DEVICE_MOUSE_PACKET_X_SIGNED_bit
 	jnc	.x_unsigned	; nie
 
 	; koryguj znak
@@ -453,11 +453,11 @@ driver_ps2_mouse:
 	add	bx,	ax
 
 	; wskaźnik poza ekranem na osi X?
-	cmp	bx,	word [kernel_video_width_pixel]
+	cmp	bx,	word [rel kernel_video_width_pixel]
 	jb	.ready	; nie, koniec obsługi pakietu
 
 	; koryguj pozycję
-	mov	bx,	word [kernel_video_width_pixel]
+	mov	bx,	word [rel kernel_video_width_pixel]
 	dec	bx
 
 	; koniec obsługi pakietu
@@ -467,10 +467,10 @@ driver_ps2_mouse:
 	;-----------------------------------------------------------------------
 
 	; następny pakiet to status
-	mov	byte [driver_ps2_mouse_packet],	STATIC_TRUE
+	mov	byte [rel driver_ps2_mouse_packet],	STATIC_TRUE
 
 	; wartość z znakiem?
-	bt	word [driver_ps2_mouse_state],	DRIVER_PS2_DEVICE_MOUSE_PACKET_Y_SIGNED_bit
+	bt	word [rel driver_ps2_mouse_state],	DRIVER_PS2_DEVICE_MOUSE_PACKET_Y_SIGNED_bit
 	jnc	.y_unsigned	; nie
 
 	; koryguj znak
@@ -480,11 +480,11 @@ driver_ps2_mouse:
 	add	dx,	ax
 
 	; wskaźnik poda ekranem na osi X?
-	cmp	dx,	word [kernel_video_height_pixel]
+	cmp	dx,	word [rel kernel_video_height_pixel]
 	jb	.ready	; nie, koniec obsługi pakietu
 
 	; koryguj pozycję
-	mov	dx,	word [kernel_video_height_pixel]
+	mov	dx,	word [rel kernel_video_height_pixel]
 	dec	dx
 
 	; koniec obsługi pakietu
@@ -500,12 +500,12 @@ driver_ps2_mouse:
 
 .ready:
 	; zachowaj nową pozycję wskaźnika
-	mov	word [driver_ps2_mouse_x],	bx
-	mov	word [driver_ps2_mouse_y],	dx
+	mov	word [rel driver_ps2_mouse_x],	bx
+	mov	word [rel driver_ps2_mouse_y],	dx
 
 .end:
 	; poinformuj LAPIC o obsłużeniu przerwania sprzętowego
-	mov	rax,	qword [kernel_apic_base_address]
+	mov	rax,	qword [rel kernel_apic_base_address]
 	mov	dword [rax + KERNEL_APIC_EOI_register],	STATIC_EMPTY
 
 	; przywróć oryginalny rejestry
@@ -544,26 +544,26 @@ driver_ps2_keyboard_pull:
 	je	.sequence	; tak
 
 	; sekwencja rozpoczęta?
-	cmp	byte [driver_ps2_keyboard_sequence],	STATIC_EMPTY
+	cmp	byte [rel driver_ps2_keyboard_sequence],	STATIC_EMPTY
 	je	.no_sequence	; nie
 
 	; kombinuj kod klawisza
 	xor	ah,	ah
-	xchg	ah,	byte [driver_ps2_keyboard_sequence]
+	xchg	ah,	byte [rel driver_ps2_keyboard_sequence]
 
 	; zapisz kod klawisza do bufora klawiatury
 	jmp	.save
 
 .sequence:
 	; zachowaj informacje o typie rozpoczętej sekwencji
-	mov	byte [driver_ps2_keyboard_sequence],	al
+	mov	byte [rel driver_ps2_keyboard_sequence],	al
 
 	; koniec obsługi przerwnia
 	jmp	.end
 
 .no_sequence:
 	; ustaw wskaźnik na macierz scancode
-	mov	rsi,	qword [driver_ps2_keyboard_matrix]
+	mov	rsi,	qword [rel driver_ps2_keyboard_matrix]
 
 	; kod klawisza poza macierzą?
 	cmp	al,	DRIVER_PS2_KEYBOARD_key_release
@@ -633,7 +633,7 @@ driver_ps2_keyboard:
 
 .end:
 	; poinformuj LAPIC o obsłużeniu przerwania sprzętowego
-	mov	rax,	qword [kernel_apic_base_address]
+	mov	rax,	qword [rel kernel_apic_base_address]
 	mov	dword [rax + KERNEL_APIC_EOI_register],	STATIC_EMPTY
 
 	; przywróć oryginalny rejestry
@@ -673,7 +673,7 @@ driver_ps2_keyboard_shift:
 	jne	.end	; nie
 
 	; zwolnij semafor
-	mov	byte [driver_ps2_keyboard_capslock_semaphore],	STATIC_FALSE
+	mov	byte [rel driver_ps2_keyboard_capslock_semaphore],	STATIC_FALSE
 
 .end:
 	; powrót z procedury
@@ -681,47 +681,47 @@ driver_ps2_keyboard_shift:
 
 .press_left:
 	; przytrzymano klawisz?
-	cmp	byte [driver_ps2_keyboard_shift_left_semaphore],	STATIC_TRUE
+	cmp	byte [rel driver_ps2_keyboard_shift_left_semaphore],	STATIC_TRUE
 	je	.end	; tak
 
 	; ustaw semafor
-	mov	byte [driver_ps2_keyboard_shift_left_semaphore],	STATIC_TRUE
+	mov	byte [rel driver_ps2_keyboard_shift_left_semaphore],	STATIC_TRUE
 
 	; zmień macierz
 	jmp	.change
 
 .press_right:
 	; przytrzymano klawisz?
-	cmp	byte [driver_ps2_keyboard_shift_right_semaphore],	STATIC_TRUE
+	cmp	byte [rel driver_ps2_keyboard_shift_right_semaphore],	STATIC_TRUE
 	je	.end	; tak
 
 	; ustaw semafor
-	mov	byte [driver_ps2_keyboard_shift_right_semaphore],	STATIC_TRUE
+	mov	byte [rel driver_ps2_keyboard_shift_right_semaphore],	STATIC_TRUE
 
 	; powrót z procedury
 	jmp	.change
 
 .release_left:
 	; zwolnij semafor
-	mov	byte [driver_ps2_keyboard_shift_left_semaphore],	STATIC_FALSE
+	mov	byte [rel driver_ps2_keyboard_shift_left_semaphore],	STATIC_FALSE
 
 	; zmień macierz
 	jmp	.change
 
 .release_right:
 	; zwolnij semafor
-	mov	byte [driver_ps2_keyboard_shift_right_semaphore],	STATIC_FALSE
+	mov	byte [rel driver_ps2_keyboard_shift_right_semaphore],	STATIC_FALSE
 
 	; zmień macierz
 	jmp	.change
 
 .capslock:
 	; przytrzymano klawisz Capslock?
-	cmp	byte [driver_ps2_keyboard_capslock_semaphore],	STATIC_TRUE
+	cmp	byte [rel driver_ps2_keyboard_capslock_semaphore],	STATIC_TRUE
 	je	.end	; tak
 
 	; ustaw semafor
-	mov	byte [driver_ps2_keyboard_capslock_semaphore],	STATIC_TRUE
+	mov	byte [rel driver_ps2_keyboard_capslock_semaphore],	STATIC_TRUE
 
 .change:
 	; zmień macierz klawiszy
@@ -733,8 +733,8 @@ driver_ps2_keyboard_shift:
 ;===============================================================================
 driver_ps2_keyboard_save:
 	; zachowaj wartość ASCII klawisza w buforze programowym
-	shl	qword [driver_ps2_keyboard_cache],	STATIC_MOVE_AX_TO_HIGH_shift
-	mov	word [driver_ps2_keyboard_cache],	ax
+	shl	qword [rel driver_ps2_keyboard_cache],	STATIC_MOVE_AX_TO_HIGH_shift
+	mov	word [rel driver_ps2_keyboard_cache],	ax
 
 	; powrót z procedury
 	ret
@@ -746,14 +746,14 @@ driver_ps2_keyboard_matrix_change:
 
 	; wstaw sugerowany typ macierzy
 	mov	rax,	driver_ps2_keyboard_matrix_high
-	xchg	qword [driver_ps2_keyboard_matrix],	rax
+	xchg	qword [rel driver_ps2_keyboard_matrix],	rax
 
 	; zamiana udana?
 	cmp	rax,	driver_ps2_keyboard_matrix_low
 	je	.end	; tak
 
 	; nie, koryguj
-	mov	qword [driver_ps2_keyboard_matrix],	driver_ps2_keyboard_matrix_low
+	mov	qword [rel driver_ps2_keyboard_matrix],	driver_ps2_keyboard_matrix_low
 
 .end:
 	; przywróć oryginalny rejestr
@@ -768,8 +768,8 @@ driver_ps2_keyboard_matrix_change:
 ;	ax - kod ASCII klawisza lub jego sekwencja
 driver_ps2_keyboard_read:
 	; pobierz kod ASCII i usuń z bufora
-	mov	ax,	word [driver_ps2_keyboard_cache + STATIC_DWORD_SIZE_byte + STATIC_WORD_SIZE_byte]
-	shl	qword [driver_ps2_keyboard_cache],	STATIC_MOVE_AX_TO_HIGH_shift
+	mov	ax,	word [rel driver_ps2_keyboard_cache + STATIC_DWORD_SIZE_byte + STATIC_WORD_SIZE_byte]
+	shl	qword [rel driver_ps2_keyboard_cache],	STATIC_MOVE_AX_TO_HIGH_shift
 
 	; pobrano kod klawisza?
 	test	ax,	ax

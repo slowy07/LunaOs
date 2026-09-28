@@ -24,7 +24,7 @@ service_network_tcp:
 	; port docelowy jest pusty?
 	mov	ecx,	SERVICE_NETWORK_STRUCTURE_PORT.SIZE
 	mul	ecx
-	add	rax,	qword [service_network_port_table]
+	add	rax,	qword [rel service_network_port_table]
 	cmp	qword [rax],	STATIC_EMPTY
 	je	.end	; tak, zignoruj pakiet
 
@@ -109,7 +109,7 @@ service_network_tcp_psh:
 	rep	stosb
 
 	; pobierz PID procesu docelowego
-	mov	rbx,	qword [service_network_port_table]
+	mov	rbx,	qword [rel service_network_port_table]
 	mov	rbx,	qword [rbx + rax]
 
 	; wyślij komunikat do procesu
@@ -273,7 +273,7 @@ service_network_tcp_find:
 
 	; przeszukaj stos TCP
 	mov	rcx,	(SERVICE_NETWORK_STACK_SIZE_page << STATIC_PAGE_SIZE_shift) / SERVICE_NETWORK_STRUCTURE_TCP_STACK.SIZE
-	mov	rdi,	qword [service_network_stack_address]
+	mov	rdi,	qword [rel service_network_stack_address]
 
 .loop:
 	; adres MAC klienta, poprawny?
@@ -345,7 +345,7 @@ service_network_tcp_syn:
 
 	; przeszukaj stos TCP
 	mov	rcx,	(SERVICE_NETWORK_STACK_SIZE_page << STATIC_PAGE_SIZE_shift) / SERVICE_NETWORK_STRUCTURE_TCP_STACK.SIZE
-	mov	rdi,	qword [service_network_stack_address]
+	mov	rdi,	qword [rel service_network_stack_address]
 
 .search:
 	; za wolnym miejscem
@@ -485,7 +485,7 @@ service_network_tcp_pseudo_header:
 	; konfiguruj pseudo nagłówek
 
 	; nadawca
-	mov	eax,	dword [driver_nic_i82540em_ipv4_address]
+	mov	eax,	dword [rel driver_nic_i82540em_ipv4_address]
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE - SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.source_ipv4],	eax
 
 	; adresat
@@ -546,7 +546,7 @@ service_network_tcp_port_assign:
 	mov	rcx,	qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
 	; załaduj do tablicy portów identyfikator właściciela (zarazem wyczyść flagi)
-	mov	rdi,	qword [service_network_port_table]
+	mov	rdi,	qword [rel service_network_port_table]
 	test	rdi,	rdi
 	jz	.error	; usługa sieciowa niezainicjowana
 
@@ -566,7 +566,7 @@ service_network_tcp_port_assign:
 
 .end:
 	; zwolnij dostęp do tablicy portów
-	mov	byte [service_network_port_semaphore],	STATIC_FALSE
+	mov	byte [rel service_network_port_semaphore],	STATIC_FALSE
 
 	; przywróć oryginalne rejestry
 	pop	rdi

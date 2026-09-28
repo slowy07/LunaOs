@@ -54,7 +54,7 @@ kernel_exec:
 	call	kernel_page_drain
 
 	; wykorzystano stronę do stronicowania
-	inc	qword [kernel_page_paged_count]
+	inc	qword [rel kernel_page_paged_count]
 
 	; zachowaj adres
 	mov	r11,	rdi
@@ -148,7 +148,7 @@ kernel_exec:
 	jc	.error
 
 	; mapuj przestrzeń jądra systemu
-	mov	rsi,	qword [kernel_page_pml4_address]
+	mov	rsi,	qword [rel kernel_page_pml4_address]
 	mov	rdi,	r11
 	call	kernel_page_merge
 
@@ -209,13 +209,13 @@ kernel_exec:
 	mov	qword [rdi +KERNEL_TASK_STRUCTURE.memory],	r12
 
 	; uzupełnij wpis o adres binarnej mapy pamięci procesu i jej rozmiar
-	add	r13,	qword [kernel_memory_high_mask]
+	add	r13,	qword [rel kernel_memory_high_mask]
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.map],	r13
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.map_size],	(KERNEL_MEMORY_MAP_SIZE_page << STATIC_PAGE_SIZE_shift) << STATIC_MULTIPLE_BY_8_shift
 
 	; zwolnij niewykrzystane, zarezerwowane strony
-	add	qword [kernel_page_free_count],	rbp
-	sub	qword [kernel_page_reserved_count],	rbp
+	add	qword [rel kernel_page_free_count],	rbp
+	sub	qword [rel kernel_page_reserved_count],	rbp
 
 	; zwróć numer PID utworzonego zadania
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rcx

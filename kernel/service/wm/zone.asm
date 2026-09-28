@@ -16,7 +16,7 @@ kernel_wm_zone_insert_by_object:
 	macro_lock	kernel_wm_zone_semaphore,	0
 
 	; lista stref jest pełna?
-	cmp	qword [kernel_wm_zone_list_records],	KERNEL_WM_ZONE_LIST_limit
+	cmp	qword [rel kernel_wm_zone_list_records],	KERNEL_WM_ZONE_LIST_limit
 	jb	.insert	; nie
 
 	xchg	bx,bx
@@ -25,11 +25,11 @@ kernel_wm_zone_insert_by_object:
 .insert:
 	; wskaźnik pośredni na koniec listy stref
 	mov	eax,	KERNEL_WM_STRUCTURE_ZONE.SIZE
-	mul	qword [kernel_wm_zone_list_records]	; pozycja za ostatnią strefą listy
+	mul	qword [rel kernel_wm_zone_list_records]	; pozycja za ostatnią strefą listy
 
 	; ustaw wskaźniki na miejsca
 	mov	rsi,	qword [rsp]
-	mov	rdi,	qword [kernel_wm_zone_list_address]
+	mov	rdi,	qword [rel kernel_wm_zone_list_address]
 	add	rdi,	rax
 
 	; wstaw właściwości strefy
@@ -43,10 +43,10 @@ kernel_wm_zone_insert_by_object:
 	mov	qword [rdi],	rax
 
 	; ilość stref na liście
-	inc	qword [kernel_wm_zone_list_records]
+	inc	qword [rel kernel_wm_zone_list_records]
 
 	; odblokuj listę stref do modyfikacji
-	mov	byte [kernel_wm_zone_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_wm_zone_semaphore],	STATIC_FALSE
 
 	; przywróć oryginalne rejestry
 	pop	rax
@@ -76,7 +76,7 @@ kernel_wm_zone_insert_by_register:
 	macro_lock	kernel_wm_zone_semaphore,	0
 
 	; lista stref jest pełna?
-	cmp	qword [kernel_wm_zone_list_records],	KERNEL_WM_ZONE_LIST_limit
+	cmp	qword [rel kernel_wm_zone_list_records],	KERNEL_WM_ZONE_LIST_limit
 	jb	.insert	; nie
 
 	xchg	bx,bx
@@ -85,10 +85,10 @@ kernel_wm_zone_insert_by_register:
 .insert:
 	; wskaźnik pośredni na koniec listy stref
 	mov	eax,	KERNEL_WM_STRUCTURE_ZONE.SIZE
-	mul	qword [kernel_wm_zone_list_records]	; pozycja za ostatnią strefą listy
+	mul	qword [rel kernel_wm_zone_list_records]	; pozycja za ostatnią strefą listy
 
 	; wskaźnik bezpośredni końca listy stref
-	mov	rsi,	qword [kernel_wm_zone_list_address]
+	mov	rsi,	qword [rel kernel_wm_zone_list_address]
 	add	rsi,	rax
 
 	; dodaj do listy nową strefę
@@ -101,10 +101,10 @@ kernel_wm_zone_insert_by_register:
 	mov	qword [rsi + KERNEL_WM_STRUCTURE_ZONE.object],	rdi
 
 	; ilość stref na liście
-	inc	qword [kernel_wm_zone_list_records]
+	inc	qword [rel kernel_wm_zone_list_records]
 
 	; odblokuj listę stref do modyfikacji
-	mov	byte [kernel_wm_zone_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_wm_zone_semaphore],	STATIC_FALSE
 
 	; przywróć oryginalne rejestry
 	pop	rsi
@@ -132,11 +132,11 @@ kernel_wm_zone:
 	push	r15
 
 	; brak stref na liście?
-	cmp	qword [kernel_wm_zone_list_records],	STATIC_EMPTY
+	cmp	qword [rel kernel_wm_zone_list_records],	STATIC_EMPTY
 	je	.end	; tak
 
 	; ustaw wskaźnik na pierwszą opisaną strefę na liście
-	mov	rdi,	qword [kernel_wm_zone_list_address]
+	mov	rdi,	qword [rel kernel_wm_zone_list_address]
 
 	; rozpocznij przetwarzanie
 	jmp	.entry
@@ -171,10 +171,10 @@ kernel_wm_zone:
 	; opisana strefa znajduje się w przestrzeni "ekranu"?
 
 	; poza prawą krawędzią ekranu?
-	cmp	r8w,	word [kernel_video_width_pixel]
+	cmp	r8w,	word [rel kernel_video_width_pixel]
 	jge	.loop	; tak
 	; poza dolną krawędzią ekranu?
-	cmp	r9w,	word [kernel_video_height_pixel]
+	cmp	r9w,	word [rel kernel_video_height_pixel]
 	jge	.loop	; tak
 	; poza lewą krawędzią ekranu?
 	cmp	r10w,	STATIC_EMPTY
@@ -188,9 +188,9 @@ kernel_wm_zone:
 	;-----------------------------------------------------------------------
 
 	; wskaźnik pośredni na koniec listy obiektów
-	mov	rsi,	qword [kernel_wm_object_list_length]
+	mov	rsi,	qword [rel kernel_wm_object_list_length]
 	shl	rsi,	KERNEL_WM_OBJECT_LIST_ENTRY_SIZE_shift	; pozycja za ostatnim obiektem listy
-	add	rsi,	qword [kernel_wm_object_list_address]
+	add	rsi,	qword [rel kernel_wm_object_list_address]
 
 .object:
 	; ustaw wskaźnik na rozpatrywany obiekt
@@ -200,7 +200,7 @@ kernel_wm_zone:
 	mov	rax,	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.object_address]
 
 	; rozpatrywany obiekt jest pierwszy na liście?
-	cmp	rsi,	qword [kernel_wm_object_list_address]
+	cmp	rsi,	qword [rel kernel_wm_object_list_address]
 	je	.fill	; tak
 
 	; obiekt widoczny?
@@ -379,7 +379,7 @@ kernel_wm_zone:
 
 .end:
 	; wszystkie strefy na liście zostały przetworzone
-	mov	qword [kernel_wm_zone_list_records],	STATIC_EMPTY
+	mov	qword [rel kernel_wm_zone_list_records],	STATIC_EMPTY
 
 	; przywróć oryginalne rejestry
 	pop	r15

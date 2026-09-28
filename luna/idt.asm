@@ -33,7 +33,7 @@ zero_idt:
 	call	zero_idt_set
 
 	; załaduj Tablicę Deskryptorów Przerwań
-	lidt	[zero_idt_header]
+	lidt	[rel zero_idt_header]
 
 	; włącz obsługę przerwań
 	sti
@@ -67,7 +67,7 @@ zero_idt_clock:
 	push	rax
 
 	; zwiększ mikrotime
-	inc	qword [zero_microtime]
+	inc	qword [rel zero_microtime]
 
 	; zaakceptuj przerwnaie
 	mov	al,	0x20

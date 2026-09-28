@@ -87,10 +87,10 @@ kernel_memory_alloc:
 	mov	rax,	STATIC_MAX_unsigned
 
 	; pobierz ilość opisanych stron w binarnej mapie pamięci
-	mov	rcx,	qword [kernel_page_total_count]
+	mov	rcx,	qword [rel kernel_page_total_count]
 
 	; przeszukaj binarną mapę pamięci od początku
-	mov	rsi,	qword [kernel_memory_map_address]
+	mov	rsi,	qword [rel kernel_memory_map_address]
 
 .reload:
 	; ilość stron wchodzących w skład rozpatrywanej przestrzeni
@@ -157,14 +157,14 @@ kernel_memory_alloc:
 
 	; ilość zarezerwowanych stron mniejszyła się
 	dec	rbp
-	dec	dword [kernel_page_reserved_count]
+	dec	dword [rel kernel_page_reserved_count]
 
 	; wykorzystano zarezerwowaną stronę
 	jmp	.reserved
 
 .next:
 	; ilość dostępnych stron zmiejszyła się
-	dec	qword [kernel_page_free_count]
+	dec	qword [rel kernel_page_free_count]
 
 .reserved:
 	; następna strona
@@ -183,7 +183,7 @@ kernel_memory_alloc:
 
 .end:
 	; zwolnij dostęp do binarnej mapy pamięci
-	mov	byte [kernel_memory_lock_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_memory_lock_semaphore],	STATIC_FALSE
 
 	; przywróć oryginalne rejestry
 	pop	rcx
@@ -219,7 +219,7 @@ kernel_memory_release_page:
 	push	rdi
 
 	; pobierz adres początku binarnej mapy pamięci
-	mov	rsi,	qword [kernel_memory_map_address]
+	mov	rsi,	qword [rel kernel_memory_map_address]
 
 	; przelicz adres strony na numer bitu
 	mov	rax,	rdi
@@ -239,10 +239,10 @@ kernel_memory_release_page:
 	bts	qword [rsi],	rdx
 
 	; zwiększamy ilość dostępnych stron o jedną
-	inc	qword [kernel_page_free_count]
+	inc	qword [rel kernel_page_free_count]
 
 	; lista zadań aktywna?
-	cmp	qword [kernel_task_active_list],	STATIC_EMPTY
+	cmp	qword [rel kernel_task_active_list],	STATIC_EMPTY
 	je	.end	; nie
 
 	; lista zadań procesorów logicznych uzupełniona?
@@ -362,7 +362,7 @@ kernel_memory_release_task:
 	call	kernel_memory_release_page
 
 	; zwolniono tablicę stronicowania
-	dec	qword [kernel_page_paged_count]
+	dec	qword [rel kernel_page_paged_count]
 
 	; usuń rekord z tablicy PML2
 	mov	qword [r9],	STATIC_EMPTY
@@ -404,7 +404,7 @@ kernel_memory_release_task:
 	call	kernel_memory_release_page
 
 	; zwolniono tablicę stronicowania
-	dec	qword [kernel_page_paged_count]
+	dec	qword [rel kernel_page_paged_count]
 
 	; usuń rekord z tablicy PML3
 	mov	qword [r10],	STATIC_EMPTY
@@ -446,7 +446,7 @@ kernel_memory_release_task:
 	call	kernel_memory_release_page
 
 	; zwolniono tablicę stronicowania
-	dec	qword [kernel_page_paged_count]
+	dec	qword [rel kernel_page_paged_count]
 
 	; usuń rekord z tablicy PML4
 	mov	qword [r11],	STATIC_EMPTY

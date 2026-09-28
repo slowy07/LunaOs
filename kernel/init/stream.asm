@@ -6,7 +6,7 @@ kernel_init_stream:
 	call	kernel_page_drain
 
 	; zachowaj adres tablicy potoków
-	mov	qword [kernel_stream_address],	rdi
+	mov	qword [rel kernel_stream_address],	rdi
 
 	; ustaw wskaźnik następnego fragmentu tablicy na początek
 	mov	qword [rdi + STATIC_STRUCTURE_BLOCK.link],	rdi
@@ -15,4 +15,4 @@ kernel_init_stream:
 	call	kernel_stream
 
 	; zachowaj wskaźnik do domyślnego potoku wyjściowego
-	mov	qword [kernel_stream_out_default],	rsi
+	mov	qword [rel kernel_stream_out_default],	rsi

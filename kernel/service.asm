@@ -503,7 +503,7 @@ kernel_service:
 	push	rcx
 
 	; przydziel przestrzeń dla procesu
-	mov	rcx,	qword [kernel_task_size_page]
+	mov	rcx,	qword [rel kernel_task_size_page]
 	call	kernel_memory_alloc_task
 	jc	.process_list_end	; brak dostępnej przestrzeni
 
@@ -515,7 +515,7 @@ kernel_service:
 	xor	ebx,	ebx
 
 	; uzupełnij listę o wszystkie procesy zarejetrowane w serpentynie
-	mov	rsi,	qword [kernel_task_address]
+	mov	rsi,	qword [rel kernel_task_address]
 
 .process_list_reload:
 	; ilość wpisów na blok serpentyny
@@ -597,7 +597,7 @@ kernel_service:
 	mov	rsi,	qword [rsi + STATIC_STRUCTURE_BLOCK.link]
 
 	; koniec serpentyny?
-	cmp	rsi,	qword [kernel_task_address]
+	cmp	rsi,	qword [rel kernel_task_address]
 	jne	.process_list_reload	; nie
 
 	; zwróć adres przestrzeni listy procesów
@@ -671,14 +671,14 @@ kernel_service:
 	or	word [rdi + KERNEL_TASK_STRUCTURE.flags],	KERNEL_TASK_FLAG_sleep
 
 	; ustaw czas wybudzenia procesu
-	add	rcx,	qword [driver_rtc_microtime]
+	add	rcx,	qword [rel driver_rtc_microtime]
 
 .process_sleep_wait:
 	; wywłaszczenie
 	int	KERNEL_APIC_IRQ_number
 
 	; wybudzić proces?
-	cmp	rcx,	qword [driver_rtc_microtime]
+	cmp	rcx,	qword [rel driver_rtc_microtime]
 	ja	.process_sleep_wait	; nie
 
 	; usuń informację o uśpieniu procesu
@@ -1150,9 +1150,9 @@ kernel_service:
 ;-------------------------------------------------------------------------------
 .system_memory:
 	; rozmiar całkowity
-	mov	r8,	qword [kernel_page_total_count]
-	mov	r9,	qword [kernel_page_free_count]
-	mov	r10,	qword [kernel_page_paged_count]
+	mov	r8,	qword [rel kernel_page_total_count]
+	mov	r9,	qword [rel kernel_page_free_count]
+	mov	r10,	qword [rel kernel_page_paged_count]
 
 	; powrót do procesu
 	jmp	kernel_service.end
@@ -1162,7 +1162,7 @@ kernel_service:
 ;-------------------------------------------------------------------------------
 .system_time:
 	; zwróć uptime systemu (1 sekunda to 1024 tyknięcia)
-	mov	rax,	qword [driver_rtc_microtime]
+	mov	rax,	qword [rel driver_rtc_microtime]
 	mov	qword [rsp],	rax
 
 	; koniec obsługi opcji

@@ -51,13 +51,13 @@ driver_rtc:
 	push	rax
 
 	; zwiększ licznik tyknięć
-	inc	qword [driver_rtc_microtime]
+	inc	qword [rel driver_rtc_microtime]
 
 	; pobierz zawartość rejestru C
 	in	al,	DRIVER_RTC_PORT_data
 
 	; poinformuj LAPIC o obsłużeniu przerwania sprzętowego
-	mov	rax,	qword [kernel_apic_base_address]
+	mov	rax,	qword [rel kernel_apic_base_address]
 	mov	dword [rax + KERNEL_APIC_EOI_register],	STATIC_EMPTY
 
 	; przywróć oryginalny rejestry
@@ -79,7 +79,7 @@ driver_rtc_get_date_and_time:
 	in	al,	DRIVER_RTC_PORT_data
 
 	; zachowaj
-	mov	byte [driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.second],	al
+	mov	byte [rel driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.second],	al
 
 	; pobierz ilość minut
 	mov	al,	DRIVER_RTC_PORT_minute
@@ -87,7 +87,7 @@ driver_rtc_get_date_and_time:
 	in	al,	DRIVER_RTC_PORT_data
 
 	; zachowaj
-	mov	byte [driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.minute],	al
+	mov	byte [rel driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.minute],	al
 
 	; pobierz ilość godzin
 	mov	al,	DRIVER_RTC_PORT_hour
@@ -95,7 +95,7 @@ driver_rtc_get_date_and_time:
 	in	al,	DRIVER_RTC_PORT_data
 
 	; zachowaj
-	mov	byte [driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.hour],	al
+	mov	byte [rel driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.hour],	al
 
 	; pobierz zawartość rejestru C
 	mov	al,	DRIVER_RTC_PORT_STATUS_REGISTER_C

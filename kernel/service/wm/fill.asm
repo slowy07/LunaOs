@@ -16,7 +16,7 @@ kernel_wm_fill_insert_by_register:
 	mov	ecx,	KERNEL_WM_FILL_LIST_limit
 
 	; ustaw wskaźnik na listy
-	mov	rdi,	qword [kernel_wm_fill_list_address]
+	mov	rdi,	qword [rel kernel_wm_fill_list_address]
 
 .loop:
 	; wolne miejsce?
@@ -71,7 +71,7 @@ kernel_wm_fill_insert_by_object:
 	mov	ecx,	KERNEL_WM_FILL_LIST_limit
 
 	; ustaw wskaźnik na listy
-	mov	rdi,	qword [kernel_wm_fill_list_address]
+	mov	rdi,	qword [rel kernel_wm_fill_list_address]
 
 .loop:
 	; wolne miejsce?
@@ -136,7 +136,7 @@ kernel_wm_fill:
 	mov	ecx,	KERNEL_WM_FILL_LIST_limit
 
 	; ustaw wskaźnik na listę wypełnień
-	mov	rsi,	qword [kernel_wm_fill_list_address]
+	mov	rsi,	qword [rel kernel_wm_fill_list_address]
 
 .loop:
 	; pusta pozycja?
@@ -184,22 +184,22 @@ kernel_wm_fill:
 	; opisana strefa wykracza poza oś X?
 	mov	ax,	r8w
 	add	ax,	r10w
-	cmp	ax,	word [kernel_video_width_pixel]
+	cmp	ax,	word [rel kernel_video_width_pixel]
 	jb	.x_inside	; nie
 
 	; ogranicz strefę do przestrzeni ekranu
-	sub	ax,	word [kernel_video_width_pixel]
+	sub	ax,	word [rel kernel_video_width_pixel]
 	sub	r10w,	ax
 
 .x_inside:
 	; opisana strefa wykracza poza oś Y?
 	mov	ax,	r9w
 	add	ax,	r11w
-	cmp	ax,	word [kernel_video_height_pixel]
+	cmp	ax,	word [rel kernel_video_height_pixel]
 	jb	.y_inside	; nie
 
 	; ogranicz strefę do przestrzeni ekranu
-	sub	ax,	word [kernel_video_height_pixel]
+	sub	ax,	word [rel kernel_video_height_pixel]
 	sub	r11w,	ax
 
 .y_inside:
@@ -219,7 +219,7 @@ kernel_wm_fill:
 	movzx	r13d,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width]
 	shl	r13d,	KERNEL_VIDEO_DEPTH_shift
 	; r14 - scanline bufora w Bajtach
-	movzx	r14d,	word [kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width]
+	movzx	r14d,	word [rel kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width]
 	shl	r14d,	KERNEL_VIDEO_DEPTH_shift
 
 	; wylicz wskaźnik początku wypełnienia w przestrzeni bufora
@@ -235,7 +235,7 @@ kernel_wm_fill:
 
 	; wskaźnik bezpośredni do przestrzeni wypełnienia w buforze
 	add	rdi,	rax
-	add	rdi,	qword [kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.address]
+	add	rdi,	qword [rel kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.address]
 
 	; korekta pozycji wypełnienia względem obiektu
 	; -----------------------------------------------------------------------
@@ -328,7 +328,7 @@ kernel_wm_fill:
 	jnz	.row	; tak
 
 	; zawartość bufora uległa modyfikacji
-	or	word [kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
+	or	word [rel kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
 
 .leave:
 	; przywróć wskaźnik i rozmiar listy

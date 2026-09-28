@@ -9,10 +9,10 @@ zero_kernel:
 	cli
 
 	; zwróć informację o adresie i rozmiarze mapy pamięci
-	mov	ebx,	dword [zero_memory_map_address]
+	mov	ebx,	dword [rel zero_memory_map_address]
 
 	; zwróć informację o adresie tablicy ZERO_STRUCTURE_GRAPHICS_MODE_INFO_BLOCK
-	mov	edx,	dword [zero_graphics_mode_info_block_address]
+	mov	edx,	dword [rel zero_graphics_mode_info_block_address]
 
 	; wyczyść pozostałę rejestry
 	xor	eax,	eax

@@ -24,7 +24,7 @@ kernel_init_network:
 
 	; wyczyść tablicę i zapamiętaj wskaźnik
 	call	kernel_page_drain
-	mov	qword [service_network_port_table],	rdi
+	mov	qword [rel service_network_port_table],	rdi
 
 	; przygotuj miejsce pod stos TCP/IP
 	call	kernel_memory_alloc_page
@@ -32,6 +32,6 @@ kernel_init_network:
 
 	; wyczyść tablicę i zapamiętaj wskaźnik
 	call	kernel_page_drain
-	mov	qword [service_network_stack_address],	rdi
+	mov	qword [rel service_network_stack_address],	rdi
 
 .end:

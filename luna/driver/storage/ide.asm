@@ -418,7 +418,7 @@ driver_ide_init_drive:
       mov	qword [rcx + DRIVER_IDE_STRUCTURE_DEVICE.size_sectors],	rax
 
       ; zarejestrowano nośnik danych
-      inc	byte [driver_ide_devices_count]
+      inc	byte [rel driver_ide_devices_count]
 
 .end:
       ; przywróć oryginalne rejestry

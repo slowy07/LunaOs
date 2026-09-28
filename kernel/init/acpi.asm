@@ -102,7 +102,7 @@ kernel_init_acpi:
 	mov	rbx,	"RSD PTR "
 
 	; pobierz wskaźnik segmentu EBDA
-	movzx	esi,	word [0x040E]
+	movzx	esi,	word [abs 0x040E]
 
 	; zamień wskaźnik segmentu na adres bezwzględny
 	shl	esi,	STATIC_MULTIPLE_BY_16_shift
@@ -252,14 +252,14 @@ kernel_init_acpi:
 	mov	rsi,	kernel_init_string_error_apic
 
 	; przetworzono choć jedną tablicę APIC?
-	cmp	byte [kernel_apic_count],	STATIC_EMPTY
+	cmp	byte [rel kernel_apic_count],	STATIC_EMPTY
 	je	.error	; nie, wyświetl komunikat błędu
 
 	; komunikat błędu
 	mov	rsi,	kernel_init_string_error_ioapic
 
 	; przetworzono choć jedną tablicę I/O APIC?
-	cmp	byte [kernel_init_ioapic_semaphore],	STATIC_FALSE
+	cmp	byte [rel kernel_init_ioapic_semaphore],	STATIC_FALSE
 	je	.error	; nie, wyświetl komunikat błędu
 
 	; kontynuuj inicjalizacje środowiska jądra systemu
@@ -282,11 +282,11 @@ kernel_init_acpi:
 
 	; zachowaj adres tablicy APIC
 	mov	eax,	dword [rsi + ACPI_STRUCTURE_MADT.apic_address]
-	mov	dword [kernel_apic_base_address],	eax
+	mov	dword [rel kernel_apic_base_address],	eax
 
 	; zachowaj rozmiar tablicy APIC
 	mov	ecx,	dword [rsi + ACPI_STRUCTURE_MADT.length]
-	mov	dword [kernel_apic_size],	ecx
+	mov	dword [rel kernel_apic_size],	ecx
 
 	; przeszukaj tablicę MADT za dostępnymi procesorami logicznymi (tzw. LAPIC)
 	sub	ecx,	ACPI_STRUCTURE_MADT.SIZE	; koryguj rozmiar tablicy MADT o nagłówek
@@ -330,18 +330,18 @@ kernel_init_acpi:
 	jnc	.madt_next_entry	; nie, pomiń rejestrację
 
 	; procesor logiczny, dostępny
-	inc	word [kernel_apic_count]
+	inc	word [rel kernel_apic_count]
 
 	; pobierz i zachowaj identyfikator procesora logicznego
 	mov	al,	byte [rsi + ACPI_STRUCTURE_MADT_APIC.cpu_id]
 	stosb
 
 	; identyfikator procesora logicznego jest wyższy?
-	cmp	al,	byte [kernel_init_apic_id_highest]
+	cmp	al,	byte [rel kernel_init_apic_id_highest]
 	jbe	.madt_next_entry	; nie
 
 	; zapamiętaj
-	mov	byte [kernel_init_apic_id_highest],	al
+	mov	byte [rel kernel_init_apic_id_highest],	al
 
 	; kontynuuj
 	jmp	.madt_next_entry
@@ -349,7 +349,7 @@ kernel_init_acpi:
 ;-------------------------------------------------------------------------------
 .madt_ioapic:
 	; przetworzono już IO APIC?
-	cmp	byte [kernel_init_ioapic_semaphore],	STATIC_TRUE
+	cmp	byte [rel kernel_init_ioapic_semaphore],	STATIC_TRUE
 	je	.madt_next_entry	; tak, nie obsługujemy pozostałych kontrolerów I/O APIC
 
 	; pobierz identyfikator pierwszego przerwania obsługiwanego przez ten kontroler
@@ -361,10 +361,10 @@ kernel_init_acpi:
 
 	; zachowaj adres kontrolera I/O APIC
 	mov	eax,	dword [rsi + ACPI_STRUCTURE_MADT_IOAPIC.base_address]
-	mov	dword [kernel_io_apic_base_address],	eax
+	mov	dword [rel kernel_io_apic_base_address],	eax
 
 	; przetworzono wpis o kontrolerze I/O APIC
-	mov	byte [kernel_init_ioapic_semaphore],	STATIC_TRUE
+	mov	byte [rel kernel_init_ioapic_semaphore],	STATIC_TRUE
 
 	; kontynuuj
 	jmp	.madt_next_entry

@@ -3,12 +3,12 @@
 ;===============================================================================
 kernel_gui_init:
 	; menedżer okien w gotowości?
-	cmp	byte [kernel_wm_semaphore],	STATIC_FALSE
+	cmp	byte [rel kernel_wm_semaphore],	STATIC_FALSE
 	je	kernel_gui_init	; nie, czekaj
 
 	; zachowaj własny numer PID
 	call	kernel_task_active_pid
-	mov	qword [kernel_gui_pid],	rax
+	mov	qword [rel kernel_gui_pid],	rax
 
 	;-----------------------------------------------------------------------
 	; skonfiguruj przestrzeń roboczą
@@ -16,9 +16,9 @@ kernel_gui_init:
 	mov	rsi,	kernel_gui_window_workbench
 
 	; ustaw szerokość, wysokość i rozmiar przestrzeni roboczej
-	mov	ax,	word [kernel_video_width_pixel]
-	mov	bx,	word [kernel_video_height_pixel]
-	mov	ecx,	dword [kernel_video_size_byte]
+	mov	ax,	word [rel kernel_video_width_pixel]
+	mov	bx,	word [rel kernel_video_height_pixel]
+	mov	ecx,	dword [rel kernel_video_size_byte]
 	mov	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width],	ax
 	mov	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.height],	bx
 	mov	dword [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.size],	ecx
@@ -33,7 +33,7 @@ kernel_gui_init:
 	;-----------------------------------------------------------------------
 
 	; pobierz miks kolorów
-	mov	rax,	qword [kernel_gui_background_mixer]
+	mov	rax,	qword [rel kernel_gui_background_mixer]
 
 	; szerokość i wysokość przestrzeni
 	mov	bx,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width]
@@ -43,7 +43,7 @@ kernel_gui_init:
 	xor	r9w,	r9w
 
 	; szerokość fragmentu na podstawie rozdzielszości
-	mov	r10w,	word [kernel_video_width_pixel]
+	mov	r10w,	word [rel kernel_video_width_pixel]
 	shr	r10w,	STATIC_DIVIDE_BY_16_shift
 
 .background_reload:
@@ -118,17 +118,17 @@ kernel_gui_init:
 	mov	rsi,	kernel_gui_window_taskbar
 
 	; ustaw pozycję paska zadań na dole ekranu
-	mov	bx,	word [kernel_video_height_pixel]
+	mov	bx,	word [rel kernel_video_height_pixel]
 	sub	bx,	KERNEL_GUI_WINDOW_TASKBAR_HEIGHT_pixel
 	mov	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.y],	bx
 
 	; ustaw szerokość paska zadań na cały ekran
-	mov	ax,	word [kernel_video_width_pixel]
+	mov	ax,	word [rel kernel_video_width_pixel]
 	mov	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width],	ax
 
 	; ustaw etykietę "zegar" na końcu paska zadań
-	sub	ax,	word [kernel_gui_window_taskbar.element_label_clock + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
-	mov	word [kernel_gui_window_taskbar.element_label_clock + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.x],	ax
+	sub	ax,	word [rel kernel_gui_window_taskbar.element_label_clock + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
+	mov	word [rel kernel_gui_window_taskbar.element_label_clock + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.x],	ax
 
 	; oblicz rozmiar przestrzeni danych okna w Bajtach
 	movzx	eax,	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
@@ -191,13 +191,13 @@ kernel_gui_init:
 	call	kernel_wm_object_insert
 
 	; zachowaj informacje o ostatniej modyfikacji listy okien
-	mov	rax,	qword [kernel_wm_object_list_modify_time]
-	mov	qword [kernel_gui_window_taskbar_modify_time],	rax
+	mov	rax,	qword [rel kernel_wm_object_list_modify_time]
+	mov	qword [rel kernel_gui_window_taskbar_modify_time],	rax
 
 	; przygotuj listę kolejności okien
 	call	kernel_memory_alloc_page
 	call	kernel_page_drain
-	mov	qword [kernel_gui_taskbar_list_address],	rdi	; zachowaj wskaźnik
+	mov	qword [rel kernel_gui_taskbar_list_address],	rdi	; zachowaj wskaźnik
 
 	; uruchom domyślnie program Console
 	call	kernel_gui_event_console

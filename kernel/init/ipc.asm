@@ -9,7 +9,7 @@ kernel_init_ipc:
 	call	kernel_page_drain_few
 
 	; zachowaj adres początku przestrzeni
-	mov	qword [kernel_ipc_base_address],	rdi
+	mov	qword [rel kernel_ipc_base_address],	rdi
 
 	; połącz koniec przestrzeni z początkiem
 	mov	qword [rdi + STATIC_STRUCTURE_BLOCK.link],	rdi

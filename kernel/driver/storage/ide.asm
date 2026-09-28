@@ -175,7 +175,7 @@ driver_ide_init_drive:
 	mov	qword [rcx + DRIVER_IDE_STRUCTURE_DEVICE.size_sectors],	rax
 
 	; zarejestrowano nośnik danych
-	inc	byte [driver_ide_devices_count]
+	inc	byte [rel driver_ide_devices_count]
 
 .end:
 	; przywróć oryginalne rejestry
@@ -193,12 +193,12 @@ driver_ide_wait:
 	push	rax
 
 	; pobierz znacznik czasu systemu w mikrosekundach
-	mov	rax,	qword [driver_rtc_microtime]
+	mov	rax,	qword [rel driver_rtc_microtime]
 	inc	rax	; odczekaj ~1ms
 
 .wait:
 	; odczekano?
-	cmp	rax,	qword [driver_rtc_microtime]
+	cmp	rax,	qword [rel driver_rtc_microtime]
 	jnb	.wait	; nie
 
 	; przywróć oryginalne rejestry

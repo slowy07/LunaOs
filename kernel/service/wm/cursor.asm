@@ -8,7 +8,7 @@ kernel_wm_cursor:
 	;-----------------------------------------------------------------------
 	; wyświetlić nową zawartość macierzy kursora?
 	;-----------------------------------------------------------------------
-	test	word [kernel_wm_object_cursor + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
+	test	word [rel kernel_wm_object_cursor + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
 	jz	.no	; nie
 
 	; zarejestruj strefę kursora
@@ -17,7 +17,7 @@ kernel_wm_cursor:
 	call	kernel_wm_fill
 
 	; obiekt kursora został wyświetlony
-	and	word [kernel_wm_object_cursor + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	~KERNEL_WM_OBJECT_FLAG_flush
+	and	word [rel kernel_wm_object_cursor + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	~KERNEL_WM_OBJECT_FLAG_flush
 
 .no:
 	; przywróć oryginalne rejestry

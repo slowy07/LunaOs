@@ -56,7 +56,7 @@ kernel_init_services:
 	push	rsi
 
 	; mapuj przestrzeń pamięci jądra systemu do usługi
-	mov	rsi,	qword [kernel_page_pml4_address]
+	mov	rsi,	qword [rel kernel_page_pml4_address]
 	mov	rdi,	r11
 	call	kernel_page_merge
 
@@ -71,7 +71,7 @@ kernel_init_services:
 	call	kernel_task_add
 
 	; podepnij domyślny strumień wyjścia
-	mov	rax,	qword [kernel_stream_out_default]
+	mov	rax,	qword [rel kernel_stream_out_default]
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.out],	rax
 
 	; ilość procesów korzystających z strumienia

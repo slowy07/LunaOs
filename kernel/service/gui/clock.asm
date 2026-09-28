@@ -12,19 +12,19 @@ kernel_gui_clock:
 
 	; pobierz aktualny czas zegara RTC
 	call	driver_rtc_get_date_and_time
-	mov	rax,	qword [driver_rtc_date_and_time]
+	mov	rax,	qword [rel driver_rtc_date_and_time]
 
 	; czas uległ zmianie?
-	cmp	qword [kernel_gui_clock_last_state],	rax
+	cmp	qword [rel kernel_gui_clock_last_state],	rax
 	je	.end	; nie, koniec obsługi procedury
 
 	; zachowaj nowy znacznik czasu
-	mov	qword [kernel_gui_clock_last_state],	rax
+	mov	qword [rel kernel_gui_clock_last_state],	rax
 
 	; przy każdej zmianie czasu (sekundy) ukryj/pokaż dwukropek
-	mov	bl,	byte [kernel_gui_clock_colon]
-	xchg	bl,	byte [kernel_gui_window_taskbar.element_label_clock_char_colon]
-	mov	byte [kernel_gui_clock_colon],	bl
+	mov	bl,	byte [rel kernel_gui_clock_colon]
+	xchg	bl,	byte [rel kernel_gui_window_taskbar.element_label_clock_char_colon]
+	mov	byte [rel kernel_gui_clock_colon],	bl
 
 	;-----------------------------------------------------------------------
 	; Minuta
@@ -38,7 +38,7 @@ kernel_gui_clock:
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
 
 	; pobierz aktualny znacznik czasu
-	mov	rax,	qword [kernel_gui_clock_last_state]
+	mov	rax,	qword [rel kernel_gui_clock_last_state]
 
 	;-----------------------------------------------------------------------
 	; Godzina

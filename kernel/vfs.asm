@@ -581,7 +581,7 @@ kernel_vfs_knot_prepare:
 
 .end:
 	; zwolnij dostęp do systemu plików
-	mov	byte [kernel_vfs_semaphore],	STATIC_FALSE
+	mov	byte [rel kernel_vfs_semaphore],	STATIC_FALSE
 
 	; przywróć oryginalne rejestry
 	pop	rdi
@@ -714,15 +714,15 @@ kernel_vfs_file_write:
 
 .saved:
 	; zwolnij pozostałą ilość zarezerwowanych bloków
-	sub	qword [kernel_page_reserved_count],	rbp
-	add	qword [kernel_page_free_count],	rbp
+	sub	qword [rel kernel_page_reserved_count],	rbp
+	add	qword [rel kernel_page_free_count],	rbp
 
 	; aktualizuj informacje o nowym rozmiarze pliku
 	mov	rcx,	qword [rsp + STATIC_QWORD_SIZE_byte]
 	mov	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.size],	rcx
 
 	; aktualizuj informacje o czasie modyfikacji pliku
-	mov	rcx,	qword [driver_rtc_microtime]
+	mov	rcx,	qword [rel driver_rtc_microtime]
 	mov	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified],	rcx
 
 .end:
@@ -867,7 +867,7 @@ kernel_vfs_file_append:
 	add	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.size],	rcx
 
 	; aktualizuj informacje o czasie modyfikacji pliku
-	mov	rcx,	qword [driver_rtc_microtime]
+	mov	rcx,	qword [rel driver_rtc_microtime]
 	mov	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified],	rcx
 
 .end:

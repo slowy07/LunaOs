@@ -687,10 +687,9 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 1: List exactly what will be removed**
 
-```bash
+```text
 The dead-code pattern, used identically in this step, in Step 3, and in Task 14's check 10:
 
-```bash
 DEADCODE='^\s*;\s*(mov|add|sub|cmp|jmp|je|jne|jz|jnz|call|ret|push|pop|int|lea|xor|test|inc|dec|nop|shl|shr|sal|sar|db|dw|dd|dq|times|equ|%include|%define|section|align|org|resb|resw|incbin)\b'
 ```
 

@@ -35,9 +35,6 @@ kernel_init_services_list:
 						dq	kernel_gui_end - kernel_gui
 						db	24
 						db	"graphical user interface"
-						; dq	service_tx
-						; dq	service_network
-						; dq	service_http
 
 						; koniec usług
 						dq	STATIC_EMPTY

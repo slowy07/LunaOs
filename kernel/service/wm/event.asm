@@ -85,8 +85,6 @@ kernel_wm_event:
 	mov	byte [rel kernel_wm_mouse_button_left_semaphore],	STATIC_FALSE
 
 .no_mouse_button_left_action_release_selected:
-	; usuń informacje o aktywnym obiekcie
-	; mov	qword [kernel_wm_object_selected_pointer],	STATIC_EMPTY
 
 .no_mouse_button_left_release:
 	;-----------------------------------------------------------------------

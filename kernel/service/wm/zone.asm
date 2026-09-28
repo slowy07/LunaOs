@@ -333,7 +333,6 @@ kernel_wm_zone:
 	; nowa pozycja prawej krawędzi strefy
 	sub	word [rsp],	r10w
 	pop	r10
-	; mov	r10,	r14
 
 	; przywróć pozycję dolnej krawędzi
 	add	r11w,	r9w

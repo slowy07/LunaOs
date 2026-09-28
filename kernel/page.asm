@@ -1145,25 +1145,6 @@ kernel_page_merge:
 	; pobierz wpis z tablicy źródłowej
 	mov	rax,	qword [rsi]
 
-; 	; znajdujemy się w tablicy PML1?
-; 	test	bl,	bl
-; 	jz	.page	; tak
-;
-; 	; zachowaj wskaźnik do aktualnego rekordu tablicy PML procesu
-; 	push	rdi
-;
-; 	; przygotuj przestrzeń pod tablicę stronicowania
-; 	call	kernel_memory_alloc_page
-; 	call	kernel_page_drain	; wyczyść wszystkie wpisy
-;
-; 	; ustaw flagi nowej tablicy
-; 	mov	rax,	rdi
-; 	or	ax,	KERNEL_PAGE_FLAG_user | KERNEL_PAGE_FLAG_write | KERNEL_PAGE_FLAG_available
-;
-; 	; dołącz do tablic stronicowania
-; 	pop	rdi
-;
-; .page:
 	; załaduj wpis do tablicy docelowej
 	mov	qword [rdi],	rax
 

@@ -272,13 +272,8 @@ kernel_wm_fill:
 	cmp	byte [rsi + 0x03],	STATIC_MAX_unsigned
 	je	.transparent_max	; tak
 
-	; ; przeliczyć wartość koloru na podstawie kanału alfa?
-	; cmp	byte [rsi + 0x03],	STATIC_EMPTY
-	; ja	.alpha	; tak
-
 	; wypełnij wiersz pikseli wypełniaczem
 	movsd
-	; rep	movsd
 
 	; kontynuuj
 	jmp	.continue
@@ -292,19 +287,6 @@ kernel_wm_fill:
 	; pomiń fragment
 	jmp	.leave
 
-; .alpha:
-; 	; zachowaj oryginalne rejestry
-; 	push	rax
-;
-; 	; wylicz kolor na podstawie kanału alfa
-; 	call	qword [LIBRARY_STRUCTURE_ENTRY_POINT.color_alpha]
-;
-; 	; aktualizuj
-; 	mov	dword [rdi],	eax
-;
-; 	; przywróć orygnalne rejestry
-; 	pop	rax
-;
 .transparent_max:
 	; pomiń piksel
 	add	rsi,	STATIC_DWORD_SIZE_byte

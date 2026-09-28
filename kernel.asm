@@ -42,7 +42,6 @@ kernel:
 	%include	"kernel/page.asm"
 	%include	"kernel/panic.asm"
 	%include	"kernel/task.asm"
-;	%include	"kernel/thread.asm"
 	%include	"kernel/vfs.asm"
 	%include	"kernel/service.asm"
 	%include	"kernel/sleep.asm"

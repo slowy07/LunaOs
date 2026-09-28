@@ -112,7 +112,6 @@ soler_fpu_float_only:
 	finit	; reset koprocesora
 	fld	qword [soler_fpu_float_result]	; mov	st1,	qword [soler_fpu_float_result]
         fisub	dword [soler_fpu_integer]	; sub	st0, dword [soler_fpu_integer]
-		; mov	st0,	st1
         fstp	qword [soler_fpu_float_result]	; mov	qword [soler_fpu_float_result],	st0
 
 	; przywróć oryginalne zmienne

@@ -264,9 +264,6 @@ library_terminal_matrix:
 	; wyświetl piksel o zdefiniowanym kolorze znaku
 	mov	dword [rdi],	r9d
 
-	; wyświetl cień za pikselem
-	; mov	dword [rdi + STATIC_DWORD_SIZE_byte],	STATIC_EMPTY
-
 .continue:
 	; następny piksel matrycy znaku
 	add	rdi,	STATIC_DWORD_SIZE_byte

@@ -80,16 +80,30 @@ kill "$QPID" 2>/dev/null
 rm -f "$PPM" "$SOCK"
 
 # --- check 8: no upstream project name or attribution in code ----------
-HITS=$(git grep -liE 'cyjon|blackdev|adamczyk|blackend' -- '*.asm' 'Makefile' '*.sh' '*.bat' '*.bxrc' 2>/dev/null | wc -l)
+# This file is excluded: it has to name the forbidden strings to search for them.
+UPSTREAM='cy[j]on|black[d]ev|adam[c]zyk|black[e]nd'
+CODEGLOBE="-- *.asm Makefile *.sh *.bat *.bxrc :!tools/verify.sh"
+HITS=$(git grep -liE "$UPSTREAM" $CODEGLOBE 2>/dev/null | wc -l)
 if [ "$HITS" -eq 0 ]; then
-  ok "8 no cyjon/blackdev/adamczyk in code, build, or scripts"
+  ok "8 no upstream project name or attribution in code, build, or scripts"
 else
   bad "8 rebrand incomplete in $HITS file(s):"
-  git grep -liE 'cyjon|blackdev|adamczyk|blackend' -- '*.asm' 'Makefile' '*.sh' '*.bat' '*.bxrc'
+  git grep -liE "$UPSTREAM" $CODEGLOBE
 fi
 
-# Checks 9 (no Polish characters) and 10 (no commented-out code) land with the
-# comment cleanup and are appended here once the tree has been translated.
+# --- check 10: no commented-out code -----------------------------------
+# `or`, `and` and `not` are excluded: they are also ordinary English words and
+# would flag prose in translated comments.
+DEADCODE='^[[:space:]]*;[[:space:]]*(mov|add|sub|cmp|jmp|je|jne|jz|jnz|call|ret|push|pop|int|lea|xor|test|inc|dec|nop|shl|shr|sal|sar|db|dw|dd|dq|times|equ|%include|%define|section|align|org|resb|resw|incbin)\b'
+DEAD=$(git grep -nIE "$DEADCODE" -- '*.asm' 2>/dev/null | wc -l)
+if [ "$DEAD" -eq 0 ]; then
+  ok "10 no commented-out code in any .asm file"
+else
+  bad "10 commented-out code remains on $DEAD line(s):"
+  git grep -nIE "$DEADCODE" -- '*.asm' | head -20
+fi
+
+# Check 9 (no Polish characters) lands once the comments are translated.
 
 echo
 echo "passed: $PASS   failed: $FAIL"

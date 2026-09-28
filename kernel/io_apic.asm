@@ -10,39 +10,39 @@ KERNEL_IO_APIC_TRIGER_MODE_level	equ	1000000000000000b
 kernel_io_apic_base_address		dq	STATIC_EMPTY
 
 ;===============================================================================
-; wejście:
-;	eax - adres względny wektora w tablicy IDT
-;	ebx - rejestr kontrolera I/O APIC
+; input:
+;	eax - relative address of the vector in the IDT table
+;	ebx - register of the I/O APIC controller
 kernel_io_apic_connect:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rdi
 
-	; ustaw wskaźnik na przestrzeń tablicy I/O APIC
+	; point the pointer at the I/O APIC table area
 	mov	rdi,	qword [rel kernel_io_apic_base_address]
 
-	; młodsza część rejestru
+	; lower part of the register
 	add	ebx,	KERNEL_IO_APIC_iowin_low
 	mov	dword [rdi + KERNEL_IO_APIC_ioregsel],	ebx
 
-	; zachowaj informacje o młodszej części adresu wektora
+	; store the information about the lower part of the vector address
 	mov	dword [rdi + KERNEL_IO_APIC_iowin],	eax
 
-	; starsza część rejestru
+	; upper part of the register
 	add	ebx,	KERNEL_IO_APIC_iowin_high - KERNEL_IO_APIC_iowin_low
 	mov	dword [rdi + KERNEL_IO_APIC_ioregsel],	ebx
 
-	; zachowaj informacje o starszej części adresu wektora
+	; store the information about the upper part of the vector address
 	shr	rax,	STATIC_MOVE_HIGH_TO_EAX_shift
 	mov	dword [rdi + KERNEL_IO_APIC_iowin],	eax
 
-	; przywóć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_io_apic_connect"

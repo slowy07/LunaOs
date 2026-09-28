@@ -1,21 +1,21 @@
 ;===============================================================================
 
-KERNEL_EXEC_FLAG_accept_childrens	equ	00000001b	; przyjmuj na standardowe wejście strumienie od procesów potomnych
-KERNEL_EXEC_FLAG_forward_out		equ	00000010b	; przekieruj wyjście rodzica na wejście procesu potomnego
+KERNEL_EXEC_FLAG_accept_childrens	equ	00000001b	; accept the streams of the child processes on the standard input
+KERNEL_EXEC_FLAG_forward_out		equ	00000010b	; redirect the output of the parent to the input of the child process
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość znaków reprezentujących nazwę uruchamianego programu
-;	rsi - wskaźnik do nazwy programu wraz z argumentami
-;	rdi - wskaźnik do supła pliku
-;	r8 - rozmiar argumentów w Bajtach
-; wyjście:
-;	Flaga CF - wystąpił błąd
-;	rax - kod błędu, jeśli Flaga CF podniesiona
-;	rcx - pid nowego procesu
-;	rdi - wskaźnik do struktury zadania
+; input:
+;\trcx - number of characters representing the name of the program to run
+;\trsi - pointer to the program name together with the arguments
+;\trdi - pointer to the file spool
+;\tr8 - size of the arguments in Bytes
+; output:
+;\tCF flag - an error occurred
+;\trax - error code, if the CF flag is raised
+;\trcx - PID of the new process
+;\trdi - pointer to the task structure
 kernel_exec:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rdx
 	push	rsi
 	push	rbp
@@ -29,38 +29,38 @@ kernel_exec:
 	push	rcx
 	push	rdi
 
-	; oblicz ilość stron niezbędnych do załadowania pliku do pamięci
+	; compute the number of pages needed to load the file into the memory
 	mov	rcx,	qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.size]
 	call	library_page_from_size
 
-	; zachowaj rozmiar przestrzeni kodu w Bajtach
+	; save the size of the code area in Bytes
 	mov	r12,	rcx
 
-	; ogranicz ilość przesyłanych argumentów do procesu
-	mov	eax,	KERNEL_ERROR_memory_low	; kod błędu
-	cmp	r8,	STATIC_PAGE_SIZE_byte	; zainicjowany rozmiar stosu procesu w Bajtach
-	ja	.error	; przepełnienie
+	; limit the number of the arguments passed to the process
+	mov	eax,	KERNEL_ERROR_memory_low	; error code
+	cmp	r8,	STATIC_PAGE_SIZE_byte	; initialised size of the process stack in Bytes
+	ja	.error	; overflow
 
-	; zarezerwuj ilość stron, niezbędną do inicjalizacji procesu
-	add	rcx,	15	; 14 stron na przestrzeń procesu, +1 do rozszerzenia serpentyny jeśli brak miejsca
+	; reserve the number of pages needed to initialise the process
+	add	rcx,	15	; 14 pages for the process area, +1 to extend the serpentine if there is no space
 	call	kernel_page_secure
-	jc	.error	; brak wystarczającej ilości pamięci
+	jc	.error	; not enough memory
 
-	; poinformuj wszystkie procedury zależne by korzystały z zarezerwowanych stron
+	; tell all the dependent procedures to use the reserved pages
 	mov	rbp,	rcx
 
-	; utwórz tablicę PML4 procesu
+	; create the PML4 table of the process
 	call	kernel_memory_alloc_page
 	call	kernel_page_drain
 
-	; wykorzystano stronę do stronicowania
+	; the page has been used for paging
 	inc	qword [rel kernel_page_paged_count]
 
-	; zachowaj adres
+	; save the address
 	mov	r11,	rdi
 
 	;-----------------------------------------------------------------------
-	; przygotuj miejsce pod przestrzeń kodu procesu
+	; prepare the space for the code area of the process
 	mov	rax,	SOFTWARE_BASE_address
 	mov	bx,	KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write | KERNEL_PAGE_FLAG_user
 	mov	rcx,	r12
@@ -68,27 +68,27 @@ kernel_exec:
 	jc	.error
 
 	;-----------------------------------------------------------------------
-	; przygotuj miejsce pod binarną mapę pamięci procesu
+	; prepare the space for the binary memory map of the process
 	shl	r12,	STATIC_PAGE_SIZE_shift
-	add	rax,	r12	; za przestrzenią kodu procesu
-	and	bx,	~KERNEL_PAGE_FLAG_user	; dostęp tylko od strony jądra systemu
+	add	rax,	r12	; behind the code area of the process
+	and	bx,	~KERNEL_PAGE_FLAG_user	; accessible from the kernel side only
 	mov	rcx,	KERNEL_MEMORY_MAP_SIZE_page
 	call	kernel_page_map_logical
 
-	; zachowaj bezpośredni adres binarnej mapy pamięci procesu
+	; save the direct address of the binary memory map of the process
 	mov	r13,	rax
 
-	; pobierz adres fizyczny strony przeznaczonej na binarną mapę pamięci procesu
+	; fetch the physical address of the page destined for the binary memory map of the process
 	mov	rdi,	qword [r8]
-	and	di,	STATIC_PAGE_mask	; usuń flagi z adresu strony
-	push	rdi	; zachowaj
+	and	di,	STATIC_PAGE_mask	; remove the flags from the page address
+	push	rdi	; save
 
-	; wyczyść binarną mapę pamięci procesu
+	; clear the binary memory map of the process
 	mov	rax,	STATIC_MAX_unsigned
 	mov	ecx,	(KERNEL_MEMORY_MAP_SIZE_page << STATIC_PAGE_SIZE_shift) >> STATIC_DIVIDE_BY_QWORD_shift
 	rep	stosq
 
-	; oznacz w binarnej mapie pamięci procesu przestrzeń zajętą przez kod i binarną mapę
+	; mark in the binary memory map of the process the area taken by the code and the binary map
 	pop	rsi
 	mov	rcx,	r12
 	shr	rcx,	STATIC_PAGE_SIZE_shift
@@ -96,7 +96,7 @@ kernel_exec:
 	call	kernel_memory_secure
 
 	;-----------------------------------------------------------------------
-	; przygotuj miejsce pod stos procesu
+	; prepare the space for the stack of the process
 	mov	rax,	KERNEL_TASK_STACK_address
 	or	bx,	KERNEL_PAGE_FLAG_user
 	mov	rcx,	SOFTWARE_STACK_limit
@@ -104,58 +104,58 @@ kernel_exec:
 	jc	.error
 
 	;-----------------------------------------------------------------------
-	; zachowaj przesłane argumenty na stosie procesu
+	; save the passed arguments on the stack of the process
 
-	; rozmiar listy przesłanych argumentów w Bajtach
+	; size of the list of the passed arguments in Bytes
 	mov	rax,	qword [rsp + STATIC_QWORD_SIZE_byte * 0x08]
 
-	; adres fizyczny strony stosu kontekstu
+	; physical address of the context stack page
 	mov	rdi,	qword [r8]
-	and	di,	STATIC_PAGE_mask	; usuń flagi z adresu
+	and	di,	STATIC_PAGE_mask	; remove the flags from the address
 
-	; przesuń wskaźnik N Bajtów w głąb przestrzeni
+	; move the pointer N Bytes deep into the area
 	add	rdi,	STATIC_PAGE_SIZE_byte
 	sub	rdi,	rax
-	and	di,	0xFFF8	; wyrównaj wskaźnik do pełnego adresu
+	and	di,	0xFFF8	; bring the pointer to a full address
 
-	; miejsce na licznik rozmiaru danych na stosie procesu
+	; space for the data size counter on the stack of the process
 	sub	rdi,	STATIC_QWORD_SIZE_byte
 
-	; zapamiętaj adres szczytu stosu procesu
+	; remember the address of the top of the stack of the process
 	mov	r14,	KERNEL_TASK_STACK_address
 	or	r14w,	di
 
-	; odłóż rozmiar danych na stosie dla procesu
+	; put the data size on the stack for the process
 	stosq
 
-	; brak listy argumentów?
+	; no argument list?
 	test	rax,	rax
-	jz	.no_arguments	; tak
+	jz	.no_arguments	; yes
 
-	; ustaw wskaźnik na początek listy argumentów
-	mov	rcx,	rax	; licznik danych do skopiowania
+	; set the pointer to the beginning of the argument list
+	mov	rcx,	rax	; counter of the data to copy
 	mov	rsi,	qword [rsp + STATIC_QWORD_SIZE_byte * 0x0A]
 	add	rsi,	qword [rsp + STATIC_QWORD_SIZE_byte]
-	rep	movsb	; kopiuj
+	rep	movsb	; copy
 
 .no_arguments:
 	;-----------------------------------------------------------------------
-	; przygotuj miejsce pod stos kontekstu (należy do jądra systemu)
+	; prepare the space for the context stack (belongs to the kernel)
 	mov	rax,	SOFTWARE_BASE_address - KERNEL_STACK_SIZE_byte
 	mov	rbx,	KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
 	mov	rcx,	KERNEL_STACK_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
 	call	kernel_page_map_logical
 	jc	.error
 
-	; mapuj przestrzeń jądra systemu
+	; map the kernel address space
 	mov	rsi,	qword [rel kernel_page_pml4_address]
 	mov	rdi,	r11
 	call	kernel_page_merge
 
-	; odstaw na początek stosu kontekstu zadania, spreparowane dane powrotu z przerwania sprzętowego "kernel_task"
+	; back up to the start of the task context stack, the prepared return data from the "kernel_task" hardware interrupt
 	mov	rdi,	qword [r8]
-	and	di,	STATIC_PAGE_mask	; usuń flagi rekordu tablicy PML1
-	add	rdi,	STATIC_PAGE_SIZE_byte - ( STATIC_QWORD_SIZE_byte * 0x05 )	; odłóż 5 rejestrów
+	and	di,	STATIC_PAGE_mask	; remove the flags of the PML1 table record
+	add	rdi,	STATIC_PAGE_SIZE_byte - ( STATIC_QWORD_SIZE_byte * 0x05 )	; put back 5 registers
 
 	; RIP
 	mov	rax,	SOFTWARE_BASE_address
@@ -163,75 +163,75 @@ kernel_exec:
 
 	; CS
 	mov	rax,	KERNEL_STRUCTURE_GDT.cs_ring3 | 0x03
-	stosq	; zapisz
+	stosq	; store
 
 	; EFLAGS
 	mov	rax,	KERNEL_TASK_EFLAGS_default
-	stosq	; zapisz
+	stosq	; store
 
 	; RSP
 	mov	rax,	r14
-	stosq	; zapisz
+	stosq	; store
 
 	; DS
 	mov	rax,	KERNEL_STRUCTURE_GDT.ds_ring3 | 0x03
-	stosq	; zapisz
+	stosq	; store
 
-	; przywróć wskaźnik do supła pliku
+	; restore the pointer to the file spool
 	mov	rsi,	qword [rsp]
 
 	;-----------------------------------------------------------------------
-	; przełącz przestrzeń pamięci na proces
+	; switch the memory space to the process
 	mov	rax,	cr3
 	mov	cr3,	r11
 
-	; załaduj kod programu do przestrzeni pamięci procesu
+	; load the program code into the memory space of the process
 	mov	rdi,	SOFTWARE_BASE_address
 	call	kernel_vfs_file_read
-	jc	.error	; nie udało się załadować pliku do przestrzeni pamięci
+	jc	.error	; the file could not be loaded into the memory space
 
-	; przywróć przestrzeń pamięci na rodzica
+	; restore the memory space to the parent
 	mov	cr3,	rax
 	;-----------------------------------------------------------------------
 
-	; wstaw proces do kolejki zadań
-	mov	eax,	KERNEL_ERROR_memory_low	; kod błędu
+	; insert the process into the task queue
+	mov	eax,	KERNEL_ERROR_memory_low	; error code
 	movzx	ecx,	byte [rsi + KERNEL_VFS_STRUCTURE_KNOT.length]
 	add	rsi,	KERNEL_VFS_STRUCTURE_KNOT.name
 	mov	rbx,	(SOFTWARE_BASE_address - STATIC_PAGE_SIZE_byte) - (STATIC_QWORD_SIZE_byte * 0x14)
 	call	kernel_task_add
 	jc	.error
 
-	; rozmiar zajętej przestrzeni przez proces w stronach
+	; size of the area taken by the process in pages
 	shr	r12,	STATIC_DIVIDE_BY_PAGE_shift
-	inc	r12	; przestrzeń binarnej mapy pamięci procesu w stronach
-	add	r12,	SOFTWARE_STACK_limit	; wraz z przestrzenią stosu
+	inc	r12	; area of the binary memory map of the process in pages
+	add	r12,	SOFTWARE_STACK_limit	; together with the stack area
 	mov	qword [rdi +KERNEL_TASK_STRUCTURE.memory],	r12
 
-	; uzupełnij wpis o adres binarnej mapy pamięci procesu i jej rozmiar
+	; complete the entry with the address of the binary memory map of the process and its size
 	add	r13,	qword [rel kernel_memory_high_mask]
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.map],	r13
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.map_size],	(KERNEL_MEMORY_MAP_SIZE_page << STATIC_PAGE_SIZE_shift) << STATIC_MULTIPLE_BY_8_shift
 
-	; zwolnij niewykrzystane, zarezerwowane strony
+	; release the unused reserved pages
 	add	qword [rel kernel_page_free_count],	rbp
 	sub	qword [rel kernel_page_reserved_count],	rbp
 
-	; zwróć numer PID utworzonego zadania
+	; return the PID of the created task
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rcx
 
-	; zwróć wskaźnik do struktury zadania
+	; return the pointer to the task structure
 	mov	qword [rsp],	rdi
 
-	; koniec obsługi procedury
+	; end of the procedure handling
 	jmp	.end
 
 .error:
-	; zwróć kod błędu
+	; return the error code
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte * 0x04],	rax
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 	pop	rbx
@@ -245,7 +245,7 @@ kernel_exec:
 	pop	rsi
 	pop	rdx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_exec"

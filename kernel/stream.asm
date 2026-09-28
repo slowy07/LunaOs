@@ -1,7 +1,7 @@
 ;===============================================================================
 
-KERNEL_STREAM_FLAG_active	equ	00000001b	; strumień jest wykorzystywany
-KERNEL_STREAM_FLAG_meta		equ	00000010b	; meta dane są aktualne
+KERNEL_STREAM_FLAG_active	equ	00000001b	; the stream is in use
+KERNEL_STREAM_FLAG_meta		equ	00000010b	; the metadata are up to date
 
 struc	KERNEL_STREAM_STRUCTURE_ENTRY
 	.address		resb	8
@@ -23,236 +23,236 @@ kernel_stream_address		dq	STATIC_EMPTY
 kernel_stream_out_default	dq	STATIC_EMPTY
 
 ;===============================================================================
-; wejście:
-;	Flaga CF - jeśli wystąpił błąd
-;	bl - flaga konfiguracji strumienia
-;	rdi - wskaźnik do zadania w kolejce
+; input:
+;\tCF flag - if an error occurred
+;\tbl - the stream configuration flag
+;\trdi - pointer to the task in the queue
 kernel_stream_set:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rsi
 	push	rdi
 
-	; utwórz potok wejścia procesu
+	; create the input pipe of the process
 	call	kernel_stream
-	jc	.end	; brak wystarczającej przestrzeni pamięci
+	jc	.end	; not enough memory
 
-	; zachowaj wskaźnik strumienia wejścia procesu
+	; save the pointer to the input stream of the process
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.in],	rsi
 
-	; ilość procesów korzystających z strumienia
+	; number of the processes using the stream
 	inc	qword [rsi + KERNEL_STREAM_STRUCTURE_ENTRY.lock]
 
-	; użyć tego samego strumienia wyjścia co rodzic?
+	; use the same output stream as the parent?
 	test	bl,	KERNEL_SERVICE_PROCESS_RUN_FLAG_out_default
-	jz	.own	; nie
+	jz	.own	; no
 
-	; zachowaj wskaźnik struktury procesu
+	; save the pointer to the process structure
 	push	rdi
 
-	; pobierz identyfikator strumienia wyjścia rodzica
+	; fetch the identifier of the output stream of the parent
 	call	kernel_task_active
 	mov	rsi,	qword [rdi + KERNEL_TASK_STRUCTURE.out]
 
-	; przywróć wskaźnik struktury procesu
+	; restore the pointer to the process structure
 	pop	rdi
 
-	; kontynuuj
+	; continue
 	jmp	.ready
 
 .no_memory:
-	; ilość procesów korzystających z strumienia wejścia
+	; number of the processes using the input stream
 	dec	qword [rsi + KERNEL_STREAM_STRUCTURE_ENTRY.lock]
 
-	; zwolnij strumień
+	; release the stream
 	mov	rdi,	rsi
 	call	kernel_stream_release
 
-	; koniec obsługi procedury
+	; end of the procedure handling
 	jmp	.end
 
 .own:
-	; przygotuj strumień wyjścia procesu
+	; prepare the output stream of the process
 	call	kernel_stream
-	jc	.no_memory	; brak wystarczającej przestrzeni pamięci
+	jc	.no_memory	; not enough memory
 
-	; przekierować wyjście dziecka na wejście rodzica?
+	; redirect the output of the child to the input of the parent?
 	test	bl,	KERNEL_SERVICE_PROCESS_RUN_FLAG_out_to_in_parent
-	jz	.ready	; nie
+	jz	.ready	; no
 
-	; zwolnij przygotowany potok
+	; release the prepared pipe
 	xchg	rsi,	rdi
 	call	kernel_stream_release
 	xchg	rdi,	rsi
 
-	; zachowaj wskaźnik struktury procesu
+	; save the pointer to the process structure
 	push	rdi
 
-	; pobierz identyfikator strumienia wejścia rodzica
+	; fetch the identifier of the input stream of the parent
 	call	kernel_task_active
 	mov	rsi,	qword [rdi + KERNEL_TASK_STRUCTURE.in]
 
-	; przywróć wskaźnik struktury procesu
+	; restore the pointer to the process structure
 	pop	rdi
 
 .ready:
-	; załaduj identyfikator strumienia wyjścia
+	; load the identifier of the output stream
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.out],	rsi
 
-	; ilość procesów korzystających z strumienia
+	; number of the processes using the stream
 	inc	qword [rsi + KERNEL_STREAM_STRUCTURE_ENTRY.lock]
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_stream_set"
 
 ;===============================================================================
-; wyjście:
-;	Flaga CF, jeśli brak miejsca
-;	rsi - identyfikator strumienia
+; output:
+;\tCF flag, if there is no space
+;\trsi - identifier of the stream
 kernel_stream:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdi
 	push	rsi
 
-	; początek tablicy strumieni
+	; beginning of the stream table
 	mov	rsi,	qword [rel kernel_stream_address]
 
-	; zablokuj dostęp do modyfikacji tablicy strumieni
+	; block the access to the modifications of the stream table
 	macro_lock	kernel_stream_semaphore, 0
 
 .reload:
-	; ilość strumieni w tablicy
+	; number of the streams in the table
 	mov	rcx,	( STATIC_PAGE_SIZE_byte / KERNEL_STREAM_STRUCTURE_ENTRY.SIZE) - 0x01
 
 .search:
-	; strumień wolny?
+	; the stream is free?
 	test	qword [rsi + KERNEL_STREAM_STRUCTURE_ENTRY.flags],	KERNEL_STREAM_FLAG_active
-	jz	.found	; tak, brak procesów korzystających z niego
+	jz	.found	; yes, no processes are using it
 
-	; przesuń wskaźnik na następny strumień w tablicy
+	; move the pointer to the next stream in the table
 	add	rsi,	KERNEL_STREAM_STRUCTURE_ENTRY.SIZE
 
-	; koniec strumieni w tablicy?
+	; end of the streams in the table?
 	dec	rcx
-	jnz	.search	; nie
+	jnz	.search	; no
 
-	; zachowaj adres aktualnej częśći tablicy strumieni
+	; save the address of the current part of the stream table
 	and	si,	STATIC_PAGE_mask
 	mov	rcx,	rsi
 
-	; pobierz adres następnej części tablicy
+	; fetch the address of the next part of the table
 	mov	rsi,	qword [rsi + STATIC_STRUCTURE_BLOCK.link]
 
-	; całkowity koniec tablicy strumieni?
+	; the complete end of the stream table?
 	cmp	rsi,	qword [rel kernel_stream_address]
-	jne	.search	; nie
+	jne	.search	; no
 
-	; przygotuj rozszerzenie tablicy
+	; prepare the extension of the table
 	call	kernel_memory_alloc_page
-	jc	.error	; brak wolnej przestrzeni
+	jc	.error	; no free space
 
-	; wyczyść przestrzeń
+	; clear the area
 	call	kernel_page_drain
 
-	; podłącz przestrzeń pod tablicę strumieni
+	; attach the area to the stream table
 	mov	qword [rcx + STATIC_STRUCTURE_BLOCK.link],	rdi
 
-	; ustaw wskaźnik następnej częśći tablicy na początek
+	; set the pointer to the next part of the table to the beginning
 	mov	qword [rdi + STATIC_STRUCTURE_BLOCK.link],	rsi
 
-	; kontynuuj w nowej części tablicy
+	; continue in the new part of the table
 	mov	rsi,	rdi
 	jmp	.reload
 
 .error:
-	; flaga, nie znaleziono wolnego strumienia
+	; flag, no free stream found
 	stc
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.end
 
 .found:
-	; przygotuj przestrzeń pod strumień
+	; prepare the area for the stream
 	mov	ecx,	KERNEL_STREAM_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
 	call	kernel_memory_alloc
-	jc	.error	; brak wolnej przestrzeni
+	jc	.error	; no free area
 
-	; wyczyść przestrzeń strumienia
+	; clear the area of the stream
 	call	kernel_page_drain_few
 
-	; zachowaj adres przestrzeni strumienia
+	; save the address of the stream area
 	mov	qword [rsi + KERNEL_STREAM_STRUCTURE_ENTRY.address],	rdi
 
-	; wyczyść wskaźniki początku końca danych w strumieniu
+	; clear the pointers of the beginning and the end of the data in the stream
 	mov	dword [rsi + KERNEL_STREAM_STRUCTURE_ENTRY.data],	STATIC_EMPTY
 
-	; strumień nie posiada danych
+	; the stream holds no data
 	mov	word [rsi + KERNEL_STREAM_STRUCTURE_ENTRY.free],	KERNEL_STREAM_SIZE_byte
 
-	; odblokuj dostęp do strumienia
+	; unblock the access to the stream
 	mov	byte [rsi + KERNEL_STREAM_STRUCTURE_ENTRY.semaphore],	STATIC_FALSE
 
-	; ilość procesów korzystających ze strumienia
+	; number of the processes using the stream
 	mov	qword [rsi + KERNEL_STREAM_STRUCTURE_ENTRY.lock],	STATIC_EMPTY
 
-	; strumień zarejestrowany
+	; the stream is registered
 	mov	byte [rsi + KERNEL_STREAM_STRUCTURE_ENTRY.flags],	KERNEL_STREAM_FLAG_active
 
-	; zwróć "identyfikator" strumienia
+	; return the "identifier" of the stream
 	mov	qword [rsp],	rsi
 
 .end:
-	; odblokuj dostęp do modyfikacji tablicy strumieni
+	; unblock the access to the modifications of the stream table
 	mov	byte [rel kernel_stream_semaphore],	STATIC_FALSE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rdi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_stream"
 
 ;===============================================================================
-; wejście:
-;	rdi - identyfikator strumienia
+; input:
+;\trdi - identifier of the stream
 kernel_stream_release:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rdi
 
-	; zwolnij przestrzeń strumienia
+	; release the area of the stream
 	mov	rdi,	qword [rdi + KERNEL_STREAM_STRUCTURE_ENTRY.address]
 	call	kernel_memory_release_page
 
-	; zwolnij wpis w tablicy strumieni
+	; release the entry in the stream table
 	mov	qword [rdi + KERNEL_STREAM_STRUCTURE_ENTRY.flags],	STATIC_EMPTY
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_stream_release"
 
 ;===============================================================================
-; wejście:
-;	rbx - identyfikator strumienia
-;	rcx - rozmiar bufora docelowego
-;	rdi - wskaźnik docelowy danych
-; wyjście:
-;	rcx - ilość przesłanych danych
+; input:
+;\trbx - identifier of the stream
+;\trcx - size of the destination buffer
+;\trdi - destination pointer of the data
+; output:
+;\trcx - number of the transferred data
 kernel_stream_receive:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 	push	rsi
@@ -260,69 +260,69 @@ kernel_stream_receive:
 	push	r8
 	push	rcx
 
-	; zablokuj dostęp do strumienia
+	; block the access to the stream
 	macro_lock	rbx, KERNEL_STREAM_STRUCTURE_ENTRY.semaphore
 
-	; w strumieniu znajdują się dane?
+	; is there any data in the stream?
 	cmp	word [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.free],	KERNEL_STREAM_SIZE_byte
-	je	.end	; nie
+	je	.end	; no
 
-	; zresetuj akumulator
+	; reset the accumulator
 	xor	al,	al
 
-	; pobierz aktualny wskaźnik początku danych strumienia
+	; fetch the current pointer to the beginning of the data of the stream
 	movzx	edx,	word [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.start]
 
-	; ustaw wskaźnik docelowy w przestrzeni strumienia
+	; set the destination pointer in the area of the stream
 	mov	rsi,	qword [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.address]
 
-	; zresetuj ilość przesłanych danych do procesu
+	; reset the number of the data transferred to the process
 	xor	r8,	r8
 
 .load:
-	; pobierz wartość z strumienia
+	; fetch a value from the stream
 	mov	al,	byte [rsi + rdx]
 
-	; załaduj do bufora procesu
+	; load it into the buffer of the process
 	stosb
 
-	; przesuń wskaźnik początku danych strumienia na następną pozycję
+	; move the pointer to the beginning of the data of the stream to the next position
 	inc	dx
 
-	; koniec przestrzeni strumienia?
+	; end of the area of the stream?
 	cmp	dx,	KERNEL_STREAM_SIZE_byte
-	jne	.continue	; nie
+	jne	.continue	; no
 
-	; przestaw wskaźnik początku przestrzeni danych strumienia
+	; reset the pointer to the beginning of the data area of the stream
 	xor	dx,	dx
 
 .continue:
-	; ilość przesłanych danych do bufora procesu
+	; number of the data transferred into the buffer of the process
 	inc	r8
 
-	; przesłano wymaganą ilość?
+	; was the required number transferred?
 	dec	rcx
-	jz	.close	; tak
+	jz	.close	; yes
 
-	; koniec danych w strumieniu?
+	; end of the data in the stream?
 	cmp	dx,	word [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.end]
-	jne	.load	; nie
+	jne	.load	; no
 
 .close:
-	; zachowaj aktualną pozycję początku strumienia
+	; save the current position of the beginning of the stream
 	mov	word [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.start],	dx
 
-	; zwróć ilość przesnałych danych
+	; return the number of the transferred data
 	mov	qword [rsp],	r8
 
-	; aktualna ilość wolnego miejsca w strumieniu
+	; current amount of the free space in the stream
 	add	word [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.free],	r8w
 
 .end:
-	; odblokuj dostęp do potoku
+	; unblock the access to the pipe
 	mov	byte [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.semaphore],	STATIC_FALSE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	r8
 	pop	rdi
@@ -330,18 +330,18 @@ kernel_stream_receive:
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_stream_receive"
 
 ;===============================================================================
-; wejście:
-;	rbx - identyfikator potoku
-;	cx - ilość danych do przesłania
-;	rsi - wskaźnik źródłowy danych
+; input:
+;\trbx - identifier of the pipe
+;\tcx - number of the data to transfer
+;\trsi - source pointer of the data
 kernel_stream_insert:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 	push	rsi
@@ -349,69 +349,69 @@ kernel_stream_insert:
 	push	rcx
 
 .retry:
-	; zablokuj dostęp do potoku
+	; block the access to the pipe
 	macro_lock	rbx, KERNEL_STREAM_STRUCTURE_ENTRY.semaphore
 
-	; pobierz aktualny wskaźnik końca danych strumienia
+	; fetch the current pointer to the end of the data of the stream
 	movzx	edx,	word [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.end]
 
-	; ustaw wskaźnik docelowy w przestrzeni strumienia
+	; set the destination pointer in the area of the stream
 	mov	rdi,	qword [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.address]
 
 .next:
-	; w strumieniu jest wystarczająco wolnej przestrzeni?
+	; is there enough free space in the stream?
 	cmp	cx,	word [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.free]
-	jbe	.insert	; tak
+	jbe	.insert	; yes
 
-	; odblokuj dostęp do strumienia
+	; unblock the access to the stream
 	mov	byte [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.semaphore],	STATIC_FALSE
 
-	; spróbuj raz jeszcze
+	; try once more
 	jmp	.retry
 
 .insert:
-	; pobierz wartość z ciągu
+	; fetch a value from the string
 	lodsb
 
-	; zachowaj w strumieniu
+	; save it in the stream
 	mov	byte [rdi + rdx],	al
 
-	; przesuń wskaźnik końca danych strumienia na następną pozycję
+	; move the pointer to the end of the data of the stream to the next position
 	inc	dx
 
-	; koniec przestrzeni strumienia?
+	; end of the area of the stream?
 	cmp	dx,	KERNEL_STREAM_SIZE_byte
-	jne	.continue	; nie
+	jne	.continue	; no
 
-	; ustaw wskaźnik końca przestrzeni danych strumienia na początek
+	; set the pointer to the end of the data area of the stream to the beginning
 	xor	dx,	dx
 
 .continue:
-	; koniec ciągu danych?
+	; end of the string of the data?
 	dec	rcx
-	jnz	.next	; nie, kontynuuj
+	jnz	.next	; no, continue
 
-	; zachowaj aktualny wskaźnik końca danych strumienia
+	; save the current pointer to the end of the data of the stream
 	mov	word [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.end],	dx
 
-	; pozostała ilość wolnego miejsca w strumieniu
+	; remaining amount of the free space in the stream
 	pop	rcx
 	sub	word [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.free],	cx
 
-	; wyłącz flagę: meta
+	; clear the flag: meta
 	and	byte [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.flags],	~KERNEL_STREAM_FLAG_meta
 
 .end:
-	; odblokuj dostęp do potoku
+	; unblock the access to the pipe
 	mov	byte [rbx + KERNEL_STREAM_STRUCTURE_ENTRY.semaphore],	STATIC_FALSE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_stream_insert"

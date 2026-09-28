@@ -18,7 +18,7 @@ KERNEL_PAGE_PML1_SIZE_byte		equ	KERNEL_PAGE_RECORDS_amount * STATIC_PAGE_SIZE_by
 KERNEL_PAGE_LIBRARY_PML4_records	equ	32
 KERNEL_PAGE_SOFTWARE_PML4_records	equ	192
 
-; wyrównaj pozycję zmiennych do pełnego adresu
+; bring the variable positions to a full address
 align	STATIC_QWORD_SIZE_byte,		db	STATIC_NOTHING
 
 kernel_page_pml4_address		dq	STATIC_EMPTY
@@ -30,12 +30,12 @@ kernel_page_paged_count			dq	STATIC_EMPTY
 kernel_page_shared_count		dq	STATIC_EMPTY
 
 ;===============================================================================
-; wejście:
-;	rax - wskaźnik do początku przestrzeni
-;	rcx - rozmiar przestrzeni w stronach
-;	r11 - wskaźnik do tablicy PML4 przestrzeni
+; input:
+;	rax - pointer to the beginning of the area
+;	rcx - size of the area in pages
+;	r11 - pointer to the PML4 table of the area
 kernel_page_purge:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdi
 	push	r8
@@ -47,161 +47,161 @@ kernel_page_purge:
 	push	r14
 	push	r15
 
-	; przygotuj środowisko pracy
+	; prepare the working environment
 	call	kernel_page_convert
 
 .pml1:
-	; brak zarejestrowanej strony?
+	; no page registered?
 	cmp	qword [r8],	STATIC_EMPTY
-	je	.pml1_omit	; tak, pomiń
+	je	.pml1_omit	; yes, skip
 
-	; pobierz adres fizyczny strony
+	; fetch the physical address of the page
 	mov	rdi,	qword [r8]
 
-	; strona oznaczona jako wirtualna?
+	; the page marked as virtual?
 	test	di,	KERNEL_PAGE_FLAG_virtual
-	jnz	.virtual	; tak, zignoruj
+	jnz	.virtual	; yes, ignore
 
-	; zwolnij stronę
+	; release the page
 	and	di,	STATIC_PAGE_mask
 	call	kernel_memory_release_page
 
 .virtual:
-	; zwolnij wpis w tablicy PML1
+	; release the entry in the PML1 table
 	mov	qword [r8],	STATIC_EMPTY
 
 .pml1_omit:
-	; następny wpis tablicy tablicy PML1
+	; next entry of the PML1 table of tables
 	add	r8,	STATIC_QWORD_SIZE_byte
 	inc	r12
 
-	; koniec tablicy PML1
+	; end of the PML1 table
 	cmp	r12,	KERNEL_PAGE_RECORDS_amount
-	jne	.pml1	; nie
+	jne	.pml1	; no
 
 .pml2_entry:
-	; zwolnij przestrzeń tablicy PML1
+	; release the area of the PML1 table
 	mov	rdi,	qword [r9]
 	and	di,	STATIC_PAGE_mask
 	call	kernel_memory_release_page
 
-	; zwolniono tablicę stronicowania
+	; the page table was released
 	dec	qword [rel kernel_page_paged_count]
 
-	; usuń rekord z tablicy PML2
+	; remove the record from the PML2 table
 	mov	qword [r9],	STATIC_EMPTY
 
 .pml2:
-	; następny wpis w tablicy PML2
+	; next entry in the PML2 table
 	add	r9,	STATIC_QWORD_SIZE_byte
 	inc	r13
 
-	; koniec tablicy PML2?
+	; end of the PML2 table?
 	cmp	r13,	KERNEL_PAGE_RECORDS_amount
-	je	.pml3_entry	; tak
+	je	.pml3_entry	; yes
 
 .pml2_record:
-	; pobierz adres tablicy PML1
+	; fetch the address of the PML1 table
 	mov	r8,	qword [r9]
 
-	; brak tablicy PML1
+	; no PML1 table
 	test	r8,	r8
-	jz	.pml2	; tak, następny rekord
+	jz	.pml2	; yes, next record
 
-	; usuń flagi
+	; remove the flags
 	xor	r8b,	r8b
 
-	; wyczyść ilość przetworzonych wpisów
+	; clear the number of the processed entries
 	xor	r12,	r12
 
-	; kontynuuj
+	; continue
 	jmp	.pml1
 
 .pml3_entry:
-	; zwolnij przestrzeń tablicy PML2
+	; release the area of the PML2 table
 	mov	rdi,	qword [r10]
 	and	di,	STATIC_PAGE_mask
 	call	kernel_memory_release_page
 
-	; zwolniono tablicę stronicowania
+	; the page table was released
 	dec	qword [rel kernel_page_paged_count]
 
-	; usuń rekord z tablicy PML3
+	; remove the record from the PML3 table
 	mov	qword [r10],	STATIC_EMPTY
 
 .pml3:
-	; następny wpis w tablicy PML3
+	; next entry in the PML3 table
 	add	r10,	STATIC_QWORD_SIZE_byte
 	inc	r14
 
-	; koniec tablicy PML3?
+	; end of the PML3 table?
 	cmp	r14,	KERNEL_PAGE_RECORDS_amount
-	je	.pml4_entry	; tak
+	je	.pml4_entry	; yes
 
 .pml3_record:
-	; pobierz adres tablicy PML2
+	; fetch the address of the PML2 table
 	mov	r9,	qword [r10]
 
-	; brak tablicy PML2?
+	; no PML2 table?
 	test	r9,	r9
-	jz	.pml3	; tak, następny rekord
+	jz	.pml3	; yes, next record
 
-	; usuń flagi
+	; remove the flags
 	xor	r9b,	r9b
 
-	; wyczyść ilość przetworzonych wpisów
+	; clear the number of the processed entries
 	xor	r13,	r13
 
-	; kontynuuj
+	; continue
 	jmp	.pml2_record
 
 .pml4_entry:
-	; zwolnij przestrzeń tablicy PML3
+	; release the area of the PML3 table
 	mov	rdi,	qword [r11]
 	and	di,	STATIC_PAGE_mask
 	call	kernel_memory_release_page
 
-	; zwolniono tablicę stronicowania
+	; the page table was released
 	dec	qword [rel kernel_page_paged_count]
 
-	; usuń rekord z tablicy PML4
+	; remove the record from the PML4 table
 	mov	qword [r11],	STATIC_EMPTY
 
 .pml4:
-	; zwolniono rekord PML4
+	; the PML4 record was released
 	dec	rcx
-	jz	.end	; przetworzono wszystkie rekordy tablicy PML4
+	jz	.end	; all the records of the PML4 table have been processed
 
-	; następny wpis w tablicy PML4
+	; next entry in the PML4 table
 	add	r11,	STATIC_QWORD_SIZE_byte
 	inc	r15
 
-	; koniec tablicy PML4?
+	; end of the PML4 table?
 	cmp	r15,	KERNEL_PAGE_RECORDS_amount
-	je	.pml5	; tak... że jak?
+	je	.pml5	; yes... and how?
 
-	; pobierz adres tablicy PML3
+	; fetch the address of the PML3 table
 	mov	r10,	qword [r11]
 
-	; brak tablicy PML3?
+	; no PML3 table?
 	test	r10,	r10
-	jz	.pml4	; tak, następny rekord
+	jz	.pml4	; yes, next record
 
-	; usuń flagi
+	; remove the flags
 	xor	r10b,	r10b
 
-	; wyczyść ilość przetworzonych wpisów
+	; clear the number of the processed entries
 	xor	r14,	r14
 
-	; kontynuuj
+	; continue
 	jmp	.pml3_record
 
 .pml5:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r15
 	pop	r14
 	pop	r13
@@ -213,228 +213,228 @@ kernel_page_purge:
 	pop	rdi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_purge"
 
 ;===============================================================================
-; wejście:
-;	rax - wskaźnik do przestrzeni pamięci do oczyszczenia
-;	rcx - ilość rekordów tablicy PML4 do przejrzenia
-;	r11 - wskaźnik do tablicy PML4
-; wyjście:
-;	r8 - wskaźnik rekordu w tablicy PML1
-;	r9 - wskaźnik rekordu w tablicy PML2
-;	r10 - wskaźnik rekordu w tablicy PML3
-;	r11 - wskaźnik rekordu w tablicy PML4
-;	r12 - numer rekordu w tablicy PML1
-;	r13 - numer rekordu w tablicy PML2
-;	r14 - numer rekordu w tablicy PML3
-;	r15 - numer rekordu w tablicy PML4
+; input:
+;	rax - pointer to the memory area to clear
+;	rcx - number of the PML4 table records to review
+;	r11 - pointer to the PML4 table
+; output:
+;	r8 - pointer to the record in the PML1 table
+;	r9 - pointer to the record in the PML2 table
+;	r10 - pointer to the record in the PML3 table
+;	r11 - pointer to the record in the PML4 table
+;	r12 - record number in the PML1 table
+;	r13 - record number in the PML2 table
+;	r14 - record number in the PML3 table
+;	r15 - record number in the PML4 table
 kernel_page_convert:
-	; zachowa oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rdx
 
 	;-----------------------------------------------------------------------
-	; oblicz numer wpisu w tablicy PML4 na podstawie otrzymanego adresu fizycznego/logicznego
+	; compute the entry number in the PML4 table from the given physical/logical address
 	mov	rcx,	KERNEL_PAGE_PML3_SIZE_byte
-	xor	rdx,	rdx	; wyczyść starszą część
+	xor	rdx,	rdx	; clear the upper part
 	div	rcx
 
-	; zachowaj
+	; save
 	mov	r15,	rax
 
-	; przesuń wskaźnik w tablicy PML4 na dany wpis
-	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; zamień na Bajty
+	; move the pointer in the PML4 table to the given entry
+	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; convert to Bytes
 	add	r11,	rax
 
-	; pobierz wskaźnik tablicy PML3 z wpisu tablicy PML4
+	; fetch the PML3 table pointer from the PML4 table entry
 	mov	rax,	qword [r11]
-	xor	al,	al	; usuń flagi wpisu
+	xor	al,	al	; remove the entry flags
 
-	; zachowaj wskaźnik tablicy PML3
+	; save the PML3 table pointer
 	mov	r10,	rax
 
 	;-----------------------------------------------------------------------
-	; oblicz numer wpisu w tablicy PML3 na podstawie pozostałego adresu fizycznego/logicznego
-	mov	rax,	rdx	; przywróć resztę z dzielenia
+	; compute the entry number in the PML3 table from the remaining physical/logical address
+	mov	rax,	rdx	; restore the remainder of the division
 	mov	rcx,	KERNEL_PAGE_PML2_SIZE_byte
-	xor	rdx,	rdx	; wyczyść starszą część
+	xor	rdx,	rdx	; clear the upper part
 	div	rcx
 
-	; zachowaj
+	; save
 	mov	r14,	rax
 
-	; przesuń wskaźnik w tablicy PML3 na wpis
-	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; zamień na Bajty
+	; move the pointer in the PML3 table to the entry
+	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; convert to Bytes
 	add	r10,	rax
 
-	; pobierz adres tablicy PML2 z wpisu tablicy PML3
+	; fetch the address of the PML2 table from the PML3 table entry
 	mov	rax,	qword [r10]
-	xor	al,	al	; usuń flagi wpisu
+	xor	al,	al	; remove the entry flags
 
-	; zachowaj wskaźnik tablicy PML2
+	; save the PML2 table pointer
 	mov	r9,	rax
 
 	;-----------------------------------------------------------------------
-	; oblicz numer wpisu w tablicy PML2 na podstawie pozostałego adresu fizycznego/logicznego
-	mov	rax,	rdx	; przywróć resztę z dzielenia
+	; compute the entry number in the PML2 table from the remaining physical/logical address
+	mov	rax,	rdx	; restore the remainder of the division
 	mov	rcx,	KERNEL_PAGE_PML1_SIZE_byte
-	xor	rdx,	rdx	; wyczyść starszą część
+	xor	rdx,	rdx	; clear the upper part
 	div	rcx
 
-	; zachowaj
+	; save
 	mov	r13,	rax
 
-	; przesuń wskaźnik w tablicy PML2 na wpis
-	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; zamień na Bajty
+	; move the pointer in the PML2 table to the entry
+	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; convert to Bytes
 	add	r9,	rax
 
-	; pobierz adres tablicy PML1 z wpisu tablicy PML2
+	; fetch the address of the PML1 table from the PML2 table entry
 	mov	rax,	qword [r9]
-	xor	al,	al	; usuń flagi wpisu
+	xor	al,	al	; remove the entry flags
 
-	; zachowaj wskaźnik tablicy PML2
+	; save the PML2 table pointer
 	mov	r8,	rax
 
 	;-----------------------------------------------------------------------
-	; oblicz numer wpisu w tablicy PML1 na podstawie pozostałego adresu fizycznego/logicznego
-	mov	rax,	rdx	; przywróć resztę z dzielenia
+	; compute the entry number in the PML1 table from the remaining physical/logical address
+	mov	rax,	rdx	; restore the remainder of the division
 	mov	rcx,	STATIC_PAGE_SIZE_byte
-	xor	rdx,	rdx	; wyczyść starszą część
+	xor	rdx,	rdx	; clear the upper part
 	div	rcx
 
-	; zachowaj
+	; save
 	mov	r12,	rax
 
-	; przesuń wskaźnik w tablicy PML1 na wpis
-	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; zamień na Bajty
+	; move the pointer in the PML1 table to the entry
+	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; convert to Bytes
 	add	r8,	rax
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_convert"
 
 ;===============================================================================
-; wejście:
-;	rdi - wskaźnik do strony
-; wyjście:
-;	Flaga ZF - jeśli pusta
+; input:
+;	rdi - pointer to the page
+; output:
+;	ZF flag - if empty
 kernel_page_empty:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 
-	; wyczyść akumulator
+	; clear the accumulator
 	xor	eax,	eax
 
-	; ilość rekordów do sprawdzenia
+	; number of the records to check
 	mov	ecx,	KERNEL_PAGE_RECORDS_amount - 0x01
 
 .loop:
-	; pobierz zawartość rekordu
+	; fetch the content of the record
 	or	rax,	qword [rdi + rcx * STATIC_QWORD_SIZE_byte]
 
-	; koniec zliczania?
+	; end of the counting?
 	dec	cx
-	jns	.loop	; nie
+	jns	.loop	; no
 
-	; strona pusta?
+	; the page empty?
 	test	rax,	rax
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_empty"
 
 ;===============================================================================
-; wejście:
-;	rdi - adres strony do wyczyszczenia
+; input:
+;	rdi - address of the page to clear
 kernel_page_drain:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 
-	; rozmiar strony w Bajtach
+	; size of the page in Bytes
 	mov	rcx,	STATIC_PAGE_SIZE_byte
 	call	.proceed
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_drain"
 
 ;-------------------------------------------------------------------------------
-; uwagi:
-;	rcx - zniszczony
+; notes:
+;	rcx - destroyed
 .proceed:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdi
 
-	; wyczyść przestrzeń
+	; clear the area
 	xor	rax,	rax
-	shr	rcx,	STATIC_DIVIDE_BY_8_shift	; po 8 Bajtów na raz
-	and	di,	STATIC_PAGE_mask	; wyrównaj adres przestrzeni w dół (failsafe)
+	shr	rcx,	STATIC_DIVIDE_BY_8_shift	; 8 Bytes at a time
+	and	di,	STATIC_PAGE_mask	; move the area address down to the alignment boundary (failsafe)
 	rep	stosq
 
-	; przywróć orygialne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rax
 
-	; powrót z podprocedury
+	; return from the subprocedure
 	ret
 
 	macro_debug	"kernel_page_drain.proceed"
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość kolejnych stron do wyczyszczenia
-;	rdi - wskaźnik do pierwszej strony
+; input:
+;	rcx - number of consecutive pages to clear
+;	rdi - pointer to the first page
 kernel_page_drain_few:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 
-	; oblicz rozmiar przestrzeni do wyczyszczenia
+	; compute the size of the area to clear
 	shl	rcx,	STATIC_PAGE_SIZE_shift
 	call	kernel_page_drain.proceed
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_drain_few"
 
 ;===============================================================================
-; wejście:
-;	rax - adres przestrzeni fizycznej do opisania w tablicach stronicowania
-;	bx - flagi rekordów tablic stronicowania
-;	rcx - rozmiar przestrzeni w stronach do opisania
-;	r11 - adres fizyczny tablicy PML4, w której dokonać wpis
-; wyjście:
-;	Flaga CF - ustawiona, jeśli wystąpił błąd
-;	r8 - adres wpisu opisującego pierwszą stronę przestrzeni
-; uwagi:
-;	zastrzeż odpowiednią ilość stron, rbp
+; input:
+;	rax - address of the physical area to describe in the page tables
+;	bx - flags of the page table records
+;	rcx - size of the area in pages to describe
+;	r11 - physical address of the PML4 table in which to make the entry
+; output:
+;	CF flag - set, if an error occurred
+;	r8 - address of the entry describing the first page of the area
+; notes:
+;	reserve the appropriate number of pages, rbp
 kernel_page_map_physical:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdx
 	push	rdi
@@ -447,47 +447,47 @@ kernel_page_map_physical:
 	push	r15
 	push	rax
 
-	; przygotuj podstawową ścieżkę do mapowanej przestrzeni
+	; prepare the base path to the mapped area
 	call	kernel_page_prepare
-	jc	.error	; błąd, brak wolnej pamięci lub przepełniono tablicę stronicowania
+	jc	.error	; error, no free memory or the page table overflowed
 
-	; dołącz do początku opisywanej przestrzeni, właściwości
+	; attach to the beginning of the described area, the properties
 	or	ax,	bx
 
 .row:
-	; sprawdź czy skończyły się rekordy w tablicy PML1
+	; check whether the records in the PML1 table have run out
 	cmp	r12,	KERNEL_PAGE_RECORDS_amount
-	jb	.exist	; nie
+	jb	.exist	; no
 
-	; utwórz nową tablicę stronicowania PML1
+	; create a new PML1 page table
 	call	kernel_page_pml1
 
 .exist:
-	; zapisz adres mapowany do wiersza PML1[r12]
+	; store the mapped address into the PML1[r12] row
 	stosq
 
-	; przesuń adres do następnego mapowanej przestrzeni
+	; move the address to the next page of the mapped area
 	add	rax,	STATIC_PAGE_SIZE_byte
 
-	; ustaw numer następnego wiersza w tablicy PML1
+	; set the number of the next row in the PML1 table
 	inc	r12
 
-	; następny wiersz tablicy?
+	; next table row?
 	dec	rcx
-	jnz	.row	; tak
+	jnz	.row	; yes
 
-	; flaga, sukces
+	; flag, success
 	clc
 
-	; koniec
+	; end
 	jmp	.end
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 	pop	r15
 	pop	r14
@@ -500,24 +500,24 @@ kernel_page_map_physical:
 	pop	rdx
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_map_physical"
 
 ;===============================================================================
-; wejście:
-;	rax - adres przestrzeni logicznej do opisania w tablicach stronicowania
-;	bx - flagi rekordów tablic stronicowania
-;	rcx - rozmiar przestrzeni w stronach do opisania
-;	r11 - adres fizyczny tablicy PML4, w której dokonać wpis
-; wyjście:
-;	Flaga CF - jeśli ustawiona, błąd
-;	r8 - adres rekordu opisującego pierwszą stronę przestrzeni
-; uwagi:
-;	zastrzeż odpowiednią ilość stron, rbp
+; input:
+;	rax - address of the logical area to describe in the page tables
+;	bx - flags of the page table records
+;	rcx - size of the area in pages to describe
+;	r11 - physical address of the PML4 table in which to make the entry
+; output:
+;	CF flag - if set, error
+;	r8 - address of the record describing the first page of the area
+; notes:
+;	reserve the appropriate number of pages, rbp
 kernel_page_map_logical:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdx
 	push	rdi
@@ -530,69 +530,69 @@ kernel_page_map_logical:
 	push	r15
 	push	rax
 
-	; przygotuj podstawową ścieżkę z tablic do mapowanego adresu
+	; prepare the base path from the tables to the mapped address
 	call	kernel_page_prepare
 	jc	.error
 
 .record:
-	; sprawdź czy skończyły się rekordy w tablicy PML1
+	; check whether the records in the PML1 table have run out
 	cmp	r12,	KERNEL_PAGE_RECORDS_amount
-	jb	.exists	; istnieją rekordy
+	jb	.exists	; records exist
 
-	; utwórz nową tablicę stronicowania PML1
+	; create a new PML1 page table
 	call	kernel_page_pml1
 	jc	.error
 
 .exists:
-	; rekord zajęty?
+	; record occupied?
 	cmp	qword [rdi],	STATIC_EMPTY
 	je	.no
 
-	; przesuń wskaźnik na następny rekord
+	; move the pointer to the next record
 	add	rdi,	STATIC_QWORD_SIZE_byte
 	jmp	.continue
 
 .no:
-	; zachowaj adres rekordu tablicy PML1
+	; save the address of the PML1 table record
 	push	rdi
 
-	; przydziel wolną stronę
+	; allocate a free page
 	call	kernel_memory_alloc_page
 	jc	.error
 
-	; wyczyść
+	; clear
 	call	kernel_page_drain
 
-	; ustaw właściwości rekordu
+	; set the properties of the record
 	add	di,	bx
 
-	; przywróć adres rekordu tablicy PML1
+	; restore the address of the PML1 table record
 	pop	rax
 
-	; zapisz adres przestrzeni mapowanej do rekordu tablicy PML1[r12]
+	; store the address of the mapped area into the PML1[r12] table record
 	xchg	rdi,	rax
 	stosq
 
 .continue:
-	; ustaw numer następnego rekordu w tablicy pml1
+	; set the number of the next record in the PML1 table
 	inc	r12
 
-	; kontynuuj
+	; continue
 	dec	rcx
 	jnz	.record
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.end
 
 .error:
-	; zwróć kod błędu
+	; return the error code
 	mov	qword [rsp],	rax
 
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 	pop	r15
 	pop	r14
@@ -605,21 +605,21 @@ kernel_page_map_logical:
 	pop	rdx
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_map_logical"
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar przestrzeni w stronach do opisania
-;	rsi - wskaźnik do przestrzeni jądra systemu
-;	rdi - wskaźnik do przestrzeni procesu
-;	r11 - adres fizyczny tablicy PML4, w której dokonać podłączenie
-; wyjście:
-;	Flaga CF - jeśli ustawiona, błąd
+; input:
+;	rcx - size of the area in pages to describe
+;	rsi - pointer to the kernel address space
+;	rdi - pointer to the process address space
+;	r11 - physical address of the PML4 table in which to make the attachment
+; output:
+;	CF flag - if set, error
 kernel_page_map_virtual:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
@@ -633,67 +633,67 @@ kernel_page_map_virtual:
 	push	r14
 	push	r15
 
-	; koryguj adres przestrzeni logicznej
+	; correct the address of the logical area
 	mov	rax,	STATIC_EMPTY	; KERNEL_MEMORY_HIGH_mask
 	sub	rdi,	rax
 	mov	rax,	rdi
 
-	; pobierz wskaźnik do właściwości procesu
+	; fetch the pointer to the properties of the process
 	call	kernel_task_active
 
-	; proces wykonujący jest usługą?
+	; is the calling process a service?
 	test	word [rdi + KERNEL_TASK_STRUCTURE.flags],	KERNEL_TASK_FLAG_service
-	jnz	.end	; zignoruj wywołanie
+	jnz	.end	; ignore the call
 
-	; tablice stronicowania domyślne dla procesu
+	; default page tables of the process
 	mov	bx,	KERNEL_PAGE_FLAG_user | KERNEL_PAGE_FLAG_write | KERNEL_PAGE_FLAG_available
 
-	; strony fizyczne oznacz jako virtualne, gdyż są tylko "kopią" udostępnioną dla procesu
+	; mark the physical pages as virtual, because they are only a "copy" shared with the process
 	or	si,	bx
 	or	si,	KERNEL_PAGE_FLAG_virtual
 
-	; przygotuj podstawową ścieżkę z tablic do mapowanego adresu
+	; prepare the base path from the tables to the mapped address
 	mov	r11,	qword [rdi + KERNEL_TASK_STRUCTURE.cr3]
 	call	kernel_page_prepare
 	jc	.error
 
 .record:
-	; sprawdź czy skończyły się rekordy w tablicy PML1
+	; check whether the records in the PML1 table have run out
 	cmp	r12,	KERNEL_PAGE_RECORDS_amount
-	jb	.exists	; istnieją rekordy
+	jb	.exists	; records exist
 
-	; utwórz nową tablicę stronicowania PML1
+	; create a new PML1 page table
 	call	kernel_page_pml1
 	jc	.error
 
 .exists:
-	; rekord wolny?
+	; record free?
 	cmp	qword [r8],	STATIC_EMPTY
-	jne	.error	; przestrzeń jest już zajęta!
+	jne	.error	; the area is already occupied!
 
-	; podłącz stronę przestrzeni jądra systemu do procesu
+	; attach a page of the kernel address space to the process
 	mov	qword [r8],	rsi
 
-	; następna strona przestrzeni jądra systemu
+	; next page of the kernel address space
 	add	rsi,	STATIC_PAGE_SIZE_byte
-	add	r8,	STATIC_QWORD_SIZE_byte	; następny wpis w tablicy
+	add	r8,	STATIC_QWORD_SIZE_byte	; next entry in the table
 
-	; ustaw numer następnego rekordu w tablicy pml1
+	; set the number of the next record in the PML1 table
 	inc	r12
 
-	; kontynuuj
+	; continue
 	dec	rcx
 	jnz	.record
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.end
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r15
 	pop	r14
 	pop	r13
@@ -707,553 +707,553 @@ kernel_page_map_virtual:
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_map_virtual"
 
 ;===============================================================================
-; wejście:
-;	rax - adres przestrzeni fizycznej do opisania w tablicach stronicowania
-;	bx - flagi rekordów tablic stronicowania
-;	r11 - adres fizyczny tablicy PML4, w której wykonać stronicowanie
-; wyjście:
-;	Flaga CF, jeśli brak wystarczającej ilości stron
-;	rdi - wskaźnik do rekordu w tablicy PML1, początku opisywanego obszaru fizycznego
+; input:
+;	rax - address of the physical area to describe in the page tables
+;	bx - flags of the page table records
+;	r11 - physical address of the PML4 table in which to do the paging
+; output:
+;	CF flag, if there are not enough pages
+;	rdi - pointer to the record in the PML1 table, the beginning of the described physical area
 ;
-;	r8 - wskaźnik następnego rekordu w tablicy PML1
-;	r9 - wskaźnik następnego rekordu w tablicy PML2
-;	r10 - wskaźnik następnego rekordu w tablicy PML3
-;	r11 - wskaźnik następnego rekordu w tablicy PML4
-;	r12 - numer następnego rekordu w tablicy PML1
-;	r13 - numer następnego rekordu w tablicy PML2
-;	r14 - numer następnego rekordu w tablicy PML3
-;	r15 - numer następnego rekordu w tablicy PML4
+;	r8 - pointer to the next record in the PML1 table
+;	r9 - pointer to the next record in the PML2 table
+;	r10 - pointer to the next record in the PML3 table
+;	r11 - pointer to the next record in the PML4 table
+;	r12 - number of the next record in the PML1 table
+;	r13 - number of the next record in the PML2 table
+;	r14 - number of the next record in the PML3 table
+;	r15 - number of the next record in the PML4 table
 kernel_page_prepare:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdx
 	push	rax
 
-	; oblicz numer rekordu w tablicy PML4 na podstawie otrzymanego adresu fizycznego/logicznego
+	; compute the record number in the PML4 table from the given physical/logical address
 	mov	rcx,	KERNEL_PAGE_PML3_SIZE_byte
-	xor	rdx,	rdx	; wyczyść starszą część
+	xor	rdx,	rdx	; clear the upper part
 	div	rcx
 
-	; zapamiętaj numer rekordu tablicy PML4
+	; remember the number of the PML4 table record
 	mov	r15,	rax
 
-	; przesuń wskaźnik w tablicy PML4 na rekord
-	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; zamień na Bajty
+	; move the pointer in the PML4 table to the record
+	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; convert to Bytes
 	add	r11,	rax
 
-	; rekord PML4 zawiera adres tablicy PML3?
+	; the PML4 record holds the address of the PML3 table?
 	cmp	qword [r11],	STATIC_EMPTY
 	je	.no_pml3
 
-	; pobierz adres tablicy PML3 z rekordu tablicy PML4
+	; fetch the address of the PML3 table from the PML4 table record
 	mov	rax,	qword [r11]
-	xor	al,	al	; usuń właściwości rekordu
+	xor	al,	al	; remove the properties of the record
 
-	; zapisz adres tablicy PML3
+	; store the address of the PML3 table
 	mov	r10,	rax
 
-	; kontynuuj
+	; continue
 	jmp	.pml3
 
 .no_pml3:
-	; pobierz zarezerwowaną stronę na potrzebę utworzenia nowej tablicy
+	; fetch a reserved page to create a new table
 	call	kernel_memory_alloc_page
 	jc	.error
 
-	; wyczyść
+	; clear
 	call	kernel_page_drain
 
-	; zapisz adres tablicy PML3
+	; store the address of the PML3 table
 	mov	r10,	rdi
 
-	; zapisz adres tablicy PML3 do rekordu tablicy PML4
+	; store the address of the PML3 table into the PML4 table record
 	mov	qword [r11],	rdi
-	or	word [r11],	bx	; ustaw właściwości rekordu tablicy PML4
+	or	word [r11],	bx	; set the properties of the PML4 table record
 
-	; strona wykorzystana do tablic stronicowania
+	; page used for the page tables
 	inc	qword [rel kernel_page_paged_count]
 
 .pml3:
-	; ustaw numer i wskaźnik rekordu w tablicy PML4 na następny
+	; set the number and the pointer of the PML4 table record to the next one
 	inc	r15
 	add	r11,	STATIC_QWORD_SIZE_byte
 
-	; oblicz numer rekordu w tablicy PML4 na podstawie otrzymanego adresu fizycznego/logicznego
-	mov	rax,	rdx	; przywróć resztę z dzielenia
+	; compute the record number in the PML4 table from the given physical/logical address
+	mov	rax,	rdx	; restore the remainder of the division
 	mov	rcx,	KERNEL_PAGE_PML2_SIZE_byte
-	xor	rdx,	rdx	; wyczyść starszą część
+	xor	rdx,	rdx	; clear the upper part
 	div	rcx
 
-	; zapamiętaj numer rekordu
+	; remember the record number
 	mov	r14,	rax
 
-	; przesuń wskaźnik w tablicy PML3 na rekord
-	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; zamień na Bajty
+	; move the pointer in the PML3 table to the record
+	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; convert to Bytes
 	add	r10,	rax
 
-	; rekord PML3 zawiera adres tablicy PML2?
+	; the PML3 record holds the address of the PML2 table?
 	cmp	qword [r10],	STATIC_EMPTY
 	je	.no_pml2
 
-	; pobierz adres tablicy PML2 z rekordu tablicy PML3
+	; fetch the address of the PML2 table from the PML3 table record
 	mov	rax,	qword [r10]
-	xor	al,	al	; usuń właściwości rekordu
+	xor	al,	al	; remove the properties of the record
 
-	; zapisz adres tablicy PML2
+	; store the address of the PML2 table
 	mov	r9,	rax
 
-	; kontynuuj
+	; continue
 	jmp	.pml2
 
 .no_pml2:
-	; pobierz zarezerwowaną stronę na potrzebę utworzenia nowej tablicy
+	; fetch a reserved page to create a new table
 	call	kernel_memory_alloc_page
 	jc	.error
 
-	; wyczyść
+	; clear
 	call	kernel_page_drain
 
-	; zapisz adres tablicy PML2
+	; store the address of the PML2 table
 	mov	r9,	rdi
 
-	; zapisz adres tablicy PML2 do rekordu tablicy PML3
+	; store the address of the PML2 table into the PML3 table record
 	mov	qword [r10],	rdi
-	or	word [r10],	bx	; ustaw właściwości rekordu tablicy PML3
+	or	word [r10],	bx	; set the properties of the PML3 table record
 
-	; strona wykorzystana do tablic stronicowania
+	; page used for the page tables
 	inc	qword [rel kernel_page_paged_count]
 
 .pml2:
-	; ustaw numer i wskaźnik rekordu w tablicy PML3 na następny
+	; set the number and the pointer of the PML3 table record to the next one
 	inc	r14
 	add	r10,	STATIC_QWORD_SIZE_byte
 
-	; oblicz numer rekordu w tablicy PML2 na podstawie otrzymanego adresu fizycznego/logicznego
-	mov	rax,	rdx	; przywróć resztę z dzielenia
+	; compute the record number in the PML2 table from the given physical/logical address
+	mov	rax,	rdx	; restore the remainder of the division
 	mov	rcx,	KERNEL_PAGE_PML1_SIZE_byte
-	xor	rdx,	rdx	; wyczyść starszą część
+	xor	rdx,	rdx	; clear the upper part
 	div	rcx
 
-	; zapamiętaj numer rekordu
+	; remember the record number
 	mov	r13,	rax
 
-	; przesuń wskaźnik w tablicy PML2 na rekord
-	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; zamień na Bajty
+	; move the pointer in the PML2 table to the record
+	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; convert to Bytes
 	add	r9,	rax
 
-	; rekord PML2 zawiera adres tablicy PML1?
+	; the PML2 record holds the address of the PML1 table?
 	cmp	qword [r9],	STATIC_EMPTY
 	je	.no_pml1
 
-	; pobierz adres tablicy PML1 z rekordu tablicy PML2
+	; fetch the address of the PML1 table from the PML2 table record
 	mov	rax,	qword [r9]
-	xor	al,	al	; usuń właściwości rekordu
+	xor	al,	al	; remove the properties of the record
 
-	; zapisz adres tablicy PML1
+	; store the address of the PML1 table
 	mov	r8,	rax
 
-	; kontynuuj
+	; continue
 	jmp	.pml1
 
 .no_pml1:
-	; pobierz zarezerwowaną stronę na potrzebę utworzenia nowej tablicy
+	; fetch a reserved page to create a new table
 	call	kernel_memory_alloc_page
 	jc	.error
 
-	; wyczyść
+	; clear
 	call	kernel_page_drain
 
-	; zapisz adres tablicy PML1
+	; store the address of the PML1 table
 	mov	r8,	rdi
 
-	; zapisz adres tablicy PML1 do rekordu tablicy PML2
+	; store the address of the PML1 table into the PML2 table record
 	mov	qword [r9],	rdi
-	or	word [r9],	bx	; ustaw właściwości rekordu tablicy PML2
+	or	word [r9],	bx	; set the properties of the PML2 table record
 
-	; strona wykorzystana do tablic stronicowania
+	; page used for the page tables
 	inc	qword [rel kernel_page_paged_count]
 
 .pml1:
-	; ustaw numer i wskaźnik rekordu w tablicy PML3 na następny
+	; set the number and the pointer of the PML3 table record to the next one
 	inc	r13
 	add	r9,	STATIC_QWORD_SIZE_byte
 
-	; oblicz numer rekordu w tablicy PML1 na podstawie otrzymanego adresu fizycznego/logicznego
-	mov	rax,	rdx	; przywróć resztę z dzielenia
+	; compute the record number in the PML1 table from the given physical/logical address
+	mov	rax,	rdx	; restore the remainder of the division
 	mov	rcx,	STATIC_PAGE_SIZE_byte
-	xor	rdx,	rdx	; wyczyść starszą część
+	xor	rdx,	rdx	; clear the upper part
 	div	rcx
 
-	; zapamiętaj numer rekordu
+	; remember the record number
 	mov	r12,	rax
 
-	; przesuń wskaźnik w tablicy PML2 na rekord
-	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; zamień na Bajty
+	; move the pointer in the PML2 table to the record
+	shl	rax,	STATIC_MULTIPLE_BY_8_shift	; convert to Bytes
 	add	r8,	rax
 
-	; zwróć wskaźnik do rekordu tablicy PML1
+	; return the pointer to the PML1 table record
 	mov	rdi,	r8
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.end
 
 .error:
-	; zwróć kod błędu
+	; return the error code
 	mov	qword [rsp],	rax
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 	pop	rdx
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_prepare"
 
 ;===============================================================================
-; opcjonalnie:
-;	rbp - ilość stron zarezerwowanych (jeśli procedura ma z nich korzystać)
-; wejście:
-;	r8 - wskaźnik aktualnego wiersza w tablicy PML1
-;	r9 - wskaźnik aktualnego wiersza w tablicy PML2
-;	r10 - wskaźnik aktualnego wiersza w tablicy PML3
-;	r11 - wskaźnik aktualnego wiersza w tablicy PML4
-;	r12 - numer aktualnego wiersza w tablicy PML1
-;	r13 - numer aktualnego wiersza w tablicy PML2
-;	r14 - numer aktualnego wiersza w tablicy PML3
-;	r15 - numer aktualnego wiersza w tablicy PML4
-; wyjście:
-;	Flaga CF, jeśli błąd
-;	rax - kod błędu, jeśli Flaga CF jest podniesiona
-;	rdi - wskaźnik do wiersza w tablicy PML1, początku opisywanego obszaru fizycznego
+; optionally:
+;	rbp - number of the reserved pages (if the procedure is to use them)
+; input:
+;	r8 - pointer to the current row in the PML1 table
+;	r9 - pointer to the current row in the PML2 table
+;	r10 - pointer to the current row in the PML3 table
+;	r11 - pointer to the current row in the PML4 table
+;	r12 - number of the current row in the PML1 table
+;	r13 - number of the current row in the PML2 table
+;	r14 - number of the current row in the PML3 table
+;	r15 - number of the current row in the PML4 table
+; output:
+;	CF flag, if an error
+;	rax - error code, if the CF flag is raised
+;	rdi - pointer to the row in the PML1 table, the beginning of the described physical area
 ;
-;	r8 - wskaźnik następnego wiersza w tablicy PML1
-;	r9 - wskaźnik następnego wiersza w tablicy PML2
-;	r10 - wskaźnik następnego wiersza w tablicy PML3
-;	r11 - wskaźnik następnego wiersza w tablicy PML4
-;	r12 - numer następnego wiersza w tablicy PML1
-;	r13 - numer następnego wiersza w tablicy PML2
-;	r14 - numer następnego wiersza w tablicy PML3
-;	r15 - numer następnego wiersza w tablicy PML4
-; uwagi:
-;	procedura zmniejsza licznik stron zarezerwowanych w binarnej mapie pamięci!
+;	r8 - pointer to the next row in the PML1 table
+;	r9 - pointer to the next row in the PML2 table
+;	r10 - pointer to the next row in the PML3 table
+;	r11 - pointer to the next row in the PML4 table
+;	r12 - number of the next row in the PML1 table
+;	r13 - number of the next row in the PML2 table
+;	r14 - number of the next row in the PML3 table
+;	r15 - number of the next row in the PML4 table
+; notes:
+;	the procedure decreases the number of the pages reserved in the binary memory map!
 kernel_page_pml1:
-	; sprawdź czy tablica PML2 jest pełna
+	; check whether the PML2 table is full
 	cmp	r13,	KERNEL_PAGE_RECORDS_amount
-	je	.pml3	; jeśli tak, utwórz nową tablicę PML2
+	je	.pml3	; if so, create a new PML2 table
 
-	; sprawdź czy kolejny w kolejce rekord tablicy PML2 posiada adres tablicy PML1
+	; check whether the next PML2 table record in the queue holds the address of the PML1 table
 	cmp	qword [r9],	STATIC_EMPTY
-	je	.pml2_create	; nie
+	je	.pml2_create	; no
 
-	; pobierz adres tablicy PML1 z rekordu tablicy PML2
+	; fetch the address of the PML1 table from the PML2 table record
 	mov	rdi,	qword [r9]
 
-	; koniec
+	; end
 	jmp	.pml2_continue
 
 .pml2_create:
-	; przygotuj miejsce na tablicę PML1
+	; prepare the space for the PML1 table
 	call	kernel_memory_alloc_page
 	jc	.error
 
-	; wyczyść
+	; clear
 	call	kernel_page_drain
 
-	; ustaw właściwości rekordu w tablicy PML2
+	; set the properties of the record in the PML2 table
 	or	di,	bx
 
-	; podepnij tablice PML1 pod rekord tablicy PML2[r13]
+	; attach the PML1 tables to the PML2[r13] table record
 	mov	qword [r9],	rdi
 
-	; strona wykorzystana do tablic stronicowania
+	; page used for the page tables
 	inc	qword [rel kernel_page_paged_count]
 
 .pml2_continue:
-	; usuń właściwości rekordu tablicy PML2
+	; remove the properties of the PML2 table record
 	and	di,	STATIC_PAGE_mask
 
-	; zwróć adres pierwszego rekordu w tablicy PML1
+	; return the address of the first record in the PML1 table
 	mov	r8,	rdi
 
-	; zresetuj numer przetwarzanego rekordu w tablicy PML1
+	; reset the number of the record being processed in the PML1 table
 	xor	r12,	r12
 
-	; ustaw adres następnego rekordu w tablicy PML2
+	; set the address of the next record in the PML2 table
 	add	r9,	STATIC_QWORD_SIZE_byte
-	inc	r13	; ustaw numer następnego rekordu w tablicy PML2
+	inc	r13	; set the number of the next record in the PML2 table
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 .pml3:
-	; sprawdź czy tablica PML3 jest pełna
+	; check whether the PML3 table is full
 	cmp	r14,	KERNEL_PAGE_RECORDS_amount
-	je	.pml4	; jeśli tak, utwórz nową tablicę PML3
+	je	.pml4	; if so, create a new PML3 table
 
-	; sprawdź czy kolejny w kolejce rekord tablicy PML3 posiada adres tablicy PML2
+	; check whether the next PML3 table record in the queue holds the address of the PML2 table
 	cmp	qword [r10],	STATIC_EMPTY
-	je	.pml3_create	; nie
+	je	.pml3_create	; no
 
-	; pobierz adres tablicy PML2 z rekordu tablicy PML3
+	; fetch the address of the PML2 table from the PML3 table record
 	mov	rdi,	qword [r10]
 
-	; koniec
+	; end
 	jmp	.pml3_continue
 
 .pml3_create:
-	; przygotuj miejsce na tablicę PML2
+	; prepare the space for the PML2 table
 	call	kernel_memory_alloc_page
 	jc	.error
 
-	; wyczyść
+	; clear
 	call	kernel_page_drain
 
-	; ustaw właściwości rekordu w tablicy PML3
+	; set the properties of the record in the PML3 table
 	or	di,	bx
 
-	; podepnij tablice PML2 pod rekord tablicy PML3[r14]
+	; attach the PML2 tables to the PML3[r14] table record
 	mov	qword [r10],	rdi
 
-	; strona wykorzystana do tablic stronicowania
+	; page used for the page tables
 	inc	qword [rel kernel_page_paged_count]
 
 .pml3_continue:
-	; usuń właściwości rekordu tablicy PML3
+	; remove the properties of the PML3 table record
 	and	di,	STATIC_PAGE_mask
 
-	; zwróć adres pierwszego rekordu w tablicy PML2
+	; return the address of the first record in the PML2 table
 	mov	r9,	rdi
 
-	; zresetuj numer przetwarzanego rekordu w tablicy PML2
+	; reset the number of the record being processed in the PML2 table
 	xor	r13,	r13
 
-	; ustaw adres następnego rekordu w tablicy PML3
+	; set the address of the next record in the PML3 table
 	add	r10,	STATIC_QWORD_SIZE_byte
-	inc	r14	; ustaw numer następnego rekordu w tablicy PML3
+	inc	r14	; set the number of the next record in the PML3 table
 
-	; powrót do procedury głównej
+	; return to the main procedure
 	jmp	kernel_page_pml1
 
 .pml4:
-	; sprawdź czy tablica PML4 jest pełna
+	; check whether the PML4 table is full
 	cmp	r15,	KERNEL_PAGE_RECORDS_amount
-	je	.error	; jeśli tak, utwórz nową tablicę PML5..., że jak?!
+	je	.error	; if so, create a new PML5 table... and how?!
 
-	; sprawdź czy kolejny w kolejce rekord tablicy PML4 posiada adres tablicy PML3
+	; check whether the next PML4 table record in the queue holds the address of the PML3 table
 	cmp	qword [r11],	STATIC_EMPTY
-	je	.pml4_create	; nie
+	je	.pml4_create	; no
 
-	; pobierz adres tablicy PML3 z rekordu tablicy PML4
+	; fetch the address of the PML3 table from the PML4 table record
 	mov	rdi,	qword [r11]
 
-	; koniec
+	; end
 	jmp	.pml4_continue
 
 .pml4_create:
-	; przygotuj miejsce na tablicę PML3
+	; prepare the space for the PML3 table
 	call	kernel_memory_alloc_page
 	jc	.error
 
-	; wyczyść
+	; clear
 	call	kernel_page_drain
 
-	; ustaw właściwości rekordu w tablicy PML4
+	; set the properties of the record in the PML4 table
 	or	di,	bx
 
-	; podepnij tablice PML3 pod rekord tablicy PML4[r15]
+	; attach the PML3 tables to the PML4[r15] table record
 	mov	qword [r11],	rdi
 
-	; strona wykorzystana do tablic stronicowania
+	; page used for the page tables
 	inc	qword [rel kernel_page_paged_count]
 
 .pml4_continue:
-	; usuń właściwości rekordu tablicy PML4
+	; remove the properties of the PML4 table record
 	and	di,	STATIC_PAGE_mask
 
-	; zwróć adres pierwszego rekordu w tablicy PML3
+	; return the address of the first record in the PML3 table
 	mov	r10,	rdi
 
-	; zresetuj numer przetwarzanego rekordu w tablicy PML3
+	; reset the number of the record being processed in the PML3 table
 	xor	r14,	r14
 
-	; ustaw adres następnego rekordu w tablicy PML4
+	; set the address of the next record in the PML4 table
 	add	r11,	STATIC_QWORD_SIZE_byte
-	inc	r15	; ustaw numer następnego rekordu w tablicy PML4
+	inc	r15	; set the number of the next record in the PML4 table
 
-	; powrót do podprocedury
+	; return to the subprocedure
 	jmp	.pml3
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_pml1"
 
 ;===============================================================================
-; wejście:
-;	rsi - adres źródłowy tablicy PML4
-;	rdi - adres docelowy tablicy PML4
-; uwagi:
-;	procedura łączy dwie tablice PML4 (z uwzględenieniem "podtablic")
-;	zachowując oryginalne rekordy tablicy docelowej!
+; input:
+;	rsi - source address of the PML4 table
+;	rdi - destination address of the PML4 table
+; notes:
+;	the procedure merges two PML4 tables (taking the "subtables" into account)
+;	preserving the original records of the destination table!
 kernel_page_merge:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 
-	; aktualny poziom tablicy PML
+	; current level of the PML table
 	mov	rbx,	4
 
 .inner:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; czy tablica jest kopią oryginału?
+	; is the table a copy of the original?
 	cmp	rdi,	rsi
-	je	.copy	; tak, nie wykonuj syzyfowej pracy
+	je	.copy	; yes, do not do the hard labour
 
-	; zmniejsz poziom przetwarzanej tablicy
+	; decrease the level of the processed table
 	dec	rbx
 
-	; ilość rekordów na jedną tablicę
+	; number of the records per table
 	mov	rcx,	KERNEL_PAGE_RECORDS_amount
 
 .loop:
-	; sprawdź czy rekord źródłowy istnieje
+	; check whether the source record exists
 	cmp	qword [rsi],	STATIC_EMPTY
-	je	.next	; brak
+	je	.next	; none
 
-	; sprawdź czy rekord docelowy zajęty
+	; check whether the destination record is occupied
 	cmp	qword [rdi],	STATIC_EMPTY
-	jne	.level	; zajęty
+	jne	.level	; occupied
 
-	; pobierz wpis z tablicy źródłowej
+	; fetch the entry from the source table
 	mov	rax,	qword [rsi]
 
-	; załaduj wpis do tablicy docelowej
+	; load the entry into the destination table
 	mov	qword [rdi],	rax
 
 .level:
-	; brak tablic innego poziomu
+	; no tables of another level
 	test	bl,	bl
-	jz	.next	; tak
+	jz	.next	; yes
 
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rsi
 	push	rdi
 
-	; załaduj adres tablicy źródłowej i docelowej
+	; load the address of the source and the destination table
 	mov	rsi,	qword [rsi]
 	mov	rdi,	qword [rdi]
 
-	; tablica jest kopią oryginału?
+	; is the table a copy of the original?
 	test	rsi,	rdi
-	jz	.the_same	; tak
+	jz	.the_same	; yes
 
-	; usuń właściwości rekordów
+	; remove the properties of the records
 	and	si,	STATIC_PAGE_mask
 	and	di,	STATIC_PAGE_mask
 
-	; połącz zawartość tablic
+	; merge the content of the tables
 	call	.inner
 
 .the_same:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 
 .next:
-	; następny rekord tablicy
+	; next record of the table
 	add	rsi,	STATIC_QWORD_SIZE_byte
 	add	rdi,	STATIC_QWORD_SIZE_byte
 
-	; kontynuuj
+	; continue
 	dec	rcx
 	jnz	.loop
 
 .copy:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; przetworzyliśmy poziom 4?
+	; have we processed level 4?
 	cmp	rbx,	4
-	jne	.return	; nie
+	jne	.return	; no
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rbx
 
 .return:
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_merge"
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość stron do zarezerwowania
-; wyjście:
-;	Flaga CF - jeśli brak wystarczającej ilości
-;	rax - kod błędu, jeśli Flaga CF jest podniesiona
+; input:
+;	rcx - number of pages to reserve
+; output:
+;	CF flag - if there are not enough
+;	rax - error code, if the CF flag is raised
 kernel_page_secure:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 
-	; zablokuj modyfikacje zmiennych przez inne procesy
+	; block the modifications of the variables by other processes
 	call	kernel_memory_lock
 
-	; istnieją dostępne strony?
+	; are there any available pages?
 	mov	rax,	qword [rel kernel_page_free_count]
 	sub	rax,	qword [rel kernel_page_reserved_count]
-	jz	.error	; nie
+	jz	.error	; no
 
-	; pozostało wystarczająco?
+	; is there enough left?
 	cmp	rax,	rcx
-	jb	.error	; nie
+	jb	.error	; no
 
-	; zarezerwuj
+	; reserve
 	sub	qword [rel kernel_page_free_count],	rcx
 	add	qword [rel kernel_page_reserved_count],	rcx
 
-	; flaga, sukces
+	; flag, success
 	clc
 
-	; koniec
+	; end
 	jmp	.end
 
 .error:
-	; zwróć kod błędu
+	; return the error code
 	mov	qword [rsp],	KERNEL_ERROR_memory_low
 
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; odblokuj
+	; unblock
 	mov	byte [rel kernel_memory_lock_semaphore],	STATIC_FALSE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_page_secure"

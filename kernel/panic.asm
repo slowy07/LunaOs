@@ -2,17 +2,17 @@
 
 ;===============================================================================
 kernel_panic_memory:
-	; komunikat błędu
+	; error message
 	mov	rsi,	kernel_init_string_error_memory_low
 
 ;===============================================================================
-; wejście:
-;	rbp - wskaźnik do ciągu znaków, zakończony terminatorem
+; input:
+;	rbp - pointer to the null-terminated string
 kernel_panic:
-	; wypisz komunikat na porcie COM1
+	; output the message on the COM1 port
 	call	driver_serial_send
 
-	; zatrzymaj dalsze wykonywanie kodu
+	; stop any further code execution
 	jmp	$
 
 	macro_debug	"kernel_panic"

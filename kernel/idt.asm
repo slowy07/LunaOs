@@ -7,173 +7,173 @@ KERNEL_IDT_TYPE_irq			equ	0x8F00
 KERNEL_IDT_TYPE_isr			equ	0xEF00
 
 ;===============================================================================
-; wejście:
-;	rax - numer przerwania
-;	rbx - identyfikator przerwania (wyjątek, sprzęt lub proces)
-;	rdi - adres procedury obsługi przerwania
+; input:
+;	rax - interrupt number
+;	rbx - interrupt identifier (exception, hardware or process)
+;	rdi - address of the interrupt handler
 kernel_idt_mount:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rdi
 
-	; ustaw rejestry na swoje miejsca
+	; put the registers in their places
 	xchg	rax,	rdi
 
-	; oblicz prdesunięcie do rekordu numeru przerwania
+	; compute the offset to the record of the interrupt number
 	shl	rdi,	STATIC_MULTIPLE_BY_16_shift
 	add	rdi,	qword [rel kernel_idt_header + KERNEL_STRUCTURE_IDT_HEADER.address]
 
-	; procedura obsługi przerwania
-	mov	rcx,	1	; podłącz procedurę obsługi pod jeden rekord
+	; interrupt handler
+	mov	rcx,	1	; attach the handler to a single record
 	call	kernel_idt_update
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_idt_mount"
 
 ;===============================================================================
-; wejście:
-;	rax - adres logiczny procedury obsługi
-;	bx - typ: wyjątek, przerwanie(sprzętowe, programowe)
-;	rcx - ilość kolejnych rekordów o tej samej procedurze obsługi
-;	rdi - adres rekordu do modyfikacji w Tablicy Deskryptorów Przerwań
-; wyjście:
-;	rdi - adres kolejnego rekordu w Tablicy Deskryptorów Przerwań
+; input:
+;	rax - logical address of the handler
+;	bx - type: exception, interrupt (hardware, software)
+;	rcx - number of consecutive records with the same handler
+;	rdi - address of the record to modify in the Interrupt Descriptor Table
+; output:
+;	rdi - address of the next record in the Interrupt Descriptor Table
 kernel_idt_update:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 
 .next:
-	; zachowaj adres procedury obsługi
+	; save the address of the handler
 	push	rax
 
-	; załaduj do tablicy adres obsługi wyjątku (bity 15...0)
+	; load the handler address into the table (bits 15...0)
 	stosw
 
-	; selektor deskryptora kodu (GDT), wszystkie procedury wywoływane są z uprawnieniami ring0
+	; code descriptor selector (GDT), all procedures are called with ring0 privileges
 	mov	ax,	KERNEL_STRUCTURE_GDT.cs_ring0
 	stosw
 
-	; typ: wyjątek, przerwanie(sprzętowe, programowe)
+	; type: exception, interrupt (hardware, software)
 	mov	ax,	bx
 	stosw
 
-	; przywróć adres procedury obsługi
+	; restore the address of the handler
 	mov	rax,	qword [rsp]
 
-	; przemieszczamy do ax bity 31...16
+	; move bits 31...16 into ax
 	shr	rax,	STATIC_MOVE_HIGH_TO_AX_shift
 	stosw
 
-	; przemieszczamy do eax bity 63...32
+	; move bits 63...32 into eax
 	shr	rax,	STATIC_MOVE_HIGH_TO_EAX_shift
 	stosd
 
-	; pola zastrzeżone, zostawiamy puste
+	; reserved fields, left empty
 	xor	eax,	eax
 	stosd
 
-	; przywróć adres procedury obsługi
+	; restore the address of the handler
 	pop	rax
 
-	; przetwórz pozostałe rekordy
+	; process the remaining records
 	dec	rcx
 	jnz	.next
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_idt_update"
 
 ;===============================================================================
-; domyślna obsługa wyjątku procesora
+; default handler of a processor exception
 kernel_idt_exception_default:
-	; przerwij pracę debugera Bochs
+	; break into the Bochs debugger
 	xchg	bx,bx
 
 	nop
 
-	; zatrzymaj dalsze wykonywanie kodu dla aktualnego procesu
+	; stop any further code execution for the current process
 	jmp	$
 
 	macro_debug	"kernel_idt_exception_default"
 
 ;===============================================================================
 kernel_idt_exception_general_protection_fault:
-	; przerwij pracę debugera Bochs
+	; break into the Bochs debugger
 	xchg	bx,bx
 
 	nop
 	nop
 
-	; zatrzymaj dalsze wykonywanie kodu dla aktualnego procesu
+	; stop any further code execution for the current process
 	jmp	$
 
 	macro_debug	"kernel_idt_exception_general_protection_fault"
 
 ;===============================================================================
 kernel_idt_exception_page_fault:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rsi
 
-	; przerwij pracę debugera Bochs
+	; break into the Bochs debugger
 	xchg	bx,bx
 
 	nop
 	nop
 	nop
 
-	; zatrzymaj dalsze wykonywanie kodu dla aktualnego procesu
+	; stop any further code execution for the current process
 	jmp	$
 
 	macro_debug	"kernel_idt_exception_page_fault"
 
 ;===============================================================================
-; domyślna obsługa przerwania sprzętowego
+; default handler of a hardware interrupt
 kernel_idt_interrupt_hardware:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rdi
 
-	; poinformuj APIC o obsłużeniu aktualnego przerwania sprzętowego
+	; inform the APIC that the current hardware interrupt has been handled
 	mov	rdi,	qword [rel kernel_apic_base_address]
 	mov	dword [rdi + KERNEL_APIC_EOI_register],	STATIC_EMPTY
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 
-	; wróć do zadania
+	; return to the task
 	iretq
 
 	macro_debug	"kernel_idt_interrupt_hardware"
 
 ;===============================================================================
-; obsługa nieprawidłowego przerwania programowego
+; handler of an invalid software interrupt
 kernel_idt_interrupt_software:
-	; zwróć informację o błędzie
+	; return the error information
 	or	word [rsp + KERNEL_TASK_STRUCTURE_IRETQ.eflags],	KERNEL_TASK_EFLAGS_cf
 
-	; wróć do zadania
+	; return to the task
 	iretq
 
 	macro_debug	"kernel_idt_interrupt_software"
 
 ;===============================================================================
-; obsługa przerwania "nieobsłużonego"
+; handler of the "unhandled" interrupt
 kernel_idt_spurious_interrupt:
-	; wróć do zadania
+	; return to the task
 	iretq
 
 	macro_debug	"kernel_idt_spurious_interrupt"

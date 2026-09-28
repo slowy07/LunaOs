@@ -1,11 +1,11 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do danych dla wątku
-;	rdi - wskaźnik początku kodu wątku
+; input:
+;	rsi - pointer to the data for the thread
+;	rdi - pointer to the start of the thread code
 kernel_thread:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
@@ -14,24 +14,24 @@ kernel_thread:
 	push	r8
 	push	r11
 
-	; przygotuj miejsce na nową tablicę stronicowania dla wątku
+	; prepare space for a new page table for the thread
 	call	kernel_memory_alloc_page
-	jc	.end	; brak miejsca
+	jc	.end	; no space
 
-	; wyczyść tablicę PML4
+	; clear the PML4 table
 	call	kernel_page_drain
 
-	; utwórz nowy stos kontekstu dla wątku
+	; create a new context stack for the thread
 	mov	rax,	KERNEL_STACK_address
 	mov	ebx,	KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
 	mov	ecx,	KERNEL_STACK_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
 	mov	r11,	rdi
 	call	kernel_page_map_logical
 
-	; odstaw na początek stosu kontekstu zadania, spreparowane dane powrotu z przerwania sprzętowego "kernel_task"
+	; back up to the start of the task context stack, the prepared return data from the "kernel_task" hardware interrupt
 	mov	rdi,	qword [r8]
-	and	di,	STATIC_PAGE_mask	; usuń flagi rekordu tablicy PML1
-	add	rdi,	STATIC_PAGE_SIZE_byte - ( STATIC_QWORD_SIZE_byte * 0x05 )	; odłóż 5 rejestrów
+	and	di,	STATIC_PAGE_mask	; remove the flags of the PML1 table record
+	add	rdi,	STATIC_PAGE_SIZE_byte - ( STATIC_QWORD_SIZE_byte * 0x05 )	; put back 5 registers
 
 	; RIP
 	mov	rax,	qword [rsp + STATIC_QWORD_SIZE_byte * 0x02]
@@ -39,34 +39,34 @@ kernel_thread:
 
 	; CS
 	mov	rax,	KERNEL_STRUCTURE_GDT.cs_ring0
-	stosq	; zapisz
+	stosq	; store
 
 	; EFLAGS
 	mov	rax,	KERNEL_TASK_EFLAGS_default
-	stosq	; zapisz
+	stosq	; store
 
 	; RSP
 	mov	rax,	KERNEL_STACK_pointer
-	stosq	; zapisz
+	stosq	; store
 
 	; DS
 	mov	rax,	KERNEL_STRUCTURE_GDT.ds_ring0
-	stosq	; zapisz
+	stosq	; store
 
-	; ostaw wskaźnik do danych dla wątku
+	; set the pointer to the data for the thread
 	mov	qword [rdi - STATIC_QWORD_SIZE_byte * 0x0B],	rsi
 
-	; mapuj przestrzeń procesu rodzica
+	; map the address space of the parent process
 	mov	rsi,	cr3
 	mov	rdi,	r11
 	call	kernel_page_merge
 
-	; wstaw zadanie jako wstrzymane do kolejki procesora logicznego, który jest najmniej obciążony
+	; insert the task as suspended into the queue of the least loaded logical processor
 	mov	bx,	KERNEL_TASK_FLAG_active | KERNEL_TASK_FLAG_thread | KERNEL_TASK_FLAG_secured
 	call	kernel_task_add
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	r8
 	pop	rdi
@@ -75,7 +75,7 @@ kernel_thread:
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_thread"

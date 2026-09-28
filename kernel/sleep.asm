@@ -2,10 +2,10 @@
 
 ;===============================================================================
 kernel_sleep:
-	; wywłaszcz process, przekazująć pozosały czas
+	; yield the processor, passing on the remaining time
 	int	KERNEL_APIC_IRQ_number
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_sleep"

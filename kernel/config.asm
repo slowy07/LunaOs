@@ -9,7 +9,7 @@ KERNEL_BASE_address					equ	0x0000000000100000
 
 KERNEL_STACK_address					equ	KERNEL_BASE_address - KERNEL_STACK_SIZE_byte
 KERNEL_STACK_pointer					equ	KERNEL_STACK_address + STATIC_PAGE_SIZE_byte
-KERNEL_STACK_SIZE_byte					equ	STATIC_PAGE_SIZE_byte * 0x02	; 4 KiB dla stosu/kontekstu, 4 KiB dla SSE,MMX,AVX
+KERNEL_STACK_SIZE_byte					equ	STATIC_PAGE_SIZE_byte * 0x02	; 4 KiB for the stack/context, 4 KiB for SSE,MMX,AVX
 KERNEL_STACK_TEMPORARY_pointer				equ	0x7000 + STATIC_PAGE_SIZE_byte
 
 ;===============================================================================

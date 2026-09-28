@@ -1,6 +1,6 @@
 ;===============================================================================
 
-KERNEL_MEMORY_MAP_SIZE_page		equ	0x01	; domyślny rozmiar 4088 Bajtów (~128 MiB możliwej przestrzeni do opisania)
+KERNEL_MEMORY_MAP_SIZE_page		equ	0x01	; default size 4088 Bytes (~128 MiB of the describable address space)
 
 kernel_memory_map_address		dq	STATIC_EMPTY
 kernel_memory_map_address_end		dq	STATIC_EMPTY
@@ -11,295 +11,295 @@ kernel_memory_real_address		dq	STATIC_EMPTY	; KERNEL_MEMORY_HIGH_REAL_address
 kernel_memory_lock_semaphore		db	STATIC_FALSE
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość stron do oznaczenia jako zajęte
-;	rsi - wskaźnik do binarnej mapy pamięci
+; input:
+;	rcx - number of pages to mark as allocated
+;	rsi - pointer to the binary memory map
 kernel_memory_secure:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
 
-	; rozpocznij blokowanie stron od początku binarnej mapy pamięci
+	; start blocking the pages from the beginning of the binary memory map
 	mov	rax,	STATIC_MAX_unsigned
 
 .loop:
-	; zablokuj dostęp do pierwszej strony "zestawu"
+	; block access to the first page of the "set"
 	inc	rax
 	btr	qword [rsi],	rax
 
-	; zablokować pozostałe strony?
+	; block the remaining pages?
 	dec	rcx
-	jnz	.loop	; tak
+	jnz	.loop	; yes
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_memory_secure"
 
 ;===============================================================================
-; wejście:
-;	rbp - ilość stron zarezerowanych do wykorzystania
-; wyjście:
-;	Flaga CF, jeśli brak dostępnej
-;	rax - kod błędu, jeśli Flaga CF jest podniesiona
-;	rdi - wskaźnik do przydzielonej przestrzeni
-;	rbp - ilość pozostałych stron zarezerwowanych
+; input:
+;	rbp - number of pages reserved for use
+; output:
+;	CF flag, if none is available
+;	rax - error code, if the CF flag is raised
+;	rdi - pointer to the allocated area
+;	rbp - number of the remaining reserved pages
 kernel_memory_alloc_page:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 
-	; przydziel przestrzeń o rozmiarze jednej strony
+	; allocate an area of one page in size
 	mov	ecx,	0x01
 	call	kernel_memory_alloc
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_memory_alloc_page"
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar przestrzeni w stronach
-;	rbp - ilość stron zarezerowanych do wykorzystania
-; wyjście:
-;	Flaga CF, jeśli brak dostępnej
-;	rax - kod błędu, jeśli Flaga CF jest podniesiona
-;	rdi - wskaźnik do przydzielonej przestrzeni
-;	rbp - ilość pozostałych stron zarezerwowanych
+; input:
+;	rcx - size of the area in pages
+;	rbp - number of pages reserved for use
+; output:
+;	CF flag, if none is available
+;	rax - error code, if the CF flag is raised
+;	rdi - pointer to the allocated area
+;	rbp - number of the remaining reserved pages
 kernel_memory_alloc:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rdx
 	push	rsi
 	push	rax
 	push	rcx
 
-	; zresetuj numer pierwszego bitu poszukiwanej przestrzeni
+	; reset the bit number of the first page of the searched area
 	mov	rax,	STATIC_MAX_unsigned
 
-	; pobierz ilość opisanych stron w binarnej mapie pamięci
+	; fetch the number of the pages described in the binary memory map
 	mov	rcx,	qword [rel kernel_page_total_count]
 
-	; przeszukaj binarną mapę pamięci od początku
+	; search the binary memory map from the beginning
 	mov	rsi,	qword [rel kernel_memory_map_address]
 
 .reload:
-	; ilość stron wchodzących w skład rozpatrywanej przestrzeni
+	;	number of the pages belonging to the considered area
 	xor	edx,	edx
 
 .search:
-	; sprawdź następną stronę
+	; check the next page
 	inc	rax
 
-	; koniec binarnej mapy pamięci?
+	;	end of the binary memory map?
 	cmp	rax,	rcx
-	je	.error	; tak
+	je	.error	;	yes
 
-	; znaleziono wolną stronę?
+	;	a free page found?
 	bt	qword [rsi],	rax
-	jnc	.search	; nie
+	jnc	.search	;	no
 
-	; zachowaj numer pierwszego bitu wchodzącego w skład poszukiwanej przestrzeni
+	;	save the bit number of the first page belonging to the searched area
 	mov	rbx,	rax
 
 .check:
-	; sprawdź następną stronę
+	; check the next page
 	inc	rax
 
-	; zalicz aktualną stronę do poszukiwanej przestrzeni
+	; count the current page into the searched area
 	inc	rdx
 
-	; znaleziono całkowity rozmiar przestrzeni
+	;	the full size of the area has been found
 	cmp	rdx,	qword [rsp]
-	je	.found	; tak
+	je	.found	;	yes
 
-	; koniec binarnej mapy pamięci?
+	;	end of the binary memory map?
 	cmp	rax,	rcx
-	je	.error	; tak
+	je	.error	;	yes
 
-	; następna strona wchodząca w skład poszukiwanej przestrzeni?
+	;	next page belonging to the searched area?
 	bt	qword [rsi],	rax
-	jc	.check	; tak
+	jc	.check	;	yes
 
-	; rozpatrywana przestrzeń jest niepełna, znajdź następną
+	;	the considered area is incomplete, find the next one
 	jmp	.reload
 
 .error:
-	; zwróć kod błędu
+	;	return the error code
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	KERNEL_ERROR_memory_low
 
-	; flaga, błąd
+	;	flag, error
 	stc
 
-	; koniec procedury
+	;	end of the procedure
 	jmp	.end
 
 .found:
-	; ustaw numer pierwszej strony przestrzeni do zablokowania
+	;	set the page number of the first page of the area to block
 	mov	rax,	rbx
 
 .lock:
-	; zwolnij kolejne strony wchodzące w skład znalezionej przestrzeni
+	;	release the following pages belonging to the found area
 	btr	qword [rsi],	rax
 
-	; wykorzystaj zarezerwowaną stronę?
+	;	use a reserved page?
 	test	rbp,	rbp
-	jz	.next	; nie
+	jz	.next	;	no
 
-	; ilość zarezerwowanych stron mniejszyła się
+	;	the number of the reserved pages decreased
 	dec	rbp
 	dec	dword [rel kernel_page_reserved_count]
 
-	; wykorzystano zarezerwowaną stronę
+	; a reserved page was used
 	jmp	.reserved
 
 .next:
-	; ilość dostępnych stron zmiejszyła się
+	; the number of the available pages decreased
 	dec	qword [rel kernel_page_free_count]
 
 .reserved:
-	; następna strona
+	;	next page
 	inc	rax
 
-	; koniec przetwarzania przestrzeni?
+	;	end of the area processing?
 	dec	rdx
-	jnz	.lock	; nie, kontynuuj
+	jnz	.lock	;	no, continue
 
-	; przelicz numer pierwszej strony przestrzeni na adres WZGLĘDNY
+	;	convert the page number of the first page of the area into a RELATIVE address
 	mov	rdi,	rbx
 	shl	rdi,	STATIC_MULTIPLE_BY_PAGE_shift
 
-	; koryguj o adres początku opisanej przestrzeni przez binarną mapę pamięci
+	;	correct it by the start address of the area described by the binary memory map
 	add	rdi,	KERNEL_BASE_address
 
 .end:
-	; zwolnij dostęp do binarnej mapy pamięci
+	;	release the access to the binary memory map
 	mov	byte [rel kernel_memory_lock_semaphore],	STATIC_FALSE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rax
 	pop	rsi
 	pop	rdx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_memory_alloc"
 
 ;===============================================================================
 kernel_memory_lock:
-	; zablokuj dostęp do binarnej mapy pamięci
+	;	block the access to the binary memory map
 	macro_lock	kernel_memory_lock_semaphore, 0
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_memory_lock"
 
 ;===============================================================================
-; wejście:
-;	rdi - adres strony do zwolnienia
+; input:
+;	rdi - address of the page to release
 kernel_memory_release_page:
-	; zachowaj oryginalne rejestry i flagi
+	; preserve the original registers and flags
 	push	rax
 	push	rcx
 	push	rdx
 	push	rsi
 	push	rdi
 
-	; pobierz adres początku binarnej mapy pamięci
+	;	fetch the address of the beginning of the binary memory map
 	mov	rsi,	qword [rel kernel_memory_map_address]
 
-	; przelicz adres strony na numer bitu
+	;	convert the page address into a bit number
 	mov	rax,	rdi
 	sub	rax,	KERNEL_BASE_address
 	shr	rax,	STATIC_PAGE_SIZE_shift
 
-	; oblicz prdesunięcie względem początku binarnej mapy pamięci
+	;	compute the offset relative to the beginning of the binary memory map
 	mov	rcx,	64
-	xor	rdx,	rdx	; wyczyść starszą część
+	xor	rdx,	rdx	;	clear the upper part
 	div	rcx
 
-	; prdesuń wskaźnik na "pakiet"
+	; shift the pointer to the "packet"
 	shl	rax,	STATIC_MULTIPLE_BY_8_shift
 	add	rsi,	rax
 
-	; włącz bit odpowiadający za zwalnianą stronę
+	; set the bit of the page being released
 	bts	qword [rsi],	rdx
 
-	; zwiększamy ilość dostępnych stron o jedną
+	;	we increase the number of the available pages by one
 	inc	qword [rel kernel_page_free_count]
 
-	; lista zadań aktywna?
+	;	task queue active?
 	cmp	qword [rel kernel_task_active_list],	STATIC_EMPTY
-	je	.end	; nie
+	je	.end	;	no
 
-	; lista zadań procesorów logicznych uzupełniona?
+	;	task queues of the logical processors filled up?
 	call	kernel_task_active
-	jz	.end	; nie, trwa dalsza inicjalizacja jądra systemu
+	jz	.end	;	no, the kernel initialisation is still running
 
 .end:
-	; przywróć oryginalne rejestry i flagi
+	; restore the original registers and flags
 	pop	rdi
 	pop	rsi
 	pop	rdx
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_memory_release_page"
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość kolejnych stron do zwolnienia
-;	rdi - wskaźnik do pierwszej strony
+; input:
+;	rcx - number of consecutive pages to release
+;	rdi - pointer to the first page
 kernel_memory_release:
-	; zachowaj oryginalne rejestry i flagi
+	; preserve the original registers and flags
 	push	rcx
 	push	rdi
 
 .loop:
-	; zwolnij pierwszą stronę
+	; release the first page
 	call	kernel_memory_release_page
 
-	; przesuń wskaźnik na następną stronę
+	; move the pointer to the next page
 	add	rdi,	STATIC_PAGE_SIZE_byte
 
-	; pozostały strony do zwolnienia?
+	;	any pages left to release?
 	dec	rcx
-	jnz	.loop	; tak
+	jnz	.loop	;	yes
 
-	; przywróć oryginalne rejestry i flagi
+	; restore the original registers and flags
 	pop	rdi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_memory_release"
 
 ;===============================================================================
-; wejście:
-;	rax - wskaźnik do początku przestrzeni
-;	rcx - rozmiar przestrzeni w stronach
-;	r11 - wskaźnik do tablicy PML4 przestrzeni
-; wyjście:
-;	Flaga CF, jeśli nieoczekiwany koniec tablic stronicowania
+; input:
+;	rax - pointer to the beginning of the area
+;	rcx - size of the area in pages
+;	r11 - pointer to the PML4 table of the area
+; output:
+;	CF flag, if the page tables end unexpectedly
 kernel_memory_release_task:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdi
 	push	r8
@@ -311,177 +311,177 @@ kernel_memory_release_task:
 	push	r14
 	push	r15
 
-	; przygotuj środowisko pracy
+	;	prepare the working environment
 	call	kernel_page_convert
 
 .pml1:
-	; koniec przetwarzania?
+	;	end of the processing?
 	test	rcx,	rcx
-	jz	.end	; tak
+	jz	.end	;	yes
 
-	; brak zarejestrowanej strony?
+	;	no page registered?
 	cmp	qword [r8],	STATIC_EMPTY
-	je	.pml1_omit	; tak, pomiń
+	je	.pml1_omit	;	yes, skip
 
-	; pobierz adres fizyczny strony
+	;	fetch the physical address of the page
 	mov	rdi,	qword [r8]
 
-	; strona oznaczona jako wirtualna?
+	;	the page marked as virtual?
 	test	di,	KERNEL_PAGE_FLAG_virtual
-	jnz	.virtual	; tak, zignoruj
+	jnz	.virtual	;	yes, ignore
 
-	; zwolnij stronę
+	; release the page
 	and	di,	STATIC_PAGE_mask
 	call	kernel_memory_release_page
 
 .virtual:
-	; zwolnij wpis w tablicy PML1
+	; release the entry in the PML1 table
 	mov	qword [r8],	STATIC_EMPTY
 
-	; jeśli zakończono opróżnianie przestrzeni
+	;	if the draining of the area has finished
 	dec	rcx
-	jz	.pml2_entry	; zwolnij puste tablice stronicowania
+	jz	.pml2_entry	; release the empty page tables
 
 .pml1_omit:
-	; następny wpis tablicy tablicy PML1
+	;	next entry of the PML1 table of tables
 	add	r8,	STATIC_QWORD_SIZE_byte
 	inc	r12
 
-	; koniec tablicy PML1
+	;	end of the PML1 table
 	cmp	r12,	KERNEL_PAGE_RECORDS_amount
-	jne	.pml1	; nie
+	jne	.pml1	;	no
 
 .pml2_entry:
-	; aktualna tablica PML1 jest pusta?
+	;	is the current PML1 table empty?
 	mov	rdi,	qword [r9]
 	and	di,	STATIC_PAGE_mask
 	call	kernel_page_empty
-	jnz	.pml2	; nie
+	jnz	.pml2	;	no
 
-	; zwolnij przestrzeń tablicy
+	; release the area of the table
 	call	kernel_memory_release_page
 
-	; zwolniono tablicę stronicowania
+	; the page table was released
 	dec	qword [rel kernel_page_paged_count]
 
-	; usuń rekord z tablicy PML2
+	;	remove the record from the PML2 table
 	mov	qword [r9],	STATIC_EMPTY
 
 .pml2:
-	; następny wpis w tablicy PML2
+	;	next entry in the PML2 table
 	add	r9,	STATIC_QWORD_SIZE_byte
 	inc	r13
 
-	; koniec tablicy PML2?
+	;	end of the PML2 table?
 	cmp	r13,	KERNEL_PAGE_RECORDS_amount
-	je	.pml3_entry	; tak
+	je	.pml3_entry	;	yes
 
 .pml2_record:
-	; pobierz adres tablicy PML1
+	;	fetch the address of the PML1 table
 	mov	r8,	qword [r9]
 
-	; brak tablicy PML1
+	;	no PML1 table
 	test	r8,	r8
-	jz	.pml2	; tak, następny rekord
+	jz	.pml2	;	yes, next record
 
-	; usuń flagi
+	;	remove the flags
 	xor	r8b,	r8b
 
-	; wyczyść ilość przetworzonych wpisów
+	;	clear the number of the processed entries
 	xor	r12,	r12
 
-	; kontynuuj
+	;	continue
 	jmp	.pml1
 
 .pml3_entry:
-	; aktualna tablica PML2 jest pusta?
+	;	is the current PML2 table empty?
 	mov	rdi,	qword [r10]
 	and	di,	STATIC_PAGE_mask
 	call	kernel_page_empty
-	jnz	.pml3	; nie
+	jnz	.pml3	;	no
 
-	; zwolnij przestrzeń tablicy
+	; release the area of the table
 	call	kernel_memory_release_page
 
-	; zwolniono tablicę stronicowania
+	; the page table was released
 	dec	qword [rel kernel_page_paged_count]
 
-	; usuń rekord z tablicy PML3
+	;	remove the record from the PML3 table
 	mov	qword [r10],	STATIC_EMPTY
 
 .pml3:
-	; następny wpis w tablicy PML3
+	;	next entry in the PML3 table
 	add	r10,	STATIC_QWORD_SIZE_byte
 	inc	r14
 
-	; koniec tablicy PML3?
+	;	end of the PML3 table?
 	cmp	r14,	KERNEL_PAGE_RECORDS_amount
-	je	.pml4_entry	; tak
+	je	.pml4_entry	;	yes
 
 .pml3_record:
-	; pobierz adres tablicy PML2
+	;	fetch the address of the PML2 table
 	mov	r9,	qword [r10]
 
-	; brak tablicy PML2?
+	;	no PML2 table?
 	test	r9,	r9
-	jz	.pml3	; tak, następny rekord
+	jz	.pml3	;	yes, next record
 
-	; usuń flagi
+	;	remove the flags
 	xor	r9b,	r9b
 
-	; wyczyść ilość przetworzonych wpisów
+	;	clear the number of the processed entries
 	xor	r13,	r13
 
-	; kontynuuj
+	;	continue
 	jmp	.pml2_record
 
 .pml4_entry:
-	; aktualna tablica PML3 jest pusta?
+	;	is the current PML3 table empty?
 	mov	rdi,	qword [r11]
 	and	di,	STATIC_PAGE_mask
 	call	kernel_page_empty
-	jnz	.pml4	; nie
+	jnz	.pml4	;	no
 
-	; zwolnij przestrzeń tablicy
+	; release the area of the table
 	call	kernel_memory_release_page
 
-	; zwolniono tablicę stronicowania
+	; the page table was released
 	dec	qword [rel kernel_page_paged_count]
 
-	; usuń rekord z tablicy PML4
+	;	remove the record from the PML4 table
 	mov	qword [r11],	STATIC_EMPTY
 
 .pml4:
-	; następny wpis w tablicy PML4
+	;	next entry in the PML4 table
 	add	r11,	STATIC_QWORD_SIZE_byte
 	inc	r15
 
-	; koniec tablicy PML4?
+	;	end of the PML4 table?
 	cmp	r15,	KERNEL_PAGE_RECORDS_amount
-	je	.pml5	; tak... że jak?
+	je	.pml5	;	yes... and how?
 
-	; pobierz adres tablicy PML3
+	;	fetch the address of the PML3 table
 	mov	r10,	qword [r11]
 
-	; brak tablicy PML3?
+	;	no PML3 table?
 	test	r10,	r10
-	jz	.pml4	; tak, następny rekord
+	jz	.pml4	;	yes, next record
 
-	; usuń flagi
+	;	remove the flags
 	xor	r10b,	r10b
 
-	; wyczyść ilość przetworzonych wpisów
+	;	clear the number of the processed entries
 	xor	r14,	r14
 
-	; kontynuuj
+	;	continue
 	jmp	.pml3_record
 
 .pml5:
-	; flaga, błąd
+	;	flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r15
 	pop	r14
 	pop	r13
@@ -493,99 +493,99 @@ kernel_memory_release_task:
 	pop	rdi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_memory_release_task"
 
 ;===============================================================================
-; wejście:
-;	rcx % 256 = 0 - rozmiar przestrzeni do skopiowania w Bajtach
-;	rsi - miejsce źródłowe
-;	rdi - miejsce docelowe
+; input:
+;	rcx % 256 = 0 - size of the area to copy in Bytes
+;	rsi - source location
+;	rdi - destination location
 kernel_memory_copy:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; przestrzeń kopiujemy w pakietach po 256 Bajtów
+	;	we copy the area in packets of 256 Bytes
 	shr	rcx,	STATIC_DIVIDE_BY_256_shift
 
 .loop:
-	; kopiuj
+	; copy
 	macro_copy
 
-	; przesuń wskaźniki na następny pakiet danych
+	; move the pointers to the next packet of data
 	add	rsi,	256
 	add	rdi,	256
 
-	; koniec przestrzeni?
+	;	end of the area?
 	dec	rcx
-	jnz	.loop	; nie
+	jnz	.loop	;	no
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_memory_copy"
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar oczekiwanej przestrzeni w stronach
-; wyjście:
-;	Flaga CF - jeśli brak miejsca
-;	rdi - wskaźnik do przydzielonej przestrzeni
+; input:
+;	rcx - expected size of the area in pages
+; output:
+;	CF flag - if there is no space
+;	rdi - pointer to the allocated area
 kernel_memory_alloc_task:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	r8
 	push	r11
 
-	; zarezerwuj podany rozmiar przestrzeni
+	;	reserve the given size of the area
 	call	kernel_memory_alloc_task_secure
-	jc	.error	; brak wystarczającej ilości pamięci
+	jc	.error	;	not enough memory
 
-	; mapuj przestrzeń
+	;	map the area
 	mov	rax,	rdi
 	mov	bx,	KERNEL_PAGE_FLAG_write | KERNEL_PAGE_FLAG_user | KERNEL_PAGE_FLAG_available
 	mov	r11,	cr3
 	call	kernel_page_map_logical
-	jnc	.ready	; przydzielono
+	jnc	.ready	;	allocated
 
-	; brak wolnej przestrzeni RAM, wyrejestruj przestrzeń procesu
+	;	no free RAM space, unregister the area of the process
 	call	kernel_memory_release_task_secured
 
 .error:
-	; flaga, błąd
+	;	flag, error
 	stc
 
 .ready:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r11
 	pop	r8
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_memory_alloc_task"
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar przestrzeni w stronach
-; wyjście:
-;	Flaga CF, jeśli brak dostępnej
-;	rax - kod błędu, jeśli Flaga CF jest podniesiona
-;	rdi - wskaźnik do przydzielonej przestrzeni
+; input:
+;	rcx - size of the area in pages
+; output:
+;	CF flag, if none is available
+;	rax - error code, if the CF flag is raised
+;	rdi - pointer to the allocated area
 kernel_memory_alloc_task_secure:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rdx
 	push	rsi
@@ -593,98 +593,98 @@ kernel_memory_alloc_task_secure:
 	push	rax
 	push	rcx
 
-	; numer pierwszego bitu wolnej przestrzeni
+	;	bit number of the first page of the free area
 	mov	rax,	STATIC_MAX_unsigned
 
-	; pobierz wskaźnik do właściwości procesu
+	;	fetch the pointer to the properties of the process
 	call	kernel_task_active
 
-	; proces wykonujący jest usługą?
+	;	the calling process is a service?
 	test	word [rdi + KERNEL_TASK_STRUCTURE.flags],	KERNEL_TASK_FLAG_service
-	jnz	.end	; zignoruj wywołanie
+	jnz	.end	;	ignore the call
 
-	; pobierz wskaźnik i ilość stron w binarnej mapie pamięci procesu
+	;	fetch the pointer and the number of pages in the binary memory map of the process
 	mov	rcx,	qword [rdi + KERNEL_TASK_STRUCTURE.map_size]
 	mov	rsi,	qword [rdi + KERNEL_TASK_STRUCTURE.map]
 
 .reload:
-	; ilość stron wchodzących w skład rozpatrywanej przestrzeni
+	;	number of the pages belonging to the considered area
 	xor	edx,	edx
 
 .search:
-	; sprawdź następną stronę
+	; check the next page
 	inc	rax
 
-	; koniec binarnej mapy pamięci?
+	;	end of the binary memory map?
 	cmp	rax,	rcx
-	je	.error	; tak
+	je	.error	;	yes
 
-	; znaleziono wolną stronę?
+	;	a free page found?
 	bt	qword [rsi],	rax
-	jnc	.search	; nie
+	jnc	.search	;	no
 
-	; zachowaj numer pierwszego bitu wchodzącego w skład poszukiwanej przestrzeni
+	;	save the bit number of the first page belonging to the searched area
 	mov	rbx,	rax
 
 .check:
-	; sprawdź następną stronę
+	; check the next page
 	inc	rax
 
-	; zalicz aktualną stronę do poszukiwanej przestrzeni
+	; count the current page into the searched area
 	inc	rdx
 
-	; znaleziono całkowity rozmiar przestrzeni
+	;	the full size of the area has been found
 	cmp	rdx,	qword [rsp]
-	je	.found	; tak
+	je	.found	;	yes
 
-	; koniec binarnej mapy pamięci?
+	;	end of the binary memory map?
 	cmp	rax,	rcx
-	je	.error	; tak
+	je	.error	;	yes
 
-	; następna strona wchodząca w skład poszukiwanej przestrzeni?
+	;	next page belonging to the searched area?
 	bt	qword [rsi],	rax
-	jc	.check	; tak
+	jc	.check	;	yes
 
-	; rozpatrywana przestrzeń jest niepełna, znajdź następną
+	;	the considered area is incomplete, find the next one
 	jmp	.reload
 
 .error:
-	; zwróć kod błędu
+	;	return the error code
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	KERNEL_ERROR_memory_low
 
-	; flaga, błąd
+	;	flag, error
 	stc
 
-	; koniec procedury
+	;	end of the procedure
 	jmp	.end
 
 .found:
-	; ustaw numer pierwszej strony przestrzeni do zablokowania
+	;	set the page number of the first page of the area to block
 	mov	rax,	rbx
 
 .lock:
-	; zwolnij kolejne strony wchodzące w skład znalezionej przestrzeni
+	;	release the following pages belonging to the found area
 	btr	qword [rsi],	rax
 
-	; następna strona
+	;	next page
 	inc	rax
 
-	; koniec przetwarzania przestrzeni?
+	;	end of the area processing?
 	dec	rdx
-	jnz	.lock	; nie, kontynuuj
+	jnz	.lock	;	no, continue
 
-	; przelicz numer pierwszej strony przestrzeni na adres WZGLĘDNY
+	;	convert the page number of the first page of the area into a RELATIVE address
 	shl	rbx,	STATIC_MULTIPLE_BY_PAGE_shift
 
-	; koryguj o adres początku opisanej przestrzeni przez binarną mapę pamięci procesu
+	;	correct it by the start address of the area described by the binary memory map of the process
 	mov	rax,	SOFTWARE_BASE_address
 	add	rbx,	rax
 
-	; zwróć adres do procesu
+	;	return the address to the process
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte * 0x02],	rbx
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rax
 	pop	rdi
@@ -692,65 +692,65 @@ kernel_memory_alloc_task_secure:
 	pop	rdx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_memory_alloc_task_secure"
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar przestrzeni w stronach
-;	rdi - adres przestrzeni do zwolnienia
+; input:
+;	rcx - size of the area in pages
+;	rdi - address of the area to release
 kernel_memory_release_task_secured:
-	; zachowaj oryginalne rejestry i flagi
+	; preserve the original registers and flags
 	push	rax
 	push	rdx
 	push	rsi
 	push	rdi
 	push	rcx
 
-	; pobierz wskaźnik do właściwości procesu
+	;	fetch the pointer to the properties of the process
 	call	kernel_task_active
 
-	; pobierz wskaźnik do binarnej mapy pamięci procesu
+	;	fetch the pointer to the binary memory map of the process
 	mov	rsi,	qword [rdi + KERNEL_TASK_STRUCTURE.map]
 
-	; przelicz adres strony na numer bitu
+	;	convert the page address into a bit number
 	mov	rax,	-SOFTWARE_BASE_address
 	add	rax,	qword [rsp + STATIC_QWORD_SIZE_byte]
 	shr	rax,	STATIC_PAGE_SIZE_shift
 
-	; oblicz prdesunięcie względem początku binarnej mapy pamięci
+	;	compute the offset relative to the beginning of the binary memory map
 	mov	rcx,	64
-	xor	rdx,	rdx	; wyczyść starszą część
+	xor	rdx,	rdx	;	clear the upper part
 	div	rcx
 
-	; przesuń wskaźnik na "pakiet"
+	; move the pointer to the "packet"
 	shl	rax,	STATIC_MULTIPLE_BY_8_shift
 	add	rsi,	rax
 
-	; zwolnij wszystkie strony wchodzące w skład przestrzeni
+	;	release all the pages belonging to the area
 	mov	rcx,	qword [rsp]
 
 .loop:
-	; włącz bit odpowiadający za zwalnianą stronę
+	; set the bit of the page being released
 	bts	qword [rsi],	rdx
 
-	; następna strona przestrzeni
+	;	next page of the area
 	inc	rdx
 
-	; koniec przestrzeni?
+	;	end of the area?
 	dec	rcx
-	jnz	.loop	; nie
+	jnz	.loop	;	no
 
-	; przywróć oryginalne rejestry i flagi
+	; restore the original registers and flags
 	pop	rcx
 	pop	rdi
 	pop	rsi
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_memory_release_task_secured"

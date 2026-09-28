@@ -1,18 +1,18 @@
 ;===============================================================================
 
 	;-----------------------------------------------------------------------
-	; stałe, zmienne, globalne, struktury, obiekty, makra
+	; constants, variables, globals, structures, objects, macros
 	;-----------------------------------------------------------------------
 	%include	"kernel/header.asm"
 	;-----------------------------------------------------------------------
 
-; 64 bitowy kod programu
+; 64-bit program code
 [bits 64]
 
-; adresowanie względne
+; relative addressing
 [default rel]
 
-; położenie kodu programu w pamięci logicznej
+; location of the program code in logical memory
 [org LIBRARY_BASE_address]
 
 ;===============================================================================

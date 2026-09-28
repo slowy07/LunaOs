@@ -7,7 +7,7 @@ KERNEL_VFS_ERROR_DIRECTORY_full				equ	0x02
 KERNEL_VFS_ERROR_FILE_name_long				equ	0x04
 KERNEL_VFS_ERROR_FILE_name_short			equ	0x05
 KERNEL_VFS_ERROR_FILE_low_memory			equ	0x06
-KERNEL_VFS_ERROR_FILE_overflow				equ	0x07	; np. niedozwolony znak przesyłany do urządzenia znakowego
+KERNEL_VFS_ERROR_FILE_overflow				equ	0x07	; e.g. a forbidden character sent to the character device
 
 struc	KERNEL_VFS_STRUCTURE_META_CHARACTER_DEVICE
 	.width						resb	8
@@ -19,7 +19,7 @@ endstruc
 
 kernel_vfs_semaphore					db	STATIC_FALSE
 
-; wyrównaj pozycję supła do pełnego adresu
+; bring the spool position to a full address
 align	STATIC_QWORD_SIZE_byte,				db	STATIC_NOTHING
 kernel_vfs_magicknot:					dq	STATIC_EMPTY	; data
 							dq	STATIC_EMPTY	; size
@@ -32,20 +32,20 @@ kernel_vfs_magicknot:					dq	STATIC_EMPTY	; data
 kernel_vfs_string_directory_local_or_overriding		db	".", "."
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do meta danych
+; input:
+;\trsi - pointer to the metadata
 kernel_vfs_metadata_update:
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_vfs_metadata_update"
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do supła katalogu nadrzędnego
-;	rdi - wskaźnik do supła katalogu przetwarzanego
+; input:
+;\trsi - pointer to the spool of the parent directory
+;\trdi - pointer to the spool of the processed directory
 kernel_vfs_dir_symlinks:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rdx
@@ -53,934 +53,934 @@ kernel_vfs_dir_symlinks:
 	push	rdi
 
 	;-----------------------------------------------------------------------
-	; utwórz dowiązanie symboliczne do siebie samego "."
-	mov	ecx,	0x01	; ilość znaków w nazwie pliku
+	; create a symbolic link to itself "."
+	mov	ecx,	0x01	; number of the characters in the file name
 	mov	dl,	KERNEL_VFS_FILE_TYPE_symbolic_link
 	mov	rsi,	kernel_vfs_string_directory_local_or_overriding
 	call	kernel_vfs_file_touch
 
-	; wskaźnik docelowy dowiązania symbolicznego
+	; destination pointer of the symbolic link
 	mov	rax,	qword [rsp]
 	mov	qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.data],	rax
 
-	; następne dowiązanie dotyczy samego siebie? /
+	; the next link refers to itself? /
 	cmp	qword [rsp + STATIC_QWORD_SIZE_byte],	rax
-	je	.end	; tak, brak dowiązania symbolicznego do katalogu nadrzędnego :)
+	je	.end	; yes, no symbolic link to the parent directory :)
 
 	;-----------------------------------------------------------------------
-	; utwórz dowiązanie symboliczne do katalogu nadrzędnego ".."
-	mov	ecx,	0x02	; ilość znaków w nazwie pliku
-	mov	rdi,	rax	; utwórz w katalogu przetwarzanym
+	; create a symbolic link to the parent directory ".."
+	mov	ecx,	0x02	; number of the characters in the file name
+	mov	rdi,	rax	; create it in the processed directory
 	call	kernel_vfs_file_touch
 
-	; wskaźnik docelowy dowiązania symbolicznego
+	; destination pointer of the symbolic link
 	mov	rax,	qword [rsp + STATIC_QWORD_SIZE_byte]
 	mov	qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.data],	rax
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rdx
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_vfs_dir_symlinks"
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar ścieżki w znakach
-;	rsi - wskaźnik do ścieżki
-; wyjście:
-;	Flaga CF - jeśli błąd
-;	rax - kod błędu
-;	rcx - ilość znaków w ostatnim pliku ścieżki
-;	rsi - wskaźnik do ostatniego pliku w ścieżce
-;	rdi - identyfikator ostatniego katalogu w ścieżce
+; input:
+;\trcx - size of the path in characters
+;\trsi - pointer to the path
+; output:
+;\tCF flag - if an error
+;\trax - error code
+;\trcx - number of the characters in the last file of the path
+;\trsi - pointer to the last file in the path
+;\trdi - identifier of the last directory in the path
 kernel_vfs_path_resolve:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rdx
 	push	rsi
 	push	rcx
 
-	; utwórz zmienne lokalną
+	; create a local variable
 	push	STATIC_EMPTY
 
-	; rozmiar przetworzonego ciągu
+	; size of the processed string
 	xor	ebx,	ebx
 
-	; ścieżka pusta?
+	; the path empty?
 	test	rcx,	rcx
-	jz	.empty	; tak
+	jz	.empty	; yes
 
-	; domyślnie rozpocznij od katalogu głównego
+	; start from the root directory by default
 	mov	rdi,	kernel_vfs_magicknot
 
-	; ścieżka rozpoczyna się od znaku "/"?
+	; does the path begin with the character "/"?
 	cmp	byte [rsi],	STATIC_SCANCODE_SLASH
-	je	.prefix	; tak
+	je	.prefix	; yes
 
-	; ustaw wskaźnik na zadanie procesora logicznego
+	; set the pointer to the task position of the logical processor
 	call	kernel_task_active
 
-	; pobierz identyfikator/węzeł katalogu roboczego rodzica
+	; fetch the identifier/node of the working directory of the parent
 	mov	rdi,	qword [rdi + KERNEL_TASK_STRUCTURE.knot]
 
-	; kontynuuj
+	; continue
 	jmp	.suffix
 
 .prefix:
-	; usuń znak "/" z początku ścieżki
+	; remove the character "/" from the beginning of the path
 	dec	rcx
 	inc	rsi
 
-	; koniec ścieżki?
+	; end of the path?
 	test	rcx,	rcx
-	jz	.root	; tak
+	jz	.root	; yes
 
-	; początek ścieżki ponownie posiada znak "/"
+	; the beginning of the path has the character "/" again
 	cmp	byte [rsi],	STATIC_SCANCODE_SLASH
-	je	.prefix	; tak
+	je	.prefix	; yes
 
 .suffix:
-	; ścieżka zakończona na znaku "/"?
+	; the path ends with the character "/"?
 	cmp	byte [rsi + rcx - 0x01],	STATIC_SCANCODE_SLASH
-	jne	.cut	; nie
+	jne	.cut	; no
 
-	; skróć ścieżkę o znak "/"
+	; shorten the path by the character "/"
 	dec	rcx
 
-	; koniec ścieżki?
+	; end of the path?
 	test	rcx,	rcx
-	jnz	.suffix	; nie
+	jnz	.suffix	; no
 
 .cut:
-	; szukaj znaku "/" od końca ścieżki
+	; look for the character "/" from the end of the path
 	cmp	byte [rsi + rcx - STATIC_BYTE_SIZE_byte],	STATIC_SCANCODE_SLASH
 	je	.loop
 
-	; skróć ścieżkę o ostatni plik
+	; shorten the path by the last file
 	inc	rbx
 	dec	rcx
 
-	; koniec ścieżki?
+	; end of the path?
 	test	rcx,	rcx
 	jnz	.cut
 
-	; ścieżka zawiera tylko "plik"
+	; the path contains only a "file"
 
-	; kontynuuj
+	; continue
 	jmp	.ready
 
 .doubled:
-	; znaleziono "/" lub "//" w ścieżce, pomiń
+	; the "/" or "//" found in the path, skip
 	dec	rcx
 	inc	rsi
 
 .loop:
-	; ścieżka przetworzona?
+	; the path processed?
 	test	rcx,	rcx
-	jz	.ready	; tak
+	jz	.ready	; yes
 
-	; zachowaj rozmiar ścieżki
+	; save the size of the path
 	mov	qword [rsp],	rcx
 
-	; pobierz nazwę katalogu
-	mov	al,	STATIC_SCANCODE_SLASH	; separator plików w ścieżce
+	; fetch the name of the directory
+	mov	al,	STATIC_SCANCODE_SLASH	; the file separator in the path
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_cut
-	jc	.ready	; przetworzono ścieżkę
+	jc	.ready	; the path has been processed
 
-	; zwrócono pusty ciąg?
+	; an empty string returned?
 	test	rcx,	rcx
-	jz	.leave	; tak
+	jz	.leave	; yes
 
-	; kod błędu, pliku nie znaleziono
+	; error code, the file was not found
 	mov	eax,	KERNEL_ERROR_vfs_file_not_found
 
-	; plik istnieje?
+	; does the file exist?
 	call	kernel_vfs_file_find
-	jc	.error	; nie
+	jc	.error	; no
 
-	; plik jest dowiązaniem symbolicznym?
+	; the file is a symbolic link?
 	test	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.type],	KERNEL_VFS_FILE_TYPE_symbolic_link
-	jz	.no_link	; nie
+	jz	.no_link	; no
 
-	; przeładuj wskaźnik
+	; reload the pointer
 	mov	rdi,	qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.data]
 
 .no_link:
-	; kod błędu, to nie jest katalog
+	; error code, this is not a directory
 	mov	eax,	KERNEL_ERROR_vfs_file_not_directory
 
-	; plik jest katalogiem?
+	; the file is a directory?
 	test	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.type],	KERNEL_VFS_FILE_TYPE_directory
-	jz	.error	; nie
+	jz	.error	; no
 
-	; koryguj ścieżkę
+	; correct the path
 	sub	qword [rsp],	rcx
 	add	rsi,	rcx
 
 .leave:
-	; przywróć rozmiar pozostałej ścieżki
+	; restore the size of the remaining path
 	mov	rcx,	qword [rsp]
 
-	; przetwarzaj dalej
+	; keep processing
 	jmp	.doubled
 
 .ready:
-	; koryguj informacje o ilości znaków pozostałych w ścieżce
+	; correct the information about the number of the characters left in the path
 	mov	rcx,	rbx
 
 .prepared:
-	; zwróć
+	; return
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rcx
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte * 0x02],	rsi
 
-	; flaga, sukces
+	; flag, success
 	clc
 
-	; koniec
+	; end
 	jmp	.end
 
 .root:
-	; ustaw wskaźnik na plik katalogu bierzącego
+	; set the pointer to the directory file of the current directory
 	mov	rcx,	0x01
 	mov	rsi,	kernel_vfs_string_directory_local_or_overriding
 
-	; kontynuuj
+	; continue
 	jmp	.prepared
 
 .empty:
-	; kod błędu, błąd ścieżki
+	; error code, path error
 	mov	eax,	KERNEL_ERROR_vfs_file_not_found
 
 .error:
-	; zwróć kod błędu
+	; return the error code
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte * 0x05],	rax
 
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; zwolnij zmienną lokalną
+	; release the local variable
 	add	rsp,	STATIC_QWORD_SIZE_byte
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rsi
 	pop	rdx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_vfs_path_resolve"
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość znaków w nazwie pliku
-;	dl - typ pliku
-;	rsi - wskaźnik do nazwy pliku
-;	rdi - supeł/identyfikator katalogu w którym utworzyć nowy plik
-; wyjście:
-;	Flaga CF, jeśli błąd
-;	rdi - supeł/identyfikator utworzonego pliku
+; input:
+;\trcx - number of characters in the file name
+;\tdl - type of the file
+;\trsi - pointer to the file name
+;\trdi - spool/identifier of the directory in which to create the new file
+; output:
+;\tCF flag, if an error
+;\trdi - spool/identifier of the created file
 kernel_vfs_file_touch:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rsi
 	push	rdi
 	push	rax
 
-	; kod błędu: nazwa pliku za długa
+	; error code: the file name is too long
 	mov	eax,	KERNEL_VFS_ERROR_FILE_name_long
 
-	; sprawdź obsługiwaną długość nazwy pliku
+	; check the supported length of the file name
 	cmp	rcx,	KERNEL_VFS_STRUCTURE_KNOT.SIZE - KERNEL_VFS_STRUCTURE_KNOT.name
 	ja	.error
 
-	; kod błędu: nazwa pliku za krótka
+	; error code: the file name is too short
 	mov	eax,	KERNEL_VFS_ERROR_FILE_name_short
 
-	; sprawdź czy podano jakąkolwiek nazwę
+	; check whether any name was given
 	cmp	rcx,	STATIC_EMPTY
 	je	.error
 
-	; kod błędu: plik istnieje
+	; error code: the file exists
 	mov	eax,	KERNEL_VFS_ERROR_FILE_exists
 
-	; sprawdź czy istnieje plik o podanej nazwie
+	; check whether a file with the given name exists
 	call	kernel_vfs_file_find
-	jnc	.error	; istnieje plik o podanej nazwie
+	jnc	.error	; a file with the given name exists
 
-	; kod błędu: brak miejsca
+	; error code: no space
 	mov	rax,	KERNEL_VFS_ERROR_DIRECTORY_full
 
-	; szukaj wolnego rekordu w katalogu głównym
+	; look for a free record in the root directory
 	call	kernel_vfs_knot_prepare
-	jc	.end	; brak wolnego rekordu
+	jc	.end	; no free record
 
-	; aktualizuj wpis supła
+	; update the spool entry
 
-	; plik typu katalog?
+	; the file is a directory?
 	cmp	dl,	KERNEL_VFS_FILE_TYPE_directory
-	jne	.no_directory	; nie
+	jne	.no_directory	; no
 
-	; zachowaj wskaźnik supła
+	; save the spool pointer
 	mov	rax,	rdi
 
-	; przygotuj blok danych dla nowego klatalogu
+	; prepare the data block for the new directory
 	call	kernel_memory_alloc_page
-	jnc	.assigned	; przydzielono
+	jnc	.assigned	; allocated
 
-	; zwolnij wpis w katalogu
+	; release the entry in the directory
 	mov	word [rdi + KERNEL_VFS_STRUCTURE_KNOT.flags],	STATIC_EMPTY
 
-	; koniec obsługi
+	; end of the handling
 	jmp	.error
 
 .assigned:
-	; wyczyść blok danych katalogu
+	; clear the data block of the directory
 	call	kernel_page_drain
 	mov	qword [rax + KERNEL_VFS_STRUCTURE_KNOT.data],	rdi
 
-	; przywróć wskaźnik supła
+	; restore the spool pointer
 	mov	rdi,	rax
 
-	; zachowaj wskaźnik do nazwy katalogu
+	; save the pointer to the directory name
 	push	rsi
 
-	; utwórz podstawowe dowiązania symboliczne
-	mov	rsi,	qword [rsp + STATIC_QWORD_SIZE_byte * 0x02]	; wskaźnik supła katalogu nadrzędnego
+	; create the basic symbolic links
+	mov	rsi,	qword [rsp + STATIC_QWORD_SIZE_byte * 0x02]	; the spool pointer of the parent directory
 	call	kernel_vfs_dir_symlinks
 
-	; przywróć wskaźnik do nazwy katalogu
+	; restore the pointer to the directory name
 	pop	rsi
 
 .no_directory:
-	; ilość znaków w nazwie pliku
+	; number of the characters in the file name
 	mov	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.length],	cl
 
-	; zachowaj typ pliku
+	; save the type of the file
 	mov	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.type],	dl
 
-	; zachowaj wskaźnik supła
+	; save the spool pointer
 	push	rdi
 
-	; nazwa pliku
+	; the name of the file
 	add	rdi,	KERNEL_VFS_STRUCTURE_KNOT.name
 	rep	movsb
 
-	; przywróć wskaźnik supła
+	; restore the spool pointer
 	pop	rdi
-	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rdi	; zwróć
+	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rdi	; return
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.end
 
 .error:
-	; zwróć kod błędu
+	; return the error code
 	mov	qword [rsp],	rax
 
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 	pop	rdi
 	pop	rsi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_vfs_file_touch"
 
 ;===============================================================================
-; weście:
-;	rcx - ilość znaków w nazwie pliku
-;	rsi - wskaźnik do nazwy plik
-;	rdi - supeł/identyfikator katalogu przeszukiwanego
-; wyjście
-;	Flaga CF - jeśli błąd
-;	rax - kod błędu
-;	rdi - wskaźnik supła opisującego plik
+; input:
+;\trcx - number of characters in the file name
+;\trsi - pointer to the file name
+;\trdi - spool/identifier of the searched directory
+; output
+;\tCF flag - if an error
+;\trax - error code
+;\trdi - pointer to the spool describing the file
 kernel_vfs_file_find:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; zapamiętaj ilość znaków w nazwie pliku
+	; remember the number of the characters in the file name
 	mov	rax,	rcx
 
-	; ustaw wskaźnik na pierwszy blok danych katalogu
+	; set the pointer to the first data block of the directory
 	mov	rdi,	qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.data]
 
 .prepare:
-	; ilość supłów na blok
+	; number of the spools in a block
 	mov	rcx,	STATIC_STRUCTURE_BLOCK.link / KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
 .loop:
-	; ilość znaków w nazwie się zgadza?
+	; do the number of the characters in the name match?
 	cmp	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.length],	al
-	jne	.next	; nie
+	jne	.next	; no
 
-	; przesuń wskaźnik na ciąg znaków nazwy pliku
+	; move the pointer to the string of the file name
 	add	rdi,	KERNEL_VFS_STRUCTURE_KNOT.name
 
-	; ustaw ilość znaków w nazwie pliku
+	; set the number of the characters in the file name
 	xchg	rcx,	rax
 
-	; porównaj nazwy plików
+	; compare the file names
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_compare
 
-	; przywróć licznik
+	; restore the counter
 	xchg	rcx,	rax
 
-	; znaleziono plik?
+	; the file found?
 	jnc	.found
 
-	; cofnij wskaźnik na początek supła
+	; move the pointer back to the beginning of the spool
 	sub	rdi,	KERNEL_VFS_STRUCTURE_KNOT.name
 
 .next:
-	; przesuń wskaźnik na następny supeł
+	; move the pointer to the next spool
 	add	rdi,	KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
-	; sprawdź kolejne supły
+	; check the next spools
 	dec	rcx
 	jnz	.loop
 
-	; skończyły się rekordy z danego bloku, pobierz adres następnego bloku danych katalogu głównego
+	; the records from the given block have run out, fetch the address of the next data block of the root directory
 	and	di,	STATIC_PAGE_mask
 	mov	rdi,	qword [rdi + STATIC_STRUCTURE_BLOCK.link]
-	test	rdi,	rdi	; koniec bloków danych?
-	jnz	.prepare	; przeszukaj następny blok danych katalogu
+	test	rdi,	rdi	; end of the data blocks?
+	jnz	.prepare	; search the next data block of the directory
 
-	; brak poszukiwanego pliku, zwróć kod błędu
+	; the wanted file not found, return the error code
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte * 0x03],	KERNEL_ERROR_vfs_file_not_found
 
-	; flaga, błąd
+	; flag, error
 	stc
 
-	; koniec obsługi procedury
+	; end of the procedure handling
 	jmp	.end
 
 .found:
-	; cofnij wskaźnik na wpis
+	; move the pointer back to the entry
 	sub	rdi,	KERNEL_VFS_STRUCTURE_KNOT.name
 
 .unload:
-	; plik jest dowiązaniem symbolicznym?
+	; the file is a symbolic link?
 	test	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.type],	KERNEL_VFS_FILE_TYPE_symbolic_link
-	jz	.return	; nie
+	jz	.return	; no
 
-	; załaduj adres supła wskazywanego przez dowiązanie symboliczne
+	; load the address of the spool pointed to by the symbolic link
 	mov	rdi,	qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.data]
 
-	; sprawdź raz jeszcze
+	; check once more
 	jmp	.unload
 
 .return:
-	; zwróć adres supła opisującego znleziony plik
+	; return the address of the spool describing the found file
 	mov	qword [rsp],	rdi
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_vfs_file_find"
 
 ;===============================================================================
-; wejście:
-;	dl - typ pliku
-;	rdi - supeł/identyfikator katalogu
-; wyjście:
-;	Flaga CF, jeśli nie znaleziono wolnego miejsca
+; input:
+;\tdl - type of the file
+;\trdi - spool/identifier of the directory
+; output:
+;\tCF flag, if no free space was found
 kernel_vfs_knot_prepare:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdi
 
-	; zablokuj dostęp do systemu plików
+	; block the access to the file system
 	macro_lock	kernel_vfs_semaphore, 0
 
-	; ustaw wskaźnik na pierwszy blok danych katalogu
+	; set the pointer to the first data block of the directory
 	mov	rdi,	qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.data]
 
 .prepare:
-	; ilość supłów na blok
+	; number of the spools in a block
 	mov	ecx,	STATIC_STRUCTURE_BLOCK.link / KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
 .loop:
-	; wolny supeł?
+	; the spool is free?
 	cmp	word [rdi + KERNEL_VFS_STRUCTURE_KNOT.flags],	STATIC_EMPTY
-	je	.ready	; tak
+	je	.ready	; yes
 
-	; przesuń wskaźnik na następny supeł
+	; move the pointer to the next spool
 	add	rdi,	KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
-	; kontynuuj z kolejnymi rekordami
+	; continue with the next records
 	loop	.loop
 
-	; skończyły się rekordy z danego bloku, pobierz adres następnego bloku danych katalogu głównego
+	; the records from the given block have run out, fetch the address of the next data block of the root directory
 	and	di,	STATIC_PAGE_mask
 	mov	rdi,	qword [rdi + STATIC_STRUCTURE_BLOCK.link]
-	test	rdi,	rdi	; koniec bloków danych?
-	jnz	.prepare	; przeszukaj następny blok danych katalogu
+	test	rdi,	rdi	; end of the data blocks?
+	jnz	.prepare	; search the next data block of the directory
 
-	; brak wolnych supłów w aktualnym bloku danych katalogu
-	mov	rcx,	rdi	; zapamiętaj wskaźnik połączenia następnego bloku danych
+	; no free spools in the current data block of the directory
+	mov	rcx,	rdi	; remember the pointer of the link of the next data block
 
-	; przygotuj miejsce do kolejny blok danych katalogu
+	; prepare the space for the next data block of the directory
 	call	kernel_memory_alloc_page
-	jnc	.ok	; brak miejsca w przstrzeni pamięci
+	jnc	.ok	; no space in the memory area
 
-	; błąd, brak miejsca
+	; error, no space
 	stc
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.end
 
 .ok:
-	; wyczyść nowy blok danych katalogu głównego
+	; clear the new data block of the root directory
 	call	kernel_page_drain
 
-	; dołącz nowy blok danych do katalogu głównego
+	; attach the new data block to the root directory
 	mov	qword [rcx],	rdi
 
 .ready:
-	; zablokuj dostęp do supła
+	; block the access to the spool
 	mov	word [rdi + KERNEL_VFS_STRUCTURE_KNOT.flags],	KERNEL_VFS_FILE_FLAGS_reserved
 
-	; zwiększ licznik supłów w katalogu bierzącym
+	; increase the counter of the spools in the current directory
 	mov	rcx,	qword [rsp]
 	inc	qword [rcx + KERNEL_VFS_STRUCTURE_KNOT.size]
 
-	; zwróć wskaźnik do supła
+	; return the pointer to the spool
 	mov	qword [rsp],	rdi
 
 .end:
-	; zwolnij dostęp do systemu plików
+	; release the access to the file system
 	mov	byte [rel kernel_vfs_semaphore],	STATIC_FALSE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_vfs_knot_prepare"
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość danych w Bajtach
-;	rsi - wskaźnik do danych pliku
-;	rdi - supeł/identyfikator pliku do nadpisania
-; wyjście:
-;	Flaga CF, jeśli błąd
+; input:
+;\trcx - number of the data in Bytes
+;\trsi - pointer to the data of the file
+;\trdi - spool/identifier of the file to overwrite
+; output:
+;\tCF flag, if an error
 kernel_vfs_file_write:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rdx
 	push	rcx
 	push	rdi
 
-	; zachowaj identyfikator/wskaźnik do supła pliku
+	; save the identifier/pointer to the spool of the file
 	mov	rbx,	rdi
 
-	; plik zawiera jakikolwiek blok danych?
+	; the file holds any data block?
 	cmp	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.data],	STATIC_EMPTY
-	jne	.exist	; tak
+	jne	.exist	; yes
 
-	; przygotuj przestrzeń pod blok danych
+	; prepare the area for the data block
 	call	kernel_memory_alloc_page
-	jc	.end	; brak wolnego miejsca w przestrzeni pamięci
+	jc	.end	; no free space in the memory area
 
-	; wyczyść blok danych pliku
+	; clear the data block of the file
 	call	kernel_page_drain
 
-	; podłącz blok danych do pliku
+	; attach the data block to the file
 	mov	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.data],	rdi
 
 .exist:
-	; zapisz do pliku N pierwszych danych bloku
+	; store the first N data of the block into the file
 	mov	rdx,	qword [rsp + STATIC_QWORD_SIZE_byte]
 
-	; pobierz pierwszy blok danych pliku
+	; fetch the first data block of the file
 	mov	rdi,	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.data]
 
-	; wszystkie dane zmieszczą się w pierwszym bloku danych?
+	; will all the data fit in the first data block?
 	cmp	rcx,	STATIC_STRUCTURE_BLOCK.link
-	jbe	.all_in_one	; tak
+	jbe	.all_in_one	; yes
 
-	; oblicz ilość bloków danych niezbędnych do zapisania danych
+	; compute the number of the data blocks needed to store the data
 	mov	rax,	STATIC_STRUCTURE_BLOCK.link
 	xchg	rax,	rcx
-	xor	edx,	edx	; usuń starszą część rozmiaru
+	xor	edx,	edx	; remove the upper part of the size
 	div	rcx
 
-	; reszta z dzielenia?
+	; the remainder of the division?
 	test	dx,	dx
-	jz	.no_modulo	; nie
+	jz	.no_modulo	; no
 
-	; ilość dodatkowych bloków +1
+	; number of the additional blocks +1
 	mov	ecx,	STATIC_TRUE
 
 .no_modulo:
-	; zarezerwuj niezbędą ilość bloków dla pliku
+	; reserve the required number of blocks for the file
 	add	rcx,	rax
 	call	kernel_page_secure
-	jc	.end	; brak wystarczającej ilości pamięci
+	jc	.end	; not enough memory
 
-	; wykorzystuj zarezerwowane bloki jeśli wystąpi potrzeba
+	; use the reserved blocks if needed
 	mov	rbp,	rcx
 
-	; zapisz do pliku N pierwszych danych bloku
+	; store the first N data of the block into the file
 	mov	rdx,	qword [rsp + STATIC_QWORD_SIZE_byte]
 
 .loop:
-	; rozmiar bloku danych w Bajtach
+	; size of the data block in Bytes
 	mov	ecx,	STATIC_STRUCTURE_BLOCK.link
 	shr	ecx,	STATIC_DIVIDE_BY_8_shift
 	rep	movsq
 
-	; zapisano pierwszą partię danych do pliku
+	; the first batch of the data was stored into the file
 	sub	rdx,	STATIC_STRUCTURE_BLOCK.link
 
-	; następny blok danych istnieje?
+	; does the next data block exist?
 	cmp	qword [rdi],	STATIC_EMPTY
-	jne	.next_block	; tak
+	jne	.next_block	; yes
 
 .next_block:
-	; pobierz następny blok danych pliku
+	; fetch the next data block of the file
 	mov	rdi,	qword [rdi]
 
-	; pozostałe dane pliku mieszczą się w jednym bloku?
+	; do the remaining data of the file fit in a single block?
 	cmp	rdx,	STATIC_STRUCTURE_BLOCK.link
-	ja	.loop	; nie
+	ja	.loop	; no
 
 .all_in_one:
-	; pozostały dane do zapisania
+	; the remaining data to store
 	test	rdx,	rdx
-	jz	.saved	; nie
+	jz	.saved	; no
 
-	; zapisz końcówkę danych do bloku
+	; store the end of the data into the block
 	mov	rcx,	rdx
 	rep	movsb
 
-	; zwolnij pozostałe bloki danych pliku
+	; release the remaining data blocks of the file
 	and	di,	STATIC_PAGE_mask
 	mov	rdi,	qword [rdi + STATIC_STRUCTURE_BLOCK.link]
 
 .remove:
-	; koniec bloków danych?
+	; end of the data blocks?
 	test	rdi,	rdi
-	jz	.saved	; tak
+	jz	.saved	; yes
 
-	; zachowaj następny prawdopodobny blok danych
+	; save the next probable data block
 	push	qword [rdi + STATIC_STRUCTURE_BLOCK.link]
 
-	; zwolnij blok danych
+	; release the data block
 	call	kernel_memory_release_page
 
-	; przywróć następny prawdopodobny blok danych
+	; restore the next probable data block
 	pop	rdi
 
-	; kontynuuj
+	; continue
 	jmp	.remove
 
 .saved:
-	; zwolnij pozostałą ilość zarezerwowanych bloków
+	; release the remaining number of the reserved blocks
 	sub	qword [rel kernel_page_reserved_count],	rbp
 	add	qword [rel kernel_page_free_count],	rbp
 
-	; aktualizuj informacje o nowym rozmiarze pliku
+	; update the information about the new size of the file
 	mov	rcx,	qword [rsp + STATIC_QWORD_SIZE_byte]
 	mov	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.size],	rcx
 
-	; aktualizuj informacje o czasie modyfikacji pliku
+	; update the information about the modification time of the file
 	mov	rcx,	qword [rel driver_rtc_microtime]
 	mov	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified],	rcx
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 	pop	rdx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_vfs_file_write"
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość danych w Bajtach
-;	rsi - wskaźnik do danych pliku
-;	rdi - supeł/identyfikator pliku do modyfikacji
-; wyjście:
-;	Flaga CF, jeśli błąd
-;	eax - kod błędu
+; input:
+;\trcx - number of the data in Bytes
+;\trsi - pointer to the data of the file
+;\trdi - spool/identifier of the file to modify
+; output:
+;\tCF flag, if an error
+;\teax - error code
 kernel_vfs_file_append:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rdx
 	push	rdi
 
-	; zmienna lokalna
+	; local variable
 	push	rcx
 
-	; zachowaj identyfikator/wskaźnik do supła pliku
+	; save the identifier/pointer to the spool of the file
 	mov	rbx,	rdi
 
-	; plik zawiera jakikolwiek blok danych?
+	; the file holds any data block?
 	cmp	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.data],	STATIC_EMPTY
-	jne	.exist	; tak
+	jne	.exist	; yes
 
-	; kod błędu, brak wolnego miejsca
+	; error code, no free space
 	mov	eax,	KERNEL_VFS_ERROR_FILE_low_memory
 
-	; przygotuj przestrzeń pod blok danych
+	; prepare the area for the data block
 	call	kernel_memory_alloc_page
-	jc	.end	; brak wolnego miejsca w przestrzeni pamięci
+	jc	.end	; no free space in the memory area
 
-	; wyczyść blok danych pliku
+	; clear the data block of the file
 	call	kernel_page_drain
 
-	; podłącz blok danych do pliku
+	; attach the data block to the file
 	mov	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.data],	rdi
 
 .exist:
-	; pobierz ostatni blok danych pliku
+	; fetch the last data block of the file
 	mov	rdi,	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.data]
 
 .last_one:
-	; jest to ostatni blok danych pliku?
+	; is it the last data block of the file?
 	cmp	qword [rdi + STATIC_STRUCTURE_BLOCK.link],	STATIC_EMPTY
-	je	.found	; tak
+	je	.found	; yes
 
-	; pobierz następny blok danych pliku
+	; fetch the next data block of the file
 	mov	rdi,	qword [rdi + STATIC_STRUCTURE_BLOCK.link]
 
-	; kontynuuj przeszukiwanie
+	; keep searching
 	jmp	.last_one
 
 .found:
-	; oblicz ilość danych przechowywanych w ostatnim bloku danych pliku
+	; compute the amount of the data held in the last data block of the file
 	mov	rax,	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.size]
 	mov	rcx,	STATIC_STRUCTURE_BLOCK.link
 	xor	edx,	edx
 	div	rcx
 
-	; przesuń wskaźnik w ostatnim bloku na koniec danych
+	; move the pointer in the last block to the end of the data
 	add	rdi,	rax
 
-	; przelicz na ilość wolnego miejsca w ostatnim bloku danych pliku
+	; convert into the amount of the free space in the last data block of the file
 	sub	rax,	STATIC_STRUCTURE_BLOCK.link
 	not	rax
 	inc	rax
 
-	; ustaw licznik na miejsce
+	; set the counter to the space
 	mov	rcx,	rax
 
-	; zmieścimy całość danych do ostatniego bloku danych pliku?
+	; will all the data fit into the last data block of the file?
 	cmp	rcx,	qword [rsp]
-	jbe	.more	; nie
+	jbe	.more	; no
 
 .less:
-	; pobierz pozostałą ilość danych do przetworzenia
+	; fetch the remaining amount of the data to process
 	xor	ecx,	ecx
 
-	; wyzeruj ilość danych do przetworzenia
+	; zero the amount of the data to process
 	xchg	rcx,	qword [rsp]
 
-	; kontynuuj
+	; continue
 	jmp	.write
 
 .more:
-	; zmiejsz ilość danych do przetworzenia
+	; decrease the amount of the data to process
 	sub	qword [rsp],	rcx
 
 .write:
-	; kopiuj dane do bloku danych pliku
+	; copy the data into the data block of the file
 	rep	movsb
 
-	; koniec danych pliku?
+	; end of the data of the file?
 	cmp	qword [rsp],	STATIC_EMPTY
-	je	.ready	; tak
+	je	.ready	; yes
 
-	; zachowaj wskaźnik końca aktualnego bloku danych
+	; save the end pointer of the current data block
 	mov	rdx,	rdi
 
-	; kod błędu, brak wolnego miejsca
+	; error code, no free space
 	mov	eax,	KERNEL_VFS_ERROR_FILE_low_memory
 
-	; przygotuj przestrzeń pod blok danych
+	; prepare the area for the data block
 	call	kernel_memory_alloc_page
-	jc	.end	; brak wolnego miejsca w przestrzeni pamięci
+	jc	.end	; no free space in the memory area
 
-	; wyczyść blok danych pliku
+	; clear the data block of the file
 	call	kernel_page_drain
 
-	; dołącz nowy blok danych do pliku
+	; attach the new data block to the file
 	mov	qword [rdx],	rdi
 
-	; ilość wolnego miejsca w nowym bloku danych
+	; amount of the free space in the new data block
 	mov	ecx,	STATIC_STRUCTURE_BLOCK.link
 
-	; zmieścimy wszystko do aktualnego bloku danych?
+	; will everything fit into the current data block?
 	cmp	qword [rsp],	rcx
-	jbe	.less	; tak
-	ja	.more	; nie
+	jbe	.less	; yes
+	ja	.more	; no
 
 .ready:
-	; aktualizuj informacje o rozmiarze pliku
+	; update the information about the size of the file
 	mov	rcx,	qword [rsp + STATIC_QWORD_SIZE_byte * 0x03]
 	add	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.size],	rcx
 
-	; aktualizuj informacje o czasie modyfikacji pliku
+	; update the information about the modification time of the file
 	mov	rcx,	qword [rel driver_rtc_microtime]
 	mov	qword [rbx + KERNEL_VFS_STRUCTURE_KNOT.time_modified],	rcx
 
 .end:
-	; zwolnij zmienną lokalną
+	; release the local variable
 	add	rsp,	STATIC_QWORD_SIZE_byte
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rdx
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_vfs_file_append"
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik bezpośredni do supła pliku
-;	rdi - adres docelowy danych pliku
-; wyjście:
-;	Flaga CF - jeśli błąd
-;	rcx - rozmiar załadowanych danych
+; input:
+;\trsi - direct pointer to the spool of the file
+;\trdi - destination address of the data of the file
+; output:
+;\tCF flag, if an error
+;\trcx - size of the loaded data
 kernel_vfs_file_read:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 	push	rsi
 	push	rdi
 
 .symbolic_link:
-	; plik jest dowiązaniem symbolicznym?
+	; the file is a symbolic link?
 	test	word [rsi + KERNEL_VFS_STRUCTURE_KNOT.type],	KERNEL_VFS_FILE_TYPE_symbolic_link
-	jz	.file	; nie
+	jz	.file	; no
 
-	; pobierz prawidłowy supeł pliku
+	; fetch the correct spool of the file
 	mov	rsi,	qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.data]
 
-	; sprawdź raz jeszcze
+	; check once more
 	jmp	.symbolic_link
 
 .file:
-	; rozmiar pliku w Bajtach
+	; size of the file in Bytes
 	mov	rax,	qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.size]
 
-	; plik jest katalogiem?
+	; the file is a directory?
 	test	byte [rsi + KERNEL_VFS_STRUCTURE_KNOT.type],	KERNEL_VFS_FILE_TYPE_directory
-	jz	.regular_file	; nie
+	jz	.regular_file	; no
 
-	; ilość wykorzystanej przestrzeni dla bloków danych w Bajtach
+	; amount of the space used for the data blocks in Bytes
 	xor	eax,	eax
 
-	; pobierz wskaźnik pierwszego bloku danych
+	; fetch the pointer to the first data block
 	mov	rcx,	qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.data]
 
 .block:
-	; zwiększ rozmiar katalogu w Bajtach
+	; increase the size of the directory in Bytes
 	add	rax,	STATIC_STRUCTURE_BLOCK.link
 
-	; pobierz wskaźnik następnego bloku danych
+	; fetch the pointer to the next data block
 	mov	rcx,	qword [rcx + STATIC_STRUCTURE_BLOCK.link]
 
-	; koniec bloków danych?
+	; end of the data blocks?
 	test	rcx,	rcx
-	jnz	.block	; nie
+	jnz	.block	; no
 
 .regular_file:
-	; zachowaj rozmiar wczytanych danych
+	; save the size of the loaded data
 	push	rax
 
-	; pobierz pierwszy blok danych pliku
+	; fetch the first data block of the file
 	mov	rsi,	qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.data]
 
 .loop:
-	; domyślny rozmiar bloku odczytanych
+	; default size of the read block
 	mov	rcx,	STATIC_STRUCTURE_BLOCK.link
 
-	; następna część pliku mieści się w pojedyńczym bloku danych?
+	; does the next part of the file fit in a single data block?
 	cmp	rax,	rcx
-	ja	.next_block	; nie
+	ja	.next_block	; no
 
-	; tak
+	; yes
 	mov	rcx,	rax
 
 .next_block:
-	; pozostała ilość danych do załadowania
+	; the remaining amount of the data to load
 	sub	rax,	rcx
 
-	; kopiuj do przestrzeni procesu
+	; copy into the area of the process
 	rep	movsb
 
-	; pobierz następny blok danych pliku
+	; fetch the next data block of the file
 	and	si,	STATIC_PAGE_mask
 	mov	rsi,	qword [rsi + STATIC_STRUCTURE_BLOCK.link]
 
-	; koniec danych pliku?
+	; end of the data of the file?
 	test	rax,	rax
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
-	; zwróć rozmiar wczytanych danych
+	; return the size of the loaded data
 	pop	rcx
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_vfs_file_read"

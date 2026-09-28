@@ -1,151 +1,151 @@
 ;===============================================================================
 
-	; procesor logiczny?
+	; logical processor?
 	cmp	byte [rel kernel_init_smp_semaphore],	STATIC_FALSE
-	je	kernel_init	; nie
+	je	kernel_init	; no
 
 	; ;-----------------------------------------------------------------------
-	; ; AP - inicjalizacja procesora logicznego
+	; ; AP - logical processor initialisation
 	; ;-----------------------------------------------------------------------
 	%include	"kernel/init/ap.asm"
 
 	;-----------------------------------------------------------------------
-	; zmienne - wykorzystywane podczas inicjalizacji środowiska jądra systemu
+	; variables - used while initialising the kernel environment
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/data.asm"
 	;-----------------------------------------------------------------------
 
 	;-----------------------------------------------------------------------
-	; procdura inicjalizująca kontroler APIC
+	; procedure initialising the APIC controller
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/apic.asm"
 
 kernel_init:
 	;-----------------------------------------------------------------------
-	; inicjalizuj port COM1 (stdlog)
+	; initialise the COM1 port (stdlog)
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/serial.asm"
 
 	;-----------------------------------------------------------------------
-	; inicjalizacja przestrzeni trybu tekstowego
+	; initialisation of the text mode area
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/video.asm"
 
 	;-----------------------------------------------------------------------
-	; utworzenie binarnej mapy pamięci i oznaczenie w niej jądra systemu
+	; creation of the binary memory map and marking the kernel in it
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/memory.asm"
 
 	;-----------------------------------------------------------------------
-	; utwórz tablicę potoków
+	; create the stream table
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/stream.asm"
 
 	;-----------------------------------------------------------------------
-	; przetworzenie tablic ACPI
+	; processing of the ACPI tables
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/acpi.asm"
 
 	;-----------------------------------------------------------------------
-	; utwórz stronicowanie docelowe jądra systemu
+	; create the final paging of the kernel
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/page.asm"
 
 	;-----------------------------------------------------------------------
-	; udostępnij biblioteki dla wszystkich procesów
+	; share the libraries with all processes
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/library.asm"
 
 	;-----------------------------------------------------------------------
-	; utwórz Globalną Tablicę Deskryptorów
+	; create the Global Descriptor Table
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/gdt.asm"
 
 	;-----------------------------------------------------------------------
-	; utwórz Tablicę Deskryptorów Przerwań
+	; create the Interrupt Descriptor Table
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/idt.asm"
 
 	;-----------------------------------------------------------------------
-	; konfiguruj zegar czasu rzeczywistego - uptime systemu
+	; configure the real time clock - system uptime
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/rtc.asm"
 
 	;-----------------------------------------------------------------------
-	; skonfiguruj obsługę urządzeń wskazujących
+	; configure the handling of the pointing devices
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/ps2.asm"
 
 	;-----------------------------------------------------------------------
-	; przygotuj komunikację międzyprocesową
+	; prepare the interprocess communication
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/ipc.asm"
 
 	;-----------------------------------------------------------------------
-	; utwórz wirtualny system plików
+	; create the virtual file system
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/vfs.asm"
 
 	;-----------------------------------------------------------------------
-	; inicjuj dostępne nośniki danych
+	; initialise the available data drives
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/storage.asm"
 
 	;-----------------------------------------------------------------------
-	; inicjalizuj jeden z dostępnych interfejsów sieciowych
+	; initialise one of the available network interfaces
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/network.asm"
 
 	;-----------------------------------------------------------------------
-	; utwórz kolejkę zadań
+	; create the task queue
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/task.asm"
 
 	;-----------------------------------------------------------------------
-	; dodaj do kolejki zadań zestaw usług zarządzających środowiskiem jądra systemu
+	; insert into the task queue a set of services managing the kernel environment
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/services.asm"
 
 	;-----------------------------------------------------------------------
-	; konfiguruj wew. przerwanie lokalnego kontrolera APIC (przełączanie zadań w kolejce)
+	; configure the internal interrupt of the local APIC controller (task switching in the queue)
 	;-----------------------------------------------------------------------
 	call	kernel_init_apic
 
-	; ustaw domyślny czas pomiędzy wywołaniami przerwania (jednostki)
+	; set the default time between the interrupt calls (units)
 	mov	dword [rsi + KERNEL_APIC_TICR_register],	DRIVER_RTC_Hz
 
-	; poinformuj APIC o obsłużeniu aktualnego przerwania sprzętowego lokalnego
+	; inform the APIC that the current local hardware interrupt has been handled
 	mov	dword [rsi + KERNEL_APIC_EOI_register],	STATIC_EMPTY
 
-	; za chwilę wywołana zostanie procedura kolejki zadań!
+	; the task queue procedure will be called shortly!
 
 	;-----------------------------------------------------------------------
-	; SMP - uruchom pozostałe procesory logiczne
+	; SMP - start the remaining logical processors
 	;-----------------------------------------------------------------------
 	%include	"kernel/init/smp.asm"
 
 .wait:
-	; pobierz ilość działających procesorów logicznych
+	; fetch the number of running logical processors
 	mov	al,	byte [rel kernel_init_ap_count]
-	inc	al	; procesor BSP nie jest liczony jako logiczny
+	inc	al	; the BSP processor is not counted as logical
 
-	; wszystkie procesory logiczne zostały zainicjowane?
+	; have all logical processors been initialised?
 	cmp	al,	byte [rel kernel_apic_count]
-	jne	.wait	; nie, czekaj
+	jne	.wait	; no, wait
 
 	;-----------------------------------------------------------------------
-	; INICJALIZACJA ZAKOŃCZONA
+	; INITIALISATION COMPLETE
 	;-----------------------------------------------------------------------
 
-	; poinformuj o zakończeniu inicjalizacji
+	; signal the end of the initialisation
 	mov	byte [rel kernel_init_semaphore],	STATIC_FALSE
 
-; wyrównaj pozycję kodu do pełnej strony
+; bring the code position to a full page
 align	STATIC_PAGE_SIZE_byte,	db	STATIC_NOTHING
 
 .clean:
-	; zwolnij przestrzeń zajętą przez procedury inicjalizacyjne
+	; release the area occupied by the initialisation procedures
 	mov	ecx,	.clean - $$
 	mov	rdi,	KERNEL_BASE_address
-	call	library_page_from_size	; zamień rozmiar przestrzeni na strony
+	call	library_page_from_size	; convert the area size into pages
 	call	kernel_memory_release

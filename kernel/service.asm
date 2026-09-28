@@ -2,212 +2,212 @@
 
 ;===============================================================================
 kernel_service:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbp
 	push	rax
 
-	; zresetuj Direction Flag
+	; reset the Direction Flag
 	cld
 
-	; usługa związana z procesem?
+	; a process related service?
 	cmp	al,	KERNEL_SERVICE_PROCESS
-	je	.process	; tak
+	je	.process	; yes
 
-	; obsługa wirtualnego systemu plików?
+	; the virtual file system handler?
 	cmp	al,	KERNEL_SERVICE_VFS
-	je	.vfs	; tak
+	je	.vfs	; yes
 
-	; obsługa systemu?
+	; the system handler?
 	cmp	al,	KERNEL_SERVICE_SYSTEM
-	je	.system	; tak
+	je	.system	; yes
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; pobierz aktualne flagi procesora
+	; fetch the current processor flags
 	pushf
 	pop	rax
 
-	; zwróć flagi do procesu
+	; return the flags to the process
 	mov	qword [rsp + KERNEL_TASK_STRUCTURE_IRETQ.eflags + STATIC_QWORD_SIZE_byte * 0x02],	rax
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 	pop	rbp
 
-	; koniec obsługi przerwania programowego
+	; end of the software interrupt handling
 	iretq
 
 	macro_debug	"kernel_service"
 
 ;===============================================================================
 .process:
-	; zakończ pracę procesu?
+	; finish the work of the process?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_exit
-	je	kernel_task_kill	; tak
+	je	kernel_task_kill	; yes
 
-	; uruchomić nowy proces?
+	; start a new process?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_run
-	je	.process_run	; tak
+	je	.process_run	; yes
 
-	; czy proces istnieje?
+	; does the process exist?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_check
-	je	.process_check	; tak
+	je	.process_check	; yes
 
-	; przydzielić przestrzeń pamięci?
+	; allocate a memory area?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_memory_alloc
-	je	.process_memory_alloc	; tak
+	je	.process_memory_alloc	; yes
 
-	; odebrać komunikat przeznaczony dla procesu?
+	; receive a message addressed to the process?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_ipc_receive
-	je	.process_ipc_receive	; tak
+	je	.process_ipc_receive	; yes
 
-	; wysłać komunikat do innego procesu?
+	; send a message to another process?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_ipc_send
-	je	.process_ipc_send	; tak
+	je	.process_ipc_send	; yes
 
-	; wysłać komunikat do rodzica?
+	; send a message to the parent?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_ipc_send_to_parent
-	je	.process_ipc_send_parent	; tak
+	je	.process_ipc_send_parent	; yes
 
-	; zwrócić PID procesu?
+	; return the PID of the process?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_pid
-	je	.process_pid	; tak
+	je	.process_pid	; yes
 
-	; zwrócić PID procesu rodzica?
+	; return the PID of the parent process?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_pid_parent
-	je	.process_pid_parent	; tak
+	je	.process_pid_parent	; yes
 
-	; przesłać ciąg znaków na standardowe wyjście?
+	; pass a string to the standard output?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_stream_out
-	je	.process_stream_out	; tak
+	je	.process_stream_out	; yes
 
-	; pobrać ciąg znaków z standardowego wejście?
+	; fetch a string from the standard input?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_stream_in
-	je	.process_stream_in	; tak
+	je	.process_stream_in	; yes
 
-	; przesłać jeden Bajt na standardowe wyjście?
+	; pass a single Byte to the standard output?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_stream_out_char
-	je	.process_stream_out_char	; tak
+	je	.process_stream_out_char	; yes
 
-	; przetworzyć meta dane strumienia?
+	; process the metadata of the stream?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_stream_meta
-	je	.process_stream_meta	; tak
+	je	.process_stream_meta	; yes
 
-	; zwrócić listę uruchomionych procesów?
+	; return the list of the started processes?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_list
-	je	.process_list	; tak
+	je	.process_list	; yes
 
-	; zwolnić przestrzeń procesu?
+	; release the area of the process?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_memory_release
-	je	.process_memory_release	; tak
+	je	.process_memory_release	; yes
 
-	; zatrzymać proces na dany czas?
+	; stop the process for a given time?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_sleep
-	je	.process_sleep	; tak
+	je	.process_sleep	; yes
 
-	; zwolnić pozostały czas procesora?
+	; release the remaining processor time?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_release
-	je	.process_release	; tak
+	je	.process_release	; yes
 
-	; zmienić katalog roboczy procesu?
+	; change the working directory of the process?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_dir_change
-	je	.process_dir_change	; tak
+	je	.process_dir_change	; yes
 
-	; koniec obsługi podprocedury
+	; end of the subprocedure handling
 	jmp	kernel_service.error
 
 ;-------------------------------------------------------------------------------
-; wyjście:
-;	rcx - PID procesu rodzica
+; output:
+;\trcx - PID of the parent process
 .process_pid_parent:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rdi
 
-	; zwróć PID rodzica
+	; return the PID of the parent
 	call	kernel_task_active
 	mov	rcx,	qword [rdi + KERNEL_TASK_STRUCTURE.parent]
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_pid_parent"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	bl - zachowanie strumienia procesu
-;	rcx - ilość znaków w ścieżce do pliku
-;	rsi - wskaźnik do ciągu znaków reprezentujących ścieżkę do pliku
-;	r8 - rozmiar argumentów w Bajtach
-; wyjście:
-;	rcx - PID uruchomionego procesu
+; input:
+;\tbl - stream behaviour of the process
+;\trcx - number of characters in the path to the file
+;\trsi - pointer to the string representing the path to the file
+;\tr8 - size of the arguments in Bytes
+; output:
+;\trcx - PID of the started process
 .process_run:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rsi
 	push	rdi
 	push	rcx
 
-	; rozwiąż ścieżkę do programu
+	; resolve the path to the program
 	call	kernel_vfs_path_resolve
-	jc	.process_run_end	; błąd, niepoprawna ścieżka
+	jc	.process_run_end	; error, invalid path
 
-	; odszukaj program w danym katalogu
+	; look for the program in the given directory
 	call	kernel_vfs_file_find
-	jc	.process_run_end	; błąd, pliku nie znaleziono
+	jc	.process_run_end	; error, the file was not found
 
-	; uruchom program
-	; rcx - ilość znaków reprezentujących nazwę uruchamianego programu
-	; rsi - wskaźnik do nazwy programu wraz z argumentami
-	; rdi - wskaźnik do supła pliku
-	; r8 - rozmiar argumentów w Bajtach
+	; start the program
+	;\trcx - number of characters representing the name of the program to run
+	;\trsi - pointer to the program name together with the arguments
+	;\trdi - pointer to the file spool
+	;\tr8 - size of the arguments in Bytes
 	call	kernel_exec
-	jc	.process_run_end	; program dodany do kolejki zadań
+	jc	.process_run_end	; the program added to the task queue
 
-	; zwróć identyfikator uruchomionego procesu
+	; return the identifier of the started process
 	mov	qword [rsp],	rcx
 
-	; przygotuj potoki
+	; prepare the pipes
 	call	kernel_stream_set
-	jc	.process_run_end	; nie udało się podłączyć strumieni we/wy
+	jc	.process_run_end	; the input/output streams could not be attached
 
-	; oznacz proces jako gotowy do przetwarzania
+	; mark the process as ready to be processed
 	or	word [rdi + KERNEL_TASK_STRUCTURE.flags],	KERNEL_TASK_FLAG_active
 
 .process_run_end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rdi
 	pop	rsi
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_run"
 
 ;-------------------------------------------------------------------------------
 .process_check:
-	; odszukaj proces w kolejce zadań
+	; look for the process in the task queue
 	call	kernel_task_pid_check
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_check"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rcx - rozmiar przestrzeni do zaalokowania
-;	rdi - wskaźnik do przestrzeni jądra systemu
-; wyjście:
-;	Flaga CF - jeśli brak miejsca
-;	rdi - wskaźnik do zaalokowanej przestrzeni
+; input:
+;\trcx - size of the area to allocate
+;\trdi - pointer to the kernel address space
+; output:
+;\tCF flag - if there is no space
+;\trdi - pointer to the allocated area
 .process_memory_alloc:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	r8
@@ -215,17 +215,17 @@ kernel_service:
 	push	rax
 	push	rdi
 
-	; zamień rozmiar przestrzeni na strony
+	; convert the size of the area into pages
 	call	library_page_from_size
 
-	; przydziel przestrzeń pamięci o podanym rozmiarze dla procesu
+	; allocate the memory area of the given size for the process
 	call	kernel_memory_alloc_task
 
-	; zwróć adres przydzielonej przestrzeni
+	; return the address of the allocated area
 	mov	qword [rsp],	rdi
 
 .process_memory_alloc_end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rax
 	pop	r11
@@ -233,718 +233,718 @@ kernel_service:
 	pop	rcx
 	pop	rbx
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_memory_alloc"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rdi - wskaźnik miejsca przeznaczenia komunikatu
-; wyjście:
-;	Flaga CF, jeśli brak komunikatu
+; input:
+;\trdi - pointer to the destination of the message
+; output:
+;\tCF flag, if there is no message
 .process_ipc_receive:
-	; pobierz komunikat przeznaczony dla procesu
+	; fetch the message addressed to the process
 	call	kernel_ipc_receive
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_ipc_receive"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rbx - PID procesu docelowego
-;	ecx - rozmiar przestrzeni w Bajtach lub jeśli wartość pusta, 40 Bajtów z pozycji wskaźnika RSI
-;	rsi - wskaźnik do przestrzeni danych
-; wyjście:
-;	Flaga CF - jeśli kolejka przepełniona
+; input:
+;\trbx - PID of the target process
+;\tecx - size of the data area in Bytes, or if the value is empty, 40 Bytes from the RSI pointer position
+;\trsi - pointer to the data area
+; output:
+;\tCF flag - if the queue has overflowed
 .process_ipc_send:
-	; wyślij komunikat do procesu
+	; send the message to the process
 	call	kernel_ipc_insert
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_ipc_send"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	ecx - rozmiar przestrzeni w Bajtach lub jeśli wartość pusta, 40 Bajtów z pozycji wskaźnika RSI
-;	rsi - wskaźnik do przestrzeni danych
-; wyjście:
-;	Flaga CF - jeśli kolejka przepełniona
+; input:
+;\tecx - size of the data area in Bytes, or if the value is empty, 40 Bytes from the RSI pointer position
+;\trsi - pointer to the data area
+; output:
+;\tCF flag - if the queue has overflowed
 .process_ipc_send_parent:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rdi
 
-	; pobierz PID procesu rodzica
+	; fetch the PID of the parent process
 	call	kernel_task_active
 	mov	rbx,	qword [rdi + KERNEL_TASK_STRUCTURE.parent]
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 
-	; wyślij komunikat do procesu
+	; send the message to the process
 	call	kernel_ipc_insert
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_ipc_send_parent"
 
 ;-------------------------------------------------------------------------------
-; wyjście:
-;	rax - pid procesu
+; output:
+;\trax - PID of the process
 .process_pid:
-	; pobierz PID procesu
+	; fetch the PID of the process
 	call	kernel_task_active_pid
 
-	; zwróć do procesu
+	; return to the process
 	mov	qword [rsp],	rax
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_pid"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rcx - rozmiar ciągu w Bajtach
-;	rsi - wskaźnik do ciągu znaków
+; input:
+;\trcx - size of the string in Bytes
+;\trsi - pointer to the string
 .process_stream_out:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rdi
 
-	; brak ciągu dla strumienia?
+	; no string for the stream?
 	test	rcx,	rcx
-	jz	.process_stream_out_end	 ; tak
+	jz	.process_stream_out_end	 ; yes
 
-	; pobierz identyfikator strumienia wyjścia procesu
+	; fetch the identifier of the output stream of the process
 	call	kernel_task_active
 	mov	rbx,	qword [rdi + KERNEL_TASK_STRUCTURE.out]
 
-	; wyślij ciąg znaków na standardowe wyjście
+	; send the string to the standard output
 	call	kernel_stream_insert
 
 .process_stream_out_end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rbx
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_stream_out"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rdi - wskaźnik do przestrzeni bufora
-; wyjście:
-;	Flaga ZF - jeśli brak danych
-;	rcx - ilość przesłanych danych
+; input:
+;\trdi - pointer to the buffer area
+; output:
+;\tZF flag - if there is no data
+;\trcx - number of the transferred data
 .process_stream_in:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rdi
 
-	; pobierz identyfikator strumienia wejścia procesu
+	; fetch the identifier of the input stream of the process
 	call	kernel_task_active
 	mov	rbx,	qword [rdi + KERNEL_TASK_STRUCTURE.in]
 
-	; wyślij ciąg znaków na standardowe wyjście
-	pop	rdi	; przywróć adres docelowy bufora procesu
+	; send the string to the standard output
+	pop	rdi	; restore the destination address of the buffer of the process
 	call	kernel_stream_receive
 
-	; brak danych?
+	; no data?
 	test	rcx,	rcx
 
-	; przywróć oryginalny rejestr
+	; restore the original register
 	pop	rbx
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_stream_in"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rcx - ile kopii znaku wysłać
-;	dl - wartość
+; input:
+;\trcx - how many copies of the character to send
+;\tdl - value
 .process_stream_out_char:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rsi
 	push	rdi
-	push	rdx	; pozostaw znak na stosie
+	push	rdx	; leave the character on the stack
 
-	; brak znków do wysłania na strumień?
+	; any characters left to send to the stream?
 	test	rcx,	rcx
-	jz	.process_stream_out_char_end	; tak
+	jz	.process_stream_out_char_end	; yes
 
-	; pobierz identyfikator strumienia wyjścia procesu
+	; fetch the identifier of the output stream of the process
 	call	kernel_task_active
 	mov	rbx,	qword [rdi + KERNEL_TASK_STRUCTURE.out]
 
-	; wyświetl znak N razy
+	; display the character N times
 	mov	rdx,	rcx
 	mov	ecx,	STATIC_BYTE_SIZE_byte
 	mov	rsi,	rsp
 
 .process_stream_out_char_loop:
-	; wyślij wartość na standardowe wyjście
+	; send the value to the standard output
 	call	kernel_stream_insert
 
-	; wysłano wszystkie kopie znaku?
+	; were all the copies of the character sent?
 	dec	rdx
-	jnz	.process_stream_out_char_loop	; nie
+	jnz	.process_stream_out_char_loop	; no
 
 .process_stream_out_char_end:
-	; przywróć oryginalne rejestry
-	pop	rdx	; przywróć znak z stosu
+	; restore the original registers
+	pop	rdx	; restore the character from the stack
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rbx
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_stream_out_char"
 
 ;===============================================================================
-; wejście:
-;	bl - odczyt lub zapis
-;	rsi - wskaźnik źródłowy danych
-;	lub
-;	rdi - wskaźnik docelowy danych
+; input:
+;\tbl - read or write
+;\trsi - source pointer of the data
+; or
+;\trdi - destination pointer of the data
 .process_stream_meta:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rdx
 	push	rsi
 	push	rdi
 
-	; rozmiar przestrzeni meta
+	; size of the metadata area
 	mov	rcx,	KERNEL_STREAM_META_SIZE_byte
 
-	; ustaw wskaźnik na właściwości procesu
+	; set the pointer to the properties of the process
 	call	kernel_task_active
 
-	; domyślny strumień: wyjście
+	; default stream: output
 	mov	rdx,	qword [rdi + KERNEL_TASK_STRUCTURE.out]
 
-	; strumień wyjścia?
+	; the output stream?
 	test	bl,	KERNEL_SERVICE_PROCESS_STREAM_META_FLAG_out
-	jnz	.process_stream_meta_selected	; tak
+	jnz	.process_stream_meta_selected	; yes
 
-	; wybierz strumień: wejście
+	; choose the stream: input
 	mov	rdx,	qword [rdi + KERNEL_TASK_STRUCTURE.in]
 
 .process_stream_meta_selected:
-	; zapisać dane?
+	; store the data?
 	test	bl,	KERNEL_SERVICE_PROCESS_STREAM_META_FLAG_set
-	jz	.process_stream_meta_read	; nie
+	jz	.process_stream_meta_read	; no
 
-	; zapisz dane do meta strumienia
+	; store the data into the metadata stream
 	mov	rdi,	rdx
 	add	rdi,	KERNEL_STREAM_STRUCTURE_ENTRY.meta
 	rep	movsb
 
-	; podnieś flagę, meta dane aktualne
+	; raise the flag, the metadata are up to date
 	or	byte [rdx + KERNEL_STREAM_STRUCTURE_ENTRY.flags],	KERNEL_STREAM_FLAG_meta
 
-	; koniec obsługi
+	; end of the handling
 	jmp	.process_stream_meta_end
 
 .process_stream_meta_read:
-	; meta dane są aktualne?
+	; the metadata are up to date?
 	test	byte [rdx + KERNEL_STREAM_STRUCTURE_ENTRY.flags],	KERNEL_STREAM_FLAG_meta
 	jz	.process_stream_meta_error
 
-	; wyślij do procesu meta dane
+	; send the metadata to the process
 	mov	rsi,	rdx
 	add	rsi,	KERNEL_STREAM_STRUCTURE_ENTRY.meta
 	mov	rdi,	qword [rsp]
 	rep	movsb
 
-	; koniec obsługi procedury
+	; end of the procedure handling
 	jmp	.process_stream_meta_end
 
 .process_stream_meta_error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .process_stream_meta_end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rdx
 	pop	rcx
 	pop	rbx
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_stream_meta"
 
 ;-------------------------------------------------------------------------------
-; wyjście:
-;	rbx - ilość wpisów
-;	rcx - rozmiar listy w Bajtach
-;	rsi - wskaźnik do przestrzeni listy
+; output:
+;\trbx - number of the entries
+;\trcx - size of the list in Bytes
+;\trsi - pointer to the area of the list
 .process_list:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdi
 	push	rcx
 
-	; przydziel przestrzeń dla procesu
+	; allocate the area for the process
 	mov	rcx,	qword [rel kernel_task_size_page]
 	call	kernel_memory_alloc_task
-	jc	.process_list_end	; brak dostępnej przestrzeni
+	jc	.process_list_end	; no available area
 
-	; zachowaj wskaźnik początku i rozmiaru przestrzeni
+	; save the pointer to the beginning and the size of the area
 	push	rcx
 	push	rdi
 
-	; ilość wpisów przesłanych do procesu
+	; number of the entries transferred to the process
 	xor	ebx,	ebx
 
-	; uzupełnij listę o wszystkie procesy zarejetrowane w serpentynie
+	; complete the list with all the processes registered in the serpentine
 	mov	rsi,	qword [rel kernel_task_address]
 
 .process_list_reload:
-	; ilość wpisów na blok serpentyny
+	; number of the entries in a block of the serpentine
 	mov	cl,	STATIC_STRUCTURE_BLOCK.link / KERNEL_TASK_STRUCTURE.SIZE
 
 .process_list_loop:
-	; wpis jest pusty?
+	; the entry is empty?
 	cmp	word [rsi + KERNEL_TASK_STRUCTURE.flags],	STATIC_EMPTY
-	je	.process_list_next	; tak
+	je	.process_list_next	; yes
 
-	; proces jest aktywny?
+	; is the process active?
 	test	word [rsi + KERNEL_TASK_STRUCTURE.flags],	KERNEL_TASK_FLAG_active
-	jz	.process_list_next	; nie, zignoruj
+	jz	.process_list_next	; no, ignore
 
-	; zachowaj wskaźnik i ilość wpisów do przetworzenia w bloku serpentyny
+	; save the pointer and the number of the entries to process in the serpentine block
 	push	rcx
 	push	rsi
 
-	; wyślij dedykowane informacje o procesie
+	; send the dedicated information about the process
 
-	; PID procesu
+	; PID of the process
 	mov	rax,	qword [rsi + KERNEL_TASK_STRUCTURE.pid]
 	stosq
 
-	; PID rodzica
+	; PID of the parent
 	mov	rax,	qword [rsi + KERNEL_TASK_STRUCTURE.parent]
 	stosq
 
-	; numer procesora logicznego przetwarzajcego proces
+	; number of the logical processor processing the process
 	mov	rax,	qword [rsi + KERNEL_TASK_STRUCTURE.cpu]
 	stosq
 
-	; czas uruchomienia procesu w formacie Microtime
+	; start time of the process in the Microtime format
 	mov	rax,	qword [rsi + KERNEL_TASK_STRUCTURE.time]
 	stosq
 
-	; niewykorzystany czas procesora w formacie APIC
+	; unused processor time in the APIC format
 	mov	eax,	dword [rsi + KERNEL_TASK_STRUCTURE.apic]
 	stosd
 
-	; rozmiar wykorzystanej przestrzeni pamięci przez proces (bez tablic stronicowania)
+	; size of the memory area used by the process (without the page tables)
 	mov	rax,	qword [rsi + KERNEL_TASK_STRUCTURE.memory]
 	stosq
 
-	; supeł katalogu roboczego procesu
+	; spool of the working directory of the process
 	mov	rax,	qword [rsi + KERNEL_TASK_STRUCTURE.knot]
 	stosq
 
-	; flagi stanu procesu
+	; state flags of the process
 	mov	ax,	word [rsi + KERNEL_TASK_STRUCTURE.flags]
 	stosw
 
-	; ilość znaków reprezentujących nazwę procesu
+	; number of the characters representing the process name
 	movzx	eax,	byte [rsi + KERNEL_TASK_STRUCTURE.length]
 	stosb
 
-	; nazwa procesu
+	; name of the process
 	mov	ecx,	eax
 	add	rsi,	KERNEL_TASK_STRUCTURE.name
 	rep	movsb
 
-	; przywróć wskaźnik i ilość wpisów do przetworzenia w bloku serpentyny
+	; restore the pointer and the number of the entries to process in the serpentine block
 	pop	rsi
 	pop	rcx
 
-	; załądowano informacje o procesie
+	; the information about the process has been loaded
 	inc	rbx
 
 .process_list_next:
-	; następny wpis z listy
+	; next entry from the list
 	add	rsi,	KERNEL_TASK_STRUCTURE.SIZE
 
-	; koniec wpisów w bloku?
+	; end of the entries in the block?
 	dec	cl
-	jnz	.process_list_loop	; nie
+	jnz	.process_list_loop	; no
 
-	; pobierz adres następnego bloku serpentyny
+	; fetch the address of the next block of the serpentine
 	and	si,	STATIC_PAGE_mask
 	mov	rsi,	qword [rsi + STATIC_STRUCTURE_BLOCK.link]
 
-	; koniec serpentyny?
+	; end of the serpentine?
 	cmp	rsi,	qword [rel kernel_task_address]
-	jne	.process_list_reload	; nie
+	jne	.process_list_reload	; no
 
-	; zwróć adres przestrzeni listy procesów
+	; return the address of the area of the process list
 	pop	rsi
-	pop	rcx	; i jej rozmiar w Bajtach
+	pop	rcx	; and its size in Bytes
 	shl	rcx,	STATIC_MULTIPLE_BY_PAGE_shift
 	mov	qword [rsp],	rcx
 
 .process_list_end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rdi
 	pop	rax
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_list"
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar przestrzeni w Bajtach
-;	rdi - wskaźnik do przestrzeni
+; input:
+;\trcx - size of the area in Bytes
+;\trdi - pointer to the area
 .process_memory_release:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	r11
 	push	rdi
 
-	; adres przestrzeni do zwolnienia
+	; address of the area to release
 	mov	rax,	rdi
 
-	; tablica stronicowania procesu
+	; page table of the process
 	mov	r11,	cr3
 
-	; rozmiar przestrzeni w stronach
+	; size of the area in pages
 	call	library_page_from_size
 
-	; zwolnij przestrzeń
+	; release the area
 	call	kernel_memory_release_task
 
-	; zwolnij przestrzeń w binarnej mapie pamięci procesu
+	; release the area in the binary memory map of the process
 	mov	rdi,	qword [rsp]
 	call	kernel_memory_release_task_secured
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	r11
 	pop	rcx
 	pop	rax
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_memory_release"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rcx - ilość milisekund
-;	1 sekunda = 1024 cykli mikrotime
+; input:
+;\trcx - number of the milliseconds
+;\t1 second = 1024 microtime ticks
 .process_sleep:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdi
 
-	; pobierz wskaźnik procesu
+	; fetch the process pointer
 	call	kernel_task_active
 
-	; oznacz proces w stanie uśpienia
+	; mark the process as sleeping
 	or	word [rdi + KERNEL_TASK_STRUCTURE.flags],	KERNEL_TASK_FLAG_sleep
 
-	; ustaw czas wybudzenia procesu
+	; set the wake up time of the process
 	add	rcx,	qword [rel driver_rtc_microtime]
 
 .process_sleep_wait:
-	; wywłaszczenie
+	; preemption
 	int	KERNEL_APIC_IRQ_number
 
-	; wybudzić proces?
+	; wake the process up?
 	cmp	rcx,	qword [rel driver_rtc_microtime]
-	ja	.process_sleep_wait	; nie
+	ja	.process_sleep_wait	; no
 
-	; usuń informację o uśpieniu procesu
+	; remove the information about the sleep of the process
 	and	word [rdi + KERNEL_TASK_STRUCTURE.flags],	~KERNEL_TASK_FLAG_sleep
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_sleep"
 
 ;-------------------------------------------------------------------------------
 .process_release:
-	; wywłaszczenie
+	; preemption
 	int	KERNEL_APIC_IRQ_number
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_release"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rcx - ilość znaków w ciągu
-;	rsi - wskaźnik do ciągu znaków
+; input:
+;\trcx - number of characters in the string
+;\trsi - pointer to the string
 .process_dir_change:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; rozwiąż ścieżkę do pliku
+	; resolve the path to the file
 	call	kernel_vfs_path_resolve
-	jc	.process_dir_change_end	; nie udało sie rozwiązać ścieżki do ostatniego pliku
+	jc	.process_dir_change_end	; the path to the last file could not be resolved
 
-	; odszukaj plik w katalogu docelowym
+	; look for the file in the target directory
 	call	kernel_vfs_file_find
-	jc	.process_dir_change_end	; nie znaleziono podanego katalogu, lub plik nie jest katalogiem
+	jc	.process_dir_change_end	; the given directory was not found, or the file is not a directory
 
 .process_dir_change_smybolic_link:
-	; odnaleziony plik jest dowiązaniem symbolicznym?
+	; the found file is a symbolic link?
 	test	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.type],	KERNEL_VFS_FILE_TYPE_symbolic_link
-	jz	.process_dir_change_ok	; nie
+	jz	.process_dir_change_ok	; no
 
-	; rozwiąż dowiązanie
+	; resolve the link
 	mov	rdi,	qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.data]
 
-	; sprawdź raz jeszcze
+	; check once more
 	jmp	.process_dir_change_smybolic_link
 
 .process_dir_change_ok:
-	; plik jest typu: katalog?
+	; the file is of the type: directory?
 	test	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.type],	KERNEL_VFS_FILE_TYPE_directory
-	jz	.process_dir_change_error	; nie
+	jz	.process_dir_change_error	; no
 
-	; zachowaj wskaźnik do supła katalogu
+	; save the pointer to the directory spool
 	mov	rax,	rdi
 
-	; ustaw wskaźnik na zadanie procesora logicznego
+	; set the pointer to the task position of the logical processor
 	call	kernel_task_active
 
-	; zachowaj informacje o nowym katalogu roboczym procesu
+	; save the information about the new working directory of the process
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.knot],	rax
 
-	; koniec obsługi polecenia
+	; end of the command handling
 	jmp	.process_dir_change_end
 
 .process_dir_change_error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .process_dir_change_end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.process_dir_change"
 
 ;===============================================================================
 .vfs:
-	; sprawdzić poprawność ścieżki?
+	; check the validity of the path?
 	cmp	ax,	KERNEL_SERVICE_VFS_exist
-	je	.vfs_exist	; tak
+	je	.vfs_exist	; yes
 
-	; utworzyć pusty plik?
+	; create an empty file?
 	cmp	ax,	KERNEL_SERVICE_VFS_touch
-	je	.vfs_touch	; tak
+	je	.vfs_touch	; yes
 
-	; zwrócić listę plików z podanej ścieżki?
+	; return the list of files from the given path?
 	cmp	ax,	KERNEL_SERVICE_VFS_dir
-	je	.vfs_dir	; tak
+	je	.vfs_dir	; yes
 
-	; wczytać zawartość pliku?
+	; read the content of the file?
 	cmp	ax,	KERNEL_SERVICE_VFS_read
-	je	.vfs_read	; tak
+	je	.vfs_read	; yes
 
-	; zapisać ciąg danych do pliku?
+	; store a string of data into the file?
 	cmp	ax,	KERNEL_SERVICE_VFS_write
-	je	.vfs_write	; tak
+	je	.vfs_write	; yes
 
-	; brak obsługi podprocedury
+	; no handling of the subprocedure
 	jmp	kernel_service.error
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rcx - rozmiar ścieżki w Bajtach
-;	rdx - ilość danych w Bajtach
-;	rsi - wskaźnik do ciągu reprezentującego ścieżkę
-;	rdi - wskaźnik do danych
+; input:
+;\trcx - size of the path in Bytes
+;\trdx - number of the data in Bytes
+;\trsi - pointer to the string representing the path
+;\trdi - pointer to the data
 .vfs_write:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
 	push	rdx
 	push	rdi
 
-	; zmienna lokalna
+	; local variable
 	push	STATIC_FALSE
 
-	; rozwiąż ścieżkę do pliku
+	; resolve the path to the file
 	call	kernel_vfs_path_resolve
-	jc	.vfs_write_end	; nie udało sie rozwiązać ścieżki do ostatniego pliku
+	jc	.vfs_write_end	; the path to the last file could not be resolved
 
-	; odszukaj plik w katalogu docelowym
+	; look for the file in the target directory
 	call	kernel_vfs_file_find
-	jnc	.vfs_write_ready	; nie znaleziono podanego pliku
+	jnc	.vfs_write_ready	; the given file was not found
 
-	; utwórz pusty plik o danej nazwie
+	; create an empty file with the given name
 	mov	dl,	KERNEL_VFS_FILE_TYPE_regular_file
 	call	kernel_vfs_file_touch
-	jc	.vfs_write_end	; nie udało się utworzyć pliku
+	jc	.vfs_write_end	; the file could not be created
 
-	; utworzono pusty plik
+	; an empty file was created
 	mov	qword [rsp],	STATIC_TRUE
 
 .vfs_write_ready:
-	; zapisz dane do pliku
+	; store the data into the file
 	mov	rcx,	qword [rsp + STATIC_QWORD_SIZE_byte * 0x02]
 	mov	rsi,	qword [rsp + STATIC_QWORD_SIZE_byte]
 	call	kernel_vfs_file_write
-	jnc	.vfs_write_end	; pomyślnie zapisano dane do pliku
+	jnc	.vfs_write_end	; the data were stored into the file successfully
 
-	; utworzono pusty plik
+	; an empty file was created
 	cmp	byte [rsp],	STATIC_FALSE
-	je	.vfs_write_end	; nie
+	je	.vfs_write_end	; no
 
 	; debug
 	xchg	bx,bx
 
 .vfs_write_end:
-	; zwolnij zmienną lokalną
+	; release the local variable
 	add	rsp,	STATIC_QWORD_SIZE_byte
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rdx
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.vfs_write"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rcx - rozmiar ścieżki w Bajtach
-;	rsi - wskaźnik do ciągu reprezentującego ścieżkę
-; wyjście:
-;	Flaga CF - jeśli nie udało się wczytać pliku lub nie znaleziono
-;	rcx - rozmiar pliku w Bajtach
-;	rdi - wskaźnik do przestrzeni z danymi pliku
+; input:
+;\trcx - size of the path in Bytes
+;\trsi - pointer to the string representing the path
+; output:
+;\tCF flag - if the file could not be read or was not found
+;\trcx - size of the file in Bytes
+;\trdi - pointer to the area with the data of the file
 .vfs_read:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rsi
 	push	rdi
 	push	rcx
 
-	; rozwiąż ścieżkę do pliku
+	; resolve the path to the file
 	call	kernel_vfs_path_resolve
-	jc	.vfs_read_end	; nie udało sie rozwiązać ścieżki do ostatniego pliku
+	jc	.vfs_read_end	; the path to the last file could not be resolved
 
-	; odszukaj plik w katalogu docelowym
+	; look for the file in the target directory
 	call	kernel_vfs_file_find
-	jc	.vfs_read_end	; nie znaleziono podanego pliku
+	jc	.vfs_read_end	; the given file was not found
 
-	; ustaw wskaźnik źródłowy na supeł pliku
+	; set the source pointer to the file spool
 	mov	rsi,	rdi
 
-	; pobierz rozmiar pliku w Bajtach/blokach
+	; fetch the size of the file in Bytes/blocks
 	mov	rcx,	qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.size]
 
-	; plik typu: zwykły plik?
+	; the file is of the type: regular file?
 	test	byte [rsi + KERNEL_VFS_STRUCTURE_KNOT.type],	KERNEL_VFS_FILE_TYPE_regular_file
-	jnz	.vfs_read_regular_file	; tak
+	jnz	.vfs_read_regular_file	; yes
 
-	; ilość wykorzystanej przestrzeni dla bloków danych w Bajtach
+	; amount of the space used for the data blocks in Bytes
 	xor	eax,	eax
 
-	; pobierz wskaźnik pierwszego bloku danych
+	; fetch the pointer to the first data block
 	mov	rcx,	qword [rsi + KERNEL_VFS_STRUCTURE_KNOT.data]
 
 .vfs_read_block:
-	; zwiększ rozmiar katalogu w Bajtach
+	; increase the size of the directory in Bytes
 	add	rax,	STATIC_STRUCTURE_BLOCK.link
 
-	; pobierz wskaźnik następnego bloku danych
+	; fetch the pointer to the next data block
 	mov	rcx,	qword [rcx + STATIC_STRUCTURE_BLOCK.link]
 
-	; koniec bloków danych?
+	; end of the data blocks?
 	test	rcx,	rcx
-	jnz	.vfs_read_block	; nie
+	jnz	.vfs_read_block	; no
 
-	; zróć rozmiar pliku w Bajtach
+	; return the size of the file in Bytes
 	mov	rcx,	rax
 
 .vfs_read_regular_file:
-	; przygotuj przestrzeń dla ładowanego pliku w przestrzeni procesu
+	; prepare the area for the loaded file in the area of the process
 	call	library_page_from_size
 	call	kernel_memory_alloc_task
-	jc	.vfs_read_end	; brak miejsca w pamięci
+	jc	.vfs_read_end	; not enough memory
 
-	; załaduj zawartość pliku do przestrzeni pamięci procesu
+	; load the content of the file into the memory area of the process
 	call	kernel_vfs_file_read
-	jc	.vfs_read_end	; załadowano poprawnie
+	jc	.vfs_read_end	; loaded correctly
 
-	; zwróć informacje o rozmiarze i wskaźniku do danych pliku
+	; return the information about the size and the pointer to the data of the file
 	mov	qword [rsp],	rcx
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rdi
 
-	; koniec obsługi procedury
+	; end of the procedure handling
 	jmp	.vfs_read_end
 
 .vfs_read_end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rdi
 	pop	rsi
 	pop	rax
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.vfs_read"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rcx - rozmiar ścieżki w Bajtach
-;	rsi - wskaźnik do ciągu reprezentującego ścieżkę
-; wyjście:
-;	rcx - ilość wpisów
-;	rdi - wskaźnik do przestrzeni z wpisami
+; input:
+;\trcx - size of the path in Bytes
+;\trsi - pointer to the string representing the path
+; output:
+;\trcx - number of the entries
+;\trdi - pointer to the area with the entries
 .vfs_dir:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rdx
@@ -952,109 +952,109 @@ kernel_service:
 	push	rdi
 	push	rcx
 
-	; rozwiąż ścieżkę do pliku
+	; resolve the path to the file
 	call	kernel_vfs_path_resolve
-	jc	.vfs_dir_end	; nie udało sie rozwiązać ścieżki do ostatniego pliku
+	jc	.vfs_dir_end	; the path to the last file could not be resolved
 
-	; odszukaj plik w katalogu docelowym
+	; look for the file in the target directory
 	call	kernel_vfs_file_find
-	jc	.vfs_dir_end	; nie znaleziono podanego pliku
+	jc	.vfs_dir_end	; the given file was not found
 
-	; typ pliku: katalog?
+	; the type of the file: directory?
 	test	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.type],	KERNEL_VFS_FILE_TYPE_directory
-	jz	.vfs_dir_not	; nie
+	jz	.vfs_dir_not	; no
 
-	; pobierz ilość wpisów w katalogu i ustaw wskaźnik źródłowy na pierwszy blok danych
+	; fetch the number of the entries in the directory and set the source pointer to the first data block
 	mov	rsi,	qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.data]
 
-	; oblicz rozmiar wymaganej przestrzeni dla wszystkich supłów
+	; compute the size of the area required for all the spools
 	mov	eax,	KERNEL_VFS_STRUCTURE_KNOT.SIZE
 	mul	qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.size]
 
-	; zamień na ilość stron
+	; convert into the number of pages
 	mov	rcx,	rax
 	call	library_page_from_size
 
-	; zarezerwuj przestrzeń dla procesu
+	; reserve the area for the process
 	call	kernel_memory_alloc_task
-	jc	.vfs_dir_end	; brak miejsca w pamięci
+	jc	.vfs_dir_end	; not enough memory
 
-	; ilość wpisów przekazanych do procesu
+	; number of the entries transferred to the process
 	xor	ebx,	ebx
 
-	; zachowaj wskaźnik do przestrzeni
+	; save the pointer to the area
 	push	rdi
 
 .vfs_dir_reload:
-	; ilość wpisów na blok danych
+	; number of the entries in a data block
 	mov	edx,	STATIC_STRUCTURE_BLOCK.link / KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
 .vfs_dir_loop:
-	; wpis zajęty?
+	; the entry is occupied?
 	test	word [rsi + KERNEL_VFS_STRUCTURE_KNOT.flags],	KERNEL_VFS_FILE_FLAGS_reserved
-	jz	.vfs_dir_next	; nie, sprawdź następny
+	jz	.vfs_dir_next	; no, check the next one
 
-	; kopiuj informacje o suple do przestrzeni procesu
+	; copy the information about the spool into the area of the process
 	mov	ecx,	KERNEL_VFS_STRUCTURE_KNOT.SIZE
 	rep	movsb
 
-	; przekazano wpis
+	; the entry was transferred
 	inc	rbx
 
-	; ustaw wskaźnik spowrotem na wpis
+	; set the pointer back to the entry
 	sub	rsi,	KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
 .vfs_dir_next:
-	; przesuń wskaźnik na następny wpis
+	; move the pointer to the next entry
 	add	rsi,	KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
-	; koniec wpisów w bloku?
+	; end of the entries in the block?
 	dec	edx
-	jnz	.vfs_dir_loop	; nie
+	jnz	.vfs_dir_loop	; no
 
-	; załaduj następny blok danych katalogu
+	; load the next data block of the directory
 	and	si,	STATIC_PAGE_mask
 	mov	rsi,	qword [rsi + STATIC_STRUCTURE_BLOCK.link]
 
-	; koniec bloków danych?
+	; end of the data blocks?
 	test	rsi,	rsi
-	jnz	.vfs_dir_reload	; nie
+	jnz	.vfs_dir_reload	; no
 
-	; przywróć wskaźnik do przestrzeni
+	; restore the pointer to the area
 	pop	rdi
 
-	; zwróć ilość wpisów przekazanych do procesu
+	; return the number of the entries transferred to the process
 	mov	qword [rsp],	rbx
-	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rdi	; oraz wskaźnik do przestrzeni
+	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rdi	; and the pointer to the area
 
-	; koniec obsługi procedury
+	; end of the procedure handling
 	jmp	.vfs_dir_end
 
 .vfs_dir_not:
-	; ustaw wskaźnik źródłowy
+	; set the source pointer
 	mov	rsi,	rdi
 
-	; przydziel przestrzeń pamięci o podanym rozmiarze dla procesu
-	mov	rcx,	0x01	; 4 KiB dla jednego supła :/
+	; allocate the memory area of the given size for the process
+	mov	rcx,	0x01	; 4 KiB for a single spool :/
 	call	kernel_memory_alloc_task
-	jc	.vfs_dir_end	; brak miejsca w pamięci
+	jc	.vfs_dir_end	; not enough memory
 
-	; zachowaj wskaźnik przestrzeni danych procesu
+	; save the pointer to the data area of the process
 	push	rdi
 
-	; kopiuj informacje o suple do przestrzeni procesu
+	; copy the information about the spool into the area of the process
 	mov	ecx,	KERNEL_VFS_STRUCTURE_KNOT.SIZE
 	rep	movsb
 
-	; przywróć wskaźnik przestrzeni danych procesu
+	; restore the pointer to the data area of the process
 	pop	rdi
-	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rdi	; zwróć do procesu
+	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rdi	; return to the process
 
-	; zwróć informacje o ilości przekazanych supłów
+	; return the information about the number of the transferred spools
 	mov	qword [rsp],	0x01
 
 .vfs_dir_end:
-	; przywróć oryginale rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rdi
 	pop	rsi
@@ -1062,110 +1062,110 @@ kernel_service:
 	pop	rbx
 	pop	rax
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.vfs_dir"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rcx - ilość znaków w ścieżce do pliku
-;	dl - typ pliku
-;	rsi - wskaźnik do ścieżki
+; input:
+;\trcx - number of characters in the path to the file
+;\tdl - type of the file
+;\trsi - pointer to the path
 .vfs_touch:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdi
 
-	; rozwiąż ścieżkę do pliku
+	; resolve the path to the file
 	call	kernel_vfs_path_resolve
-	jc	.vfa_touch_end	; błąd, niepoprawna ścieżka
+	jc	.vfa_touch_end	; error, invalid path
 
-	; utwórz pusty plik
+	; create an empty file
 	call	kernel_vfs_file_touch
 
 .vfa_touch_end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rax
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.vfs_touch"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rcx - ilość znaków w ciągu
-;	rsi - wskaźnik do ciągu reprezentujący nazwę/ścieżkę pliku
-; wyjście:
-;	Flaga CF - jeśli plik nie istnieje
-;	bl - typ pliku
+; input:
+;\trcx - number of characters in the string
+;\trsi - pointer to the string representing the name/path of the file
+; output:
+;\tCF flag - if the file does not exist
+;\tbl - type of the file
 .vfs_exist:
-	; kod błędu, brak
+	; error code, none
 	xor	eax,	eax
 
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; rozwiąż ścieżkę do programu
+	; resolve the path to the program
 	call	kernel_vfs_path_resolve
-	jc	.vfs_exist_not	; błąd, niepoprawna ścieżka
+	jc	.vfs_exist_not	; error, invalid path
 
-	; odszukaj program w danym katalogu
+	; look for the program in the given directory
 	call	kernel_vfs_file_find
 
-	; zwróć informacje o typie pliku
+	; return the information about the type of the file
 	mov	bl,	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.type]
 
 .vfs_exist_not:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 
-	; zwróć kod błędu
+	; return the error code
 	mov	qword [rsp],	rax
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.vfs_exist"
 
 ;===============================================================================
 .system:
-	; zwrócić właściwości pamięci RAM
+	; return the properties of the RAM memory
 	cmp	ax,	KERNEL_SERVICE_SYSTEM_memory
-	je	.system_memory	; tak
+	je	.system_memory	; yes
 
-	; zwrócić informacje o czasie?
+	; return the information about the time?
 	cmp	ax,	KERNEL_SERVICE_SYSTEM_time
 	je	.system_time
 
-	; brak obsługi podprocedury
+	; no handling of the subprocedure
 	jmp	kernel_service.error
 
 ;-------------------------------------------------------------------------------
 .system_memory:
-	; rozmiar całkowity
+	; total size
 	mov	r8,	qword [rel kernel_page_total_count]
 	mov	r9,	qword [rel kernel_page_free_count]
 	mov	r10,	qword [rel kernel_page_paged_count]
 
-	; powrót do procesu
+	; return to the process
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.system_memory"
 
 ;-------------------------------------------------------------------------------
 .system_time:
-	; zwróć uptime systemu (1 sekunda to 1024 tyknięcia)
+	; return the system uptime (1 second is 1024 ticks)
 	mov	rax,	qword [rel driver_rtc_microtime]
 	mov	qword [rsp],	rax
 
-	; koniec obsługi opcji
+	; end of the option handling
 	jmp	kernel_service.end
 
 	macro_debug	"kernel_service.system_time"

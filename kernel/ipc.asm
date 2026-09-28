@@ -10,195 +10,195 @@ kernel_ipc_base_address		dq	STATIC_EMPTY
 kernel_ipc_entry_count		dq	STATIC_EMPTY
 
 ;===============================================================================
-; wejście:
-;	rbx - PID procesu docelowego
-;	ecx - rozmiar przestrzeni w Bajtach lub jeśli wartość pusta, 40 Bajtów z pozycji wskaźnika RSI
-;	rsi - wskaźnik do przestrzeni danych
+; input:
+;\trbx - PID of the target process
+;\tecx - size of the data area in Bytes, or if the value is empty, 40 Bytes from the RSI pointer position
+;\trsi - pointer to the data area
 kernel_ipc_insert:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 	push	rsi
 	push	rdi
 	push	rcx
 
-	; pobierz PID procesu wywołującego
+	; fetch the PID of the calling process
 	call	kernel_task_active
 	mov	rdx,	qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
 .retry:
-	; uzyskaj dostęp do listy komunikatów
+	; get the access to the message list
 	macro_lock	kernel_ipc_semaphore, 0
 
-	; pobierz aktualny czas systemu
+	; fetch the current system time
 	mov	rax,	qword [rel driver_rtc_microtime]
 
-	; ilość dostępnych wpisów na liście
+	; number of the available entries on the list
 	mov	rcx,	KERNEL_IPC_ENTRY_limit
 
-	; ustaw wskaźnik na początek listy
+	; set the pointer to the beginning of the list
 	mov	rdi,	qword [rel kernel_ipc_base_address]
 
 .loop:
-	; wpis przeterminowany?
+	; the entry has expired?
 	cmp	rax,	qword [rdi + KERNEL_IPC_STRUCTURE.ttl]
-	ja	.found	; tak
+	ja	.found	; yes
 
-	; przesuń wskaźnik na następny wpis
+	; move the pointer to the next entry
 	add	rdi,	KERNEL_IPC_STRUCTURE.SIZE
 
-	; sprawdzić następny wpis?
+	; check the next entry?
 	dec	rcx
-	jnz	.loop	; tak
+	jnz	.loop	; yes
 
-	; zwolnij dostęp do listy komunikatów
+	; release the access to the message list
 	mov	byte [rel kernel_ipc_semaphore],	STATIC_FALSE
 
-	; sprawdź raz jeszcze
+	; check once more
 	jmp	.retry
 
 .found:
-	; ustaw PID nadawcy
+	; set the PID of the sender
 	mov	qword [rdi + KERNEL_IPC_STRUCTURE.pid_source],	rdx
 
-	; ustaw PID odbiorcy
+	; set the PID of the receiver
 	mov	qword [rdi + KERNEL_IPC_STRUCTURE.pid_destination],	rbx
 
-	; typ wiadomości
+	; message type
 	mov	bl,	byte [rsi + KERNEL_IPC_STRUCTURE.type]
 	mov	byte [rdi + KERNEL_IPC_STRUCTURE.type],	bl
 
-	; przywróć oryginalny rejestr
+	; restore the original register
 	mov	rcx,	qword [rsp]
 
-	; rozmiar przestrzeni danych pusty?
+	; the data area size is empty?
 	test	rcx,	rcx
-	jz	.load	; tak, uzupełnij komunikat danymi z wskaźnika RSI
+	jz	.load	; yes, fill the message with the data from the RSI pointer
 
-	; ustaw rozmiar danych przestrzeni
+	; set the data area size
 	mov	qword [rdi + KERNEL_IPC_STRUCTURE.size],	rcx
 
-	; ustaw wskaźnik do przestrzeni danych
+	; set the pointer to the data area
 	mov	qword [rdi + KERNEL_IPC_STRUCTURE.pointer],	rsi
 
-	; koniec tworzenia wiadomości do procesu
+	; end of creating the message for the process
 	jmp	.end
 
 .load:
-	; zachowaj wskaźnik początku wpisu
+	; save the pointer to the beginning of the entry
 	push	rdi
 
-	; załaduj treść wiadomości
+	; load the content of the message
 	mov	ecx,	KERNEL_IPC_STRUCTURE.SIZE - KERNEL_IPC_STRUCTURE.data
 	add	rsi,	KERNEL_IPC_STRUCTURE.data
 	add	rdi,	KERNEL_IPC_STRUCTURE.data
 	rep	movsb
 
-	; przywróć wskaźnik początku wpisu
+	; restore the pointer to the beginning of the entry
 	pop	rdi
 
 .end:
-	; ilość wiadomości na liście
+	; number of the messages on the list
 	inc	qword [rel kernel_ipc_entry_count]
 
-	; ustaw czas przedawnienia wiadomości
+	; set the expiry time of the message
 	add	rax,	KERNEL_IPC_TTL_default
 	mov	qword [rdi + KERNEL_IPC_STRUCTURE.ttl],	rax
 
-	; zwolnij dostęp
+	; release the access
 	mov	byte [rel kernel_ipc_semaphore],	STATIC_FALSE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rdi
 	pop	rsi
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_ipc_insert"
 
 ;===============================================================================
-; wejście:
-;	rdi - wskaźnik do miejsca docelowego
-; wyjście:
-;	Flaga CF jeśli brak wiadomości
+; input:
+;\trdi - pointer to the destination location
+; output:
+;\tCF flag if there is no message
 kernel_ipc_receive:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; istnieją komunikaty na liście?
+	; are there any messages on the list?
 	cmp	qword [rel kernel_ipc_entry_count],	STATIC_EMPTY
-	je	.empty	; nie
+	je	.empty	; no
 
-	; pobierz PID procesu wywołującego
+	; fetch the PID of the calling process
 	call	kernel_task_active_pid
 
-	; ilość dostępnych wpisów na liście
+	; number of the available entries on the list
 	mov	rcx,	KERNEL_IPC_ENTRY_limit
 
-	; ustaw wskaźnik na początek listy
+	; set the pointer to the beginning of the list
 	mov	rsi,	qword [rel kernel_ipc_base_address]
 
-	; pobierz aktualny czas systemu
+	; fetch the current system time
 	mov	rdi,	qword [rel driver_rtc_microtime]
 
 .loop:
-	; wpis dla procesu?
+	; an entry for the process?
 	cmp	qword [rsi + KERNEL_IPC_STRUCTURE.pid_destination],	rax
-	jne	.next	; nie
+	jne	.next	; no
 
-	; wiadomość przeterminowana?
+	; the message has expired?
 	cmp	rdi,	qword [rsi + KERNEL_IPC_STRUCTURE.ttl]
-	jbe	.found	; nie
+	jbe	.found	; no
 
 .next:
-	; przesuń wskaźnik na następny wpis
+	; move the pointer to the next entry
 	add	rsi,	KERNEL_IPC_STRUCTURE.SIZE
 
-	; pozostały wpisy do przejrzenia?
+	; any entries left to review?
 	dec	rcx
-	jnz	.loop	; tak
+	jnz	.loop	; yes
 
-	; brak wiadomości dla procesu
+	; no message for the process
 
 .empty:
-	; flaga, błąd
+	; flag, error
 	stc
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.error
 
 .found:
-	; prześlij komunikat do przestrzeni procesu
+	; pass the message into the area of the process
 	mov	ecx,	KERNEL_IPC_STRUCTURE.SIZE
 	mov	rdi,	qword [rsp]
 	rep	movsb
 
-	; zwolnij wpis na liście
+	; release the entry on the list
 	mov	qword [rsi - KERNEL_IPC_STRUCTURE.SIZE],	STATIC_EMPTY
 
-	; ilość komunikatów na liście
+	; number of the messages on the list
 	dec	qword [rel kernel_ipc_entry_count]
 
-	; flaga, sukces
+	; flag, success
 	clc
 
 .error:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_ipc_receive"

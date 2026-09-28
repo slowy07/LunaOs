@@ -16,7 +16,7 @@ KERNEL_APIC_ICH_register		equ	0x0310	; Interrupt Command Register (bits 32..63)
 KERNEL_APIC_LVT_TR_register		equ	0x0320	; Local Vector Timer - Timer Register
 KERNEL_APIC_LVT_TR_FLAG_mask_interrupts	equ	00000000000000010000000000000000b
 KERNEL_APIC_TICR_register		equ	0x0380
-KERNEL_APIC_TCCR_register		equ	0x0390	; aktualny licznik pozostałego czasu procesora logicznego
+KERNEL_APIC_TCCR_register		equ	0x0390	; current counter of the remaining time of the logical processor
 KERNEL_APIC_TDC_register		equ	0x03E0
 KERNEL_APIC_TDC_divide_by_1		equ	0x0B
 KERNEL_APIC_TDC_divide_by_16		equ	0x03
@@ -31,13 +31,13 @@ kernel_apic_count			db	STATIC_EMPTY
 kernel_apic_id_table	times	0x0100	db	STATIC_EMPTY
 
 ;===============================================================================
-; wyjście:
-;	rax - identyfikator procesora logicznego
+; output:
+;	rax - identifier of the logical processor
 kernel_apic_id_get:
 	; macro
 	macro_apic_id_get
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_apic_id_get"

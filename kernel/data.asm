@@ -11,17 +11,17 @@ kernel_init_exec_end:
 ;===============================================================================
 ; GDT
 ;===============================================================================
-; wyrównaj pozycję nagłówka do pełnego adresu
+; bring the header position to a full address
 align	STATIC_QWORD_SIZE_byte,				db	STATIC_NOTHING
 kernel_gdt_header					dw	STATIC_PAGE_SIZE_byte
 							dq	STATIC_EMPTY
 
-; wyrównaj miejsca wskaźników do pełnego adresu
+; bring the pointer positions to a full address
 align	STATIC_QWORD_SIZE_byte,				db	STATIC_NOTHING
 kernel_gdt_tss_bsp_selector				dw	STATIC_EMPTY
 kernel_gdt_tss_cpu_selector				dw	STATIC_EMPTY
 
-; wyrównaj pozycję tablicy do pełnego adresu
+; bring the table position to a full address
 align	STATIC_QWORD_SIZE_byte,				db	STATIC_NOTHING
 kernel_gdt_tss_table:
 							dd	STATIC_EMPTY
@@ -32,7 +32,7 @@ kernel_gdt_tss_table_end:
 ;===============================================================================
 ; IDT
 ;===============================================================================
-; wyrównaj pozycję nagłówka do pełnego adresu
+; bring the header position to a full address
 align	STATIC_QWORD_SIZE_byte,				db	STATIC_NOTHING
 kernel_idt_header:
 							dw	STATIC_PAGE_SIZE_byte
@@ -41,10 +41,10 @@ kernel_idt_header:
 ;===============================================================================
 ; VIDEO
 ;===============================================================================
-kernel_video_width_pixel				dq	STATIC_EMPTY	; szerokość w pikselach
-kernel_video_height_pixel				dq	STATIC_EMPTY	; wysokość w pikselach
-kernel_video_base_address				dq	STATIC_EMPTY	; wskaźnik do przestrzeni danych terminala
-kernel_video_size_byte					dq	STATIC_EMPTY	; rozmiar przestrzeni w Bajtach
+kernel_video_width_pixel				dq	STATIC_EMPTY	; width in pixels
+kernel_video_height_pixel				dq	STATIC_EMPTY	; height in pixels
+kernel_video_base_address				dq	STATIC_EMPTY	; pointer to the terminal data area
+kernel_video_size_byte					dq	STATIC_EMPTY	; size of the area in Bytes
 kernel_video_scanline_byte				dq	STATIC_EMPTY	; scanline_byte
 
 macro_debug	"kernel_data"

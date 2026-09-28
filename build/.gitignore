@@ -8,3 +8,18 @@ kernel.list
 shell
 wello
 free
+
+# upstream (make.sh)
+zero
+bootsector
+library
+disk.raw
+tm
+hello
+console
+ls
+cat
+moko
+redia
+soler
+taris

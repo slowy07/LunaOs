@@ -1,91 +1,125 @@
-DRIVER_SERIAL_PORT_COM1 equ 0x03F8
-DRIVER_SERIAL_PORT_COM2 equ 0x02F8
+;===============================================================================
+; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
+; GPL-3.0 License
+;
+; Main developer:
+;	Andrzej Adamczyk
+;===============================================================================
 
-struc DRIVER_SERIAL_STRUCTURE_REGISTERS
- .data_or_divisor_low resb 1
- .interrupt_enable_or_divisor_high resb 1
- .interrupt_identification_or_fifo resb 1
- .line_control_or_dlab resb 1
- .modem_control resb 1
- .line_status resb 1
- .modem_status resb 1
- .scratch resb 1
+DRIVER_SERIAL_PORT_COM1				equ	0x03F8
+DRIVER_SERIAL_PORT_COM2				equ	0x02F8
+
+struc	DRIVER_SERIAL_STRUCTURE_REGISTERS
+	.data_or_divisor_low			resb	1
+	.interrupt_enable_or_divisor_high	resb	1
+	.interrupt_identification_or_fifo	resb	1
+	.line_control_or_dlab			resb	1
+	.modem_control				resb	1
+	.line_status				resb	1
+	.modem_status				resb	1
+	.scratch				resb	1
 endstruc
 
+;===============================================================================
 driver_serial:
- push rax
- push rdx
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rdx
 
- mov al, 0x00
- mov dx, DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.interrupt_enable_or_divisor_high
- out dx, al
+	; wyłącz generowanie przerwań
+	mov	al,	0x00
+	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.interrupt_enable_or_divisor_high
+	out	dx,	al
 
- mov al, 0x80
- mov dx, DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.line_control_or_dlab
- out dx, al
+	; włącz DLAB (podzielnik częstotliwości)
+	mov	al,	0x80
+	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.line_control_or_dlab
+	out	dx,	al
 
- mov al, 0x03
- mov dx, DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.data_or_divisor_low
- out dx, al
- mov al, 0x00
- mov dx, DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.interrupt_enable_or_divisor_high
- out dx, al
- 
- mov al, 0x03
- mov dx, DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.line_control_or_dlab
- out dx, al
+	; częstotliwość 115200
+	mov	al,	0x03
+	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.data_or_divisor_low
+	out	dx,	al
+	mov	al,	0x00
+	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.interrupt_enable_or_divisor_high
+	out	dx,	al
 
- mov al, 0xC7
- mov dx, DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.interrupt_identification_or_fifo
- out dx, al
+	; 8 bitów na znak, bez parzystości, 1 bit końca
+	mov	al,	0x03
+	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.line_control_or_dlab
+	out	dx,	al
 
- pop rdx
- pop rax
+	; włącz FIFO, wyczyść z 14 Bajtowym progiem
+	mov	al,	0xC7
+	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.interrupt_identification_or_fifo
+	out	dx,	al
 
- ret
+	; przywóć oryginalne rejestry
+	pop	rdx
+	pop	rax
 
+	; powrót z procedury
+	ret
+
+;===============================================================================
+; wejście:
+;	rsi - wskaźnik do danych zakończony terminatorem
 driver_serial_send:
- push rax
- push rdx
- push rbp
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rdx
+	push	rsi
 
- mov dx, DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.data_or_divisor_low
+	; numer portu wyjściowego
+	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.data_or_divisor_low
 
 .loop:
- cmp byte [rbp], STATIC_ASCII_TERMINATOR
- je .end
+	; pobierz znak z ciągu
+	lodsb
 
- call driver_serial_ready
+	; koniec ciągu?
+	test	al,	al
+	jz	.end	; tak
 
- mov al, byte [rbp]
- 
- out dx, al
+	; odczekaj na gotowość kontrolera
+	call	driver_serial_ready
 
- inc rbp
+	; wyślij znak na port
+	out	dx,	al
 
- jmp .loop
+	; wyświetl pozostałe dane ciągu
+	jmp	.loop
 
 .end:
- pop rbp
- pop rdx
- pop rax
+	; przywróć oryginalne rejestry
+	pop	rsi
+	pop	rdx
+	pop	rax
 
- ret
+	; powrót z procedury
+	ret
 
+
+;===============================================================================
 driver_serial_ready:
- push rax
- push rdx
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rdx
 
- mov dx, DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.line_status
- 
+	; ustaw port
+	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.line_status
+
 .loop:
- in al, dx
+	; pobierz stan kontrolera
+	in	al,	dx
 
- test al, 01100000b
- jz .loop
+	; bufor pusty?
+	test	al,	01100000b
+	jz	.loop	; nie
 
- pop rdx
- pop rax
+	; przywróć oryginalne rejestry
+	pop	rdx
+	pop	rax
 
- ret
-
+	; powrót z procedury
+	ret

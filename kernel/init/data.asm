@@ -1,113 +1,174 @@
-kernel_init_string_name db KERNEL_name
+;===============================================================================
+; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
+; GPL-3.0 License
+;
+; Main developer:
+;	Andrzej Adamczyk
+;===============================================================================
+
+kernel_init_string_name				db	KERNEL_name
 kernel_init_string_name_end:
 
-kernel_init_string_error_memory db "Init: Memory map, error."
-kernel_init_string_error_memory_end:
-kernel_init_string_error_memory_low db "Not enough memory."
-kernel_init_string_error_memory_low_end:
-kernel_init_string_acpi_search db "Looking for a RSDP/XSDP table, "
-kernel_init_string_acpi_search_end:
+kernel_init_string_error_memory			db	"Error: Memory map damaged.", STATIC_SCANCODE_TERMINATOR
+kernel_init_string_error_memory_low		db	"Error: Not enough memory.", STATIC_SCANCODE_TERMINATOR
+kernel_init_string_error_acpi_header		db	"Error: RSDP/XSDP not found.", STATIC_SCANCODE_TERMINATOR
+kernel_init_string_error_acpi			db	"Error: RSDT/XSDT not recognized.", STATIC_SCANCODE_TERMINATOR
+kernel_init_string_error_apic			db	"Error: APIC not found.", STATIC_SCANCODE_TERMINATOR
+kernel_init_string_error_ioapic			db	"Error: I/O APIC not found.", STATIC_SCANCODE_TERMINATOR
 
-kernel_init_string_acpi_search_found:
- db "found.", STATIC_ASCII_NEW_LINE
-
-kernel_init_string_acpi_search_found_end:
-kernel_init_string_error_acpi db "not found."
-kernel_init_string_error_acpi_end:
-kernel_init_string_error_acpi_corrupted db "ACPI table, corrupted."
-kernel_init_string_error_acpi_corrupted_end:
-kernel_init_string_error_apic db "APIC table not found."
-kernel_init_string_error_apic_end:
-kernel_init_string_error_ioapic db "I/O APIC table not found."
-kernel_init_string_error_ioapic_end:
-
-kernel_init_string_welcome db STATIC_COLOR_ASCII_GREEN_LIGHT, "Welcome to Luna OS!", STATIC_COLOR_ASCII_GRAY, " (v", KERNEL_version, ".", KERNEL_revision, " ", KERNEL_architecture, ")", STATIC_ASCII_NEW_LINE
-kernel_init_string_welcome_end:
-kernel_init_string_video db STATIC_COLOR_ASCII_GREEN_LIGHT, "--", STATIC_COLOR_ASCII_DEFAULT, " Video resolution at ", STATIC_COLOR_ASCII_WHITE
-kernel_init_string_video_end:
-kernel_init_string_video_separator db STATIC_COLOR_ASCII_DEFAULT, "x", STATIC_COLOR_ASCII_WHITE
-kernel_init_string_video_separator_end:
-kernel_init_string_video_font db STATIC_COLOR_ASCII_GREEN_LIGHT, "--", STATIC_COLOR_ASCII_DEFAULT, " Font: ", STATIC_COLOR_ASCII_DEFAULT
-kernel_init_string_video_font_end:
-kernel_init_string_memory_size db STATIC_COLOR_ASCII_GREEN_LIGHT, "--", STATIC_COLOR_ASCII_DEFAULT, " Available ", STATIC_COLOR_ASCII_WHITE
-kernel_init_string_memory_size_end:
-kernel_init_string_memory_format db STATIC_COLOR_ASCII_DEFAULT, " KiB of RAM memory.", STATIC_ASCII_NEW_LINE
-kernel_init_string_memory_format_end:
-kernel_init_string_storage_ide db STATIC_COLOR_ASCII_GREEN_LIGHT, "--", STATIC_COLOR_ASCII_DEFAULT, " IDE storage devices:", STATIC_ASCII_NEW_LINE
-kernel_init_string_storage_ide_end:
-kernel_init_string_storage_ide_hd db "   "
-kernel_init_string_storage_ide_hd_path db "/dev/hd"
-kernel_init_string_storage_ide_hd_letter db "a"
+kernel_init_string_storage_ide_hd_path		db	"/dev/hd"
+kernel_init_string_storage_ide_hd_letter	db	"a"
 kernel_init_string_storage_ide_hd_end:
-kernel_init_string_storage_ide_size db " of size ", STATIC_COLOR_ASCII_WHITE
-kernel_init_string_storage_ide_size_end:
-kernel_init_string_storage_ide_format db " KiB", STATIC_ASCII_NEW_LINE
-kernel_init_string_storage_ide_format_end:
 
-kernel_init_apic_semaphore db STATIC_FALSE
-kernel_init_ioapic_semaphore db STATIC_FALSE
-kernel_init_smp_semaphore db STATIC_FALSE
-kernel_init_ap_semaphore db STATIC_FALSE
-kernel_init_ap_count db STATIC_EMPTY
+kernel_init_apic_semaphore			db	STATIC_FALSE
+kernel_init_ioapic_semaphore			db	STATIC_FALSE
+kernel_init_smp_semaphore			db	STATIC_FALSE
+kernel_init_ap_semaphore			db	STATIC_FALSE
+kernel_init_ap_count				db	STATIC_EMPTY
 
-kernel_init_apic_id_highest db STATIC_EMPTY
+kernel_init_apic_id_highest			db	STATIC_EMPTY
 
 kernel_init_services_list:
- dq service_tresher
- db 7
- db "tresher"
+						dq	kernel_gc
+						dq	kernel_gc_end - kernel_gc
+						db	17
+						db	"garbage collector"
+						dq	kernel_wm
+						dq	kernel_wm_end - kernel_wm
+						db	14
+						db	"window manager"
+						dq	kernel_gui
+						dq	kernel_gui_end - kernel_gui
+						db	24
+						db	"graphical user interface"
+						; dq	service_tx
+						; dq	service_network
+						; dq	service_http
 
- dq service_desu
- db 4
- db "desu"
-
- dq service_workbench
- db 17
- db "service_workbench"
-
- dq STATIC_EMPTY
+						; koniec usług
+						dq	STATIC_EMPTY
 
 kernel_init_vfs_directory_structure:
- db 0x04
- db "/bin"
- db 0x04
- db "/dev"
+						db	0x04
+						db	"/bin"
+						db	0x04
+						db	"/etc"
+						db	0x04
+						db	"/dev"
+						db	0x04
+						db	"/var"
 
- db STATIC_EMPTY
+						; koniec struktury katalogów
+						db	STATIC_EMPTY
 
 kernel_init_vfs_files:
- dq kernel_init_vfs_file_init
- dq kernel_init_vfs_file_init_end - kernel_init_vfs_file_init
- db 9
- db "/bin/init"
+						dq	kernel_init_vfs_file_shell
+						dq	kernel_init_vfs_file_shell_end - kernel_init_vfs_file_shell
+						dw	KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+						db	10
+						db	"/bin/shell"
 
- dq kernel_init_vfs_file_shell
- dq kernel_init_vfs_file_shell_end - kernel_init_vfs_file_shell
- db 10
- db "/bin/shell"
+						dq	kernel_init_vfs_file_hello
+						dq	kernel_init_vfs_file_hello_end - kernel_init_vfs_file_hello
+						dw	KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+						db	10
+						db	"/bin/hello"
 
- dq kernel_init_vfs_file_wello
- dq kernel_init_vfs_file_wello_end - kernel_init_vfs_file_wello
- db 10
- db "/bin/wello"
+						dq	kernel_init_vfs_file_tm
+						dq	kernel_init_vfs_file_tm_end - kernel_init_vfs_file_tm
+						dw	KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+						db	7
+						db	"/bin/tm"
 
- dq kernel_init_vfs_file_free
- dq kernel_init_vfs_file_free_end - kernel_init_vfs_file_free
- db 9
- db "/bin/free"
+						dq	kernel_init_vfs_file_console
+						dq	kernel_init_vfs_file_console_end - kernel_init_vfs_file_console
+						dw	KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+						db	12
+						db	"/bin/console"
 
- dq STATIC_EMPTY
+						dq	kernel_init_vfs_file_ls
+						dq	kernel_init_vfs_file_ls_end - kernel_init_vfs_file_ls
+						dw	KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+						db	7
+						db	"/bin/ls"
 
-kernel_init_vfs_file_init incbin "build/init"
-kernel_init_vfs_file_init_end:
-kernel_init_vfs_file_shell incbin "build/shell"
+						dq	kernel_init_vfs_file_cat
+						dq	kernel_init_vfs_file_cat_end - kernel_init_vfs_file_cat
+						dw	KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+						db	8
+						db	"/bin/cat"
+
+						dq	kernel_init_vfs_file_moko
+						dq	kernel_init_vfs_file_moko_end - kernel_init_vfs_file_moko
+						dw	KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+						db	9
+						db	"/bin/moko"
+
+						dq	kernel_init_vfs_file_redia
+						dq	kernel_init_vfs_file_redia_end - kernel_init_vfs_file_redia
+						dw	KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+						db	10
+						db	"/bin/redia"
+
+						dq	kernel_init_vfs_file_soler
+						dq	kernel_init_vfs_file_soler_end - kernel_init_vfs_file_soler
+						dw	KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+						db	10
+						db	"/bin/soler"
+
+						dq	kernel_init_vfs_file_taris
+						dq	kernel_init_vfs_file_taris_end - kernel_init_vfs_file_taris
+						dw	KERNEL_VFS_FILE_MODE_USER_full_control | KERNEL_VFS_FILE_MODE_GROUP_execute_or_traverse | KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse
+						db	10
+						db	"/bin/taris"
+
+						dq	kernel_init_vfs_file_hostname
+						dq	kernel_init_vfs_file_hostname_end - kernel_init_vfs_file_hostname
+						dw	KERNEL_VFS_FILE_MODE_USER_read | KERNEL_VFS_FILE_MODE_USER_read | KERNEL_VFS_FILE_MODE_USER_read | KERNEL_VFS_FILE_MODE_OTHER_read
+						db	13
+						db	"/etc/hostname"
+
+						dq	kernel_init_vfs_file_welcome
+						dq	kernel_init_vfs_file_welcome_end - kernel_init_vfs_file_welcome
+						dw	KERNEL_VFS_FILE_MODE_USER_read | KERNEL_VFS_FILE_MODE_USER_read | KERNEL_VFS_FILE_MODE_USER_read | KERNEL_VFS_FILE_MODE_OTHER_read
+						db	16
+						db	"/var/welcome.txt"
+
+
+						; koniec listy plików
+						dq	STATIC_EMPTY
+
+kernel_init_vfs_file_shell			incbin	"build/shell"
 kernel_init_vfs_file_shell_end:
-kernel_init_vfs_file_wello incbin "build/wello"
-kernel_init_vfs_file_wello_end:
-kernel_init_vfs_file_free incbin "build/free"
-kernel_init_vfs_file_free_end:
+kernel_init_vfs_file_hello			incbin	"build/hello"
+kernel_init_vfs_file_hello_end:
+kernel_init_vfs_file_tm				incbin	"build/tm"
+kernel_init_vfs_file_tm_end:
+kernel_init_vfs_file_console			incbin	"build/console"
+kernel_init_vfs_file_console_end:
+kernel_init_vfs_file_ls				incbin	"build/ls"
+kernel_init_vfs_file_ls_end:
+kernel_init_vfs_file_cat			incbin	"build/cat"
+kernel_init_vfs_file_cat_end:
+kernel_init_vfs_file_moko			incbin	"build/moko"
+kernel_init_vfs_file_moko_end:
+kernel_init_vfs_file_redia			incbin	"build/redia"
+kernel_init_vfs_file_redia_end:
+kernel_init_vfs_file_soler			incbin	"build/soler"
+kernel_init_vfs_file_soler_end:
+kernel_init_vfs_file_taris			incbin	"build/taris"
+kernel_init_vfs_file_taris_end:
+
+kernel_init_vfs_file_hostname			incbin	"fs/etc/hostname"
+kernel_init_vfs_file_hostname_end:
+
+kernel_init_vfs_file_welcome			incbin	"fs/var/welcome.txt"
+kernel_init_vfs_file_welcome_end:
 
 kernel_init_boot_file:
- incbin "build/boot"
+						incbin	"build/boot"
 kernel_init_boot_file_end:
 
+align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
+kernel_init_library_file			incbin	"build/library"
+kernel_init_library_file_end:

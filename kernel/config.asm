@@ -1,43 +1,34 @@
-%define KERNEL_name "luna"
-%define KERNEL_version "1"
-%define KERNEL_revision "105"
-%define KERNEL_architecture "x86_64"
+;===============================================================================
+; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
+; GPL-3.0 License
+;
+; Main developer:
+;	Andrzej Adamczyk
+;===============================================================================
 
-KERNEL_BASE_address equ 0x0000000000100000
+%define	KERNEL_name					"cyjon"
+%define	KERNEL_version					"0"
+%define	KERNEL_revision					"1403"
+%define	KERNEL_architecture				"x86_64"
 
-KERNEL_STACK_address equ KERNEL_MEMORY_HIGH_VIRTUAL_address - KERNEL_STACK_SIZE_byte
-KERNEL_STACK_pointer equ KERNEL_MEMORY_HIGH_VIRTUAL_address - KERNEL_PAGE_SIZE_byte
-KERNEL_STACK_SIZE_byte equ KERNEL_PAGE_SIZE_byte * 0x02
-KERNEL_STACK_TEMPORARY_pointer equ 0x8000 + KERNEL_PAGE_SIZE_byte
+KERNEL_BASE_address					equ	0x0000000000100000
 
-KERNEL_MEMORY_HIGH_mask equ 0xFFFF000000000000
-KERNEL_MEMORY_HIGH_REAL_address equ 0xFFFF800000000000
-KERNEL_MEMORY_HIGH_VIRTUAL_address equ KERNEL_MEMORY_HIGH_REAL_address - KERNEL_MEMORY_HIGH_mask
+KERNEL_STACK_address					equ	KERNEL_BASE_address - KERNEL_STACK_SIZE_byte
+KERNEL_STACK_pointer					equ	KERNEL_STACK_address + STATIC_PAGE_SIZE_byte
+KERNEL_STACK_SIZE_byte					equ	STATIC_PAGE_SIZE_byte * 0x02	; 4 KiB dla stosu/kontekstu, 4 KiB dla SSE,MMX,AVX
+KERNEL_STACK_TEMPORARY_pointer				equ	0x7000 + STATIC_PAGE_SIZE_byte
 
-KERNEL_SERVICE equ 0x40
+;===============================================================================
+; VIDEO
+;===============================================================================
+KERNEL_VIDEO_DEPTH_shift				equ	2
+KERNEL_VIDEO_DEPTH_byte					equ	4
+KERNEL_VIDEO_DEPTH_bit					equ	32
 
-KERNEL_SERVICE_PROCESS equ 0x0000
-KERNEL_SERVICE_PROCESS_exit equ 0x0000 + KERNEL_SERVICE_PROCESS
-KERNEL_SERVICE_PROCESS_run equ 0x0100 + KERNEL_SERVICE_PROCESS
-KERNEL_SERVICE_PROCESS_check equ 0x0200 + KERNEL_SERVICE_PROCESS
-
-KERNEL_SERVICE_VIDEO equ 0x0001
-KERNEL_SERVICE_VIDEO_string equ 0x0100 + KERNEL_SERVICE_VIDEO
-KERNEL_SERVICE_VIDEO_cursor equ 0x0200 + KERNEL_SERVICE_VIDEO
-KERNEL_SERVICE_VIDEO_char equ 0x0300 + KERNEL_SERVICE_VIDEO
-KERNEL_SERVICE_VIDEO_clean equ 0x0400 + KERNEL_SERVICE_VIDEO
-KERNEL_SERVICE_VIDEO_properties equ 0x0500 + KERNEL_SERVICE_VIDEO
-KERNEL_SERVICE_VIDEO_number equ 0x0600 + KERNEL_SERVICE_VIDEO
-KERNEL_SERVICE_VIDEO_cursor_set equ 0x0700 + KERNEL_SERVICE_VIDEO
-
-KERNEL_SERVICE_KEYBOARD equ 0x0002
-KERNEL_SERVICE_KEYBOARD_key equ 0x0000 + KERNEL_SERVICE_KEYBOARD
-
-KERNEL_SERVICE_VFS equ 0x0003
-KERNEL_SERVICE_VFS_exist equ 0x0000 + KERNEL_SERVICE_VFS
-
-KERNEL_SERVICE_SYSTEM equ 0x0004
-KERNEL_SERVICE_SYSTEM_memory equ 0x0000 + KERNEL_SERVICE_SYSTEM
-
-KERNEL_ERROR_PAGE_memory_low equ 0x0001
-
+;===============================================================================
+; ERROR
+;===============================================================================
+KERNEL_ERROR_memory_low					equ	0x0001
+KERNEL_ERROR_vfs_file_not_found				equ	0x0002
+KERNEL_ERROR_vfs_file_read				equ	0x0003
+KERNEL_ERROR_vfs_file_not_directory			equ	0x0004

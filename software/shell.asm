@@ -1,67 +1,39 @@
- %include "config.asm"
- %include "kernel/config.asm"
- %include "software/shell/config.asm"
+;===============================================================================
+; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
+; GPL-3.0 License
+;
+; Main developer:
+;	Andrzej Adamczyk
+;===============================================================================
 
-[BITS 64]
+	;-----------------------------------------------------------------------
+	%include	"software/shell/config.asm"
+	;-----------------------------------------------------------------------
 
-[DEFAULT REL]
-
-[ORG SOFTWARE_base_address]
-
+;===============================================================================
 shell:
-
- mov ecx, shell_string_prompt_end - shell_string_prompt_with_new_line
- mov rsi, shell_string_prompt_with_new_line
-
- mov ax, KERNEL_SERVICE_VIDEO_cursor
- int KERNEL_SERVICE
-
- cmp ebx, STATIC_EMPTY
- jne .prompt
-
- mov ecx, shell_string_prompt_end - shell_string_prompt
- mov rsi, shell_string_prompt
-
-.prompt:
-
- mov ax, KERNEL_SERVICE_VIDEO_string
- int KERNEL_SERVICE
+	; inicjalizuj środowisko pracy powłoki
+	%include	"software/shell/init.asm"
 
 .restart:
+	; pobierz informacje o strumieniu wyjścia
+	mov	ax,	KERNEL_SERVICE_PROCESS_stream_meta
+	mov	bl,	KERNEL_SERVICE_PROCESS_STREAM_META_FLAG_get | KERNEL_SERVICE_PROCESS_STREAM_META_FLAG_out
+	mov	rdi,	shell_stream_meta
+	int	KERNEL_SERVICE
+	jc	shell.restart	; brak aktualnych informacji
 
- xor ebx, ebx
+	; pobierz od użyszkodnia polecenie
+	%include	"software/shell/input.asm"
 
- mov ecx, SHELL_CACHE_SIZE_byte
+	; przetwórz
+	%include	"software/shell/exec.asm"
 
- mov rsi, shell_cache
+	macro_debug	"software: shell"
 
- call library_input
- jc shell
-
- call library_string_trim
- jc shell
-
- push rcx
-
- cmp rsi, shell_cache
- je .begin
-
- mov rdi, shell_cache
- rep movsb
-
-.begin:
-
- pop rcx
-
- mov rsi, shell_cache
- call library_string_word_next
-
- jmp shell_prompt
-
- %include "software/shell/data.asm"
- %include "software/shell/prompt.asm"
- %include "library/input.asm"
- %include "library/string_trim.asm"
- %include "library/string_word_next.asm"
- %include "library/string_compare.asm"
-
+	;-----------------------------------------------------------------------
+	%include	"software/shell/data.asm"
+	%include	"software/shell/event.asm"
+	%include	"software/shell/header.asm"
+	%include	"software/shell/prompt.asm"
+	;-----------------------------------------------------------------------

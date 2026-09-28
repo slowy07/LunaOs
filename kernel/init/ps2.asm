@@ -1,75 +1,122 @@
+;===============================================================================
+; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
+; GPL-3.0 License
+;
+; Main developer:
+;	Andrzej Adamczyk
+;===============================================================================
+
+;===============================================================================
 kernel_init_ps2:
- call driver_ps2_check_dummy_answer_or_dump
+	;=======================================================================
+	; z kontrolerem myszki jest najwięcej zabawy, zarazem musi być skonfigurowany jako pierwszy
+	;=======================================================================
 
- mov al, DRIVER_PS2_COMMAND_CONFIGURATION_GET
- call driver_ps2_send_command_receive_answer
+	; opróżnij bufor kontrolera PS2
+	call	driver_ps2_check_dummy_answer_or_dump
 
- push rax
+	;-----------------------------------------------------------------------
+	; pobierz konfigurację kontrolera PS2
+	mov	al,	DRIVER_PS2_COMMAND_CONFIGURATION_GET
+	call	driver_ps2_send_command_receive_answer
 
- mov al, DRIVER_PS2_COMMAND_CONFIGURATION_SET
- call driver_ps2_send_command
+	; zachowaj odpowiedź
+	push	rax
 
- bts word [rsp], DRIVER_PS2_CONTROLLER_CONFIGURATION_BIT_SECOND_PORT_INTERRUPT
- btr word [rsp], DRIVER_PS2_CONTROLLER_CONFIGURATION_BIT_SECOND_PORT_CLOCK
+	; poinformuj o chęci zwrócenia odpowiedzi
+	mov	al,	DRIVER_PS2_COMMAND_CONFIGURATION_SET
+	call	driver_ps2_send_command
 
- pop rax
+	; włącz przerwanie i zegar na porcie 1
+	bts	word [rsp],	DRIVER_PS2_CONTROLLER_CONFIGURATION_BIT_SECOND_PORT_INTERRUPT
+	btr	word [rsp],	DRIVER_PS2_CONTROLLER_CONFIGURATION_BIT_SECOND_PORT_CLOCK
 
- call driver_ps2_send_answer_or_ask_device
+	; przywróć zmodyfikowaną odpowiedź
+	pop	rax
 
- mov al, DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND
- call driver_ps2_send_command
- mov al, DRIVER_PS2_DEVICE_RESET
- call driver_ps2_send_answer_or_ask_device
+	; wyślij odpowiedź
+	call	driver_ps2_send_answer_or_ask_device
 
- call driver_ps2_receive_answer
- cmp al, DRIVER_PS2_ANSWER_COMMAND_ACKNOWLEDGED
- jne .error
+	;-----------------------------------------------------------------------
+	; wyślij polecenie reset do urządzenia na porcie 1 (urządzenie wskazujące - myszka)
+	;-----------------------------------------------------------------------
+	mov	al,	DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND
+	call	driver_ps2_send_command
+	mov	al,	DRIVER_PS2_DEVICE_RESET
+	call	driver_ps2_send_answer_or_ask_device
 
- call driver_ps2_receive_answer
+	; polecenie przetworzone poprawnie?
+	call	driver_ps2_receive_answer
+	cmp	al,	DRIVER_PS2_ANSWER_COMMAND_ACKNOWLEDGED
+	jne	.error	; nie
 
- cmp al, DRIVER_PS2_ANSWER_SELF_TEST_SUCCESS
- jne .error
+	; pobierz odpowiedź od urządzenia
+	call	driver_ps2_receive_answer
 
- call driver_ps2_receive_answer
- mov byte [driver_ps2_mouse_type], al
+	; polecenie przetworzone poprawnie?
+	cmp	al,	DRIVER_PS2_ANSWER_SELF_TEST_SUCCESS
+	jne	.error	; nie
 
- mov al, DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND
- call driver_ps2_send_command
- mov al, DRIVER_PS2_DEVICE_SET_DEFAULT
- call driver_ps2_send_answer_or_ask_device
- call driver_ps2_receive_answer
- 
- cmp al, DRIVER_PS2_ANSWER_COMMAND_ACKNOWLEDGED
- jne .error
+	;-----------------------------------------------------------------------
+	; pobierz identyfikator urządzenia
+	;-----------------------------------------------------------------------
+	call	driver_ps2_receive_answer
+	mov	byte [driver_ps2_mouse_type],	al
 
- mov al, DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND
- call driver_ps2_send_command
- mov al, DRIVER_PS2_DEVICE_PACKETS_ENABLE
- call driver_ps2_send_answer_or_ask_device
- call driver_ps2_receive_answer
+	;-----------------------------------------------------------------------
+	; ustaw urządzenie na wartości domyślne
+	;-----------------------------------------------------------------------
+	mov	al,	DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND
+	call	driver_ps2_send_command
+	mov	al,	DRIVER_PS2_DEVICE_SET_DEFAULT
+	call	driver_ps2_send_answer_or_ask_device
+	call	driver_ps2_receive_answer
 
- cmp al, DRIVER_PS2_ANSWER_COMMAND_ACKNOWLEDGED
- je .done
+	; polecenie przetworzone poprawnie?
+	cmp	al,	DRIVER_PS2_ANSWER_COMMAND_ACKNOWLEDGED
+	jne	.error	; nie
+
+	;-----------------------------------------------------------------------
+	; włącz przesyłanie pakietów z urządzenia do kontrolera
+	;-----------------------------------------------------------------------
+	mov	al,	DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND
+	call	driver_ps2_send_command
+	mov	al,	DRIVER_PS2_DEVICE_PACKETS_ENABLE
+	call	driver_ps2_send_answer_or_ask_device
+	call	driver_ps2_receive_answer
+
+	; polecenie przetworzone poprawnie?
+	cmp	al,	DRIVER_PS2_ANSWER_COMMAND_ACKNOWLEDGED
+	je	.done	; tak
 
 .error:
- jmp $
+	; zatrzymaj dalsze wykonywanie kodu inicjalizacji
+	jmp	$
 
 .done:
- mov eax, KERNEL_IDT_IRQ_offset + DRIVER_PS2_MOUSE_IRQ_number
- mov bx, KERNEL_IDT_TYPE_irq
- mov rdi, driver_ps2_mouse
- call kernel_idt_mount
+	;-----------------------------------------------------------------------
+	; podłącz procedury obsługi myszki
+	;-----------------------------------------------------------------------
+	mov	eax,	KERNEL_IDT_IRQ_offset + DRIVER_PS2_MOUSE_IRQ_number
+	mov	bx,	KERNEL_IDT_TYPE_irq
+	mov	rdi,	driver_ps2_mouse
+	call	kernel_idt_mount
 
- mov eax, KERNEL_IDT_IRQ_offset + DRIVER_PS2_MOUSE_IRQ_number
- mov ebx, DRIVER_PS2_MOUSE_IO_APIC_register
- call kernel_io_apic_connect
+	; ustaw wektor przerwania z tablicy IDT w kontrolerze I/O APIC
+	mov	eax,	KERNEL_IDT_IRQ_offset + DRIVER_PS2_MOUSE_IRQ_number
+	; or	ax,	KERNEL_IO_APIC_TRIGER_MODE_level
+	mov	ebx,	DRIVER_PS2_MOUSE_IO_APIC_register
+	call	kernel_io_apic_connect
 
- mov eax, KERNEL_IDT_IRQ_offset + DRIVER_PS2_KEYBOARD_IRQ_number
- mov bx, KERNEL_IDT_TYPE_irq
- mov rdi, driver_ps2_keyboard
- call kernel_idt_mount
+	;-----------------------------------------------------------------------
+	; podłącz procedurę obsługi klawiatury
+	;-----------------------------------------------------------------------
+	mov	eax,	KERNEL_IDT_IRQ_offset + DRIVER_PS2_KEYBOARD_IRQ_number
+	mov	bx,	KERNEL_IDT_TYPE_irq
+	mov	rdi,	driver_ps2_keyboard
+	call	kernel_idt_mount
 
- mov eax, KERNEL_IDT_IRQ_offset + DRIVER_PS2_KEYBOARD_IRQ_number
- mov ebx, DRIVER_PS2_KEYBOARD_IO_APIC_register
- call kernel_io_apic_connect
-
+	; ustaw wektor przerwania z tablicy IDT w kontrolerze I/O APIC
+	mov	eax,	KERNEL_IDT_IRQ_offset + DRIVER_PS2_KEYBOARD_IRQ_number
+	mov	ebx,	DRIVER_PS2_KEYBOARD_IO_APIC_register
+	call	kernel_io_apic_connect

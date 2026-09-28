@@ -5,234 +5,234 @@
 	;-----------------------------------------------------------------------
 
 ;===============================================================================
-; wejście:
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	r8 - pointer to the terminal structure
 library_terminal:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 
-	; wylicz scanline z znaków
+	; compute the scanline from the characters
 	mov	rax,	LIBRARY_FONT_HEIGHT_pixel
 	mul	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_byte]
 	mov	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char],	rax
 
-	; wylicz szerokość terminala w znakach
+	; compute the terminal width in characters
 	mov	rax,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.width]
 	xor	edx,	edx
 	div	qword [library_font_width_pixel]
 	mov	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.width_char],	rax
 
-	; wylicz wysokość terminala w znakach
+	; compute the terminal height in characters
 	mov	rax,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.height]
 	xor	edx,	edx
 	div	qword [library_font_height_pixel]
 	mov	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.height_char],	rax
 
-	; domyślnie wirtualny kursor wyłączony
+	; the virtual cursor is off by default
 	mov	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.lock],	STATIC_FALSE
 
-	; inicjalizuj przestrzeń terminala
+	; initialise the terminal area
 	call	library_terminal_clear
 
-	; włącz wirtualny kursor
+	; switch the virtual cursor on
 	call	library_terminal_cursor_enable
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal"
 
 ;===============================================================================
-; wejście:
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	r8 - pointer to the terminal structure
 library_terminal_clear:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rdx
 	push	rdi
 
-	; wyłączy wirtualny kursor
+	; switch the virtual cursor off
 	call	library_terminal_cursor_disable
 
-	; wyczyść przestrzeń domyślnym kolorem tła
+	; clear the area with the default background color
 	mov	eax,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.background_color]
 	mov	rdx,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.height]
 	mov	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.address]
 
 .loop:
-	; zachowaj adres początku fragmentu
+	; store the address of the start of the chunk
 	push	rdi
 
-	; wyczyść pierwszy fragment
+	; clear the first chunk
 	mov	rcx,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.width]
 	rep	stosd
 
-	; przywróć adres początku fragmentu
+	; restore the address of the start of the chunk
 	pop	rdi
 
-	; przesuń wskaźnik na następny fragment
+	; move the pointer to the next chunk
 	add	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_byte]
 
-	; koniec przestrzeni?
+	; end of the area?
 	dec	rdx
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
-	; ustaw wirtualny kursor na na początek przestrzeni terminala
+	; set the virtual cursor to the start of the terminal area
 	mov	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor],	STATIC_EMPTY
 
-	; ustaw sprzętowy kursor na miejsce
+	; position the hardware cursor
 	call	library_terminal_cursor_set
 
-	; włącz wirtualny kursor
+	; switch the virtual cursor on
 	call	library_terminal_cursor_enable
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rdx
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_clear"
 
 ;===============================================================================
-; wejście:
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	r8 - pointer to the terminal structure
 library_terminal_cursor_disable:
-	; nałóż blokadę na kursor
+	; take the cursor lock
 	inc	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.lock]
 
-	; blokada nałożona?
+	; lock already taken?
 	cmp	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.lock],	STATIC_FALSE
-	jne	.ready	; blokada nałożona już wcześniej, zwiększono poziom
+	jne	.ready	; the lock was taken before, the level was raised
 
-	; przełącz widoczność kursora
+	; toggle the cursor visibility
 	call	library_terminal_cursor_switch
 
 .ready:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	ret
 
 	macro_debug	"library_terminal_cursor_disable"
 
 ;===============================================================================
-; wejście:
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	r8 - pointer to the terminal structure
 library_terminal_cursor_enable:
-	; blokada nałożona?
+	; lock already taken?
 	cmp	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.lock],	STATIC_EMPTY
-	je	.ready	; nie, zignoruj
+	je	.ready	; no, ignore
 
-	; zwolnij blokadę na kursor
+	; release the cursor lock
 	dec	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.lock]
 
-	; blokada dalej nałożona?
+	; lock taken further up?
 	cmp	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.lock],	STATIC_EMPTY
-	jne	.ready	; tak, zignoruj
+	jne	.ready	; yes, ignore
 
-	; przełącz widoczność kursora
+	; toggle the cursor visibility
 	call	library_terminal_cursor_switch
 
 .ready:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	ret
 
 	macro_debug	"library_terminal_cursor_enable"
 
 ;===============================================================================
-; wejście:
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	r8 - pointer to the terminal structure
 library_terminal_cursor_switch:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rdi
 
-	; scanline ekranu
+	; screen scanline
 	mov	rax,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_byte]
 
-	; wysokość kursora
+	; cursor height
 	mov	rcx,	LIBRARY_FONT_HEIGHT_pixel
 
-	; pozycja kursora
+	; cursor position
 	mov	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.pointer]
 
 .loop:
-	; odróć kolor piksela
+	; invert the pixel color
 	not	word [rdi]
 	not	byte [rdi + STATIC_WORD_SIZE_byte]
 
-	; przesuń wskaźnik na następny piksel
+	; move the pointer to the next pixel
 	add	rdi,	rax
 
-	; nastepny piksel?
+	; next pixel?
 	dec	rcx
 	jnz	.loop
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_cursor_switch"
 
 ;===============================================================================
-; wejście:
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	r8 - pointer to the terminal structure
 library_terminal_cursor_set:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rdx
 
-	; wyłącz kursor
+	; switch the cursor off
 	call	library_terminal_cursor_disable
 
-	; oblicz pozycję kursora w znakach
+	; compute the cursor position in characters
 	mov	eax,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor + LIBRARY_TERMINAL_STURCTURE_CURSOR.y]
 	mul	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
-	push	rax	; zapamiętaj
+	push	rax	; remember
 	mov	eax,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor + LIBRARY_TERMINAL_STURCTURE_CURSOR.x]
 	mul	qword [library_font_width_byte]
 	add	qword [rsp],	rax
-	pop	rax	; zwróć wynik
+	pop	rax	; return the result
 
-	; zapisz nową pozycję wskaźnika w przestrzeni pamięci karty graficznej
+	; store the new pointer position in the graphics card memory area
 	add	rax,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.address]
 	mov	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.pointer],	rax
 
-	; włącz kursor
+	; switch the cursor on
 	call	library_terminal_cursor_enable
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_cursor_set"
 
 ;===============================================================================
-; wejście:
-;	rax - kod ASCII znaku
-;	rdi - pozycja znaku w przestrzeni pamięci ekranu
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	rax - character ASCII code
+;	rdi - character position in the screen memory area
+;	r8 - pointer to the terminal structure
 library_terminal_matrix:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
@@ -241,49 +241,49 @@ library_terminal_matrix:
 	push	rdi
 	push	r9
 
-	; oblicz prdesunięcie względem początku matrycy czcionki dla znaku
+	; compute the offset from the start of the font matrix for the character
 	mov	ebx,	dword [library_font_height_pixel]
 	mul	rbx
 
-	; ustaw wskaźnik na matrycę znaku
+	; set the pointer to the glyph matrix
 	mov	rsi,	library_font_matrix
 	add	rsi,	rax
 
-	; pobierz kolor czcionki
+	; fetch the font color
 	mov	r9d,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.foreground_color]
 
 .next:
-	; szerokość matrycy znaku liczona od zera
+	; glyph matrix width counted from zero
 	mov	ecx,	LIBRARY_FONT_WIDTH_pixel - 0x01
 
 .loop:
-	; włączyć piksel matrycy znaku na ekranie?
+	; switch a glyph matrix pixel on screen?
 	bt	word [rsi],	cx
-	jnc	.continue	; nie
+	jnc	.continue	; no
 
-	; wyświetl piksel o zdefiniowanym kolorze znaku
+	; display the pixel with the given glyph color
 	mov	dword [rdi],	r9d
 
 .continue:
-	; następny piksel matrycy znaku
+	; next glyph matrix pixel
 	add	rdi,	STATIC_DWORD_SIZE_byte
 
-	; wyświetlić pozostałe?
+	; display the rest?
 	dec	cl
-	jns	.loop	; tak
+	jns	.loop	; yes
 
-	; przesuń wskaźnik na następną linię matrycy na ekranie
-	sub	rdi,	LIBRARY_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift	; cofnij o szerokość wyświetlonego znaku w Bajtach
-	add	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_byte]	; przesuń do przodu o rozmiar scanline ekranu
+	; move the pointer to the next matrix line on screen
+	sub	rdi,	LIBRARY_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift	; go back by the width of the displayed character in bytes
+	add	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_byte]	; advance by the size of the screen scanline
 
-	; przesuń wskaźnik na następną linię matrycy znaku
+	; move the pointer to the next glyph matrix line
 	inc	rsi
 
-	; przetworzono całą matrycę znaku?
+	; has the whole glyph matrix been processed?
 	dec	bl
-	jnz	.next	; nie, kontynuuj z następną linią matrycy znaku
+	jnz	.next	; no, continue with the next glyph row
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r9
 	pop	rdi
 	pop	rsi
@@ -292,315 +292,315 @@ library_terminal_matrix:
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_matrix"
 
 ;===============================================================================
-; wejście:
-;	rdi - wskaźnik pozycji znaku
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	rdi - pointer to the character position
+;	r8 - pointer to the terminal structure
 library_terminal_empty_char:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rdx
 	push	rdi
 
-	; wysokość matrycy znaku w pikselach
+	; glyph matrix height in pixels
 	mov	ebx,	LIBRARY_FONT_HEIGHT_pixel
 
-	; kolor tła
+	; background color
 	mov	eax,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.background_color]
 
 .next:
-	; szerokość matrycy znaku liczona od zera
+	; glyph matrix width counted from zero
 	mov	cx,	LIBRARY_FONT_WIDTH_pixel - 0x01
 
 .loop:
-	; wyświetl piksel o zdefiniowanym kolorze tła
+	; display the pixel with the given background color
 	stosd
 
 .continue:
-	; następny piksel z linii matrycy znaku
+	; next pixel from the glyph matrix line
 	dec	cl
 	jns	.loop
 
-	; przesuń wskaźnik na następną linię matrycy na ekranie
-	sub	rdi,	LIBRARY_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift	; cofnij o szerokość znaku w Bajtach
-	add	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_byte]	; przesuń do przodu o rozmiar scanline ekranu
+	; move the pointer to the next matrix line on screen
+	sub	rdi,	LIBRARY_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift	; go back by the character width in bytes
+	add	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_byte]	; advance by the size of the screen scanline
 
-	; przetworzono całą matrycę znaku?
+	; has the whole glyph matrix been processed?
 	dec	bl
-	jnz	.next	; nie, następna linia matrycy znaku
+	jnz	.next	; no, next glyph row
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rdx
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_empty_char"
 
 ;===============================================================================
-; wejście:
-;	rax - kod ASCII znaku
-;	rcx - ilość kopii znaku do wyświetlenia
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	rax - character ASCII code
+;	rcx - number of copies of the character to display
+;	r8 - pointer to the terminal structure
 library_terminal_char:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rdx
 	push	rdi
 
-	; wyłącz kursor
+	; switch the cursor off
 	call	library_terminal_cursor_disable
 
-	; pozycja kursora na osi X,Y
+	; cursor position on the X,Y axes
 	mov	ebx,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor + LIBRARY_TERMINAL_STURCTURE_CURSOR.x]
 	mov	edx,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor + LIBRARY_TERMINAL_STURCTURE_CURSOR.y]
 
-	; ustaw wskaźnik na ostatnią pozycję w przestrzeni pamięci trybu tekstowego
+	; set the pointer to the last position in the text mode memory area
 	mov	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.pointer]
 
 .loop:
-	; znak "powrót karetki"?
+	; character "carriage return"?
 	cmp	ax,	STATIC_SCANCODE_RETURN
-	je	.return	; tak
+	je	.return	; yes
 
-	; znak "nowej linii"?
+	; character "new line"?
 	cmp	ax,	STATIC_SCANCODE_NEW_LINE
-	je	.new_line	; tak
+	je	.new_line	; yes
 
-	; znak "backspace"?
+	; character "backspace"?
 	cmp	ax,	STATIC_SCANCODE_BACKSPACE
-	je	.backspace	; tak
+	je	.backspace	; yes
 
-	; nieobsługiwany znak specjalny?
+	; unsupported special character?
 	cmp	ax,	STATIC_SCANCODE_SPACE
-	jb	.omit	; tak
+	jb	.omit	; yes
 	cmp	ax,	STATIC_SCANCODE_TILDE
-	ja	.omit	; tak
+	ja	.omit	; yes
 
-	; wyczyść przestrzeń znaku domyślnym kolorem tła
+	; clear the glyph area with the default background color
 	call	library_terminal_empty_char
 
-	; wyświetl matrycę znaku na ekran
-	sub	ax,	STATIC_SCANCODE_SPACE	; macierz czcionki rozpoczyna się od znaku STATIC_SCANCODE_SPACE
+	; display the glyph matrix on screen
+	sub	ax,	STATIC_SCANCODE_SPACE	; the font matrix starts at the STATIC_SCANCODE_SPACE character
 	call	library_terminal_matrix
 
-	; przesuń kursor na osi X o jedną pozycję w prawo
+	; advance the cursor one position right on the X axis
 	inc	ebx
 
-	; przesuń wskaźnik na następną pozycję w przestrzeni pamięci karty graficznej
+	; move the pointer to the next position in the graphics card memory area
 	add	rdi,	qword [library_font_width_byte]
 
-	; pozycja kursora poza przestrzenią pamięci trybu tekstowego?
+	; cursor position outside the text mode memory area?
 	cmp	ebx,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.width_char]
-	jb	.continue	; nie
+	jb	.continue	; no
 
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 
-	; przesuń wskaźnik kursora na początek nowej linii
+	; move the cursor pointer to the start of the new line
 	mov	rax,	qword [library_font_width_byte]
 	mul	rbx
 	sub	rdi,	rax
 	add	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rax
 
-	; przesuń kursor do następnego wiersza
+	; move the cursor to the next row
 	xor	ebx,	ebx
 	inc	edx
 
 .row:
-	; pozycja kursora poza przestrzenią pamięci trybu tekstowego?
+	; cursor position outside the text mode memory area?
 	cmp	edx,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.height_char]
-	jb	.continue	; nie
+	jb	.continue	; no
 
-	; koryguj pozycję kursora na osi Y
+	; fix the cursor position on the Y axis
 	dec	edx
 
-	; koryguj wskaźnik
+	; fix up the pointer
 	sub	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
 
-	; przewiń zawartość przestrzeni pamięci trybu tekstowego o jedną linię tekstu w górę
+	; scroll the text mode memory area content up by one text line
 	call	library_terminal_scroll
 
 .continue:
-	; wyświetlono wszystkie kopie?
+	; have all the copies been displayed?
 	dec	rcx
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
-	; zachowaj aktualną pozycję kursora w przestrzeni pamięci trybu tekstowego
+	; store the current cursor position in the text mode memory area
 	mov	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor + LIBRARY_TERMINAL_STURCTURE_CURSOR.x],	ebx
 	mov	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor + LIBRARY_TERMINAL_STURCTURE_CURSOR.y],	edx
 
-	; zachowaj aktualną pozycję wskaźnika w przestrzeni pamięci trybu tekstowego
+	; store the current pointer position in the text mode memory area
 	mov	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.pointer],	rdi
 
 .omit:
-	; włącz kursor
+	; switch the cursor on
 	call	library_terminal_cursor_enable
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rdx
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_char"
 
 ;-------------------------------------------------------------------------------
 .return:
-	; przesuń wskaźnik i wirtualny kursor na początek aktualnej linii
+	; move the pointer and the virtual cursor to the start of the current line
 	mov	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor + LIBRARY_TERMINAL_STURCTURE_CURSOR.x],	STATIC_EMPTY
 	call	library_terminal_cursor_set
 
-	; koryguj pozyję wirtualnego kursora na osi X
+	; fix the virtual cursor position on the X axis
 	xor	ebx,	ebx
 
-	; pobierz nowy wskaźnik pozycji wirtualnego kursora wprzestrzeni pamięci terminala
+	; fetch the new virtual cursor position pointer in the terminal memory area
 	mov	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.pointer]
 
-	; powrót do głównej pętli
+	; return to the main loop
 	jmp	.continue
 
 	macro_debug	"library_terminal_char.return"
 
 ;-------------------------------------------------------------------------------
 .new_line:
-	; zachowaj oryginalne rejestry
-	push	rax	; kod ASCII znaku
-	push	rdx	; pozycja kursor na osi Y
+	; preserve the original registers
+	push	rax	; character ASCII code
+	push	rdx	; cursor position on the Y axis
 
-	; cofnij wskaźnik na początek linii
+	; move the pointer back to the start of the line
 	mov	eax,	ebx
 	mul	qword [library_font_width_pixel]
 	shl	rax,	KERNEL_VIDEO_DEPTH_shift
 	sub	rdi,	rax
 
-	; cofnij wirtualny kursor na początek linii
+	; move the virtual cursor back to the start of the line
 	xor	ebx,	ebx
 
-	; przesuń kursor i wskaźnik do następnej linii
+	; move the cursor and the pointer to the next line
 	add	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
 
-	; przywróć pozycję kursora na osi Y
+	; restore the cursor position on the Y axis
 	pop	rdx
-	inc	rdx	; przesuń kursor do następnej linii
+	inc	rdx	; move the cursor to the next line
 
-	; przywróć kod ASCII znaku
+	; restore the character ASCII code
 	pop	rax
 
-	; kontynuuj
+	; continue
 	jmp	.row
 
 	macro_debug	"library_terminal_char.new_line"
 
 ;-------------------------------------------------------------------------------
 .backspace:
-	; kursor znajduje się na początku linii?
+	; is the cursor at the start of the line?
 	test	ebx,	ebx
-	jz	.begin	; tak
+	jz	.begin	; yes
 
-	; cofnij pozycję kursora na osi X
+	; move the cursor position back on the X axis
 	dec	ebx
 
-	; kontynuuj
+	; continue
 	jmp	.clear
 
 .begin:
-	; kursor znajduje się w pierwszej linii?
+	; is the cursor on the first line?
 	test	edx,	edx
-	jz	.continue	; tak
+	jz	.continue	; yes
 
-	; ustaw pozycję kursora na koniec aktualnej linii
+	; set the cursor position to the end of the current line
 	mov	ebx,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.width_char]
 	dec	ebx
 
-	; cofnij pozycję kursora o jedną linię
+	; move the cursor back by one line
 	dec	edx
 
-	; zachowaj oryginalny rejestr
+	; preserve the original register
 	push	rax
 	push	rdx
 
-	; przesuń wskaźnik kursora na początek poprzedniej linii
+	; move the cursor pointer to the start of the previous line
 	sub	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
 	mov	rax,	qword [library_font_width_byte]
 	mul	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.width_char]
 	add	rdi,	rax
 
-	; przywróć oryginalny rejestr
+	; restore the original register
 	pop	rdx
 	pop	rax
 
 .clear:
-	; przesuń wskaźnik o jeden znak wstecz
+	; move the pointer back by one character
 	sub	rdi,	LIBRARY_FONT_WIDTH_pixel << KERNEL_VIDEO_DEPTH_shift
 
-	; wyczyść przestrzeń znaku domyślnym kolorem tła
+	; clear the glyph area with the default background color
 	call	library_terminal_empty_char
 
-	; kontynuuj
+	; continue
 	jmp	.continue
 
 	macro_debug	"library_terminal_char.backspace"
 
 ;===============================================================================
-; wejście:
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	r8 - pointer to the terminal structure
 library_terminal_scroll:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 
-	; rozpocznij od linii nr 1 (liczymy od zera)
+	; start at line number 1 (we count from zero)
 	mov	ecx,	1
 
-	; wszystkie wiersze
+	; all rows
 	mov	rbx,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.height_char]
-	dec	rbx	; pierwszy wiersz nie bierze udziału
+	dec	rbx	; the first row does not take part
 
-	; przewiń w górę
+	; scroll up
 	call	library_terminal_scroll_up
 
-	; wyczyść ostatnią linię znaków na ekranie
+	; clear the last character line on screen
 	call	library_terminal_empty_line
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_scroll"
 
 ;===============================================================================
-; wejście:
-;	rbx - ilość linii do przesunięcia
-;	rcx - linia rozpoczynająca
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	rbx - number of lines to shift
+;	rcx - starting line
+;	r8 - pointer to the terminal structure
 library_terminal_scroll_down:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
@@ -609,66 +609,66 @@ library_terminal_scroll_down:
 	push	rdi
 	push	r9
 
-	; wyłącz wirtualny kursor
+	; switch the virtual cursor off
 	call	library_terminal_cursor_disable
 
-	; rozpocznij przewijanie od linii RCX
+	; start scrolling from the RCX line
 	mov	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.address]
 	mov	rax,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
 	add	rcx,	rbx
 	mul	rcx
 	add	rdi,	rax
 
-	; w kierunku linii poprzedniej
+	; towards the previous line
 	mov	rsi,	rdi
 	sub	rsi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
 
-	; rozmiar linii przestrzeni terminala w Bajtach
+	; line size of the terminal area in bytes
 	mov	rax,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.width]
 	shl	rax,	KERNEL_VIDEO_DEPTH_shift
 
-	; scanline przestrzeni wyświetlania
+	; display area scanline
 	mov	r9,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_byte]
 
 .row:
-	; zachowaj wskaźniki aktualnie przetwarzanych wierszy
+	; store the pointers to the rows being processed
 	push	rsi
 	push	rdi
 
-	; wysokość linii w pikselach
+	; line height in pixels
 	mov	edx,	LIBRARY_FONT_HEIGHT_pixel
 
 .line:
-	; przesuń pierwszy wiersz aktualnej linii
+	; move the first row of the current line
 	mov	rcx,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.width]
 	rep	movsd
 
-	; przesuń wskaźniki na następną linię
+	; move the pointers to the next line
 	sub	rdi,	rax
 	add	rdi,	r9
 	sub	rsi,	rax
 	add	rsi,	r9
 
-	; przesunięto wszystkie linie pierwszego wiersza?
+	; have all the lines of the first row been shifted?
 	dec	edx
-	jnz	.line	; nie
+	jnz	.line	; no
 
-	; przywróć wskaźniki przetworzonych wierszy
+	; restore the pointers to the processed rows
 	pop	rdi
 	pop	rsi
 
-	; przesuń wskaźniki na następny wiersz
+	; move the pointers to the next row
 	sub	rsi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
 	sub	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
 
-	; przesunięto wszystkie wiersze?
+	; have all the rows been shifted?
 	dec	rbx
-	jnz	.row	; nie
+	jnz	.row	; no
 
-	; włącz wirtualny kursor
+	; switch the virtual cursor on
 	call	library_terminal_cursor_enable
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r9
 	pop	rdi
 	pop	rsi
@@ -677,18 +677,18 @@ library_terminal_scroll_down:
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_scroll_up"
 
 ;===============================================================================
-; wejście:
-;	rbx - ilość linii do przesunięcia
-;	rcx - linia rozpoczynająca
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	rbx - number of lines to shift
+;	rcx - starting line
+;	r8 - pointer to the terminal structure
 library_terminal_scroll_up:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
@@ -697,53 +697,53 @@ library_terminal_scroll_up:
 	push	rdi
 	push	r9
 
-	; wyłącz wirtualny kursor
+	; switch the virtual cursor off
 	call	library_terminal_cursor_disable
 
-	; rozpocznij przewijanie od linii RCX
+	; start scrolling from the RCX line
 	mov	rsi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.address]
 	mov	rax,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
 	mul	rcx
 	add	rsi,	rax
 
-	; w kierunku linii następnej
+	; towards the next line
 	mov	rdi,	rsi
 	sub	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
 
-	; rozmiar linii przestrzeni terminala w Bajtach
+	; line size of the terminal area in bytes
 	mov	rax,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.width]
 	shl	rax,	KERNEL_VIDEO_DEPTH_shift
 
-	; scanline przestrzeni wyświetlania
+	; display area scanline
 	mov	r9,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_byte]
 
 .row:
-	; wysokość linii w pikselach
+	; line height in pixels
 	mov	edx,	LIBRARY_FONT_HEIGHT_pixel
 
 .line:
-	; przesuń pierwszy wiersz aktualnej linii
+	; move the first row of the current line
 	mov	rcx,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.width]
 	rep	movsd
 
-	; przesuń wskaźniki na następną linię
+	; move the pointers to the next line
 	sub	rdi,	rax
 	add	rdi,	r9
 	sub	rsi,	rax
 	add	rsi,	r9
 
-	; przesunięto wszystkie linie pierwszego wiersza?
+	; have all the lines of the first row been shifted?
 	dec	edx
-	jnz	.line	; nie
+	jnz	.line	; no
 
-	; przesunięto wszystkie wiersze?
+	; have all the rows been shifted?
 	dec	rbx
-	jnz	.row	; nie
+	jnz	.row	; no
 
-	; włącz wirtualny kursor
+	; switch the virtual cursor on
 	call	library_terminal_cursor_enable
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r9
 	pop	rdi
 	pop	rsi
@@ -752,238 +752,238 @@ library_terminal_scroll_up:
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_scroll_up"
 
 ;===============================================================================
-; wejście:
-;	rbx - numer linii na ekranie
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	rbx - line number on screen
+;	r8 - pointer to the terminal structure
 library_terminal_empty_line:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rdx
 	push	rdi
 
-	; wyłącz wirtualny kursor
+	; switch the virtual cursor off
 	call	library_terminal_cursor_disable
 
-	; wylicz pozycję względmą linii w przestrzeni terminala
+	; compute the relative position of the line in the terminal area
 	mov	rax,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_char]
 	mul	rbx
 
-	; scanline przestrzeni terminala
+	; terminal area scanline
 	mov	rbx,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.width]
 	shl	rbx,	KERNEL_VIDEO_DEPTH_shift
 
-	; wysokość wiersza w pikselach
+	; row height in pixels
 	mov	edx,	LIBRARY_FONT_HEIGHT_pixel
 
-	; ustaw wskaźnik
+	; set the pointer
 	mov	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.address]
 	add	rdi,	rax
 
 .line:
-	; wyczyść linię domyślnym kolorem tła
+	; clear the line with the default background color
 	mov	eax,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.background_color]
 	mov	rcx,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.width]
 	rep	stosd
 
-	; przesuń wskaźnik na następną linię wiersza
+	; move the pointer to the next row line
 	sub	rdi,	rbx
 	add	rdi,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.scanline_byte]
 
-	; wyczyszczono wszystkie linie wiersza?
+	; have all the lines of the row been cleared?
 	dec	edx
-	jnz	.line	; nie
+	jnz	.line	; no
 
-	; włącz wirtualny kursor
+	; switch the virtual cursor on
 	call	library_terminal_cursor_enable
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rdx
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_empty_line"
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość znaków w ciągu
-;	rsi - wskaźnik do ciągu
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	rcx - number of characters in the string
+;	rsi - pointer to the string
+;	r8 - pointer to the terminal structure
 library_terminal_string:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rdx
 	push	rsi
 
-	; wyłącz wirtualny kursor
+	; switch the virtual cursor off
 	call	library_terminal_cursor_disable
 
-	; wyświetlić jakąkolwiek ilość znaków z ciągu?
+	; display any number of characters from the string?
 	test	rcx,	rcx
-	jz	.end	; nie
+	jz	.end	; no
 
-	; wyczyść zmienną
+	; clear the variable
 	xor	eax,	eax
 
 .loop:
-	; pobierz kod ASCII z ciągu
+	; fetch the ASCII code from the string
 	lodsb
 
-	; wymuszony koniec ciągu?
+	; forced end of string?
 	test	al,	al
-	jz	.end	; tak
+	jz	.end	; yes
 
-	; zachowaj pozostały rozmiar ciągu
+	; store the remaining string size
 	push	rcx
 
-	; wyświetl 1 kopię kodu ASCII
+	; display 1 copy of the ASCII code
 	mov	ecx,	1
 	call	library_terminal_char
 
-	; przywróć pozostały rozmiar ciągu
+	; restore the remaining string size
 	pop	rcx
 
 .continue:
-	; wyświetl pozostałą część ciągu
+	; display the remaining part of the string
 	dec	rcx
 	jnz	.loop
 
 .end:
-	; włącz wirtualny kursor
+	; switch the virtual cursor on
 	call	library_terminal_cursor_enable
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rdx
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_string"
 
 ;===============================================================================
-; wejście:
-;	rax - wartość do wyświetlenia
-;	rbx - system liczbowy
-;	rcx - rozmiar wypełnienia przed liczbą
-;	rdx  - kod ASCII wypełnienia
-;	r8 - wskaźnik do struktury terminala
+; input:
+;	rax - value to display
+;	rbx - number base
+;	rcx - size of the padding in front of the number
+;	rdx - padding ASCII code
+;	r8 - pointer to the terminal structure
 library_terminal_number:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 	push	rbp
 	push	r9
 
-	; wyłącz wirtualny kursor
+	; switch the virtual cursor off
 	call	library_terminal_cursor_disable
 
-	; wyczyść zbędne dane w rejestrze RBX
+	; clear the redundant data in the RBX register
 	and	ebx,	STATIC_BYTE_mask
 
-	; podstawa liczby w odpowiednim zakresie?
+	; number base within the valid range?
 	cmp	bl,	2
-	jb	.error	; nie
+	jb	.error	; no
 	cmp	bl,	36
-	ja	.error	; nie
+	ja	.error	; no
 
-	; zachowaj wartość prefiksa
+	; store the prefix value
 	mov	r9,	rdx
 	sub	r9,	0x30
 
-	; wyczyść starszą część / resztę z dzielenia
+	; clear the high part / remainder
 	xor	rdx,	rdx
 
-	; utwórz stos zmiennych lokalnych
+	; create a stack of local variables
 	mov	rbp,	rsp
 
 .loop:
-	; oblicz resztę z dzielenia
+	; compute the remainder
 	div	rbx
 
-	; zapisz resztę z dzielenia do zmiennych lokalnych
+	; store the remainder in the local variables
 	push	rdx
-	dec	rcx	; zmniejsz rozmiar prefiksu
+	dec	rcx	; shrink the prefix size
 
-	; wyczyść resztę z dzielenia
+	; clear the remainder
 	xor	rdx,	rdx
 
-	; przeliczać dalej?
+	; keep converting?
 	test	rax,	rax
-	jnz	.loop	; tak
+	jnz	.loop	; yes
 
-	; uzupełnić prefiks?
+	; fill the prefix?
 	cmp	rcx,	STATIC_EMPTY
-	jle	.print	; nie
+	jle	.print	; no
 
 .prefix:
-	; uzupełnij wartość o prefiks
+	; fill the value with the prefix
 	push	r9
 
-	; uzupełniać dalej?
+	; keep filling?
 	dec	rcx
-	jnz	.prefix	; tak
+	jnz	.prefix	; yes
 
 .print:
-	; wyświetl każdą cyfrę
-	mov	ecx,	0x01	; 1 raz
+	; display every digit
+	mov	ecx,	0x01	; once
 
-	; pozostały cyfry do wyświetlenia?
+	; any digits left to display?
 	cmp	rsp,	rbp
-	je	.end	; nie
+	je	.end	; no
 
-	; pobierz cyfrę
+	; fetch the digit
 	pop	rax
 
-	; przemianuj cyfrę na kod ASCII
+	; convert the digit into an ASCII code
 	add	rax,	0x30
 
-	; system liczbowy powyżej podstawy 10?
+	; number base above 10?
 	cmp	al,	0x3A
-	jb	.no	; nie
+	jb	.no	; no
 
-	; koryguj kod ASCII do podstawy liczbowej
+	; fix the ASCII code to the number base
 	add	al,	0x07
 
 .no:
-	; wyświetl cyfrę
+	; display the digit
 	call	library_terminal_char
 
-	; kontynuuj
+	; continue
 	jmp	.print
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; włącz wirtualny kursor
+	; switch the virtual cursor on
 	call	library_terminal_cursor_enable
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r9
 	pop	rbp
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_terminal_number"

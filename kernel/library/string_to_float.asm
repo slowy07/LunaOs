@@ -1,122 +1,122 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość znaków w ciągu
-;	rsi - wskaźnik do ciągu
-; wyjście:
-;	rax - wartość zmiennoprzecinkowa
+; input:
+;	rcx - number of characters in the string
+;	rsi - pointer to the string
+; output:
+;	rax - floating point value
 library_string_to_float:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rsi
 	push	rax
 
-	; ciąg pusty?
+	; empty string?
 	test	rcx,	rcx
-	jz	.error	; tak
+	jz	.error	; yes
 
-	; ustaw zmienne lokalne
-	push	STATIC_NUMBER_SYSTEM_decimal	; system dziesiętny
-	push	STATIC_EMPTY	; frakcja
-	push	STATIC_EMPTY	; całkowita
+	; set up the local variables
+	push	STATIC_NUMBER_SYSTEM_decimal	; decimal system
+	push	STATIC_EMPTY	; fraction
+	push	STATIC_EMPTY	; integer part
 
-	; odszukaj znaku ułamka w ciągu
+	; look for the fraction character in the string
 	mov	al,	","
 	call	library_string_word_next
-	jnc	.integer	; zamień wartość całkowitą na część ułamkową
+	jnc	.integer	; convert the integer value into the fractional part
 
-	; zamień cały ciąg na liczbę
+	; convert the whole string to a number
 	call	library_string_to_integer
 
-	; aktualizuj wartość całkowitą
+	; update the integer part
 	mov	qword [rsp],	rax
 
-	; wartość całkowita do zmiennoprzecinkowej
-	finit	; reset koprocesora
+	; integer part as a float
+	finit	; reset the coprocessor
 	fild	qword [rsp]
 
-	; zwolnij zmienne lokalne
+	; free the local variables
 	add	rsp,	STATIC_QWORD_SIZE_byte * 0x03
 
-	; zwróć wynik
+	; return the result
 	fstp	qword [rsp]
 
-	; koniec operacji przekształcenia
+	; end of the conversion
 	jmp	.end
 
 .integer:
-	; ilość cyfr z wartości całkowitej
+	; number of digits in the integer part
 	test	rbx,	rbx
-	jz	.integer_empty	; brak
+	jz	.integer_empty	; none
 
-	; zamień cały ciąg na liczbę
+	; convert the whole string to a number
 	call	library_string_to_integer
 
-	; aktualizuj wartość całkowitą
+	; update the integer part
 	mov	qword [rsp],	rax
 
 .integer_empty:
-	; koryguj rozmiar i wskaźnik ciągu
+	; fix up the string size and pointer
 	inc	rbx	; separator
 	sub	rcx,	rbx
 	add	rsi,	rbx
 
 .fraction:
-	; domyślnie brak części ułamkowej
+	; no fractional part by default
 	xor	ebx,	ebx
 
-	; brak cyfr w wartości frakcji?
+	; no digits in the fraction value?
 	test	rcx,	rcx
-	jz	.transform	; tak
+	jz	.transform	; yes
 
-	; zamień cały ciąg na liczbę
+	; convert the whole string to a number
 	mov	rbx,	rcx
 	call	library_string_to_integer
 
-	; aktualizuj wartość frakcji
+	; update the fraction value
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rax
 
 .transform:
-	; wartość frakcji do zmiennoprzecinkowej
-	finit	; reset koprocesora
-	fild	qword [rsp + STATIC_QWORD_SIZE_byte * 0x02]	; st1 > system liczbowy
-	fild	qword [rsp + STATIC_QWORD_SIZE_byte]	; st0 > frakcja
+	; fraction value as a float
+	finit	; reset the coprocessor
+	fild	qword [rsp + STATIC_QWORD_SIZE_byte * 0x02]	; st1 > number base
+	fild	qword [rsp + STATIC_QWORD_SIZE_byte]	; st0 > fraction
 
 .convert:
-	; zamień liczbę w ułamek
-	fdiv	st0,	st1	; div	st1
+	; convert the number into a fraction
+	fdiv	st0,	st1	; divide by st1
 
-	; osiągnięto rząd wielkości?
+	; magnitude reached?
 	dec	rbx
-	jnz	.convert	; nie, przeliczaj dalej
+	jnz	.convert	; no, keep converting
 
-	; dodaj obydwie liczby zmiennoprzecinkowe
-	fild	qword [rsp]	; st0 > całkowita
+	; sum the two floating point values
+	fild	qword [rsp]	; st0 > integer part
 	faddp	st1,	st0
 
-	; zwolnij zmienne lokalne
+	; free the local variables
 	add	rsp,	STATIC_QWORD_SIZE_byte * 0x03
 
-	; zwróć wynik
+	; return the result
 	fstp	qword [rsp]
 
-	; koniec operacji przekształcenia
+	; end of the conversion
 	jmp	.end
 
 .error:
-	; nie udało się poprawnie przetworzyć ciągu, zwróć "0.0"
+	; the string could not be processed correctly, return "0.0"
 	mov	qword [rsp],	STATIC_EMPTY
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 	pop	rsi
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_string_to_float"

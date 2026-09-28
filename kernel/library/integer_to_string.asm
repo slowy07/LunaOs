@@ -1,17 +1,17 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rax - wartość całkowita
-;	rbx - system liczbowy (podstawa: 2..36)
-;	rcx - ilość znaków na prefiks
-;	dl - kod ASCII prefiksu
-;	rdi - wskaźnik docelowy ciągu
-; wyjście:
-;	Flaga CF, jeśli niepoprawna podstawa
-;	rcx - ilość przetworzonych cyfr
+; input:
+;	rax - integer value
+;	rbx - number base (base: 2..36)
+;	rcx - number of characters in the prefix
+;	dl - prefix ASCII code
+;	rdi - destination string pointer
+; output:
+;	CF flag, if the base is invalid
+;	rcx - number of processed digits
 library_integer_to_string:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 	push	rdi
@@ -19,89 +19,89 @@ library_integer_to_string:
 	push	r9
 	push	rcx
 
-	; system liczbowy obsługiwany?
+	; number base supported?
 	cmp	rbx,	2
-	jb	.error	; nie
+	jb	.error	; no
 	cmp	rbx,	36
-	ja	.error	; nie
+	ja	.error	; no
 
-	; zachowaj wartość prefiksa
+	; store the prefix value
 	mov	r9,	rdx
 
-	; wyczyść starszą część / resztę z dzielenia
+	; clear the high part / remainder
 	xor	rdx,	rdx
 
-	; utwórz stos zmiennych lokalnych
+	; create a stack of local variables
 	mov	rbp,	rsp
 
 .loop:
-	; oblicz resztę z dzielenia
+	; compute the remainder
 	div	rbx
 
-	; zapisz resztę z dzielenia do zmiennych lokalnych
-	add	rdx,	STATIC_SCANCODE_DIGIT_0	; przemianuj cyfrę na kod ASCII
+	; store the remainder in the local variables
+	add	rdx,	STATIC_SCANCODE_DIGIT_0	; convert the digit into an ASCII code
 	push	rdx
 
-	; zmniejsz rozmiar prefiksu
+	; shrink the prefix size
 	dec	rcx
 
-	; wyczyść resztę z dzielenia
+	; clear the remainder
 	xor	rdx,	rdx
 
-	; przeliczać dalej?
+	; keep converting?
 	test	rax,	rax
-	jnz	.loop	; tak
+	jnz	.loop	; yes
 
-	; uzupełnić prefiks?
+	; fill the prefix?
 	cmp	rcx,	STATIC_EMPTY
-	jle	.init	; nie
+	jle	.init	; no
 
 .prefix:
-	; uzupełnij wartość o prefiks
+	; fill the value with the prefix
 	push	r9
 
-	; uzupełniać dalej?
+	; keep filling?
 	dec	rcx
-	jnz	.prefix	; tak
+	jnz	.prefix	; yes
 
 .init:
-	; ilość przetworzonych cyfr
+	; number of processed digits
 	xor	ecx,	ecx
 
 .return:
-	; pozostały cyfry do wyświetlenia?
+	; any digits left to display?
 	cmp	rsp,	rbp
-	je	.end	; nie
+	je	.end	; no
 
-	; pobierz cyfrę
+	; fetch the digit
 	pop	rax
 
-	; sprawdź czy system liczbowy powyżej podstawy 10
+	; check whether the number base is above 10
 	cmp	al,	0x3A
-	jb	.no	; jeśli nie, kontynuuj
+	jb	.no	; if not, continue
 
-	; koryguj kod ASCII do odpowiedniej podstawy liczbowej
+	; fix the ASCII code up to the matching number base
 	add	al,	0x07
 
 .no:
-	; zwróć cyfrę
+	; return the digit
 	stosb
 
-	; przetworzona cyfra
+	; processed digit
 	inc	rcx
 
-	; kontynuuj
+	; continue
 	jmp	.return
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; zwróć informacje o ilości przetworzonych cyfr
+	; return information about the number of processed digits
 	mov	qword [rsp],	rcx
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	r9
 	pop	rbp
@@ -109,7 +109,7 @@ library_integer_to_string:
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_integer_to_string"

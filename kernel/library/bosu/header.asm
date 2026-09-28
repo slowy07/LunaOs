@@ -7,19 +7,19 @@ LIBRARY_BOSU_WINDOW_BORDER_THICKNESS_pixel	equ	0x01
 LIBRARY_BOSU_WINDOW_BORDER_color		equ	0x0028282800303030
 
 ;-------------------------------------------------------------------------------
-LIBRARY_BOSU_WINDOW_FLAG_flush			equ	1 << 0	; okno wymaga przerysowania
-							; powyżej 1, flagi inicjalizacyjne, interpretowane tylko raz
-LIBRARY_BOSU_WINDOW_FLAG_visible		equ	1 << 1	; okno widoczne
-LIBRARY_BOSU_WINDOW_FLAG_fixed_xy		equ	1 << 2	; okno nieruchome na osi X,Y
-LIBRARY_BOSU_WINDOW_FLAG_fixed_z		equ	1 << 3	; okno nieruchome na osi Z
-LIBRARY_BOSU_WINDOW_FLAG_fragile		equ	1 << 4	; okno ukrywane przy wystąpieniu akcji z LPM lub PPM
-LIBRARY_BOSU_WINDOW_FLAG_arbiter		equ	1 << 6	; nadobiekt, np. decyduje o trybie pełnoekranowym (domyślnie jest nim GUI)
-							; powyżej 7, przeznaczone dla GUI
-LIBRARY_BOSU_WINDOW_FLAG_unregistered		equ	1 << 8	; nie rejestruj okna w menedżerze okien
-LIBRARY_BOSU_WINDOW_FLAG_header			equ	1 << 9	; pokaż nagłówek okna
-LIBRARY_BOSU_WINDOW_FLAG_border			equ	1 << 10	; rysuj krawędź wokół okna
-LIBRARY_BOSU_WINDOW_FLAG_BUTTON_close		equ	1 << 11 ; przycisk zamknięcia okna
-LIBRARY_BOSU_WINDOW_FLAG_BUTTON_min		equ	1 << 12 ; przycisk minimalizacji okna
+LIBRARY_BOSU_WINDOW_FLAG_flush			equ	1 << 0	; the window needs a redraw
+							; above 1, initialisation flags, interpreted only once
+LIBRARY_BOSU_WINDOW_FLAG_visible		equ	1 << 1	; the window is visible
+LIBRARY_BOSU_WINDOW_FLAG_fixed_xy		equ	1 << 2	; the window is fixed on the X,Y axes
+LIBRARY_BOSU_WINDOW_FLAG_fixed_z		equ	1 << 3	; the window is fixed on the Z axis
+LIBRARY_BOSU_WINDOW_FLAG_fragile		equ	1 << 4	; the window is hidden when an LMB or RMB action occurs
+LIBRARY_BOSU_WINDOW_FLAG_arbiter		equ	1 << 6	; superobject, e.g. decides on the full screen mode (the GUI is that by default)
+							; above 7, meant for the GUI
+LIBRARY_BOSU_WINDOW_FLAG_unregistered		equ	1 << 8	; do not register the window in the window manager
+LIBRARY_BOSU_WINDOW_FLAG_header			equ	1 << 9	; show the window header
+LIBRARY_BOSU_WINDOW_FLAG_border			equ	1 << 10	; draw a border around the window
+LIBRARY_BOSU_WINDOW_FLAG_BUTTON_close		equ	1 << 11 ; window close button
+LIBRARY_BOSU_WINDOW_FLAG_BUTTON_min		equ	1 << 12 ; window minimize button
 ;-------------------------------------------------------------------------------
 
 LIBRARY_BOSU_HEADER_HEIGHT_pixel		equ	18
@@ -77,7 +77,7 @@ struc	LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA
 	.id					resb	8
 	.length					resb	1
 	.name					resb	LIBRARY_BOSU_WINDOW_NAME_length
-	;--- dane specyficzne dla Bosu
+	;--- Bosu-specific data
 	.scanline_byte				resb	4
 	.reserved				resb	4
 	.SIZE:
@@ -151,7 +151,7 @@ endstruc
 
 struc	LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN
 	.type					resb	LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
-	.size					resb	2	; rozmiar przestrzeni w Bajtach
+	.size					resb	2	; area size in bytes
 	.address				resb	8
 	.SIZE:
 endstruc

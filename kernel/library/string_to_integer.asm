@@ -1,13 +1,13 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rbx - ilość znaków w ciągu
-;	rsi - wskaźnik do ciągu
-; wyjście:
-;	rax - wartość całkowita
+; input:
+;	rbx - number of characters in the string
+;	rsi - pointer to the string
+; output:
+;	rax - integer value
 library_string_to_integer:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rdx
@@ -15,34 +15,34 @@ library_string_to_integer:
 	push	r8
 	push	rax
 
-	; podstawa cyfry
+	; digit base
 	mov	ecx,	1
 
-	; wynik cząstkowy
+	; partial result
 	xor	r8,	r8
 
 .loop:
-	; pobierz ostatnią cyfrę z ciągu
+	; fetch the last digit from the string
 	movzx	eax,	byte [rsi + rbx - 0x01]
-	sub	al,	STATIC_SCANCODE_DIGIT_0	; przekształć kod ASCII cyfry na wartość
-	mul	rcx	; zamień na wartość z danej podstawy dla cyfry
+	sub	al,	STATIC_SCANCODE_DIGIT_0	; turn the digit's ASCII code into a value
+	mul	rcx	; convert the digit from its number base
 
-	; dodaj do wyniku cząstkowego
+	; fold it into the partial result
 	add	r8,	rax
 
-	; zamień podstawę na dziesiątki, setki, tysiące... itd.
+	; step the base up to tens, hundreds, thousands... and so on
 	mov	eax,	STATIC_NUMBER_SYSTEM_decimal
 	mul	rcx
 	mov	rcx,	rax
 
-	; koniec ciągu?
+	; end of string?
 	dec	rbx
-	jnz	.loop	; nie, przetwarzaj dalej
+	jnz	.loop	; no, keep processing
 
-	; zwróć wynik
+	; return the result
 	mov	qword [rsp],	r8
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 	pop	r8
 	pop	rsi
@@ -50,7 +50,7 @@ library_string_to_integer:
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_string_to_integer"

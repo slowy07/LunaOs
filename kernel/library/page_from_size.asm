@@ -1,32 +1,32 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar w Bajtach
-; wyjście:
-;	rcx - rozmiar w stronach wyrównany do góry
+; input:
+;	rcx - size in bytes
+; output:
+;	rcx - size in pages, rounded up
 library_page_from_size:
-	; zmienna lokalna
+	; local variable
 	push	rcx
 
-	; usuń młodszą część rozmiaru
+	; drop the low bits of the size
 	and	cx,	STATIC_PAGE_mask
 
-	; sprawdź czy rozmiar jednakowy
+	; check whether the size already matches
 	cmp	rcx,	qword [rsp]
-	je	.ready	; jeśli tak, koniec
+	je	.ready	; if so, done
 
-	; przesuń rozmiar o jedną stronę do przodu
+	; advance the size by one page
 	add	rcx,	STATIC_PAGE_SIZE_byte
 
 .ready:
-	; zamień na strony
+	; convert to pages
 	shr	rcx,	STATIC_DIVIDE_BY_PAGE_shift
 
-	; usuń zmienną lokalną
+	; drop the local variable
 	add	rsp,	STATIC_QWORD_SIZE_byte
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_page_from_size"

@@ -1,11 +1,11 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rax - wartość
-; wyjście:
-;	rax - wartość
-;	rbx - typ
+; input:
+;	rax - value
+; output:
+;	rax - value
+;	rbx - type
 ;		0 - Bytes
 ;		1 - KiB
 ;		2 - MiB
@@ -15,59 +15,59 @@
 ;		6 - EiB
 ;		7 - ZiB
 ;		8 - YiB
-;	rdx - procent z reszty
+;	rdx - percentage of the remainder
 library_value_to_size:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rax
 
-	; inicjuj rozmiar
+	; initialise the size
 	xor	ebx,	ebx
 
-	; podstawowy przelicznik rozmiaru
+	; base size divisor
 	mov	ecx,	1024
 
-	; domyślny procent z reszty
+	; default percentage of the remainder
 	xor	edx,	edx
 
-	; wartość mniejsza od podstawy?
+	; value smaller than the base?
 	cmp	rax,	1024
-	jb	.end	; tak, brak przeliczania
+	jb	.end	; yes, no conversion
 
 .loop:
-	; przelicz oryginalną wartość na odpowiedni rozmiar
+	; convert the original value into the matching size
 	mov	rax,	qword [rsp]
 	div	rcx
 
-	; następny rozmiar wartości
+	; next size of the value
 	shl	rcx,	STATIC_MULTIPLE_BY_1024_shift
 
-	; przeliczono do następnego rozmiaru
+	; converted to the next size
 	inc	bl
 
-	; wartość wynikowa mniejsza od podstawy?
+	; result value smaller than the base?
 	cmp	rax,	1024
-	jae	.loop	; tak, przelicz na inny rozmiar
+	jae	.loop	; yes, convert to another size
 
-	; zachowaj wynik całkowity
+	; store the whole result
 	mov	qword [rsp],	rax
 
-	; resztę przelicz na %
+	; convert the remainder into %
 	mov	rax,	rdx
 	mov	edx,	100
-	shr	rcx,	STATIC_DIVIDE_BY_1024_shift	; koryguj podstawę wyniku
+	shr	rcx,	STATIC_DIVIDE_BY_1024_shift	; fix up the result base
 	mul	rdx
 	div	rcx
 
-	; zwróć procent
+	; return the percentage
 	mov	rdx,	rax
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_value_to_size"

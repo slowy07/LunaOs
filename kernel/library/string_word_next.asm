@@ -1,52 +1,52 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	al - kod ASII separatora
-;	rcx - rozmiar ciągu w Bajtach
-;	rsi - wskaźnik do ciągu
-; wyjście:
-;	Flaga CF - jeśli nie znaleziono separatora
-;	rbx - rozmiar ciągu do pierwszego separatora
-;	lub rbx = rcx jeśli Flaga CF
+; input:
+;	al - separator ASCII code
+;	rcx - string size in bytes
+;	rsi - pointer to the string
+; output:
+;	CF flag - if no separator was found
+;	rbx - string size up to the first separator
+;	or rbx = rcx if the CF flag is set
 library_string_word_next:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
 
-	; licznik
+	; counter
 	xor	ebx,	ebx
 
 .search:
-	; koniec ciągu?
+	; end of string?
 	dec	rcx
-	js	.not_found	; tak
+	js	.not_found	; yes
 
-	; znaleziono separator?
+	; separator found?
 	cmp	byte [rsi],	al
-	je	.end	; tak, koniec fragmentu ciągu
+	je	.end	; yes, end of the string chunk
 
-	; przesuń wskaźnik na następny znak w buforze polecenia
+	; move the pointer to the next character in the command buffer
 	inc	rsi
 
-	; zwiększ licznik znaków przypadających na znalezione słowo
+	; increment the counter of characters belonging to the found word
 	inc	rbx
 
-	; zliczaj dalej
+	; keep counting
 	jmp	.search
 
 .not_found:
-	; nie znaleziono słowa w ciągu znaków
+	; no word found in the character string
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_string_word_next"

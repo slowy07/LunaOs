@@ -1,64 +1,64 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rsi - początek przestrzeni binarnej mapy pamięci
-;	rdi - koniec przestrzeni binarnej mapy pamięci
-; wyjście:
-;	Flaga CF - błąd, jeśli ustawiona
-;	rax - bezwzględny numer znalezionego bitu
+; input:
+;	rsi - start of the binary memory map region
+;	rdi - end of the binary memory map region
+; output:
+;	CF flag - error, if set
+;	rax - absolute index of the found bit
 library_bit_find:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdi
 	push	rsi
 
-	; wyczyść akumulator
+	; clear the accumulator
 	xor	eax,	eax
 
 .search:
-	; sprawdź czy "pakiet" zawiera, jakiekolwiek bity
+	; check whether the "packet" holds any bits at all
 	cmp	qword [rsi],	STATIC_EMPTY
-	jne	.found	; znaleziono
+	jne	.found	; found
 
-	; sprawdź następny "pakiet"
+	; check the next "packet"
 	add	rsi,	STATIC_QWORD_SIZE_byte
 
-	; sprawdź czy przeszukaliśmy już całą binarną mapę
+	; check whether the whole binary map has been searched
 	cmp	rsi,	rdi
-	jne	.search	; szukaj dalej
+	jne	.search	; keep searching
 
-	; flaga, błąd
+	; flag, error
 	stc
 
-	; koniec
+	; end
 	jmp	.end
 
 .found:
 	; todo:
 	; tzcnt
 
-	; pobierz pozycję wolnego bitu od najstarszej pozycji w słowie i wyłącz go
+	; fetch the free bit position counting from the oldest bit in the word and clear it
 	bsf	rax,	qword [rsi]
 	btr	qword [rsi],	rax
 
-	; oblicz bezwzględny numer pobranego bitu
+	; compute the absolute index of the taken bit
 	sub	rsi,	qword [rsp]
 
-	; zamień Bajty na bity
+	; convert bytes to bits
 	shl	rsi,	STATIC_DIVIDE_BY_8_shift
 
-	; zwróć sumę pozycji
+	; return the sum of the positions
 	add	rax,	rsi
 
-	; flaga, sukces
+	; flag, success
 	clc
 
 .end:
-	; przywróc oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rdi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret

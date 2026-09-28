@@ -1,98 +1,98 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rcx	- ilość znaków w ciągu
-;	rsi	- wskaźnik do ciągu
-; wyjście:
-;	Flaga CF - ciąg pusty
-;	rcx	- ilość znaków w ciągu bez "białych" znaków
-;	rsi	- wskaźnik początku ciągu bez "białych" znaków
+; input:
+;	rcx - number of characters in the string
+;	rsi - pointer to the string
+; output:
+;	CF flag - empty string
+;	rcx - number of characters in the string without the "white" characters
+;	rsi - pointer to the start of the string without the "white" characters
 library_string_trim:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rsi
 
-	; ciąg pusty?
+	; empty string?
 	test	rcx,	rcx
-	jz	.error	; tak
+	jz	.error	; yes
 
 .prefix:
-	; spacja?
+	; space?
 	cmp	byte [rsi],	STATIC_SCANCODE_SPACE
-	je	.prefix_found	; tak
+	je	.prefix_found	; yes
 
-	; tabulator?
+	; tab?
 	cmp	byte [rsi],	STATIC_SCANCODE_TAB
-	je	.prefix_found	; tak
+	je	.prefix_found	; yes
 
-	; pusty znak?
+	; empty character?
 	cmp	byte [rsi],	STATIC_EMPTY
-	jne	.prefix_ready	; nie
+	jne	.prefix_ready	; no
 
 .prefix_found:
-	; przesuń wskaźnik na nastepny znak w ciągu
+	; move the pointer to the next character in the string
 	inc	rsi
 
-	; ilość znaków w ciągu
+	; number of characters in the string
 	dec	rcx
-	jnz	.prefix	; przetwórz pozostałą zawartość ciągu
+	jnz	.prefix	; process the remaining string content
 
-	; ciąg pusty
+	; empty string
 	jmp	.error
 
 .prefix_ready:
-	; przesuń wskaźnik na koniec ciągu
+	; move the pointer to the end of the string
 	add	rsi,	rcx
 
 .suffix:
-	; spacja?
+	; space?
 	cmp	byte [rsi - STATIC_BYTE_SIZE_byte],	STATIC_SCANCODE_SPACE
-	je	.suffix_found	; tak
+	je	.suffix_found	; yes
 
-	; tabulator?
+	; tab?
 	cmp	byte [rsi - STATIC_BYTE_SIZE_byte],	STATIC_SCANCODE_TAB
-	je	.suffix_found	; tak
+	je	.suffix_found	; yes
 
-	; pusty znak?
+	; empty character?
 	cmp	byte [rsi - STATIC_BYTE_SIZE_byte],	STATIC_EMPTY
-	jne	.suffix_ready	; nie
+	jne	.suffix_ready	; no
 
 .suffix_found:
-	; przesuń wskaźnik na poprzedni znak w ciągu
+	; move the pointer to the previous character in the string
 	dec	rsi
 
-	; ilość znaków w ciągu
+	; number of characters in the string
 	dec	rcx
-	jnz	.suffix	; przetwórz pozostałą zawartość ciągu
+	jnz	.suffix	; process the remaining string content
 
-	; ciąg pusty
+	; empty string
 	jmp	.error
 
 .suffix_ready:
-	; ustaw wskaźnik na początek ciągu bez "białych" znaków
+	; set the pointer to the start of the string without the "white" characters
 	sub	rsi,	rcx
 
-	; zwróć właściwości nowego ciągu
+	; return the properties of the new string
 	mov	qword [rsp],	rsi
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rcx
 
-	; flaga, sukces
+	; flag, success
 	clc
 
-	; koniec procedury
+	; end of procedure
 	jmp	.end
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_string_trim"

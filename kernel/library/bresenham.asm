@@ -1,14 +1,14 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rbx - wskaźnik do procedury rysowania
+; input:
+;	rbx - pointer to the drawing procedure
 ;	r8 - x1
 ;	r9 - y1
 ;	r10 - x2
 ;	r11 - y2
 library_bresenham:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 	push	rsi
@@ -20,52 +20,52 @@ library_bresenham:
 	push	r14
 	push	r15
 
-	; sprawdź oś X
+	; check the X axis
 	; x1 > x2
 	cmp	r8,	r10
 	ja	.reverse_x
 
-	; kierunek osi X rosnąco
+	; X axis direction increasing
 	mov	r12,	1	; xi =  1
 	mov	r14,	r10	; dx =  x2
 	sub	r14,	r8	; dx -= x1
 
-	; sprawdź oś Y
+	; check the Y axis
 	jmp	.check_y
 
 .reverse_x:
-	; kierunek osi X malejąco
+	; X axis direction decreasing
 	mov	r12,	-1	 ; xi =  -1
 	mov	r14,	r8	 ; dx =  x1
 	sub	r14,	r10	; dx -= x2
 
 .check_y:
-	; sprawdź oś Y
+	; check the Y axis
 	; y1 > y2
 	cmp	r9,	r11
 	ja	.reverse_y
 
-	; kierunek osi Y rosnąco
+	; Y axis direction increasing
 	mov	r13,	1	; yi =  1
 	mov	r15,	r11	; dy =  y2
 	sub	r15,	r9	; dy -= y1
 
-	; kontynuuj
+	; continue
 	jmp	.done
 
 .reverse_y:
-	; kierunek osi Y malejąco
+	; Y axis direction decreasing
 	mov	r13,	-1	; yi =  -1
 	mov	r15,	r9	; dy =  y1
 	sub	r15,	r11	; dy -= y2
 
 .done:
-	; względem której osi rysować linię?
+	; relative to which axis is the line drawn?
 	; dy > dx
 	cmp	r15,	r14
 	ja	.osY
 
-	; rysuj linię względem osi X
+	; draw the line relative to the X axis
 	mov	rsi,	r15	; ai =  dy
 	sub	rsi,	r14	; ai -= dx
 	shl	rsi,	STATIC_MULTIPLE_BY_2_shift
@@ -75,37 +75,37 @@ library_bresenham:
 	sub	rdx,	r14	; d -=  dx
 
 .loop_x:
-	; wyświetl piksel o zdefiniowanym kolorze
+	; display the pixel with the given color
 	call	rbx
 
-	; jeśli wyświetlony piksel znajduje się w punkcie końca linii, koniec
+	; if the displayed pixel sits at the line end point, done
 	; x1 == x2
 	cmp	r8,	r10
 	je	.end
 
-	; współczynnik ujemny?
+	; negative coefficient?
 	; d
 	bt	rdx,	STATIC_QWORD_BIT_sign
 	jc	.loop_x_minus
 
-	; oblicz pozycję następnego piksela w linii
+	; compute the position of the next pixel on the line
 	add	r8,	r12	; x +=  xi
 	add	r9,	r13	; y +=  yi
 	add	rdx,	rsi	; d +=  ai
 
-	; rysuj linię
+	; draw the line
 	jmp	.loop_x
 
 .loop_x_minus:
-	; oblicz pozycję następnego piksela w linii
+	; compute the position of the next pixel on the line
 	add	rdx,	rdi	; d +=  bi
 	add	r8,	r12	; x +=  xi
 
-	; rysuj linię
+	; draw the line
 	jmp	.loop_x
 
 .osY:
-	; rysuj linię względem osi Y
+	; draw the line relative to the Y axis
 	mov	rsi,	r14	; ai =  dx
 	sub	rsi,	r15	; ai -= dy
 	shl	rsi,	STATIC_MULTIPLE_BY_2_shift
@@ -115,37 +115,37 @@ library_bresenham:
 	sub	rdx,	r15	; d -=  dy
 
 .loop_y:
-	; wyświetl piksel o zdefiniowanym kolorze
+	; display the pixel with the given color
 	call	rbx
 
-	; jeśli wyświetlony piksel znajduje się w punkcie końca linii, koniec
+	; if the displayed pixel sits at the line end point, done
 	; y1 == y2
 	cmp	r9,	r11
 	je	.end
 
-	; współczynnik ujemny?
+	; negative coefficient?
 	; d
 	bt	rdx,	STATIC_QWORD_BIT_sign
 	jc	.loop_y_minus
 
-	; oblicz pozycję następnego piksela w linii
+	; compute the position of the next pixel on the line
 	add	r8,	r12	; x +=  xi
 	add	r9,	r13	; y +=  yi
 	add	rdx,	rsi	; d +=  ai
 
-	; rysuj linię
+	; draw the line
 	jmp	.loop_y
 
 .loop_y_minus:
-	; oblicz pozycję następnego piksela w linii
+	; compute the position of the next pixel on the line
 	add	rdx,	rdi	; d +=  bi
 	add	r9,	r13	; y +=  yi
 
-	; rysuj linię
+	; draw the line
 	jmp	.loop_y
 
 .end:
-	; przywtóć oryginalne rejestry
+	; restore the original registers
 	pop	r15
 	pop	r14
 	pop	r13
@@ -157,5 +157,5 @@ library_bresenham:
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

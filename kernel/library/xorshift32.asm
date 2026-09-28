@@ -1,12 +1,12 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rax - ziarno
-; wyjście:
-;	rax - wartość "losowa"
+; input:
+;	rax - seed
+; output:
+;	rax - "random" value
 library_xorshift32:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rdx
 
 	; https://en.wikipedia.org/wiki/Xorshift
@@ -20,10 +20,10 @@ library_xorshift32:
 	shl	eax,	5
 	xor	eax,	edx
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_xorshift32"

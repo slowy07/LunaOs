@@ -1,46 +1,46 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość znaków w ciągu
-;	rsi - wskaźnik do ciągu
-; wyjście:
-;	Flaga CF - jeśli ciąg nie zawiera samych cyfr
+; input:
+;	rcx - number of characters in the string
+;	rsi - pointer to the string
+; output:
+;	CF flag - if the string does not contain only digits
 library_string_digits:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rsi
 	push	rcx
 
 .loop:
-	; znak spoza zakrecy cyfr?
+	; character outside the digit range?
 	cmp	byte [rsi],	STATIC_SCANCODE_DIGIT_0
-	jb	.error	; tak
+	jb	.error	; yes
 	cmp	byte [rsi],	STATIC_SCANCODE_DIGIT_9
-	ja	.error	; tak
+	ja	.error	; yes
 
-	; sprawdź następny znak
+	; check the next character
 	inc	rsi
 
-	; koniec ciągu
+	; end of string
 	dec	rcx
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
-	; flaga, sukces
+	; flag, success
 	clc
 
-	; koniec procedury
+	; end of procedure
 	jmp	.end
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rsi
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_string_digits"

@@ -1,29 +1,29 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rdi - adres
-; wyjście:
-;	rdi - adres wyrównany do pełnej strony w górę
+; input:
+;	rdi - address
+; output:
+;	rdi - address rounded up to a whole page
 library_page_align_up:
-	; utwórz zmienną lokalną
+	; create a local variable
 	push	rdi
 
-	; usuń młodszą część adresu
+	; drop the low bits of the address
 	and	di,	STATIC_PAGE_mask
 
-	; sprawdź czy adres jest identyczny z zmienną lokalną
+	; check whether the address equals the local variable
 	cmp	rdi,	qword [rsp]
-	je	.end	; jeśli tak, koniec
+	je	.end	; if so, done
 
-	; przesuń adres o jedną ramkę do przodu
+	; advance the address by one frame
 	add	rdi,	STATIC_PAGE_SIZE_byte
 
 .end:
-	; usuń zmienną lokalną
+	; drop the local variable
 	add	rsp,	STATIC_QWORD_SIZE_byte
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_page_align_up"

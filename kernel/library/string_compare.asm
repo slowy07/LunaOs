@@ -1,52 +1,52 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość znaków do porównania
-;	rsi - wskaźnik do ciągu pierwszego
-;	rdi - wskaźnik do ciągu drugiego
-; wyjście:
-;	Flaga CF - jeśli różne
+; input:
+;	rcx - number of characters to compare
+;	rsi - pointer to the first string
+;	rdi - pointer to the second string
+; output:
+;	CF flag - if different
 library_string_compare:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
 	push	rdi
 
 .loop:
-	; załaduj znak z ciągu RSI do rejestru AL, zwieksz rejestr RSI o 1
+	; load the character from the RSI string into the AL register, bump RSI by 1
 	lodsb
 
-	; sprawdź czy znak jest identyczny z znakiem z drugiego ciągu
+	; check whether the character matches the one from the second string
 	cmp	al,	byte [rdi]
-	jne	.error	; różne
+	jne	.error	; different
 
-	; przesuń wskaźnik ciągu RDI na następną pozycję
+	; advance the RDI string pointer to the next position
 	inc	rdi
 
-	; kontynuuj, dopóki pozostały inne znaki do porównania
+	; continue while further characters remain to compare
 	dec	rcx
 	jnz	.loop
 
-	; flaga, sukces
+	; flag, success
 	clc
 
-	; koniec procedury
+	; end of procedure
 	jmp	.end
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_string_compare"

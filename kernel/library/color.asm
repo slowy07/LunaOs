@@ -1,158 +1,158 @@
 ;===============================================================================
 
 ;=======================================================================
-; wejście:
-;	rsi - kolor ważony
-;	rdi - kolor podstawowy
-; wyjście:
-;	eax - kolor połączony z uwzględnieniem kanału alfa
+; input:
+;	rsi - weighted color
+;	rdi - base color
+; output:
+;	eax - color combined through the alpha channel
 library_color_alpha:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rdx
 
-	; zmienna lokalna
+	; local variable
 	push	STATIC_EMPTY
 
-	; waga (kanał alfa)
+	; weight (alpha channel)
 	movzx	rbx,	byte [rsi + 0x03]
 
-	; odwróć kanał alfa, używam odwrotnej notacji 0..widoczny, 255..niewidoczny
+	; invert the alpha channel, I use the reversed notation 0..visible, 255..invisible
 	not	bl
 	inc	bl
 
-	; czerwony -------------------------------------------------------------
+	; red ------------------------------------------------------------------
 	movzx	rax,	byte [rsi + 0x02]
 
-	; ważenie
+	; weighting
 	mul	bl
 	mov	cl,	STATIC_BYTE_mask
 	xor	dl,	dl
 	div	cl
 
-	; wynik cząstkowy
+	; partial result
 	mov	byte [rsp + 0x02],	al
 
-	; zielony --------------------------------------------------------------
+	; green ----------------------------------------------------------------
 	mov	al,	byte [rsi + 0x01]
 
-	; ważenie
+	; weighting
 	mul	bl
 	xor	dl,	dl
 	div	cl
 
-	; wynik cząstkowy
+	; partial result
 	mov	byte [rsp + 0x01],	al
 
-	; niebieski ------------------------------------------------------------
+	; blue -----------------------------------------------------------------
 	mov	al,	byte [rsi]
 
-	; ważenie
+	; weighting
 	mul	bl
 	xor	dl,	dl
 	div	cl
 
-	; wynik cząstkowy
+	; partial result
 	mov	byte [rsp],	al
 
-	; odwróć kanał alfa
+	; invert the alpha channel
 	sub	bl,	STATIC_BYTE_mask
 	not	bl
 	inc	bl
 
-	; czerwony podstawowy --------------------------------------------------
+	; base red -------------------------------------------------------------
 	mov	al,	byte [rdi + 0x02]
 
-	; ważenie
+	; weighting
 	mul	bl
 	xor	dl,	dl
 	div	cl
 
-	; wynik cząstkowy
+	; partial result
 	add	byte [rsp + 0x02],	al
 
-	; zielony podstawowy ---------------------------------------------------
+	; base green -----------------------------------------------------------
 	mov	al,	byte [rdi + 0x01]
 
-	; ważenie
+	; weighting
 	mul	bl
 	xor	dl,	dl
 	div	cl
 
-	; wynik cząstkowy
+	; partial result
 	add	byte [rsp + 0x01],	al
 
-	; niebieski podstawowy -------------------------------------------------
+	; base blue ------------------------------------------------------------
 	mov	al,	byte [rdi]
 
-	; ważenie
+	; weighting
 	mul	bl
 	xor	dl,	dl
 	div	cl
 
-	; wynik cząstkowy
+	; partial result
 	add	byte [rsp],	al
 
-	; zwróć wynik
+	; return the result
 	pop	rax
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"library_color_alpha"
 
 ;===============================================================================
-; wejście:
-;	rcx - ilość danych obrazu w Bajtach
-;	rsi - wskaźnik do danych obrazu
+; input:
+;	rcx - amount of image data in bytes
+;	rsi - pointer to the image data
 library_color_alpha_invert:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
 
-	; zamień rozmiar na ilość pikseli
+	; convert the size into a pixel count
 	shr	rcx,	KERNEL_VIDEO_DEPTH_shift
 
 .loop:
-	; pobierz wartość kanału alfa
+	; fetch the alpha channel value
 	mov	al,	byte [rsi + 0x03]
 
-	; wartość całkowicie niewidoczna?
+	; value completely invisible?
 	test	al,	al
-	jz	.invisible	; tak
+	jz	.invisible	; yes
 
-	; koryguj wartość
+	; fix up the value
 	dec	al
 
 .invisible:
-	; odwróć wartość
+	; invert the value
 	not	al
 
-	; odłóż na miejsce
+	; put it back in place
 	mov	byte [rsi + 0x03],	al
 
-	; przesuń wskaźnik na następną wartość kanału alfa
+	; move the pointer to the next alpha channel value
 	add	rsi,	KERNEL_VIDEO_DEPTH_byte
 
-	; przetworzyć kolejne piksele?
+	; process further pixels?
 	dec	rcx
-	jnz	.loop	; tak
+	jnz	.loop	; yes
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"library_color_alpha_invert"

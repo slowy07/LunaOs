@@ -10,8 +10,8 @@ struc	LIBRARY_TERMINAL_STRUCTURE
 	.width_char			resb	8
 	.height_char			resb	8
 	.scanline_char			resb	8
-	.cursor:			resb	4	; pozycja na osi X
-					resb	4	; pozycja na osi Y
+	.cursor:			resb	4	; position on the X axis
+					resb	4	; position on the Y axis
 	.lock				resb	8
 	.foreground_color		resb	4
 	.background_color		resb	4

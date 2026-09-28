@@ -1,150 +1,150 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rbx - rozmiar bufora
-;	rcx - ilość znaków w buforze
-;	rdx - procedura obsługi wyjątku
-;	rsi - wskaźnik przestrzeni bufora
-;	rdi - wskaźnik przestrzeni IPC
-; wyjście:
-;	Flaga CF - użytkownik przerwał wprowadzanie (np. klawisz ESC) lub bufor pusty
-;	rcx - ilość znaków w ciągu
-;	rsi - wskaźnik do bufora
+; input:
+;	rbx - buffer size
+;	rcx - number of characters in the buffer
+;	rdx - exception handler procedure
+;	rsi - pointer to the buffer area
+;	rdi - pointer to the IPC area
+; output:
+;	CF flag - the user aborted the input (e.g. the ESC key) or the buffer is empty
+;	rcx - number of characters in the string
+;	rsi - pointer to the buffer
 library_input:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rdx
 	push	rcx
 
-	; wyświetlić zawartość bufora?
+	; display the buffer content?
 	test	rcx,	rcx
-	jz	.entry	; nie
+	jz	.entry	; no
 
-	; wyświetl zawartość bufora
+	; display the buffer content
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	int	KERNEL_SERVICE
 
 .entry:
-	; wyczyść akumulator
+	; clear the accumulator
 	xor	eax,	eax
 
-	; ilość wolnego miejsca w buforze
+	; amount of free space in the buffer
 	sub	rbx,	rcx
 
 .loop:
-	; zwolnij pozostały czas procesora
+	; release the remaining processor time
 	mov	ax,	KERNEL_SERVICE_PROCESS_release
 	int	KERNEL_SERVICE
 
-	; pobierz komunikat "znak z bufora klawiatury"
+	; fetch the "character from the keyboard buffer" message
 	mov	ax,	KERNEL_SERVICE_PROCESS_ipc_receive
 	int	KERNEL_SERVICE
-	jc	.loop	; brak komunikatu
+	jc	.loop	; no message
 
-	; komunikat typu: klawiatura?
+	; message of type: keyboard?
 	cmp	byte [rdi + KERNEL_IPC_STRUCTURE.type],	KERNEL_IPC_TYPE_KEYBOARD
-	je	.keyboard	; tak
+	je	.keyboard	; yes
 
-	; obsłuż komunikat
+	; handle the message
 	call	qword [rsp + STATIC_QWORD_SIZE_byte]
 
-	; kontynuuj
+	; continue
 	jmp	.loop
 
 .keyboard:
-	; pobierz kod klawisza
+	; fetch the key code
 	mov	dx,	word [rdi + KERNEL_IPC_STRUCTURE.data]
 
-	; klawisz typu Backspace?
+	; key of type Backspace?
 	cmp	dx,	STATIC_SCANCODE_BACKSPACE
 	je	.key_backspace
 
-	; klawisz typu Enter?
+	; key of type Enter?
 	cmp	dx,	STATIC_SCANCODE_RETURN
 	je	.key_enter
 
-	; klawisz typu ESC?
+	; key of type ESC?
 	cmp	dx,	STATIC_SCANCODE_ESCAPE
-	je	.empty	; zakończ libliotekę
+	je	.empty	; finish the library
 
-	; znak dozwolony?
+	; character allowed?
 
-	; sprawdź czy pobrany znak jest możliwy do wyświetlenia
+	; check whether the fetched character can be displayed
 	cmp	dx,	STATIC_SCANCODE_SPACE
-	jb	.loop	; nie, zignoruj
+	jb	.loop	; no, ignore
 	cmp	dx,	STATIC_SCANCODE_TILDE
-	ja	.loop	; nie, zignoruj
+	ja	.loop	; no, ignore
 
-	; bufor pełny?
+	; buffer full?
 	test	rbx,	rbx
-	jz	.loop	; tak
+	jz	.loop	; yes
 
-	; zachowaj znak w buforze
+	; store the character in the buffer
 	mov	byte [rsi + rcx],	dl
 
-	; pozostałe miejsce w buforze
+	; remaining space in the buffer
 	dec	rbx
 
-	; ilość znaków w buforze
+	; number of characters in the buffer
 	inc	rcx
 
 .print:
-	; zachowaj ilość znaków w buforze
+	; preserve the character count in the buffer
 	push	rcx
 
-	; wyświetl znak na terminal
+	; display the character on the terminal
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out_char
-	mov	ecx,	0x01	; jeden raz
+	mov	ecx,	0x01	; once
 	int	KERNEL_SERVICE
 
-	; przywróć ilość znakóœ w buforze
+	; restore the character count in the buffer
 	pop	rcx
 
-	; kontynuuj
+	; continue
 	jmp	.loop
 
 .key_backspace:
-	; bufor pusty?
+	; buffer empty?
 	test	rcx,	rcx
-	jz	.loop	; tak
+	jz	.loop	; yes
 
-	; ilość znaków w buforze
+	; number of characters in the buffer
 	dec	rcx
 
-	; rozmiar dostępnego bufora
+	; size of the available buffer
 	inc	rbx
 
-	; wyświetl klawisz backspace
+	; display the backspace key
 	jmp	.print
 
 .key_enter:
-	; bufor pusty?
+	; buffer empty?
 	test	rcx,	rcx
-	jz	.empty	; tak
+	jz	.empty	; yes
 
-	; zwróć ilość znaków w buforze
+	; return the number of characters in the buffer
 	mov	qword [rsp],	rcx
 
-	; flaga, sukces
+	; flag, success
 	clc
 
-	; koniec liblioteki
+	; end of library
 	jmp	.end
 
 .empty:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rdx
 	pop	rbx
 	pop	rax
 
-	; powrót z biblioteki
+	; return from the library
 	ret
 
 	macro_debug	"library_input"

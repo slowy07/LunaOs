@@ -1,46 +1,46 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
+; input:
 ;	al - separator
-;	rcx - ilość znaków w ciągu
-;	rsi - wskaźnik do ciągu
-; wyjście:
-;	Flaga CF - brak separatora
-;	rcx - ilość znaków w słowie
+;	rcx - number of characters in the string
+;	rsi - pointer to the string
+; output:
+;	CF flag - no separator
+;	rcx - number of characters in the word
 library_string_cut:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rsi
 	push	rcx
 
 .loop:
-	; koniec ciagu?
+	; end of string?
 	cmp	byte [rsi],	STATIC_SCANCODE_TERMINATOR
-	je	.end	; tak
+	je	.end	; yes
 
-	; znaleziono separator
+	; separator found
 	cmp	byte [rsi],	al
-	je	.end	; tak, koniec procedury
+	je	.end	; yes, end of procedure
 
-	; zwiększ licznik i sprawdź następny znak
+	; increment the counter and check the next character
 	inc	rsi
 
-	; sprawdzić następny znak ciągu?
+	; check the next character of the string?
 	dec	rcx
 	jnz	.loop
 
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; zwróć ilość znaków w słowie
+	; return the number of characters in the word
 	sub	qword [rsp],	rcx
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rsi
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"library_string_cut"

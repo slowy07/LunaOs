@@ -1,7 +1,7 @@
 ;===============================================================================
 ; Font: Canele (https://addy-dclxvi.github.io/post/bitmap-fonts/)
 ; Migrated via:
-;	"vga text font designer II ver 1.0" by Paweł Szcześniak from 01.09.1998 :D
+;	"vga text font designer II ver 1.0" by Pawel Szczesniak from 01.09.1998 :D
 ;	on 01.01.2020 at 3:28 AM ^^
 ;===============================================================================
 

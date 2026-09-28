@@ -377,509 +377,509 @@ driver_ps2_string_debug_end:
 
 ;===============================================================================
 driver_ps2_mouse:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rdx
 
-	; sprawdź czy dane należą do urządzenia wskazującego (myszka)
+	; check whether the data belongs to the pointing device (mouse)
 	in	al,	DRIVER_PS2_PORT_COMMAND_OR_STATUS
 	test	al,	DRIVER_PS2_STATUS_output_second
-	jz	.end	; nie
+	jz	.end	; no
 
-	; pobierz wiadomość z kontrolera PS2
+	; fetch a message from the PS2 controller
 	xor	eax,	eax
 	in	al,	DRIVER_PS2_PORT_DATA
 
-	; pobierz aktualną pozycję na osi X i Y
+	; fetch the current position on the X and Y axes
 	mov	bx,	word [rel driver_ps2_mouse_x]
 	mov	dx,	word [rel driver_ps2_mouse_y]
 
 	;-----------------------------------------------------------------------
 	; status?
 	cmp	byte [rel driver_ps2_mouse_packet],	STATIC_TRUE
-	jne	.no_status	; nie
+	jne	.no_status	; no
 
-	; pakiet statusu zawiera "zawsze włączony" bit?
+	; does the status packet carry the "always on" bit?
 	bt	ax,	DRIVER_PS2_DEVICE_MOUSE_PACKET_ALWAYS_ONE_bit
-	jnc	.end	; błąd, porzuć pakiet
+	jnc	.end	; error, drop the packet
 
-	; przepełnienie na osi X
+	; overflow on the X axis
 	bt	ax,	DRIVER_PS2_DEVICE_MOUSE_PACKET_OVERFLOW_x
-	jc	.end	; tak, porzuć pakiet
+	jc	.end	; yes, drop the packet
 
-	; przepełnienie na osi X
+	; overflow on the X axis
 	bt	ax,	DRIVER_PS2_DEVICE_MOUSE_PACKET_OVERFLOW_y
-	jc	.end	; tak, porzuć pakiet
+	jc	.end	; yes, drop the packet
 
-	; zachowaj status kontrolera
+	; keep the controller status
 	mov	byte [rel driver_ps2_mouse_state],	al
 
-	; następny pakiet to prdesunięcie na osi X
+	; the next packet is an X axis displacement
 	inc	byte [rel driver_ps2_mouse_packet]
 
-	; koniec obsługi przerwania
+	; end of interrupt handling
 	jmp	.end
 
 .no_status:
 	;-----------------------------------------------------------------------
 
-	; prdesunięcie na osi X?
+	; X axis displacement?
 	cmp	byte [rel driver_ps2_mouse_packet],	STATIC_FALSE
-	jne	.no_x	; nie
+	jne	.no_x	; no
 
-	; następny pakiet to prdesunięcie na osi Y
+	; the next packet is a Y axis displacement
 	inc	byte [rel driver_ps2_mouse_packet]
 
-	; wartość z znakiem?
+	; signed value?
 	bt	word [rel driver_ps2_mouse_state],	DRIVER_PS2_DEVICE_MOUSE_PACKET_X_SIGNED_bit
-	jnc	.x_unsigned	; nie
+	jnc	.x_unsigned	; no
 
-	; koryguj znak
+	; correct the sign
 	neg	al
 
-	; przesuń wskaźnik w lewo
+	; move the pointer left
 	sub	bx,	ax
-	jns	.ready	; koniec obsługi pakietu
+	jns	.ready	; end of packet handling
 
-	; koryguj pozycje na osi X
+	; correct the position on the X axis
 	xor	bx,	bx
 
-	; koniec obsługi pakietu
+	; end of packet handling
 	jmp	.ready
 
 .x_unsigned:
-	; przesuń wskaźnik w prawo
+	; move the pointer right
 	add	bx,	ax
 
-	; wskaźnik poza ekranem na osi X?
+	; pointer off the screen on the X axis?
 	cmp	bx,	word [rel kernel_video_width_pixel]
-	jb	.ready	; nie, koniec obsługi pakietu
+	jb	.ready	; no, end of packet handling
 
-	; koryguj pozycję
+	; correct the position
 	mov	bx,	word [rel kernel_video_width_pixel]
 	dec	bx
 
-	; koniec obsługi pakietu
+	; end of packet handling
 	jmp	.ready
 
 .no_x:
 	;-----------------------------------------------------------------------
 
-	; następny pakiet to status
+	; the next packet is the status
 	mov	byte [rel driver_ps2_mouse_packet],	STATIC_TRUE
 
-	; wartość z znakiem?
+	; signed value?
 	bt	word [rel driver_ps2_mouse_state],	DRIVER_PS2_DEVICE_MOUSE_PACKET_Y_SIGNED_bit
-	jnc	.y_unsigned	; nie
+	jnc	.y_unsigned	; no
 
-	; koryguj znak
+	; correct the sign
 	neg	al
 
-	; przesuń wskaźnik w lewo
+	; move the pointer left
 	add	dx,	ax
 
-	; wskaźnik poda ekranem na osi X?
+	; pointer below the screen on the X axis?
 	cmp	dx,	word [rel kernel_video_height_pixel]
-	jb	.ready	; nie, koniec obsługi pakietu
+	jb	.ready	; no, end of packet handling
 
-	; koryguj pozycję
+	; correct the position
 	mov	dx,	word [rel kernel_video_height_pixel]
 	dec	dx
 
-	; koniec obsługi pakietu
+	; end of packet handling
 	jmp	.ready
 
 .y_unsigned:
-	; przesuń wskaźnik w prawo
+	; move the pointer right
 	sub	dx,	ax
-	jns	.ready	; koniec obsługi pakietu
+	jns	.ready	; end of packet handling
 
-	; koryguj pozycje na osi X
+	; correct the position on the X axis
 	xor	dx,	dx
 
 .ready:
-	; zachowaj nową pozycję wskaźnika
+	; keep the new pointer position
 	mov	word [rel driver_ps2_mouse_x],	bx
 	mov	word [rel driver_ps2_mouse_y],	dx
 
 .end:
-	; poinformuj LAPIC o obsłużeniu przerwania sprzętowego
+	; tell the LAPIC that the hardware interrupt has been handled
 	mov	rax,	qword [rel kernel_apic_base_address]
 	mov	dword [rax + KERNEL_APIC_EOI_register],	STATIC_EMPTY
 
-	; przywróć oryginalny rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rbx
 	pop	rax
 
-	; powrót z przerwania sprzętowego
+	; return from the hardware interrupt
 	iretq
 
 ;===============================================================================
-; wyjście:
-;	Flaga ZF, jeśli brak klawisza
-;	ax - kod ASCII klawisza
+; output:
+;	ZF flag, set if there is no key
+;	ax - ASCII code of the key
 driver_ps2_keyboard_pull:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rsi
 
-	; pobierz stan kontrolera
+	; fetch the controller state
 	in	al,	DRIVER_PS2_PORT_COMMAND_OR_STATUS
 
-	; dane na wyjściu?
+	; data ready?
 	test	al,	DRIVER_PS2_STATUS_output
 	jz	.end
 
-	; pobierz kod klawisza z bufora sprzętowego klawiatury
-	xor	eax,	eax	; wyczyść akumulator
+	; fetch the key code from the keyboard hardware buffer
+	xor	eax,	eax	; clear the accumulator
 	in	al,	DRIVER_PS2_PORT_DATA
 
-	; rozpocząć sekwencje?
+	; sequence to start?
 	cmp	al,	DRIVER_PS2_KEYBOARD_sequence
-	je	.sequence	; tak
+	je	.sequence	; yes
 
-	; rozpocząć sekwencje?
+	; sequence to start?
 	cmp	al,	DRIVER_PS2_KEYBOARD_sequence_alternative
-	je	.sequence	; tak
+	je	.sequence	; yes
 
-	; sekwencja rozpoczęta?
+	; sequence started?
 	cmp	byte [rel driver_ps2_keyboard_sequence],	STATIC_EMPTY
-	je	.no_sequence	; nie
+	je	.no_sequence	; no
 
-	; kombinuj kod klawisza
+	; combine the key code
 	xor	ah,	ah
 	xchg	ah,	byte [rel driver_ps2_keyboard_sequence]
 
-	; zapisz kod klawisza do bufora klawiatury
+	; store the key code in the keyboard buffer
 	jmp	.save
 
 .sequence:
-	; zachowaj informacje o typie rozpoczętej sekwencji
+	; keep the type of the sequence that has started
 	mov	byte [rel driver_ps2_keyboard_sequence],	al
 
-	; koniec obsługi przerwnia
+	; end of interrupt handling
 	jmp	.end
 
 .no_sequence:
-	; ustaw wskaźnik na macierz scancode
+	; point at the scancode table
 	mov	rsi,	qword [rel driver_ps2_keyboard_matrix]
 
-	; kod klawisza poza macierzą?
+	; key code outside the table?
 	cmp	al,	DRIVER_PS2_KEYBOARD_key_release
-	jb	.inside	; nie
+	jb	.inside	; no
 
-	; koryguj scancode
+	; correct the scancode
 	sub	al,	DRIVER_PS2_KEYBOARD_key_release
 
-	; pobierz kod klawisza na podstawie scancode
+	; fetch the key code from the scancode
 	mov	ax,	word [rsi + rax * STATIC_WORD_SIZE_byte]
 
-	; koryguj kod klawisza
+	; correct the key code
 	add	al,	DRIVER_PS2_KEYBOARD_key_release
 
-	; zapisz kod klawisza
+	; store the key code
 	jmp	.save
 
 .inside:
-	; pobierz kod klawisza na podstawie scancode
+	; fetch the key code from the scancode
 	mov	ax,	word [rsi + rax * STATIC_WORD_SIZE_byte]
 
 .save:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rdx
 	push	rdi
 
-	; zamień wartość na ciąg
+	; turn the value into a string
 	mov	bl,	STATIC_NUMBER_SYSTEM_hexadecimal
-	mov	ecx,	4	; prefiks
-	mov	dl,	STATIC_SCANCODE_DIGIT_0	; uzupełnij wartościami ZERO
+	mov	ecx,	4	; prefix
+	mov	dl,	STATIC_SCANCODE_DIGIT_0	; fill up with ZERO values
 	mov	rdi,	driver_ps2_string_scancode
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
 
-	; wyślij ciąg na port szeregowy COM1
+	; send the string to the COM1 serial port
 	mov	rsi,	driver_ps2_string_debug
 	call	driver_serial_send
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rdx
 	pop	rcx
 	pop	rbx
 
-	; zmień macierz klawiatury, jeśli wystąpiła odpowiednia sekwencja
+	; switch the keyboard table if the matching sequence occurred
 	call	driver_ps2_keyboard_shift
 
 .end:
-	; przyróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 driver_ps2_keyboard:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 
-	; pobierz kod ASCII klawisza
+	; fetch the ASCII code of the key
 	call	driver_ps2_keyboard_pull
-	jz	.end	; brak klawisza
+	jz	.end	; no key
 
-	; zachowaj kod ASCII klawisza w buforze
+	; keep the ASCII code of the key in the buffer
 	call	driver_ps2_keyboard_save
 
 .end:
-	; poinformuj LAPIC o obsłużeniu przerwania sprzętowego
+	; tell the LAPIC that the hardware interrupt has been handled
 	mov	rax,	qword [rel kernel_apic_base_address]
 	mov	dword [rax + KERNEL_APIC_EOI_register],	STATIC_EMPTY
 
-	; przywróć oryginalny rejestry
+	; restore the original registers
 	pop	rax
 
-	; powrót z przerwania sprzętowego
+	; return from the hardware interrupt
 	iretq
 
 ;===============================================================================
-; wejście:
-;	ax - scancode klawisza
-; wyjście:
-;	Flaga CF - nie rozpoznano
+; input:
+;	ax - scancode of the key
+; output:
+;	CF flag - not recognised
 driver_ps2_keyboard_shift:
-	; lewy naciśnięty
+	; left pressed
 	cmp	ax,	DRIVER_PS2_KEYBOARD_PRESS_SHIFT_LEFT
 	je	.press_left
 
-	; prawy naciśnięty
+	; right pressed
 	cmp	ax,	DRIVER_PS2_KEYBOARD_PRESS_SHIFT_RIGHT
 	je	.press_right
 
-	; lewy puszczony
+	; left released
 	cmp	ax,	DRIVER_PS2_KEYBOARD_RELEASE_SHIFT_LEFT
 	je	.release_left
 
-	; prawy puszczony
+	; right released
 	cmp	ax,	DRIVER_PS2_KEYBOARD_RELEASE_SHIFT_RIGHT
 	je	.release_right
 
-	; capslock naciśnięty
+	; caps lock pressed
 	cmp	ax,	DRIVER_PS2_KEYBOARD_PRESS_CAPSLOCK
 	je	.capslock
 
-	; capslock puszczony?
+	; caps lock released?
 	cmp	ax,	DRIVER_PS2_KEYBOARD_RELEASE_CAPSLOCK
-	jne	.end	; nie
+	jne	.end	; no
 
-	; zwolnij semafor
+	; release the semaphore
 	mov	byte [rel driver_ps2_keyboard_capslock_semaphore],	STATIC_FALSE
 
 .end:
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 .press_left:
-	; przytrzymano klawisz?
+	; key held down?
 	cmp	byte [rel driver_ps2_keyboard_shift_left_semaphore],	STATIC_TRUE
-	je	.end	; tak
+	je	.end	; yes
 
-	; ustaw semafor
+	; set the semaphore
 	mov	byte [rel driver_ps2_keyboard_shift_left_semaphore],	STATIC_TRUE
 
-	; zmień macierz
+	; switch the table
 	jmp	.change
 
 .press_right:
-	; przytrzymano klawisz?
+	; key held down?
 	cmp	byte [rel driver_ps2_keyboard_shift_right_semaphore],	STATIC_TRUE
-	je	.end	; tak
+	je	.end	; yes
 
-	; ustaw semafor
+	; set the semaphore
 	mov	byte [rel driver_ps2_keyboard_shift_right_semaphore],	STATIC_TRUE
 
-	; powrót z procedury
+	; return from the procedure
 	jmp	.change
 
 .release_left:
-	; zwolnij semafor
+	; release the semaphore
 	mov	byte [rel driver_ps2_keyboard_shift_left_semaphore],	STATIC_FALSE
 
-	; zmień macierz
+	; switch the table
 	jmp	.change
 
 .release_right:
-	; zwolnij semafor
+	; release the semaphore
 	mov	byte [rel driver_ps2_keyboard_shift_right_semaphore],	STATIC_FALSE
 
-	; zmień macierz
+	; switch the table
 	jmp	.change
 
 .capslock:
-	; przytrzymano klawisz Capslock?
+	; caps lock key held down?
 	cmp	byte [rel driver_ps2_keyboard_capslock_semaphore],	STATIC_TRUE
-	je	.end	; tak
+	je	.end	; yes
 
-	; ustaw semafor
+	; set the semaphore
 	mov	byte [rel driver_ps2_keyboard_capslock_semaphore],	STATIC_TRUE
 
 .change:
-	; zmień macierz klawiszy
+	; switch the key table
 	call	driver_ps2_keyboard_matrix_change
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 driver_ps2_keyboard_save:
-	; zachowaj wartość ASCII klawisza w buforze programowym
+	; keep the ASCII value of the key in the software buffer
 	shl	qword [rel driver_ps2_keyboard_cache],	STATIC_MOVE_AX_TO_HIGH_shift
 	mov	word [rel driver_ps2_keyboard_cache],	ax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 driver_ps2_keyboard_matrix_change:
-	; zachowaj oryginalne klawisze
+	; preserve the original keys
 	push	rax
 
-	; wstaw sugerowany typ macierzy
+	; insert the suggested table type
 	mov	rax,	driver_ps2_keyboard_matrix_high
 	xchg	qword [rel driver_ps2_keyboard_matrix],	rax
 
-	; zamiana udana?
+	; switch successful?
 	cmp	rax,	driver_ps2_keyboard_matrix_low
-	je	.end	; tak
+	je	.end	; yes
 
-	; nie, koryguj
+	; no, correct it
 	mov	qword [rel driver_ps2_keyboard_matrix],	driver_ps2_keyboard_matrix_low
 
 .end:
-	; przywróć oryginalny rejestr
+	; restore the original register
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wyjście:
-;	Flaga ZF - jeśli brak klawisza
-;	ax - kod ASCII klawisza lub jego sekwencja
+; output:
+;	ZF flag - set if there is no key
+;	ax - ASCII code of the key or its sequence
 driver_ps2_keyboard_read:
-	; pobierz kod ASCII i usuń z bufora
+	; fetch the ASCII code and remove it from the buffer
 	mov	ax,	word [rel driver_ps2_keyboard_cache + STATIC_DWORD_SIZE_byte + STATIC_WORD_SIZE_byte]
 	shl	qword [rel driver_ps2_keyboard_cache],	STATIC_MOVE_AX_TO_HIGH_shift
 
-	; pobrano kod klawisza?
+	; key code fetched?
 	test	ax,	ax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 driver_ps2_check_dummy_answer_or_dump:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 
 .again:
-	; pobierz status kontrolera
+	; fetch the controller status
 	in	al,	DRIVER_PS2_PORT_COMMAND_OR_STATUS
-	bt	ax,	1	; sprawdź czy pierwszy bit jest równy zero
+	bt	ax,	1	; check whether the first bit equals zero
 	jnc	.nothing
 
-	; pobierz z bufora kontrolera niewiadomą odpowiedź
+	; fetch the unknown response from the controller buffer
 	in	al,	DRIVER_PS2_PORT_DATA
 	jmp	.again
 
 .nothing:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 driver_ps2_send_command_receive_answer:
-	; czekaj na możliwość wysłania polecenia
+	; wait until a command can be sent
 	call	driver_ps2_check_write
 
-	; wyślij polecenie
+	; send the command
 	out	DRIVER_PS2_PORT_COMMAND_OR_STATUS,	al
 
-	; odbierz odpowiedź
+	; receive the response
 	call	driver_ps2_receive_answer
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 driver_ps2_check_write:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 
 .loop:
-	; pobierz status kontrolera
+	; fetch the controller status
 	in	al,	DRIVER_PS2_PORT_COMMAND_OR_STATUS
-	test	al,	2	; sprawdź czy drugi bit jest równy zero
-	jnz	.loop	; jeśli nie, powtórz operacje
+	test	al,	2	; check whether the second bit equals zero
+	jnz	.loop	; if not, repeat the operation
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wyjście:
-;	al - odpowiedź od kontrolera
+; output:
+;	al - response from the controller
 driver_ps2_receive_answer:
-	; czekaj na możliwość odbioru odpowiedzi
+	; wait until a response can be received
 	call	driver_ps2_check_read
 
-	; odbierz odpowiedź
+	; receive the response
 	in	al,	DRIVER_PS2_PORT_DATA
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 driver_ps2_check_read:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 
 .loop:
-	; pobierz status kontrolera
+	; fetch the controller status
 	in	al,	DRIVER_PS2_PORT_COMMAND_OR_STATUS
-	test	al,	1	; sprawdź czy pierwszy bit jest równy zero
-	jz	.loop	; jeśli nie, powtórz operacje
+	test	al,	1	; check whether the first bit equals zero
+	jz	.loop	; if not, repeat the operation
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 driver_ps2_send_command:
-	; czekaj na możliwość wysłania polecenia
+	; wait until a command can be sent
 	call	driver_ps2_check_write
 
-	; wyślij polecenie
+	; send the command
 	out	DRIVER_PS2_PORT_COMMAND_OR_STATUS,	al
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	al - zapytanie do kontrolera
+; input:
+;	al - query to the controller
 driver_ps2_send_answer_or_ask_device:
-	; czekaj na możliwość wysłania polecenia
+	; wait until a command can be sent
 	call	driver_ps2_check_write
 
-	; wyślij polecenie
+	; send the command
 	out	DRIVER_PS2_PORT_DATA,	al
 
-	; powrót z procedury
+	; return from the procedure
 	ret

@@ -2,33 +2,33 @@
 
 ;===============================================================================
 kernel_init_apic:
-	; pobierz adres tablicy Local ACPI
+	; fetch the address of the Local ACPI table
 	mov	rsi,	qword [rel kernel_apic_base_address]
 
-	; wyłącz Task Priority i Priority Sub-Class
+	; disable Task Priority and Priority Sub-Class
 	mov	dword [rsi + KERNEL_APIC_TP_register],	STATIC_EMPTY
 
-	; włącz Flat Mode
+	; enable Flat Mode
 	mov	dword [rsi + KERNEL_APIC_DF_register],	KERNEL_APIC_DF_FLAG_flat_mode
 
-	; wszystkie dostępne procesory otrzymują przerwania (fizyczne!)
+	; all available processors receive the interrupts (physical!)
 	mov	dword [rsi + KERNEL_APIC_LD_register],	KERNEL_APIC_LD_FLAG_target_cpu
 
-	; włącz kontroler APIC na procesorze BSP/logicznym
+	; enable the APIC controller on the BSP/logical processor
 	mov	eax,	dword [rsi + KERNEL_APIC_SIV_register]
 	or	eax,	KERNEL_APIC_SIV_FLAG_enable_apic | KERNEL_APIC_SIV_FLAG_spurious_vector
 	mov	dword [rsi + KERNEL_APIC_SIV_register],	eax
 
-	; włącz przerwania wew. czasu na kontrolerze APIC procesora BSP/logicznego
+	; enable the timer interrupts on the APIC controller of the BSP/logical processor
 	mov	eax,	dword [rsi + KERNEL_APIC_LVT_TR_register]
 	and	eax,	~KERNEL_APIC_LVT_TR_FLAG_mask_interrupts
 	mov	dword [rsi + KERNEL_APIC_LVT_TR_register],	eax
 
-	; numer przerwania sprzętowego podczas zakończenia odliczania czasu
+	; interrupt line on timer expiry
 	mov	dword [rsi + KERNEL_APIC_LVT_TR_register],	KERNEL_APIC_IRQ_number
 
-	; przelicznik odliczanego czasu
+	; timer divider
 	mov	dword [rsi + KERNEL_APIC_TDC_register],	KERNEL_APIC_TDC_divide_by_16
 
-	; powróc z procedury
+	; return from the procedure
 	ret

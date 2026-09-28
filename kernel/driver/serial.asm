@@ -16,21 +16,21 @@ endstruc
 
 ;===============================================================================
 driver_serial:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 
-	; wyłącz generowanie przerwań
+	; disable interrupt generation
 	mov	al,	0x00
 	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.interrupt_enable_or_divisor_high
 	out	dx,	al
 
-	; włącz DLAB (podzielnik częstotliwości)
+	; enable DLAB (divisor latch)
 	mov	al,	0x80
 	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.line_control_or_dlab
 	out	dx,	al
 
-	; częstotliwość 115200
+	; baud rate 115200
 	mov	al,	0x03
 	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.data_or_divisor_low
 	out	dx,	al
@@ -38,82 +38,82 @@ driver_serial:
 	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.interrupt_enable_or_divisor_high
 	out	dx,	al
 
-	; 8 bitów na znak, bez parzystości, 1 bit końca
+	; 8 bits per character, no parity, 1 stop bit
 	mov	al,	0x03
 	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.line_control_or_dlab
 	out	dx,	al
 
-	; włącz FIFO, wyczyść z 14 Bajtowym progiem
+	; enable the FIFO, clear it, 14 byte trigger
 	mov	al,	0xC7
 	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.interrupt_identification_or_fifo
 	out	dx,	al
 
-	; przywóć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do danych zakończony terminatorem
+; input:
+;	rsi - pointer to the data terminated with a zero byte
 driver_serial_send:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 	push	rsi
 
-	; numer portu wyjściowego
+	; output port number
 	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.data_or_divisor_low
 
 .loop:
-	; pobierz znak z ciągu
+	; fetch a character from the string
 	lodsb
 
-	; koniec ciągu?
+	; end of the string?
 	test	al,	al
-	jz	.end	; tak
+	jz	.end	; yes
 
-	; odczekaj na gotowość kontrolera
+	; wait for the controller to become ready
 	call	driver_serial_ready
 
-	; wyślij znak na port
+	; send the character to the port
 	out	dx,	al
 
-	; wyświetl pozostałe dane ciągu
+	; display the rest of the string data
 	jmp	.loop
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 
 ;===============================================================================
 driver_serial_ready:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 
-	; ustaw port
+	; set the port
 	mov	dx,	DRIVER_SERIAL_PORT_COM1 + DRIVER_SERIAL_STRUCTURE_REGISTERS.line_status
 
 .loop:
-	; pobierz stan kontrolera
+	; fetch the controller state
 	in	al,	dx
 
-	; bufor pusty?
+	; buffer empty?
 	test	al,	01100000b
-	jz	.loop	; nie
+	jz	.loop	; no
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

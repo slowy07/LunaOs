@@ -16,105 +16,105 @@ struc	KERNEL_STRUCTURE_GDT
 endstruc
 
 kernel_init_gdt:
-	; zarezerwuj przestrzeń dla Globalnej Tablicy Deskryptorów
+	; reserve room for the Global Descriptor Table
 	call	kernel_memory_alloc_page
 	jc	kernel_panic_memory
 
-	; wyczyść tablicę GDT i zachowaj jej adres
+	; clear the GDT table and save its address
 	call	kernel_page_drain
 	mov	qword [rel kernel_gdt_header + KERNEL_STRUCTURE_GDT_HEADER.address],	rdi
 
-	; utwórz deskryptor NULL
+	; create the NULL descriptor
 	xor	eax,	eax
-	stosq	; zapisz
+	stosq	; store
 
-	; utwórz deskryptor kodu ring0 (CS)
+	; create the ring0 code descriptor (CS)
 	mov	rax,	0000000000100000100110000000000000000000000000000000000000000000b
-	stosq	; zapisz
+	stosq	; store
 
-	; utwórz deskryptor danych/stosu ring0 (DS/SS)
+	; create the ring0 data/stack descriptor (DS/SS)
 	mov	rax,	0000000000100000100100100000000000000000000000000000000000000000b
-	stosq	; zapisz
+	stosq	; store
 
-	; utwórz deskryptor kodu ring3 (CS)
+	; create the ring3 code descriptor (CS)
 	mov	rax,	0000000000100000111110000000000000000000000000000000000000000000b
-	stosq	; zapisz
+	stosq	; store
 
-	; utwórz deskryptor danych/stosu ring3 (DS/SS)
+	; create the ring3 data/stack descriptor (DS/SS)
 	mov	rax,	0000000000100000111100100000000100000000000000000000000000000000b
-	stosq	; zapisz
+	stosq	; store
 
-	; zachowaj adres pośredni pierwszego deskryptora TSS
+	; save the indirect address of the first TSS descriptor
 	and	di,	~STATIC_PAGE_mask
 	mov	word [rel kernel_gdt_tss_bsp_selector],	di
 
-	; utwórz N deskryptorów TSS dla procesorów logicznych
+	; create N TSS descriptors for the logical processors
 	mov	cx,	word [rel kernel_apic_count]
 	mov	rsi,	kernel_apic_id_table
 
 .loop:
-	; pobierz identyfikator procesora logicznego
+	; fetch the logical processor identifier
 	lodsb
 
-	; zamień na deskryptor
+	; turn it into a descriptor
 	and	eax,	STATIC_BYTE_mask
 	shl	eax,	STATIC_MULTIPLE_BY_16_shift
 
-	; ustaw wskaźnik na docelowy deskryptor TSS procesora logicznego
+	; point at the target TSS descriptor of the logical processor
 	mov	rdi,	qword [rel kernel_gdt_header + KERNEL_STRUCTURE_GDT_HEADER.address]
 	add	rdi,	rax
 	add	di,	word [rel kernel_gdt_tss_bsp_selector]
 
-	; rozmiar tablicy Task State Segment w Bajtach
+	; size of the Task State Segment table in bytes
 	mov	ax,	kernel_gdt_tss_table_end - kernel_gdt_tss_table
-	stosw	; zapisz
+	stosw	; store
 
-	; pobierz adres fizyczny tablicy Task State Segment
+	; fetch the physical address of the Task State Segment table
 	mov	rax,	kernel_gdt_tss_table
-	stosw	; zapisz (bity 15..0)
-	shr	rax,	16	; przesuń starszą część rejestru EAX do AX
-	stosb	; zapisz (bity 23..16)
+	stosw	; store (bits 15..0)
+	shr	rax,	16	; shift the high part of the EAX register into AX
+	stosb	; store (bits 23..16)
 
-	; zachowaj pozostałą część adresu tablicy Task State Segment
+	; save the remaining part of the Task State Segment table address
 	push	rax
 
-	; uzupełnij deskryptor Task State Segment o flagi
+	; fill in the Task State Segment descriptor with the flags
 	mov	al,	10001001b	; P, DPL, 0, Type
-	stosb	; zapisz
-	xor	al,	al		; G, 0, 0, AVL, Limit (starsza część rozmiaru tablicy Task State Segment)
-	stosb	; zapisz
+	stosb	; store
+	xor	al,	al		; G, 0, 0, AVL, Limit (high part of the Task State Segment table size)
+	stosb	; store
 
-	; przywróć pozostałą część adresu tablicy Task State Segment
+	; restore the remaining part of the Task State Segment table address
 	pop	rax
 
-	; przenieś bity 31..24 do rejestru AL
+	; move bits 31..24 into the AL register
 	shr	rax,	8
-	stosb	; zapisz (bity 31..24)
+	stosb	; store (bits 31..24)
 
-	; przenieś bity 63..32 do rejestru EAX
+	; move bits 63..32 into the EAX register
 	shr	rax,	8
-	stosd	; zapisz (bity 63..32)
+	stosd	; store (bits 63..32)
 
-	; 32 Bajty deskryptora - zastrzeżone
+	; 32 descriptor bytes - reserved
 	xor	rax,	rax
-	stosd	; zapisz
+	stosd	; store
 
-	; utworzyć pozostałe?
+	; create the rest?
 	dec	cx
-	jnz	.loop	; tak
+	jnz	.loop	; yes
 
-	; przeładuj Globalną Tablicę Deskryptorów
+	; reload the Global Descriptor Table
 	lgdt	[rel kernel_gdt_header]
 
-	; załaduj deskryptor Task State Segment
+	; load the Task State Segment descriptor
 	ltr	word [rel kernel_gdt_tss_bsp_selector]
 
-	; zresetuj deskryptory niewykorzystywane
+	; reset the unused descriptors
 	mov	fs,	ax
 	mov	gs,	ax
 
-	; przeładuj głównedeskryptory
+	; reload the main descriptors
 	mov	ax,	KERNEL_STRUCTURE_GDT.ds_ring0
-	mov	ds,	ax	; danych
-	mov	es,	ax	; ekstra
-	mov	ss,	ax	; stosu
+	mov	ds,	ax	; data
+	mov	es,	ax	; extra
+	mov	ss,	ax	; stack

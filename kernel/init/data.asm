@@ -36,7 +36,7 @@ kernel_init_services_list:
 						db	24
 						db	"graphical user interface"
 
-						; koniec usług
+						; end of services
 						dq	STATIC_EMPTY
 
 kernel_init_vfs_directory_structure:
@@ -49,7 +49,7 @@ kernel_init_vfs_directory_structure:
 						db	0x04
 						db	"/var"
 
-						; koniec struktury katalogów
+						; end of the directory structure
 						db	STATIC_EMPTY
 
 kernel_init_vfs_files:
@@ -126,7 +126,7 @@ kernel_init_vfs_files:
 						db	"/var/welcome.txt"
 
 
-						; koniec listy plików
+						; end of the file list
 						dq	STATIC_EMPTY
 
 kernel_init_vfs_file_shell			incbin	"build/shell"

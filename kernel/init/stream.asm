@@ -1,18 +1,18 @@
 ;===============================================================================
 
 kernel_init_stream:
-	; przygotuj miejsce pod pustą tablicę potoków
+	; prepare room for an empty pipe table
 	call	kernel_memory_alloc_page
 	call	kernel_page_drain
 
-	; zachowaj adres tablicy potoków
+	; save the address of the pipe table
 	mov	qword [rel kernel_stream_address],	rdi
 
-	; ustaw wskaźnik następnego fragmentu tablicy na początek
+	; set the next table chunk pointer to the start
 	mov	qword [rdi + STATIC_STRUCTURE_BLOCK.link],	rdi
 
-	; przygotuj domyślny potok wyjściowy (stdout, stderr, stdlog)
+	; prepare the default output pipe (stdout, stderr, stdlog)
 	call	kernel_stream
 
-	; zachowaj wskaźnik do domyślnego potoku wyjściowego
+	; save the pointer to the default output pipe
 	mov	qword [rel kernel_stream_out_default],	rsi

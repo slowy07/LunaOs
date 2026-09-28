@@ -21,15 +21,15 @@ DRIVER_PCI_CLASS_SUBCLASS_scsi		equ	0x0107
 DRIVER_PCI_CLASS_SUBCLASS_network	equ	0x0200
 
 ;============================================================================
-; wejście:
-;	eax - poszukiwana wartość
+; input:
+;	eax - value to look for
 ;		high - device
 ;		low - vendor
-; wyjście:
-;	Flaga CF, jeśli nie znaleziono
+; output:
+;	CF flag, set if not found
 ;	ebx - szyna
-;	ecx - urządzenie
-;	edx - funkcja
+;	ecx - device
+;	edx - function
 driver_pci_find_vendor_and_device:
 	; zachowaj oryginalne rejestry
 	push	rbx
@@ -37,87 +37,87 @@ driver_pci_find_vendor_and_device:
 	push	rdx
 	push	rax
 
-	; szyna 0
+	; bus 0
 	xor	ebx,	ebx
-	; urządzenie 0
+	; device 0
 	xor	ecx,	ecx
-	; funkcja 0
+	; function 0
 	xor	edx,	edx
 
 .next:
-	; pobierz zawartość rejestru Vendor & Device
+	; read the Vendor & Device register
 	mov	eax,	DRIVER_PCI_REGISTER_vendor_and_device
 	call	driver_pci_read
 
-	; poszukiwany Vendor i Device?
+	; looking for Vendor and Device?
 	cmp	eax,	dword [rsp]
-	je	.found	; tak
+	je	.found	; yes
 
-	; następna funkcja
+	; next function
 	inc	edx
 
-	; koniec przeglądanych funkcji?
+	; end of the functions scanned?
 	cmp	edx,	0x0008
-	jb	.next	; nie
+	jb	.next	; no
 
-	; następne urządzenie na szynie
+	; next device on the bus
 	inc	ecx
 
-	; pierwsza funkcja urządzenia
+	; first function of the device
 	xor	edx,	edx
 
-	; koniec urządzeń na danej szynie?
+	; end of the devices on this bus?
 	cmp	ecx,	0x0020
-	jb	.next	; nie
+	jb	.next	; no
 
-	; następna szyna
+	; next bus
 	inc	ebx
 
-	; pierwsze urządzenie na szynie
+	; first device on the bus
 	xor	ecx,	ecx
 
-	; koniec dostępnych szyn?
+	; end of the available buses?
 	cmp	ebx,	0x0100
-	jb	.next	; nie
+	jb	.next	; no
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
-	; koniec
+	; end
 	jmp	.end
 
 .found:
-	; pobierz zawartość rejestru Vendor & Device
+	; read the Vendor & Device register
 	mov	eax,	DRIVER_PCI_REGISTER_bar0
 	call	driver_pci_read
 
-	; zwróć informacje o położeniu urządzenia
+	; return the device location information
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rdx
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte * 0x02],	rcx
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte * 0x03],	rbx
 
-	; flaga, sukces
+	; flag, success
 	clc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 	pop	rdx
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;============================================================================
-; wejście:
-;	ax - poszukiwana wartość Class & Subclass
-; wyjście:
-;	Flaga CF, jeśli nie znaleziono
+; input:
+;	ax - Class & Subclass value to look for
+; output:
+;	CF flag, set if not found
 ;	ebx - szyna
-;	ecx - urządzenie
-;	edx - funkcja
+;	ecx - device
+;	edx - function
 driver_pci_find_class_and_subclass:
 	; zachowaj oryginalne rejestry
 	push	rbx
@@ -125,132 +125,132 @@ driver_pci_find_class_and_subclass:
 	push	rdx
 	push	rax
 
-	; szyna 0
+	; bus 0
 	xor	ebx,	ebx
-	; urządzenie 0
+	; device 0
 	xor	ecx,	ecx
-	; funkcja 0
+	; function 0
 	xor	edx,	edx
 
 .next:
-	; pobierz zawartość rejestru Class & Subclass
+	; read the Class & Subclass register
 	mov	eax,	DRIVER_PCI_REGISTER_class_and_subclass
 	call	driver_pci_read
 
-	; przesuń wartość do AX
+	; shift the value into AX
 	shr	eax,	STATIC_MOVE_HIGH_TO_AX_shift
 
-	; kontroler IDE?
+	; IDE controller?
 	cmp	ax,	word [rsp]
-	je	.found	; tak
+	je	.found	; yes
 
-	; następna funkcja
+	; next function
 	inc	edx
 
-	; koniec przeglądanych funkcji?
+	; end of the functions scanned?
 	cmp	edx,	0x0008
-	jb	.next	; nie
+	jb	.next	; no
 
-	; następne urządzenie na szynie
+	; next device on the bus
 	inc	ecx
 
-	; pierwsza funkcja urządzenia
+	; first function of the device
 	xor	edx,	edx
 
-	; koniec urządzeń na danej szynie?
+	; end of the devices on this bus?
 	cmp	ecx,	0x0020
-	jb	.next	; nie
+	jb	.next	; no
 
-	; następna szyna
+	; next bus
 	inc	ebx
 
-	; pierwsze urządzenie na szynie
+	; first device on the bus
 	xor	ecx,	ecx
 
-	; koniec dostępnych szyn?
+	; end of the available buses?
 	cmp	ebx,	0x0100
-	jb	.next	; nie
+	jb	.next	; no
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
-	; koniec
+	; end
 	jmp	.end
 
 .found:
-	; zwróć informacje o położeniu urządzenia
+	; return the device location information
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rdx
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte * 0x02],	rcx
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte * 0x03],	rbx
 
-	; flaga, sukces
+	; flag, success
 	clc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 	pop	rdx
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;============================================================================
-; wejście:
-;	eax - adres rejestru do odczytu
+; input:
+;	eax - address of the register to read
 ;	bl - szyna
-;	cl - urządzenie
+;	cl - device
 ;	dl - funkcja
-; wyjście:
-;	eax - odpowiedź
+; output:
+;	eax - response
 driver_pci_read:
 	; zachowaj oryginalne rejestry
 	push	rbx
 	push	rcx
 	push	rdx
 
-	; włącz bit 31
+	; set bit 31
 	or	eax,	0x80000000
 
-	; załaduj numer funkcji do bitów 10..8
+	; load the function number into bits 10..8
 	ror	eax,	8
 	or	al,	dl
 
-	; załaduj numer urządzenia do bitów 15..11
+	; load the device number into bits 15..11
 	ror	eax,	3
 	or	al,	cl
 
-	; załaduj numer szyny do bitów 23..16
+	; load the bus number into bits 23..16
 	ror	eax,	5
 	or	al,	bl
 
-	; numer rejestru w bitach 7..2
+	; register number in bits 7..2
 	rol	eax,	16
 
-	; poproś o informacje w danym rejestrze
+	; ask for the information in the given register
 	mov	dx,	DRIVER_PCI_PORT_command
-	out	dx,	eax	; wyślij polecenie
+	out	dx,	eax	; send the command
 
-	; odbierz odpowiedź
+	; receive the response
 	mov	dx,	DRIVER_PCI_PORT_data
 	in	eax,	dx
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;============================================================================
-; wejście:
-;	eax - wartość
+; input:
+;	eax - value
 ;
 ;	bl - szyna
-;	cl - urządzenie
+;	cl - device
 ;	dl - funkcja
 driver_pci_write:
 	; zachowaj oryginalne rejestry
@@ -259,39 +259,39 @@ driver_pci_write:
 	push	rdx
 	push	rax
 
-	; włącz bit 31
+	; set bit 31
 	or	eax,	0x80000000
 
-	; załaduj numer funkcji do bitów 10..8
+	; load the function number into bits 10..8
 	ror	eax,	8
 	or	al,	dl
 
-	; załaduj numer urządzenia do bitów 15..11
+	; load the device number into bits 15..11
 	ror	eax,	3
 	or	al,	cl
 
-	; załaduj numer szyny do bitów 23..16
+	; load the bus number into bits 23..16
 	ror	eax,	5
 	or	al,	bl
 
-	; numer rejestru w bitach 7..2
+	; register number in bits 7..2
 	rol	eax,	16
 
-	; poproś o dane z rejestru
+	; ask for the data from the register
 	mov	dx,	DRIVER_PCI_PORT_command
 	out	dx,	eax
 
-	; przywróć wartość do wysłania
+	; restore the value to be sent
 	pop	rax
 
-	; wyślij
+	; send
 	mov	dx,	DRIVER_PCI_PORT_data
 	out	dx,	eax
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret

@@ -9,42 +9,42 @@ endstruc
 
 ;===============================================================================
 kernel_init_services:
-	; ustaw wskaźnik na początek listy usług do uruchomienia
+	; point at the start of the list of services to start
 	mov	rsi,	kernel_init_services_list
 
 .loop:
-	; zarezerwuj miejsce pod tablicę PML4 usługi
+	; reserve room for the service PML4 table
 	call	kernel_memory_alloc_page
 	jc	kernel_panic_memory
 
-	; usuń wszystkie wpisy z tablicy
+	; remove every entry from the table
 	call	kernel_page_drain
 
-	; mapuj przestrzeń pod stos usługi
+	; map the area for the service stack
 	mov	rax,	KERNEL_STACK_address
 	mov	rbx,	KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
 	mov	rcx,	KERNEL_STACK_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
 	mov	r11,	rdi
 	call	kernel_page_map_logical
 
-	; odstaw na szczyt stosu usługi, spreparowane dane powrotu z przerwania sprzętowego
-	mov	rdi,	qword [r8]	; pobierz z wiersza tablicy PML1 adres początku przestrzeni stosu
-	and	di,	STATIC_PAGE_mask	; usuń flagi przestrzeni
-	add	rdi,	STATIC_PAGE_SIZE_byte - ( STATIC_QWORD_SIZE_byte * 0x05 )	; odłóż 5 rejestrów
+	; place the prepared hardware interrupt return data on the top of the service stack
+	mov	rdi,	qword [r8]	; fetch the start address of the stack area from the PML1 table row
+	and	di,	STATIC_PAGE_mask	; remove the area flags
+	add	rdi,	STATIC_PAGE_SIZE_byte - ( STATIC_QWORD_SIZE_byte * 0x05 )	; push 5 registers
 
 	; RIP
-	mov	rax,	qword [rsi + KERNEL_INIT_STRUCTURE_SERVICE.pointer]	; wskaźnik wejścia do usługi
+	mov	rax,	qword [rsi + KERNEL_INIT_STRUCTURE_SERVICE.pointer]	; service entry point
 	stosq
 
-	; CS, wszystkie usługi pracują w przestrzeni jądra systemu
+	; CS, all services run in the kernel space
 	mov	rax,	KERNEL_STRUCTURE_GDT.cs_ring0
 	stosq
 
-	; EFLAGS, wszystkie flagi wyczyszczone, przerwania włączone
+	; EFLAGS, all flags cleared, interrupts enabled
 	mov	rax,	KERNEL_TASK_EFLAGS_default
 	stosq
 
-	; RSP, wskaźnik szczytu stosu, po uruchomieniu usługi
+	; RSP, stack top pointer, once the service has started
 	mov	rax,	KERNEL_STACK_pointer
 	stosq
 
@@ -52,42 +52,42 @@ kernel_init_services:
 	mov	rax,	KERNEL_STRUCTURE_GDT.ds_ring0
 	stosq
 
-	; zachowaj wskaźnik listy
+	; save the list pointer
 	push	rsi
 
-	; mapuj przestrzeń pamięci jądra systemu do usługi
+	; map the kernel memory area into the service
 	mov	rsi,	qword [rel kernel_page_pml4_address]
 	mov	rdi,	r11
 	call	kernel_page_merge
 
-	; przywróć wskaźnik listy
+	; restore the list pointer
 	pop	rsi
 
-	; dodaj usługę do kolejki zadań
+	; put the service on the task queue
 	mov	rbx,	KERNEL_STACK_pointer - (STATIC_QWORD_SIZE_byte * 0x14)
 	movzx	ecx,	byte [rsi + KERNEL_INIT_STRUCTURE_SERVICE.length]
-	push	rcx	; zapamiętaj ilość znaków w nazwie procesu
+	push	rcx	; remember the number of characters in the process name
 	add	rsi,	KERNEL_INIT_STRUCTURE_SERVICE.name
 	call	kernel_task_add
 
-	; podepnij domyślny strumień wyjścia
+	; attach the default output stream
 	mov	rax,	qword [rel kernel_stream_out_default]
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.out],	rax
 
-	; ilość procesów korzystających z strumienia
+	; number of processes using the stream
 	inc	qword [rax + KERNEL_STREAM_STRUCTURE_ENTRY.lock]
 
-	; oznacz zadanie jako aktywne i usługa
+	; mark the task as active and a service
 	or	word [rdi + KERNEL_TASK_STRUCTURE.flags],	KERNEL_TASK_FLAG_active | KERNEL_TASK_FLAG_service
 
-	; wstaw informacje o rozmiarze procesu w stronach
+	; store the process size information in pages
 	mov	rcx,	qword [rsi + (KERNEL_INIT_STRUCTURE_SERVICE.size - KERNEL_INIT_STRUCTURE_SERVICE.name)]
 	call	library_page_from_size
-	add	rcx,	KERNEL_STACK_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift	; wraz z przestrzenią stosu
+	add	rcx,	KERNEL_STACK_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift	; together with the stack area
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.memory],	rcx
 
-	; koniec tablicy?
-	pop	rcx	; przywróć ilość znaków nazwie procesu
+	; end of the table?
+	pop	rcx	; restore the number of characters in the process name
 	add	rsi,	rcx
 	cmp	qword [rsi],	STATIC_EMPTY
 	jne	.loop	; nie

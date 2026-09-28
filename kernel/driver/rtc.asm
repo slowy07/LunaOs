@@ -45,65 +45,65 @@ driver_rtc_microtime					dq	STATIC_EMPTY
 driver_rtc_date_and_time				dq	STATIC_EMPTY
 
 ;===============================================================================
-; domyślna procedura obsługi przerwania zegara czasu rzeczywistego
+; default real time clock interrupt handler
 driver_rtc:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 
-	; zwiększ licznik tyknięć
+	; increment the tick counter
 	inc	qword [rel driver_rtc_microtime]
 
-	; pobierz zawartość rejestru C
+	; fetch the contents of register C
 	in	al,	DRIVER_RTC_PORT_data
 
-	; poinformuj LAPIC o obsłużeniu przerwania sprzętowego
+	; tell the LAPIC that the hardware interrupt has been handled
 	mov	rax,	qword [rel kernel_apic_base_address]
 	mov	dword [rax + KERNEL_APIC_EOI_register],	STATIC_EMPTY
 
-	; przywróć oryginalny rejestry
+	; restore the original registers
 	pop	rax
 
-	; powrót z przerwania sprzętowego
+	; return from the hardware interrupt
 	iretq
 
 ;===============================================================================
-; wyjście:
+; output:
 ;	driver_rtc_date_and_time
 driver_rtc_get_date_and_time:
-	; zachowaj oryginalny rejestr
+	; preserve the original register
 	push	rax
 
-	; pobierz ilość sekund
+	; fetch the number of seconds
 	mov	al,	DRIVER_RTC_PORT_second
 	out	DRIVER_RTC_PORT_command,	al
 	in	al,	DRIVER_RTC_PORT_data
 
-	; zachowaj
+	; store
 	mov	byte [rel driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.second],	al
 
-	; pobierz ilość minut
+	; fetch the number of minutes
 	mov	al,	DRIVER_RTC_PORT_minute
 	out	DRIVER_RTC_PORT_command,	al
 	in	al,	DRIVER_RTC_PORT_data
 
-	; zachowaj
+	; store
 	mov	byte [rel driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.minute],	al
 
-	; pobierz ilość godzin
+	; fetch the number of hours
 	mov	al,	DRIVER_RTC_PORT_hour
 	out	DRIVER_RTC_PORT_command,	al
 	in	al,	DRIVER_RTC_PORT_data
 
-	; zachowaj
+	; store
 	mov	byte [rel driver_rtc_date_and_time + DRIVER_RTC_STRUCTURE.hour],	al
 
-	; pobierz zawartość rejestru C
+	; fetch the contents of register C
 	mov	al,	DRIVER_RTC_PORT_STATUS_REGISTER_C
 	out	DRIVER_RTC_PORT_command,	al
 	in	al,	DRIVER_RTC_PORT_data
 
-	; przywróć oryginalny rejestr
+	; restore the original register
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

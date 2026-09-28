@@ -2,35 +2,35 @@
 
 ;===============================================================================
 kernel_init_network:
-	; przeszukaj magistrale PCI za kontrolerem sieci
+	; scan the PCI buses for a network controller
 	mov	eax,	DRIVER_PCI_CLASS_SUBCLASS_network
 	call	driver_pci_find_class_and_subclass
-	jc	.end	; nie znaleziono
+	jc	.end	; not found
 
-	; pobierz producenta i model
+	; fetch the vendor and model
 	mov	eax,	DRIVER_PCI_REGISTER_vendor_and_device
 	call	driver_pci_read
 
-	; kontroler typu i82540EM?
+	; a controller of type i82540EM?
 	cmp	eax,	DRIVER_NIC_I82540EM_VENDOR_AND_DEVICE
-	jne	.end	; nie
+	jne	.end	; no
 
-	; inicjalizuj kontroler
+	; initialise the controller
 	call	driver_nic_i82540em
 
-	; przygotuj miejsce pod tablicę portów
+	; reserve room for the port table
 	call	kernel_memory_alloc_page
-	jc	kernel_panic	; brak miejsca
+	jc	kernel_panic	; out of memory
 
-	; wyczyść tablicę i zapamiętaj wskaźnik
+	; clear the table and remember the pointer
 	call	kernel_page_drain
 	mov	qword [rel service_network_port_table],	rdi
 
-	; przygotuj miejsce pod stos TCP/IP
+	; reserve room for the TCP/IP stack
 	call	kernel_memory_alloc_page
-	jc	kernel_panic	; brak miejsca
+	jc	kernel_panic	; out of memory
 
-	; wyczyść tablicę i zapamiętaj wskaźnik
+	; clear the table and remember the pointer
 	call	kernel_page_drain
 	mov	qword [rel service_network_stack_address],	rdi
 

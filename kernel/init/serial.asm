@@ -2,5 +2,5 @@
 
 ;===============================================================================
 kernel_init_serial:
-	; inicjalizuj urządzenie COM1
+	; initialise the COM1 device
 	call	driver_serial

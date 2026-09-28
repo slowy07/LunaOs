@@ -98,275 +98,275 @@ endstruc
 
 ;===============================================================================
 kernel_init_acpi:
-	; odszukaj nagłówek Root/Extended System Description Pointer
+	; look for the Root/Extended System Description Pointer header
 	mov	rbx,	"RSD PTR "
 
-	; pobierz wskaźnik segmentu EBDA
+	; fetch the EBDA segment pointer
 	movzx	esi,	word [abs 0x040E]
 
-	; zamień wskaźnik segmentu na adres bezwzględny
+	; turn the segment pointer into an absolute address
 	shl	esi,	STATIC_MULTIPLE_BY_16_shift
 
-	;  domyślnie spodziewamy się ACPI w wersji 1.0
+	;  by default we expect ACPI version 1.0
 	mov	r8b,	STATIC_TRUE
 
 .rsdp_search:
-	; pobierz 8 Bajtów
+	; fetch 8 bytes
 	lodsq
 
-	; znaleziono nagłówek RSDP/XSDP?
+	; found the RSDP/XSDP header?
 	cmp	rax,	rbx
-	je	.rsdp_found	; tak
+	je	.rsdp_found	; yes
 
-	; koniec przeszukiwanej przestrzeni?
+	; end of the area being searched?
 	cmp	esi,	0x000FFFFF
-	jb	.rsdp_search	; nie
+	jb	.rsdp_search	; no
 
-	; komunikat błędu
+	; error message
 	mov	rsi,	kernel_init_string_error_acpi_header
 
 .error:
-	; wyświetl komunikat
+	; display the message
 	jmp	kernel_panic
 
 .rsdp_found:
-	; zachowaj wskaźnik do nagłówka RSDP lub XSDP
+	; save the pointer to the RSDP or XSDP header
 	push	rsi
 
 	;-----------------------------------------------------------------------
-	; sumuj wszystkie Bajty nagłówka RSDP
+	; sum all the bytes of the RSDP header
 	xor	al,	al
 	mov	ecx,	ACPI_STRUCTURE_RSDP.SIZE
 
-	; cofnij wskaźnik na początek nagłówka
+	; move the pointer back to the start of the header
 	sub	rsi,	ACPI_STRUCTURE_RSDP.checksum
 
 .checksum:
-	; utwórz sumę kontrolną
+	; build the checksum
 	add	al,	byte [rsi]
 
-	; przesuń wskaźnik na następną wartość
+	; move the pointer to the next value
 	inc	rsi
 
-	; kontynuuj z pozostałymi wartościami
+	; carry on with the remaining values
 	loop	.checksum
 	;=======================================================================
 
-	; przywróć wskaźnik do nagłówka RSDP
+	; restore the pointer to the RSDP header
 	pop	rsi
 
-	; suma kontrolna wynosi ZERO?
+	; is the checksum ZERO?
 	test	al,	al
-	jnz	.rsdp_search	; nie, to nie jest poprawny nagłówek RSDP, szukaj dalej
+	jnz	.rsdp_search	; no, this is not a valid RSDP header, keep searching
 
 .rsdp_or_xsdp:
-	; ustaw wskaźnik na początek nagłówka
+	; point at the start of the header
 	sub	rsi,	ACPI_STRUCTURE_RSDP.checksum
 
-	; sprawdź wersje tablicy ACPI w którym znajduje się nagłówek RSDP
+	; check which version of the ACPI table the RSDP header is in
 	cmp	byte [rsi + ACPI_STRUCTURE_RSDP.revision],	0x00
-	jne	.extended	; wersja 1.0
+	jne	.extended	; version 1.0
 
-	; pobierz adres tablicy RSDT na podstawie wskaźnika w nagłówku
+	; fetch the address of the RSDT table from the pointer in the header
 	mov	edi,	dword [rsi + ACPI_STRUCTURE_RSDP.rsdt_address]
 
-	; kontynuuj
+	; continue
 	jmp	.standard
 
 .extended:
-	; pobierz adres tablicy XSDT na podstawie wskaźnika w nagłówku
+	; fetch the address of the XSDT table from the pointer in the header
 	mov	rdi,	qword [rsi + ACPI_STRUCTURE_XSDP.xsdt_address]
 
 	; ACPI 2.0+
 	mov	r8b,	STATIC_FALSE
 
 .standard:
-	; komunikat błędu
+	; error message
 	mov	rsi,	kernel_init_string_error_acpi
 
-	; sprawdź sygnaturę tablicy RSDT
+	; check the signature of the RSDT table
 	cmp	dword [rdi + ACPI_STRUCTURE_RSDT_or_XSDT.signature],	"RSDT"
-	je	.found	; rozpoznano
+	je	.found	; recognised
 
-	; sprawdź sygnaturę tablicy XSDT
+	; check the signature of the XSDT table
 	cmp	dword [rdi + ACPI_STRUCTURE_RSDT_or_XSDT.signature],	"XSDT"
-	jne	.error	; nie rozpoznano
+	jne	.error	; not recognised
 
 	;=======================================================================
 
 .found:
-	; pobierz rozmiar tablicy wskaźników RSDT/XSDT
+	; fetch the size of the RSDT/XSDT pointer table
 	mov	ecx,	dword [rdi + ACPI_STRUCTURE_RSDT_or_XSDT.length]
 	sub	ecx,	ACPI_STRUCTURE_RSDT_or_XSDT.SIZE
 
-	; przesuń wskaźnik na pierwszy wpis tablicy
+	; move the pointer to the first table entry
 	add	rdi,	ACPI_STRUCTURE_RSDT_or_XSDT.SIZE
 
-	; wersja standardowa?
+	; standard version?
 	cmp	r8b,	STATIC_TRUE
-	je	.rsdt_pointers	; tak
+	je	.rsdt_pointers	; yes
 
 .xsdt_pointers:
-	; zamień na ilość wpisów
+	; turn it into the number of entries
 	shr	ecx,	STATIC_DIVIDE_BY_QWORD_shift
 
 .xsdt_pointers_loop:
-	; pobierz adres nagłówka wpisu
+	; fetch the address of the entry header
 	mov	rsi,	qword [rdi]
 
-	; sprawdź typ nagłówka
+	; check the header type
 	call	.header
 
-	; przesuń wskaźnik na następny wpis w tablicy XSDT
+	; move the pointer to the next entry in the XSDT table
 	add	rdi,	STATIC_QWORD_SIZE_byte
 
-	; koniec wskaźników?
+	; end of the pointers?
 	dec	ecx
-	jnz	.xsdt_pointers_loop	; nie
+	jnz	.xsdt_pointers_loop	; no
 
-	; koniec przetwarzania tablic
+	; end of the table processing
 	jmp	.summary
 
 .rsdt_pointers:
-	; zamień na ilość wpisów
+	; turn it into the number of entries
 	shr	ecx,	STATIC_DIVIDE_BY_DWORD_shift
 
 .rsdt_pointers_loop:
-	; pobierz adres nagłówka wpisu
+	; fetch the address of the entry header
 	mov	esi,	dword [rdi]
 
-	; sprawdź typ nagłówka
+	; check the header type
 	call	.header
 
-	; przesuń wskaźnik na następny wpis w tablicy RSDT
+	; move the pointer to the next entry in the RSDT table
 	add	rdi,	STATIC_DWORD_SIZE_byte
 
-	; koniec wskaźników?
+	; end of the pointers?
 	dec	ecx
-	jnz	.rsdt_pointers_loop	; nie
+	jnz	.rsdt_pointers_loop	; no
 
-	; koniec przetwarzania tablic
+	; end of the table processing
 
 .summary:
-	; komunikat błędu
+	; error message
 	mov	rsi,	kernel_init_string_error_apic
 
-	; przetworzono choć jedną tablicę APIC?
+	; was at least one APIC table processed?
 	cmp	byte [rel kernel_apic_count],	STATIC_EMPTY
-	je	.error	; nie, wyświetl komunikat błędu
+	je	.error	; no, display the error message
 
-	; komunikat błędu
+	; error message
 	mov	rsi,	kernel_init_string_error_ioapic
 
-	; przetworzono choć jedną tablicę I/O APIC?
+	; was at least one I/O APIC table processed?
 	cmp	byte [rel kernel_init_ioapic_semaphore],	STATIC_FALSE
-	je	.error	; nie, wyświetl komunikat błędu
+	je	.error	; no, display the error message
 
-	; kontynuuj inicjalizacje środowiska jądra systemu
+	; continue initialising the kernel environment
 	jmp	.end
 
 ;-------------------------------------------------------------------------------
 .header:
-	; nagłówek tablicy MADT (Multiple APIC Description Table)?
+	; MADT (Multiple APIC Description Table) header?
 	cmp	dword [rsi + ACPI_STRUCTURE_MADT.signature],	"APIC"
-	je	.madt	; tak, przetwórz
+	je	.madt	; yes, process it
 
-	; nie rozpoznano nagłówka, zignoruj
+	; header not recognised, skip it
 	ret
 
 .madt:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; zachowaj adres tablicy APIC
+	; save the address of the APIC table
 	mov	eax,	dword [rsi + ACPI_STRUCTURE_MADT.apic_address]
 	mov	dword [rel kernel_apic_base_address],	eax
 
-	; zachowaj rozmiar tablicy APIC
+	; save the size of the APIC table
 	mov	ecx,	dword [rsi + ACPI_STRUCTURE_MADT.length]
 	mov	dword [rel kernel_apic_size],	ecx
 
-	; przeszukaj tablicę MADT za dostępnymi procesorami logicznymi (tzw. LAPIC)
-	sub	ecx,	ACPI_STRUCTURE_MADT.SIZE	; koryguj rozmiar tablicy MADT o nagłówek
-	add	rsi,	ACPI_STRUCTURE_MADT.SIZE	; przesuń wskaźnik na pierwszy wpis tablicy MADT
+	; search the MADT table for the available logical processors (a.k.a. LAPIC)
+	sub	ecx,	ACPI_STRUCTURE_MADT.SIZE	; adjust the size of the MADT table by the header
+	add	rsi,	ACPI_STRUCTURE_MADT.SIZE	; move the pointer to the first entry of the MADT table
 
-	; informacje o dostępnych procesorach logicznych przechowaj w tablicy
+	; store the information about the available logical processors in the table
 	mov	rdi,	kernel_apic_id_table
 
 .madt_loop:
-	; znaleziono procesor logiczny?
+	; found a logical processor?
 	cmp	byte [rsi + ACPI_STRUCTURE_MADT_entry.type],	ACPI_MADT_ENTRY_lapic
-	je	.madt_apic	; tak, przetwórz
+	je	.madt_apic	; yes, process it
 
-	; znaleziono I/O APIC?
+	; found an I/O APIC?
 	cmp	byte [rsi + ACPI_STRUCTURE_MADT_entry.type],	ACPI_MADT_ENTRY_ioapic
-	je	.madt_ioapic	; tak, przetwórz
+	je	.madt_ioapic	; yes, process it
 
-	; nie rozpoznano lub brak obsługi
+	; not recognised or not supported
 
 .madt_next_entry:
-	; przesuń wskaźnik na następny wpis w tablicy MADT
+	; move the pointer to the next entry in the MADT table
 	movzx	eax,	byte [rsi + ACPI_STRUCTURE_MADT_entry.length]
 	add	rsi,	rax
 
-	; koniec wpisów?
+	; end of the entries?
 	sub	rcx,	rax
-	jnz	.madt_loop	; nie, kontynuuj
+	jnz	.madt_loop	; no, carry on
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 
-	; koniec podprocedury
+	; end of the subprocedure
 	ret
 
 ;-------------------------------------------------------------------------------
 .madt_apic:
-	; procesor logiczny aktywny?
+	; logical processor active?
 	bt	word [rsi + ACPI_STRUCTURE_MADT_APIC.flags],	ACPI_MADT_APIC_FLAG_ENABLED_bit
-	jnc	.madt_next_entry	; nie, pomiń rejestrację
+	jnc	.madt_next_entry	; no, skip the registration
 
-	; procesor logiczny, dostępny
+	; logical processor available
 	inc	word [rel kernel_apic_count]
 
-	; pobierz i zachowaj identyfikator procesora logicznego
+	; fetch and save the logical processor identifier
 	mov	al,	byte [rsi + ACPI_STRUCTURE_MADT_APIC.cpu_id]
 	stosb
 
-	; identyfikator procesora logicznego jest wyższy?
+	; is the logical processor identifier higher?
 	cmp	al,	byte [rel kernel_init_apic_id_highest]
-	jbe	.madt_next_entry	; nie
+	jbe	.madt_next_entry	; no
 
-	; zapamiętaj
+	; remember it
 	mov	byte [rel kernel_init_apic_id_highest],	al
 
-	; kontynuuj
+	; continue
 	jmp	.madt_next_entry
 
 ;-------------------------------------------------------------------------------
 .madt_ioapic:
-	; przetworzono już IO APIC?
+	; has an IO APIC already been processed?
 	cmp	byte [rel kernel_init_ioapic_semaphore],	STATIC_TRUE
-	je	.madt_next_entry	; tak, nie obsługujemy pozostałych kontrolerów I/O APIC
+	je	.madt_next_entry	; yes, we do not support the remaining I/O APIC controllers
 
-	; pobierz identyfikator pierwszego przerwania obsługiwanego przez ten kontroler
+	; fetch the identifier of the first interrupt served by this controller
 	mov	eax,	dword [rsi + ACPI_STRUCTURE_MADT_IOAPIC.gsib]
 
-	; kontroler obsługuje wektory przerwań 0+?
+	; does the controller serve interrupt vectors 0 and up?
 	test	al,	al
-	jnz	.madt_next_entry	; nie, pomiń ten kontroler
+	jnz	.madt_next_entry	; no, skip this controller
 
-	; zachowaj adres kontrolera I/O APIC
+	; save the address of the I/O APIC controller
 	mov	eax,	dword [rsi + ACPI_STRUCTURE_MADT_IOAPIC.base_address]
 	mov	dword [rel kernel_io_apic_base_address],	eax
 
-	; przetworzono wpis o kontrolerze I/O APIC
+	; processed an I/O APIC controller entry
 	mov	byte [rel kernel_init_ioapic_semaphore],	STATIC_TRUE
 
-	; kontynuuj
+	; continue
 	jmp	.madt_next_entry
 
 .end:

@@ -82,265 +82,265 @@ endstruc
 
 driver_ide_devices_count				db	STATIC_EMPTY
 
-; wyrównaj pozycję tablicy do pełnego adresu
+; set the array entry to a full address
 align	STATIC_QWORD_SIZE_byte,				db	STATIC_NOTHING
 driver_ide_devices:
 	times	DRIVER_IDE_STRUCTURE_DEVICE.SIZE * 0x04	db	STATIC_EMPTY
 
 ;===============================================================================
-; wejście:
-;	al - urządzenie MASTER lub SLAVE
-;	dx - kanał PRIMARY lub SECONDARY
+; input:
+;	al - MASTER or SLAVE device
+;	dx - PRIMARY or SECONDARY channel
 driver_ide_init_drive:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rax
 	push	rdi
 	push	rdx
 
-	; wybierz urządzenie X na kanale Y
+	; select device X on channel Y
 	add	dx,	DRIVER_IDE_REGISTER_drive_OR_head
 	out	dx,	al
 
-	; odczekaj na wykonanie polecenia
+	; wait for the command to complete
 	call	driver_ide_wait
 
-	; wyślij polecenie IDENTIFY	; kanał
+	; send the IDENTIFY command	; channel
 	mov	al,	DRIVER_IDE_COMMAND_identify
 	mov	dx,	word [rsp]
 	add	dx,	DRIVER_IDE_REGISTER_command_OR_status
 	out	dx,	al
 
-	; odczekaj na wykonanie polecenia
+	; wait for the command to complete
 	call	driver_ide_wait
 
-	; pobierz status urządzenia X na kanale Y
+	; fetch the status of device X on channel Y
 	in	al,	dx
 
-	; brak urządzenia?
+	; no device?
 	test	al,	al
-	jz	.end	; tak
+	jz	.end	; yes
 
-	; brak urządzenia?
+	; no device?
 	cmp	al,	STATIC_MAX_unsigned
-	je	.end	; tak
+	je	.end	; yes
 
-	; wystąpił błąd na urządzeniu?
+	; did an error occur on the device?
 	test	al,	DRIVER_IDE_STATUS_error
-	jnz	.end	; tak
+	jnz	.end	; yes
 
-	; odbierz oczekujące dane z polecenia IDENTIFY
-	mov	ecx,	256	; 512 Bajtów
+	; receive the data pending from the IDENTIFY command
+	mov	ecx,	256	; 512 bytes
 	mov	dx,	word [rsp]
 	add	dx,	DRIVER_IDE_REGISTER_data
 	rep	insw
 
-	; przywróć wskaźnik do początku przestrzeni roboczej
+	; restore the pointer to the start of the working buffer
 	mov	rdi,	qword [rsp + STATIC_QWORD_SIZE_byte]
 
-	; urządzenie wspiera tryb LBA Extended?
+	; does the device support the LBA Extended mode?
 	mov	eax,	dword [rdi + DRIVER_IDE_IDENTIFY_command_sets]
 	test	eax,	DRIVER_IDE_IDENTIFY_COMMAND_SETS_lba_extended
-	jz	.end	; nie
+	jz	.end	; no
 
-	; nośnik zainicjowany, zarejestruj
+	; drive initialised, register it
 	mov	rcx,	driver_ide_devices
 
-	; kanał PRIMARY?
+	; PRIMARY channel?
 	mov	dx,	word [rsp]
 	cmp	dx,	DRIVER_IDE_CHANNEL_PRIMARY
-	je	.primary	; tak
+	je	.primary	; yes
 
-	; nie, przesuń na wpis SECONDARY
+	; no, move on to the SECONDARY entry
 	add	rcx,	DRIVER_IDE_STRUCTURE_DEVICE.SIZE << STATIC_MULTIPLE_BY_2_shift
 
 .primary:
-	; nośnik MASTER?
+	; MASTER drive?
 	mov	al,	byte [rsp + STATIC_QWORD_SIZE_byte * 0x02]
 	cmp	al,	DRIVER_IDE_DRIVE_master
-	je	.master	; tak
+	je	.master	; yes
 
-	; nie, przesuń na wpis SLAVE
+	; no, move on to the SLAVE entry
 	add	rcx,	DRIVER_IDE_STRUCTURE_DEVICE.SIZE
 
 .master:
-	; zachowaj kanał nośnika
+	; save the drive channel
 	mov	word [rcx + DRIVER_IDE_STRUCTURE_DEVICE.channel],	dx
 
-	; zachowaj urządzenie nośnika
+	; save the drive device
 	mov	byte [rcx + DRIVER_IDE_STRUCTURE_DEVICE.drive],	al
 
-	; zachowaj rozmiar nośnika w sektorach
+	; save the drive size in sectors
 	mov	eax,	dword [rdi + DRIVER_IDE_IDENTIFY_max_lba_extended]
 	mov	qword [rcx + DRIVER_IDE_STRUCTURE_DEVICE.size_sectors],	rax
 
-	; zarejestrowano nośnik danych
+	; drive registered
 	inc	byte [rel driver_ide_devices_count]
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rdi
 	pop	rax
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 driver_ide_wait:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 
-	; pobierz znacznik czasu systemu w mikrosekundach
+	; fetch the system time stamp in microseconds
 	mov	rax,	qword [rel driver_rtc_microtime]
-	inc	rax	; odczekaj ~1ms
+	inc	rax	; wait ~1ms
 
 .wait:
-	; odczekano?
+	; waited?
 	cmp	rax,	qword [rel driver_rtc_microtime]
-	jnb	.wait	; nie
+	jnb	.wait	; no
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 driver_ide_init:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 	push	rdi
 
-	; przygotuj przestrzeń roboczą
+	; prepare the working buffer
 	call	kernel_memory_alloc_page
 
 	;-----------------------------------------------------------------------
-	; wyłącz przerwania na kanale PRIMARY
+	; disable the interrupts on the PRIMARY channel
 	mov	al,	DRIVER_IDE_CONTROL_nIEN
 	mov	dx,	DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
 	out	dx,	al
 
-	; czekaj na wykonanie polecenia
+	; wait for the command to complete
 	mov	dx,	DRIVER_IDE_CHANNEL_PRIMARY
 	call	driver_ide_pool
-	jc	.next	; brak urządzeń na kanale
+	jc	.next	; no devices on the channel
 
-	; przełącz urządzenia na kanale w tryb RESET
+	; switch the devices on the channel into RESET mode
 	mov	al,	DRIVER_IDE_CONTROL_SRST
 	mov	dx,	DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
 	out	dx,	al
-	; wyłącz tryb RESET
+	; leave RESET mode
 	xor	al,	al
 	out	dx,	al
 
-	; czekaj na wykonanie polecenia
+	; wait for the command to complete
 	mov	dx,	DRIVER_IDE_CHANNEL_PRIMARY
 	call	driver_ide_pool
 
-	; inicjalizuj urządzenie MASTER na kanale PRIMARY
+	; initialise the MASTER device on the PRIMARY channel
 	mov	al,	DRIVER_IDE_DRIVE_master
 	mov	dx,	DRIVER_IDE_CHANNEL_PRIMARY
 	call	driver_ide_init_drive
 
-	; inicjalizuj urządzenie SLAVE na kanale PRIMARY
+	; initialise the SLAVE device on the PRIMARY channel
 	mov	al,	DRIVER_IDE_DRIVE_slave
 	mov	dx,	DRIVER_IDE_CHANNEL_PRIMARY
 	call	driver_ide_init_drive
 
 .next:
 	;-----------------------------------------------------------------------
-	; wyłącz przerwania na kanale SECONDARY
+	; disable the interrupts on the SECONDARY channel
 	mov	al,	DRIVER_IDE_CONTROL_nIEN
 	mov	dx,	DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
 	out	dx,	al
 
-	; czekaj na wykonanie polecenia
+	; wait for the command to complete
 	mov	dx,	DRIVER_IDE_CHANNEL_SECONDARY
 	call	driver_ide_pool
-	jc	.end	; brak urządzeń na kanale
+	jc	.end	; no devices on the channel
 
-	; przełącz urządzenia na kanale w tryb RESET
+	; switch the devices on the channel into RESET mode
 	mov	al,	DRIVER_IDE_CONTROL_SRST
 	mov	dx,	DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
 	out	dx,	al
-	; wyłącz tryb RESET
+	; leave RESET mode
 	xor	al,	al
 	out	dx,	al
 
-	; czekaj na wykonanie polecenia
+	; wait for the command to complete
 	mov	dx,	DRIVER_IDE_CHANNEL_SECONDARY
 	call	driver_ide_pool
 
-	; inicjalizuj urządzenie MASTER na kanale SECONDARY
+	; initialise the MASTER device on the SECONDARY channel
 	mov	al,	DRIVER_IDE_DRIVE_master
 	mov	dx,	DRIVER_IDE_CHANNEL_SECONDARY
 	call	driver_ide_init_drive
 
-	; inicjalizuj urządzenie SLAVE na kanale SECONDARY
+	; initialise the SLAVE device on the SECONDARY channel
 	mov	al,	DRIVER_IDE_DRIVE_slave
 	mov	dx,	DRIVER_IDE_CHANNEL_SECONDARY
 	call	driver_ide_init_drive
 
 .end:
-	; zwolnij przestrzeń roboczą
+	; release the working buffer
 	call	kernel_memory_release_page
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	dx - identyfikator nośnika
+; input:
+;	dx - drive identifier
 driver_ide_pool:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rdx
 
 	;-----------------------------------------------------------------------
-	; odłóż w czasie sprawdzenie stanu kanału
+	; defer the channel status check
 	add	dx,	DRIVER_IDE_REGISTER_channel_control_OR_altstatus
 	in	al,	dx
 	in	al,	dx
 	in	al,	dx
 	in	al,	dx
 
-	; brak urządzeń?
+	; no devices?
 	test	al,	al
-	jz	.error	; tak
+	jz	.error	; yes
 
-	; brak urządzeń?
+	; no devices?
 	cmp	al,	STATIC_MAX_unsigned
-	jne	.wait	; tak
+	jne	.wait	; yes
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
-	; koniec obsługi procedury
+	; end of the procedure
 	jmp	.end
 
 .wait:
-	; pobierz stan urządzeń na kanale
+	; fetch the state of the devices on the channel
 	in	al,	dx
 	and	al,	DRIVER_IDE_STATUS_busy | DRIVER_IDE_STATUS_ready
 	cmp	al,	DRIVER_IDE_STATUS_ready
-	jne	.wait	; urządzenia nadal niegotowe, czekaj
+	jne	.wait	; the devices are still not ready, wait
 
 	; flaga, sukces
 	clc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

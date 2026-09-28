@@ -2,40 +2,40 @@
 
 ;===============================================================================
 kernel_init_storage:
-	; sprawdź czy dostępny jest kontroler IDE
+	; check whether an IDE controller is available
 	mov	eax,	DRIVER_PCI_CLASS_SUBCLASS_ide
 	call	driver_pci_find_class_and_subclass
-	jc	.ide_end	; brak
+	jc	.ide_end	; none
 
-	; inicjalizuj dostępne nośniki na kontrolerze IDE
+	; initialise the available drives on the IDE controller
 	call	driver_ide_init
 
-	; znaleziono jakiekolwiek nośniki danych?
+	; were any drives found?
 	cmp	byte [rel driver_ide_devices_count],	STATIC_EMPTY
-	je	.ide_end	; nie
+	je	.ide_end	; no
 
-	; maksymalna ilość urządzeń IDE
+	; maximum number of IDE devices
 	mov	cl,	0x04
 
-	; zarejestruj wszystkie dostępne nośniki danych
+	; register all the available drives
 	mov	rdi,	driver_ide_devices
 
 .ide_loop:
-	; wpis uzupełniony?
+	; entry filled in?
 	cmp	word [rdi + DRIVER_IDE_STRUCTURE_DEVICE.channel],	STATIC_EMPTY
-	je	.ide_next	; nie
+	je	.ide_next	; no
 
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; pobierz rozmiar nośnika w Bajtach
+	; fetch the drive size in bytes
 	mov	rax,	qword [rdi + DRIVER_IDE_STRUCTURE_DEVICE.size_sectors]
-	shl	rax,	STATIC_MULTIPLE_BY_512_shift	; zamień na Bajty
+	shl	rax,	STATIC_MULTIPLE_BY_512_shift	; turn it into bytes
 
-	; utwórz urządzenie blokowe w wirtualnym systemie plików
+	; create the block device in the virtual file system
 	mov	ecx,	kernel_init_string_storage_ide_hd_end - kernel_init_string_storage_ide_hd_path
 	mov	rsi,	kernel_init_string_storage_ide_hd_path
 	call	kernel_vfs_path_resolve
@@ -43,24 +43,24 @@ kernel_init_storage:
 	mov	dl,	KERNEL_VFS_FILE_TYPE_block_device
 	call	kernel_vfs_file_touch
 
-	; aktualizuj rozmiar urządzenia blokowego
+	; update the block device size
 	mov	qword [rdi + KERNEL_VFS_STRUCTURE_KNOT.size],	rax
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rax
 
 .ide_next:
-	; następna litera nośnika
+	; next drive letter
 	inc	byte [rel kernel_init_string_storage_ide_hd_letter]
 
-	; przesuń wskaźnik na następny wpis
+	; move the pointer to the next entry
 	add	rdi,	DRIVER_IDE_STRUCTURE_DEVICE.SIZE
 
-	; koniec wpisów
+	; end of the entries
 	dec	cl
-	jnz	.ide_loop	; nie
+	jnz	.ide_loop	; no
 
 .ide_end:

@@ -2,11 +2,11 @@
 
 ;===============================================================================
 kernel_init_smp:
-	; dostępny jest tylko jeden procesor logiczny?
+	; is only one logical processor available?
 	cmp	word [rel kernel_apic_count],	STATIC_TRUE
-	jbe	.finish	; tak, pomiń inicjalizacje pozostałych
+	jbe	.finish	; yes, skip initialising the rest
 
-	; mapuj przestrzeń pamięci kodu inicjalizującego procesory logiczne
+	; map the memory area holding the logical processor init code
 	mov	eax,	0x7000	; 0x0000:0x7000
 	mov	bx,	KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
 	mov	ecx,	kernel_init_boot_file_end - kernel_init_boot_file
@@ -14,97 +14,97 @@ kernel_init_smp:
 	call	library_page_from_size
 	call	kernel_page_map_physical
 
-	; załaduj kod rozruchowy dla procesorów logicznych
+	; load the boot code for the logical processors
 	mov	ecx,	kernel_init_boot_file_end - kernel_init_boot_file
 	mov	rsi,	kernel_init_boot_file
 	mov	rdi,	0x7000	; 0x0000:0x7000
 	rep	movsb
 
-	; otwórz docelową ścieżkę dla procesorów logicznych w procedurach inicjalizacyjnych
+	; open the target path for the logical processors in the init routines
 	mov	byte [rel kernel_init_smp_semaphore],	STATIC_TRUE
 
-	; pobierz identyfikator procesora BSP
+	; fetch the identifier of the BSP
 	mov	rdi,	qword [rel kernel_apic_base_address]
 	mov	eax,	dword [rdi + KERNEL_APIC_ID_register]
-	shr	eax,	24	; przesuń bity z 24..31 do 0..7
+	shr	eax,	24	; shift the bits from 24..31 to 0..7
 
-	; zachowaj identyfikator
+	; save the identifier
 	mov	dl,	al
 
-	; inicjalizuj kolejne procesory logiczne
+	; initialise the following logical processors
 	mov	rsi,	kernel_apic_id_table
 
-	; ilość procesorów logicznych
+	; number of logical processors
 	mov	cx,	word [rel kernel_apic_count]
 
 .init:
- 	; koniec procesorów logicznych do wybudzenia?
+ 	; end of the logical processors to wake up?
  	dec	cx
- 	js	.init_done	; tak
+ 	js	.init_done	; yes
 
- 	; pobierz identyfikator procesora logicznego
+ 	; fetch the logical processor identifier
  	lodsb
 
- 	; procesor BSP?
+ 	; the BSP?
  	cmp	al,	dl
- 	je	.init	; tak, pomiń
+ 	je	.init	; yes, skip
 
- 	; wyślij polecenie INIT do procesora logicznego
- 	shl	eax,	24	; przesuń bity z 0..7 do 24..31
+ 	; send the INIT command to the logical processor
+ 	shl	eax,	24	; shift the bits from 0..7 to 24..31
  	mov	dword [rdi + KERNEL_APIC_ICH_register],	eax
  	mov	eax,	0x00004500
  	mov	dword [rdi + KERNEL_APIC_ICL_register],	eax
 
  .init_wait:
- 	; wykonano polecenie?
+ 	; has the command completed?
  	bt	dword [rdi + KERNEL_APIC_ICL_register],	KERNEL_APIC_ICL_COMMAND_COMPLETE_bit
- 	jc	.init_wait	; czekaj
+ 	jc	.init_wait	; wait
 
- 	; następny procesor logiczny
+ 	; next logical processor
  	jmp	.init
 
 .init_done:
- 	; odczekaj około 10ms
+ 	; wait about 10ms
  	mov	rax,	qword [rel driver_rtc_microtime]
  	add	rax,	10
 
  .init_wait_for_ipi:
- 	; upłynął czas?
+ 	; has the time elapsed?
  	cmp	rax,	qword [rel driver_rtc_microtime]
- 	ja	.init_wait_for_ipi	; nie
+ 	ja	.init_wait_for_ipi	; no
 
-	; wskaż wszystkim procesorom logicznym adres rozpoczęcia pracy
+	; tell every logical processor the address to start at
 
-	; uruchom kolejne procesory logiczne
+	; start the following logical processors
 	mov	rsi,	kernel_apic_id_table
 
-	; ilość procesorów logicznych
+	; number of logical processors
 	mov	cx,	word [rel kernel_apic_count]
 
 .start:
- 	; koniec procesorów logicznych?
+ 	; end of the logical processors?
  	dec	cx
- 	js	.finish	; tak
+ 	js	.finish	; yes
 
- 	; pobierz identyfikator procesora logicznego
+ 	; fetch the logical processor identifier
  	lodsb
 
- 	; procesor BSP?
+ 	; the BSP?
  	cmp	al,	dl
- 	je	.start	; tak, pomiń
+ 	je	.start	; yes, skip
 
- 	; wyślij polecenie START do procesora logicznego (wektor 0x07 > 0x7000)
- 	shl	eax,	24	; przesuń bity z 0..7 do 24..31
+ 	; send the START command to the logical processor (vector 0x07 > 0x7000)
+ 	shl	eax,	24	; shift the bits from 0..7 to 24..31
  	mov	dword [rdi + KERNEL_APIC_ICH_register],	eax
  	mov	eax,	0x00004607
  	mov	dword [rdi + KERNEL_APIC_ICL_register],	eax
 
  .start_wait:
- 	; wykonano polecenie?
+ 	; has the command completed?
  	bt	dword [rdi + KERNEL_APIC_ICL_register],	KERNEL_APIC_ICL_COMMAND_COMPLETE_bit
- 	jc	.start_wait	; czekaj
+ 	jc	.start_wait	; wait
 
- 	; następny procesor logiczny
+ 	; next logical processor
  	jmp	.start
 
 .finish:

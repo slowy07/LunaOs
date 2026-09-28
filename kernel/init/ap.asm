@@ -2,28 +2,28 @@
 
 ;===============================================================================
 
-	; w tym momencie stos jest niedostępny!
+	; the stack is unavailable at this point!
 
 	;-----------------------------------------------------------------------
 	; GDT
 	;-----------------------------------------------------------------------
 
-	; załaduj Globalną Tablicę Deskryptorów
+	; load the Global Descriptor Table
 	lgdt	[rel kernel_gdt_header]
 
 	;-----------------------------------------------------------------------
 	; TSS
 	;-----------------------------------------------------------------------
 
-	; pobierz identyfikator procesora logicznego
+	; fetch the logical processor identifier
 	mov	rax,	qword [rel kernel_apic_base_address]
 	mov	dword [rax + KERNEL_APIC_TP_register],	STATIC_EMPTY
 	mov	eax,	dword [rax + KERNEL_APIC_ID_register]
-	shr	eax,	24	; przesuń bity z 24..31 do 0..7
+	shr	eax,	24	; shift the bits from 24..31 to 0..7
 
-	; załaduj deskryptor Task State Segment dla danego procesora logicznego
-	shl	eax,	STATIC_MULTIPLE_BY_16_shift	; oblicz prdesunięcie w tablicy GDT dla selektora TSS
-	add	ax,	word [rel kernel_gdt_tss_bsp_selector]	; koryguj prdesunięcie względem deskryptora procesora BSP
+	; load the Task State Segment descriptor for the given logical processor
+	shl	eax,	STATIC_MULTIPLE_BY_16_shift	; compute the offset in the GDT for the TSS selector
+	add	ax,	word [rel kernel_gdt_tss_bsp_selector]	; adjust the offset relative to the BSP descriptor
 	mov	word [rel kernel_gdt_tss_cpu_selector],	ax
 	ltr	word [rel kernel_gdt_tss_cpu_selector]
 
@@ -31,59 +31,59 @@
 	; IDT
 	;-----------------------------------------------------------------------
 
-	; załaduj Tablicę Deskryptorów Przerwań
+	; load the Interrupt Descriptor Table
 	lidt	[rel kernel_idt_header]
 
 	;=======================================================================
-	; TYLKO JEDEN PROCESOR LOGICZNY NA RAZ MOŻE PRZETWARZAĆ PONIŻSZĄ PROCEDURĘ STRONICOWANIA
+	; ONLY ONE LOGICAL PROCESSOR AT A TIME MAY RUN THE PAGING PROCEDURE BELOW
 .wait:	;=======================================================================
 	mov	al,	STATIC_TRUE
 	xchg	byte [rel kernel_init_ap_semaphore],	al
-	test	al,	al	; sprawdź czy uzyskano dostęp
-	jz	.wait	; blokada, spróbuj raz jeszcze
+	test	al,	al	; check whether access has been obtained
+	jz	.wait	; locked, try once more
 	;=======================================================================
 
 	;-----------------------------------------------------------------------
 	; Page
 	;-----------------------------------------------------------------------
 
-	; ustaw tymczasowo wskaźnik na tablice stronicowania procesora BSP
+	; temporarily point at the page tables of the BSP
 	mov	rax,	qword [rel kernel_page_pml4_address]
 	mov	cr3,	rax
 
-	; ustaw tymczasowy wskaźnik szczytu stosu dla procesora logicznego
+	; set the temporary stack top pointer for the logical processor
 	mov	rsp,	KERNEL_STACK_TEMPORARY_pointer
 
-	; przygotuj przestrzeń na tablicę PML4 procesora logicznego
+	; reserve room for the PML4 table of the logical processor
 	call	kernel_memory_alloc_page
 	jc	kernel_panic_memory
 
-	; wyczyść tablicę PML4
+	; clear the PML4 table
 	call	kernel_page_drain
 
-	; strona wykorzystana do tablic stronicowania
+	; page used for the page tables
 	inc	qword [rel kernel_page_paged_count]
 
-	; przygotuj osobny stos/kontekstu dla procesora logicznego
+	; prepare a separate stack/context for the logical processor
 	mov	rax,	KERNEL_STACK_address
 	mov	ebx,	KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
 	mov	ecx,	KERNEL_STACK_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
-	mov	r11,	rdi	; dodaj wpis do PML4 procesora logicznego
-	xor	ebp,	ebp	; brak stron zarezerwowanych na ten cel
+	mov	r11,	rdi	; add an entry to the PML4 of the logical processor
+	xor	ebp,	ebp	; no pages reserved for this purpose
 	call	kernel_page_map_logical
 
-	; mapuj pozostałą przestrzeń pamięci na podstawie procesora BSP
+	; map the rest of the memory space following the BSP
 	mov	rsi,	qword [rel kernel_page_pml4_address]
 	call	kernel_page_merge
 
-	; przeładuj stronicowanie procesora logicznego
+	; reload the paging of the logical processor
 	mov	rax,	rdi
 	mov	cr3,	rax
 
-	; ustawiamy wskaźnik szczytu stosu na koniec stosu
+	; we set the stack top pointer to the end of the stack
 	mov	rsp,	KERNEL_STACK_pointer
 
-	; zwolnij dostęp do procedury
+	; release access to the procedure
 	mov	byte [rel kernel_init_ap_semaphore],	STATIC_FALSE
 
 	;-----------------------------------------------------------------------
@@ -92,25 +92,25 @@
 	call	kernel_init_apic
 
 	;-----------------------------------------------------------------------
-	; TASK - przydziel pierwszy proces do przetworzenia dla procesora logicznego
+	; TASK - assign the first task to be processed for the logical processor
 	;-----------------------------------------------------------------------
 
-	; wyłącz flagę DF
+	; clear the DF flag
 	cld
 
-	; pobierz identyfikator procesora logicznego
+	; fetch the logical processor identifier
 	call	kernel_apic_id_get
 
-	; ustaw wskaźnik na pozycje aktualnego zadania dla procesora logicznego
+	; point at the position of the current task for the logical processor
 	mov	rbx,	rax
 	shl	rbx,	STATIC_MULTIPLE_BY_8_shift
 	mov	rsi,	qword [rel kernel_task_active_list]
 
-	; ustaw wskaźnik na początek kolejki zadań
+	; point at the start of the task queue
 	mov	rdi,	qword [rel kernel_task_address]
 
-	; procesor logiczny zainicjowany
+	; logical processor initialised
 	inc	byte [rel kernel_init_ap_count]
 
-	; przydziel pierwsze zadanie dla procesora logicznego
+	; assign the first task for the logical processor
 	jmp	kernel_task.ap_entry

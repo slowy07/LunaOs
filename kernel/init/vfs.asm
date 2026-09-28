@@ -11,94 +11,94 @@ endstruc
 
 ;===============================================================================
 kernel_init_vfs:
-	; przygotuj miejsce na tablice supłów
+	; prepare room for the volume tables
 	call	kernel_memory_alloc_page
 	jc	kernel_panic_memory
 
-	; wyczyść przestrzeń i zachowa wskaźnik katalogu głównego
+	; clear the area and save the root directory pointer
 	call	kernel_page_drain
 	mov	qword [rel kernel_vfs_magicknot + KERNEL_VFS_STRUCTURE_KNOT.data],	rdi
 
-	; ustaw wskaźnik na Super Węzeł
+	; point at the Super Node
 	mov	rdi,	kernel_vfs_magicknot
 
-	; wypełnij katalog główny podstawowymi dowiązaniami
+	; fill the root directory with the basic links
 	mov	rsi,	rdi
 	call	kernel_vfs_dir_symlinks
 
 	;-----------------------------------------------------------------------
-	; utwórz strukturę katalogów
+	; create the directory structure
 	;-----------------------------------------------------------------------
 	mov	rsi,	kernel_init_vfs_directory_structure
 
 .dir:
-	; pobierz rozmiar ścieżki
+	; fetch the path size
 	movzx	ecx,	byte [rsi]
 
-	; koniec struktury?
+	; end of the structure?
 	test	cl,	cl
-	jz	.next	; tak
+	jz	.next	; yes
 
-	; przesuń wskaźnik na ścieżkę
+	; move the pointer to the path
 	inc	rsi
 
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rsi
 
-	; rozwiąż ścieżkę
+	; resolve the path
 	call	kernel_vfs_path_resolve
 
-	; typ pliku: katalog
+	; file type: directory
 	mov	dl,	KERNEL_VFS_FILE_TYPE_directory
-	call	kernel_vfs_file_touch	; utwórz
+	call	kernel_vfs_file_touch	; create it
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 
-	; przesuń wskaźnik na następny wpis
+	; move the pointer to the next entry
 	add	rsi,	rcx
 
-	; przetwórz następny wpis
+	; process the next entry
 	jmp	.dir
 
 .next:
 	;-----------------------------------------------------------------------
-	; załaduj do systemu plików zestaw oprogramowania wbudowanego
+	; load the built-in software set into the file system
 	;-----------------------------------------------------------------------
 	mov	rsi,	kernel_init_vfs_files
 
 .file:
-	; koniec listy plików?
+	; end of the file list?
 	cmp	qword [rsi],	STATIC_EMPTY
-	je	.end	; tak
+	je	.end	; yes
 
-	; zachowaj wskaźnik aktualnie przetwarzanego pliku
+	; save the pointer to the file being processed
 	push	rsi
 
-	; utwórz "pusty" plik w systemie plików
+	; create an "empty" file in the file system
 	movzx	ecx,	byte [rsi + KERNEL_INIT_STRUCTURE_VFS_FILE.length]
 	mov	dl,	KERNEL_VFS_FILE_TYPE_regular_file
 	add	rsi,	KERNEL_INIT_STRUCTURE_VFS_FILE.path
 	call	kernel_vfs_path_resolve
 	call	kernel_vfs_file_touch
 
-	; załaduj do utworzonego pliku, zawartość
-	mov	rsi,	qword [rsp]	; pobierz wskaźnik do aktualnie przetwarzanego pliku
+	; load the contents into the created file
+	mov	rsi,	qword [rsp]	; fetch the pointer to the file being processed
 	mov	rcx,	qword [rsi + KERNEL_INIT_STRUCTURE_VFS_FILE.size]
 	mov	rsi,	qword [rsi + KERNEL_INIT_STRUCTURE_VFS_FILE.data_pointer]
 	call	kernel_vfs_file_append
 
-	; przywróć wskaźnik do aktualnie przetwarzanego pliku
+	; restore the pointer to the file being processed
 	pop	rsi
 
-	; przesuń wskaźnik na następny wpis
+	; move the pointer to the next entry
 	movzx	ecx,	byte [rsi + KERNEL_INIT_STRUCTURE_VFS_FILE.length]
 	add	rsi,	rcx
 	add	rsi,	KERNEL_INIT_STRUCTURE_VFS_FILE.SIZE
 
-	; kontynuuj
+	; continue
 	jmp	.file
 
 .end:

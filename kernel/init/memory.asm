@@ -8,69 +8,69 @@ struc	KERNEL_INIT_MEMORY_STRUCTURE_MEMORY_MAP
 endstruc
 
 ;===============================================================================
-; wejście:
-;	ebx - wskaźnik do tablicy mapy pamieci
+; input:
+;	ebx - pointer to the memory map array
 kernel_init_memory:
-	; odszukaj przestrzeń pamięci rozpoczynającą się od adresu KERNEL_BASE_address
+	; find the memory area starting at the KERNEL_BASE_address address
 	cmp	qword [ebx + KERNEL_INIT_MEMORY_STRUCTURE_MEMORY_MAP.address],	KERNEL_BASE_address
-	je	.found	; odnaleziono
+	je	.found	; found
 
-	; następny wpis z tablicy mapy pamięci
+	; next entry from the memory map array
 	add	ebx,	KERNEL_INIT_MEMORY_STRUCTURE_MEMORY_MAP.SIZE
 
-	; koniec wpisów?
+	; end of the entries?
 	cmp	qword [ebx],	STATIC_EMPTY
-	jne	kernel_init_memory	; nie
+	jne	kernel_init_memory	; no
 
-	; komunikat błędu
+	; error message
 	mov	rsi,	kernel_init_string_error_memory
 	call	kernel_panic
 
 .found:
-	; pobierz i zamień rozmiar przestrzeni na ilość stron
+	; fetch the area size and turn it into a number of pages
 	mov	rcx,	qword [rbx + KERNEL_INIT_MEMORY_STRUCTURE_MEMORY_MAP.limit]
-	shr	rcx,	STATIC_DIVIDE_BY_PAGE_shift	; resztę z dzielenia porzucamy (niepełna strona jest bezużyteczna)
+	shr	rcx,	STATIC_DIVIDE_BY_PAGE_shift	; we drop the remainder (a partial page is useless)
 
-	; zachowaj informację o ilości dostępnych stron (całkowitej i aktualnej)
+	; save the information about the number of available pages (total and current)
 	mov	qword [rel kernel_page_total_count],	rcx
 	mov	qword [rel kernel_page_free_count],	rcx
 
-	; binarną mapę pamięci tworzymy za kodem jądra systemu
+	; we put the binary memory map behind the kernel code
 	mov	rdi,	kernel_end
 	call	library_page_align_up
 
-	; zachowaj adres binarnej mapy pamięci jądra systemu
+	; save the address of the kernel binary memory map
 	mov	qword [rel kernel_memory_map_address],	rdi
 
-	; zamień ilość stron na "zestawy" po 8 bitów
-	shr	rcx,	STATIC_DIVIDE_BY_8_shift	; w tym przypadku możemy stracić do 7 stron
-							; zastosowane w celu uproszenia kodu
+	; turn the number of pages into "sets" of 8 bits
+	shr	rcx,	STATIC_DIVIDE_BY_8_shift	; in this case we can lose up to 7 pages
+							; used to simplify the code
 
-	; zachowaj ilość stron
+	; save the number of pages
 	push	rcx
 
-	; wyczyść przestrzeń binarnej mapy pamięci
+	; clear the binary memory map area
 	call	library_page_from_size
 	call	kernel_page_drain_few
 
-	; przywróć ilość stron
+	; restore the number of pages
 	pop	rcx
 
-	; wypełnij binarną mapę pamięci
+	; fill in the binary memory map
 	mov	al,	STATIC_MAX_unsigned
 	rep	stosb
 
-	; zachowaj adres końca binarnej mapy pamięci
+	; save the address of the end of the binary memory map
 	mov	qword [rel kernel_memory_map_address_end],	rdi
 
-	; oznacz te strony jako zajęte, w których znajduje się kod jądra systemu i binarna mapa pamięci
+	; mark the pages holding the kernel code and the binary memory map as used
 
-	; wylicz rozmiar wykorzystanej przestrzeni w stronach
+	; compute the size of the used area in pages
 	call	library_page_align_up
 	sub	rdi,	KERNEL_BASE_address
 	shr	rdi,	STATIC_DIVIDE_BY_PAGE_shift
 
-	; oznacz N pierwszych stron w binarnej mapie pamięci jako zajęte
+	; mark the first N pages in the binary memory map as used
 	mov	rcx,	rdi
 	mov	rsi,	qword [rel kernel_memory_map_address]
 	call	kernel_memory_secure

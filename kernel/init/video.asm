@@ -35,22 +35,22 @@ endstruc
 
 ;===============================================================================
 kernel_init_video:
-	; pobierz i zachowaj adres przestrzeni pamięci karty graficznej
+	; fetch and save the address of the graphics card memory area
 	mov	edi,	dword [edx + KERNEL_INIT_VIDEO_STRUCTURE_MODE_INFO_BLOCK.physical_base_address]
 	mov	qword [rel kernel_video_base_address],	rdi
 
-	; pobierz i zachowaj rozdzielczość
+	; fetch and save the resolution
 	movzx	eax,	word [edx + KERNEL_INIT_VIDEO_STRUCTURE_MODE_INFO_BLOCK.x_resolution]
 	mov	qword [rel kernel_video_width_pixel],	rax
 	mov	ax,	word [edx + KERNEL_INIT_VIDEO_STRUCTURE_MODE_INFO_BLOCK.y_resolution]
 	mov	qword [rel kernel_video_height_pixel],	rax
 
-	; rozmiar przestrzeni pamięci karty graficznej w Bajtach
+	; size of the graphics card memory area in bytes
 	mul	qword [rel kernel_video_width_pixel]
 	shl	rax,	KERNEL_VIDEO_DEPTH_shift
 	mov	qword [rel kernel_video_size_byte],	rax
 
-	; scanline ekranu
+	; screen scanline
 	mov	rax,	qword [rel kernel_video_width_pixel]
 	shl	rax,	KERNEL_VIDEO_DEPTH_shift
 	mov	qword [rel kernel_video_scanline_byte],	rax

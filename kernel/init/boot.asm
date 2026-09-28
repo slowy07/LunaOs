@@ -1,52 +1,52 @@
 ;===============================================================================
 
 ;===============================================================================
-; 16 bitowy kod programu rozruchowego dla procesorów logicznych ================
+; 16 bit logical processor boot code ================
 ;===============================================================================
 [BITS 16]
 
-; pozycja kodu w przestrzeni segmentu CS
+; code position within the CS segment
 [ORG 0x7000]
 
 boot:
 	;-----------------------------------------------------------------------
-	; przygotuj 32 bitowe środowisko produkcyjne
+	; prepare the 32 bit production environment
 	;-----------------------------------------------------------------------
 
-	; wyłącz przerwania
+	; disable the interrupts
 	cli
 
-	; ustaw adres segmentu kodu (CS) na początek pamięci fizycznej
+	; set the code segment (CS) address to the start of physical memory
 	jmp	0x0000:.repair_cs
 
 .repair_cs:
-	; ustaw adresy segmentów danych (DS), ekstra (ES) i stosu (SS) na początek pamięci fizycznej
+	; set the data (DS), extra (ES) and stack (SS) segment addresses to the start of physical memory
 	xor	ax,	ax
-	mov	ds,	ax	; segment danych
-	mov	es,	ax	; segment ekstra
+	mov	ds,	ax	; data segment
+	mov	es,	ax	; extra segment
 
-	; wyłącz Direction Flag
+	; clear the Direction Flag
 	cld
 
-	; załaduj globalną tablicę deskryptorów dla trybu 32 bitowego
+	; load the global descriptor table for 32 bit mode
 	lgdt	[boot_header_gdt_32bit]
 
-	; przełącz procesor w tryb chroniony
+	; switch the processor into protected mode
 	mov	eax,	cr0
-	bts	eax,	0	; włącz pierwszy bit rejestru cr0
+	bts	eax,	0	; set the first bit of the cr0 register
 	mov	cr0,	eax
 
-	; skocz do 32 bitowego kodu programu rozruchowego
+	; jump to the 32 bit boot code
 	jmp	long 0x0008:boot_protected_mode
 
 ;-------------------------------------------------------------------------------
-align 0x10	; wszystkie tablice trzymamy pod pełnym adresem
+align 0x10	; we keep all the tables under a full address
 boot_table_gdt_32bit:
-	; deskryptor zerowy
+	; null descriptor
 	dq	0x0000000000000000
-	; deskryptor kodu
+	; code descriptor
 	dq	0000000011001111100110000000000000000000000000001111111111111111b
-	; deskryptor danych
+	; data descriptor
 	dq	0000000011001111100100100000000000000000000000001111111111111111b
 boot_table_gdt_32bit_end:
 
@@ -55,52 +55,52 @@ boot_header_gdt_32bit:
 	dd	boot_table_gdt_32bit
 
 ;===============================================================================
-; 32 bitowy kod programu rozruchowego dla procesorów logicznych ================
+; 32 bit logical processor boot code ================
 ;===============================================================================
 [BITS 32]
 
 boot_protected_mode:
-	; ustaw deskryptory danych, ekstra i stosu na przestrzeń danych
+	; set the data, extra and stack descriptors to the data area
 	mov	ax,	0x10
-	mov	ds,	ax	; segment danych
-	mov	es,	ax	; segment ekstra
+	mov	ds,	ax	; data segment
+	mov	es,	ax	; extra segment
 
 	;-----------------------------------------------------------------------
-	; załaduj globalną tablicę deskryptorów dla trybu 64 bitowego
+	; load the global descriptor table for 64 bit mode
 	;-----------------------------------------------------------------------
 	lgdt	[boot_header_gdt_64bit]
 
-	; włącz bity NX/PAE, PGE oraz OSFXSR w rejestrze CR4
-	mov	eax,	1010100000b	; NX (bit 5) - blokada wykonania kodu w stronie lub obsługa pamięci fizycznej do 64 GiB
-	mov	cr4,	eax		; PGE (bit 7) - obsługa stronicowania
-					; OSFXSR (bit 9) - obsługa rejestrów XMM0-15
+	; enable the NX/PAE, PGE and OSFXSR bits in the CR4 register
+	mov	eax,	1010100000b	; NX (bit 5) - no-execute protection in a page, or physical memory addressing up to 64 GiB
+	mov	cr4,	eax		; PGE (bit 7) - paging support
+					; OSFXSR (bit 9) - support for the XMM0-15 registers
 
-	; załaduj do CR3 adres fizyczny tablicy PML4 programu rozruchowego
-	mov	eax,	0x0000A000	; adres zależny od tablic stronicowania programu rozruchowego Zero
+	; load the physical address of the boot PML4 table into CR3
+	mov	eax,	0x0000A000	; address dependent on the boot page tables Zero
 	mov	cr3,	eax
 
-	; włącz w rejestrze EFER MSR tryb LME (bit 9)
-	mov	ecx,	0xC0000080	; adres EFER MSR
+	; enable the LME mode (bit 9) in the EFER MSR
+	mov	ecx,	0xC0000080	; EFER MSR address
 	rdmsr
 	or	eax,	100000000b
 	wrmsr
 
-	; włącz bity PE i PG w rejestrze cr0
+	; enable the PE and PG bits in the cr0 register
 	mov	eax,	cr0
-	or	eax,	0x80000001	; PE (bit 0) - wyłącz tryb rzeczywisty,
-	mov	cr0,	eax		; PG (bit 31) - współdzielenie tablic stronicowania
+	or	eax,	0x80000001	; PE (bit 0) - leave real mode,
+	mov	cr0,	eax		; PG (bit 31) - paging
 
-	; skocz do 64 bitowego kodu programu rozruchowego dla procesorów logicznych
+	; jump to the 64 bit logical processor boot code
 	jmp	0x0008:boot_long_mode
 
-; wszystkie tablice pod adresem wyrównanym do 0x08 Bajtów
+; all the tables at an address aligned to 0x08 bytes
 align 0x10
 boot_table_gdt_64bit:
-	; deskryptor zerowy
+	; null descriptor
 	dq	0x0000000000000000
-	; deskryptor kodu
+	; code descriptor
 	dq	0000000000100000100110000000000000000000000000000000000000000000b
-	; deskryptor danych
+	; data descriptor
 	dq	0000000000100000100100100000000000000000000000000000000000000000b
 boot_table_gdt_64bit_end:
 
@@ -109,14 +109,14 @@ boot_header_gdt_64bit:
 	dd	boot_table_gdt_64bit
 
 ;===============================================================================
-; 64 bitowy kod programu rozruchowego dla procesorów logicznych ================
+; 64 bit logical processor boot code ================
 ;===============================================================================
 [BITS 64]
 
 ;===============================================================================
 boot_long_mode:
-	; skocz do kodu jądra systemu
+	; jump to the kernel code
 	jmp	0x0000000000100000
 
-; koniec kodu programu rozruchowego dla procesorów logicznych
+; end of the logical processor boot code
 boot_end:

@@ -2,44 +2,44 @@
 
 ;===============================================================================
 kernel_init_rtc:
-	; pobierz stan rejestru A
+	; fetch the state of register A
 	mov	al,	DRIVER_RTC_PORT_STATUS_REGISTER_A
 	out	DRIVER_RTC_PORT_command,	al
 	in	al,	DRIVER_RTC_PORT_data
 
-	; aktualizacja w toku?
+	; update in progress?
 	test	al,	DRIVER_RTC_PORT_STATUS_REGISTER_A_update_in_progress
-	jne	kernel_init_rtc	; tak, sprawdź raz jeszcze
+	jne	kernel_init_rtc	; yes, check once more
 
-	; ustaw częstotliwość wywoływania przerwania na 1024 Hz
+	; set the interrupt rate to 1024 Hz
 	mov	al,	DRIVER_RTC_PORT_STATUS_REGISTER_A
 	out	DRIVER_RTC_PORT_command,	al
 	mov	al,	DRIVER_RTC_PORT_STATUS_REGISTER_A_rate | DRIVER_RTC_PORT_STATUS_REGISTER_A_divider
 	out	DRIVER_RTC_PORT_data,	al
 
-	; włącz: tryb 24 godzinny, czas w formacie binarnym oraz przerwania
+	; enable: 24 hour mode, binary time and interrupts
 	mov	al,	DRIVER_RTC_PORT_STATUS_REGISTER_B
 	out	DRIVER_RTC_PORT_command,	al
 	mov	al,	DRIVER_RTC_PORT_STATUS_REGISTER_B_24_hour_mode | DRIVER_RTC_PORT_STATUS_REGISTER_B_binary_mode | DRIVER_RTC_PORT_STATUS_REGISTER_B_periodic_interrupt
 	out	DRIVER_RTC_PORT_data,	al
 
-	; ustaw CMOS na rejestr C
+	; set CMOS to register C
 	mov	al,	DRIVER_RTC_PORT_STATUS_REGISTER_C
 	out	DRIVER_RTC_PORT_command,	al
 
-	; pobierz status
+	; fetch the status
 	in	al,	DRIVER_RTC_PORT_data
 
-	; zarejestruj procedurę obsługi przerwania zegara czasu rzeczywistego w tablicy IDT
+	; register the real time clock interrupt handler in the IDT
 	mov	eax,	KERNEL_IDT_IRQ_offset + DRIVER_RTC_IRQ_number
 	mov	bx,	KERNEL_IDT_TYPE_irq
 	mov	rdi,	driver_rtc
 	call	kernel_idt_mount
 
-	; podłącz wektor przerwania z tablicy IDT w kontrolerze I/O APIC
+	; program the IDT interrupt vector into the I/O APIC
 	mov	eax,	KERNEL_IDT_IRQ_offset + DRIVER_RTC_IRQ_number
 	mov	ebx,	DRIVER_RTC_IO_APIC_register
 	call	kernel_io_apic_connect
 
-	; włącz obsługę przerwań
+	; enable interrupt handling
 	sti

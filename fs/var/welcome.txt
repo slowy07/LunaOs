@@ -4,10 +4,14 @@ Welcome!
  made for fun. Intended only for virtualized
  environments.
 
- Author: Andrzej Adamczyk (akasei/blackend)
+ LunaOs - a 64-bit assembly operating system
 
- You can find me at:
- [PL] https://4programmers.net/ - akasei
- [EN] https://forum.osdev.org/ - akasei
- [EN] https://reddit.com/ - atBlackEnd
+ Build it with:
+   make
+
+ Run it with:
+   make run-qemu
+
+ Documentation lives in the docs/ directories
+ next to the code each file describes.
  --------------------------------------------

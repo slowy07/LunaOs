@@ -1,10 +1,10 @@
 ;===============================================================================
 
-KERNEL_IPC_TYPE_SYSTEM			equ	0x00	; komunikat zawiera dane: system
-KERNEL_IPC_TYPE_KEYBOARD		equ	0x01	; komunikat zawiera dane: klawiatury
-KERNEL_IPC_TYPE_MOUSE			equ	0x02	; komunikat zawiera dane: myszka
-KERNEL_IPC_TYPE_GRAPHICS		equ	0x03	; komunikat zawiera dane: ekran
-KERNEL_IPC_TYPE_INTERNAL		equ	0x04	; komunikat zawiera dane: rodzic <> dziecko/wątek
+KERNEL_IPC_TYPE_SYSTEM			equ	0x00	; message carries data: system
+KERNEL_IPC_TYPE_KEYBOARD		equ	0x01	; message carries data: keyboard
+KERNEL_IPC_TYPE_MOUSE			equ	0x02	; message carries data: mouse
+KERNEL_IPC_TYPE_GRAPHICS		equ	0x03	; message carries data: screen
+KERNEL_IPC_TYPE_INTERNAL		equ	0x04	; message carries data: parent <> child/thread
 
 KERNEL_IPC_MOUSE_EVENT_left_press	equ	0
 KERNEL_IPC_MOUSE_EVENT_left_release	equ	1

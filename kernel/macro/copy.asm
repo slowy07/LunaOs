@@ -1,8 +1,8 @@
 ;===============================================================================
 
-; kopiowanie przestrzeni z RSI do RDI w fragmentach po 256 Bajtów
+; copy the memory space from RSI to RDI in chunks of 256 bytes
 %macro	macro_copy	0
-	; instrukcje SSE wymagają adresu wyrównanego do DWORD/QWORD
+	; SSE instructions require a DWORD/QWORD aligned address
 	align	STATIC_DWORD_SIZE_byte
 
 	prefetchnta	[rsi + 256]

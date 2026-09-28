@@ -1,21 +1,21 @@
 ;===============================================================================
 
 	;-----------------------------------------------------------------------
-	; pierwsza część programu rozruchowego
+	; first part of the boot program
 	;-----------------------------------------------------------------------
 	incbin	"build/bootsector"
 
 	;-----------------------------------------------------------------------
-	; główny plik programu rozruchowego
+	; main boot program file
 	;-----------------------------------------------------------------------
 	incbin	"build/luna_stage2"
 
 	;-----------------------------------------------------------------------
-	; plik jądra systemu
+	; kernel file
 	;-----------------------------------------------------------------------
 	incbin	"build/kernel"
 
-	; VirtualBox wymaga obrazu o rozmiarze min. 1 MiB
+	; VirtualBox requires an image of at least 1 MiB
 
-; wyrównaj rozmiar obrazu dysku do pełnego 1 MiB
+; pad the disk image size to a full 1 MiB
 align	1048576

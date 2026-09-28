@@ -1,72 +1,72 @@
 ;===============================================================================
 
 ;===============================================================================
-; 16 bitowy kod głównego programu rozruchowego =================================
+; 16-bit main boot program code =================================
 ;===============================================================================
 [bits 16]
 
-; pozycja kodu w przestrzeni segmentu CS
+; code position within the CS segment space
 [org 0x1000]
 
 ;===============================================================================
 zero:
 	;-----------------------------------------------------------------------
-	; przygotuj mapę pamięci
+	; prepare the memory map
 	;-----------------------------------------------------------------------
 	%include	"luna/memory.asm"
 
 	;-----------------------------------------------------------------------
-	; włącz tryb graficzny
+	; enable graphics mode
 	;-----------------------------------------------------------------------
 	%include	"luna/graphics.asm"
 
 	;-----------------------------------------------------------------------
-	; przełącz procesor w tryb 32 bitowy
+	; switch the processor to 32-bit mode
 	;-----------------------------------------------------------------------
 	%include	"luna/protected_mode.asm"
 
 	;-----------------------------------------------------------------------
-	; przełącz procesor w tryb 64 bitowy
+	; switch the processor to 64-bit mode
 	;-----------------------------------------------------------------------
 	%include	"luna/long_mode.asm"
 
 	;-----------------------------------------------------------------------
-	; konfiguruj obslugę wyjątków i przerwań sprzętowych
+	; configure exception and hardware interrupt handling
 	;-----------------------------------------------------------------------
 	%include	"luna/idt.asm"
 
 	;-----------------------------------------------------------------------
-	; włącz przerwania sprzętowe na kontrolerze PIC
+	; enable the hardware interrupts on the PIC controller
 	;-----------------------------------------------------------------------
 	%include	"luna/pic.asm"
 
 	;-----------------------------------------------------------------------
-	; wczytaj plik jadra systemu
+	; load the kernel file
 	;-----------------------------------------------------------------------
 	%include	"luna/storage.asm"
 
 	;-----------------------------------------------------------------------
-	; wyłącz przerwanie na kontrolerze PIT
+	; disable the interrupt on the PIT controller
 	;-----------------------------------------------------------------------
 	%include	"luna/pit.asm"
 
 	;-----------------------------------------------------------------------
-	; przekaż wszystkie niezbędne informacje do jadra systemu
+	; pass all required information to the kernel
 	;-----------------------------------------------------------------------
 	%include	"luna/kernel.asm"
 
 	;-----------------------------------------------------------------------
-	; sterownik obsługi dysków IDE
+	; IDE disk controller driver
 	;-----------------------------------------------------------------------
 	%include	"luna/driver/storage/ide.asm"
 
 	;-----------------------------------------------------------------------
-	; procedura zaokrąglająca adres do pełnej strony
+	; routine that rounds an address up to a full page
 	;-----------------------------------------------------------------------
 	%include	"luna/page.asm"
 
 	;-----------------------------------------------------------------------
-	; zmienne programu rozruchowego
+	; boot program variables
 	;-----------------------------------------------------------------------
 	%include	"luna/data.asm"
 

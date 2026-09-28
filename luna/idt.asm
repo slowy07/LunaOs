@@ -12,126 +12,126 @@ endstruc
 
 ;===============================================================================
 zero_idt:
-	; adres tablicy IDT
+	; IDT address
 	mov	edi,	ZERO_IDT_address
 
-	; zarejestruj wszystkie wyjątki procesora pod domyślną procedurę obsługi
+	; register all processor exceptions with the default handler
 	mov	rax,	zero_idt_default_exception
 	mov	bx,	ZERO_IDT_TYPE_exception
-	mov	ecx,	32	; wszystkie wyjątki procesora
+	mov	ecx,	32	; all processor exceptions
 	call	zero_idt_set
 
-	; podłącz procedurę obsługi przerwania zegara
+	; hook up the timer interrupt handler
 	mov	rax,	zero_idt_clock
 	mov	bx,	ZERO_IDT_TYPE_irq
-	mov	ecx,	1	; wszystkie wyjątki procesora
+	mov	ecx,	1	; all processor exceptions
 	call	zero_idt_set
 
-	; zarejestruj pozostałe przerwania sprzętowe pod domyślną procedurę obsługi
+	; register the remaining hardware interrupts with the default handler
 	mov	rax,	zero_idt_default_interrupt
-	mov	ecx,	15	; wszystkie wyjątki procesora
+	mov	ecx,	15	; all processor exceptions
 	call	zero_idt_set
 
-	; załaduj Tablicę Deskryptorów Przerwań
+	; load the Interrupt Descriptor Table
 	lidt	[rel zero_idt_header]
 
-	; włącz obsługę przerwań
+	; enable interrupt handling
 	sti
 
-	; kontynuuj
+	; continue
 	jmp	zero_idt_end
 
 ;===============================================================================
 zero_idt_default_exception:
-	; powrót z przerwania wyjątku procesora
+	; return from a processor exception
 	iretq
 
 ;===============================================================================
 zero_idt_default_interrupt:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 
-	; zaakceptuj przerwnaie
+	; acknowledge the interrupt
 	mov	al,	0x20
 	out	0x20,	al
 
-	; przywróćoryginalne rejestry
+	; restore the original registers
 	pop	rax
 
-	; powrót z przerwania sprzętowego
+	; return from a hardware interrupt
 	iretq
 
 ;===============================================================================
 zero_idt_clock:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 
-	; zwiększ mikrotime
+	; increment microtime
 	inc	qword [rel zero_microtime]
 
-	; zaakceptuj przerwnaie
+	; acknowledge the interrupt
 	mov	al,	0x20
 	out	0x20,	al
 
-	; przywróćoryginalne rejestry
+	; restore the original registers
 	pop	rax
 
-	; powrót z przerwania sprzętowego
+	; return from a hardware interrupt
 	iretq
 
 ;===============================================================================
-; wejście:
-;	rax - adres logiczny procedury obsługi
-;	bx - typ: wyjątek, przerwanie(sprzętowe, programowe)
-;	rcx - ilość kolejnych rekordów o tej samej procedurze obsługi
-;	rdi - adres rekordu do modyfikacji w Tablicy Deskryptorów Przerwań
-; wyjście:
-;	rdi - adres kolejnego rekordu w Tablicy Deskryptorów Przerwań
+; in:
+;	rax - logical address of the handler
+;	bx - type: exception, interrupt (hardware, software)
+;	rcx - number of consecutive records sharing the same handler
+;	rdi - address of the record to modify in the Interrupt Descriptor Table
+; out:
+;	rdi - address of the next record in the Interrupt Descriptor Table
 zero_idt_set:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 
 .next:
-	; zachowaj adres procedury obsługi
+	; preserve the handler address
 	push	rax
 
-	; załaduj do tablicy adres obsługi wyjątku (bity 15...0)
+	; store the low 16 bits of the handler address into the table (bits 15...0)
 	stosw
 
-	; selektor deskryptora kodu (GDT), wszystkie procedury wywoływane są z uprawnieniami ring0
+	; code descriptor selector (GDT), all routines are entered with ring0 privileges
 	mov	ax,	0x08
 	stosw
 
-	; typ: wyjątek, przerwanie(sprzętowe, programowe)
+	; type: exception, interrupt (hardware, software)
 	mov	ax,	bx
 	stosw
 
-	; przywróć adres procedury obsługi
+	; restore the handler address
 	mov	rax,	qword [rsp]
 
-	; przemieszczamy do ax bity 31...16
+	; shift bits 31...16 into ax
 	shr	rax,	16
 	stosw
 
-	; przemieszczamy do eax bity 63...32
+	; shift bits 63...32 into eax
 	shr	rax,	32
 	stosd
 
-	; pola zastrzeżone, zostawiamy puste
+	; reserved fields, left empty
 	xor	eax,	eax
 	stosd
 
-	; przywróć adres procedury obsługi
+	; restore the handler address
 	pop	rax
 
-	; przetwórz pozostałe rekordy
+	; process the remaining records
 	dec	rcx
 	jnz	.next
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 
-	; powrót z procedury
+	; return from the routine
 	ret
 
 ;===============================================================================

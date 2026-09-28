@@ -2,29 +2,29 @@
 
 ;===============================================================================
 zero_protected_mode:
-	; wyłącz przerwania, jeśli program rozruchowy jest w trybie 16 bitowym
-	; zostaną one przywrócone
+	; disable interrupts if the boot program is in 16-bit mode
+	; they will be restored afterwards
 	cli
 
-	; załaduj globalną tablicę deskryptorów dla trybu 32 bitowego
+	; load the global descriptor table for 32-bit mode
 	lgdt	[zero_protected_mode_header_gdt_32bit]
 
-	; przełącz procesor w tryb chroniony
+	; switch the processor to protected mode
 	mov	eax,	cr0
-	bts	eax,	0	; włącz pierwszy bit rejestru cr0
+	bts	eax,	0	; set the first bit of CR0
 	mov	cr0,	eax
 
-	; skocz do 32 bitowego kodu
+	; jump to the 32-bit code
 	jmp	long 0x0008:zero_protected_mode_entry
 
-; wszystkie tablice trzymamy pod pełnym adresem
+; we keep all tables at a full address
 align 0x10
 zero_protected_mode_table_gdt_32bit:
-	; deskryptor zerowy
+	; null descriptor
 	dq	0x0000000000000000
-	; deskryptor kodu
+	; code descriptor
 	dq	0000000011001111100110000000000000000000000000001111111111111111b
-	; deskryptor danych
+	; data descriptor
 	dq	0000000011001111100100100000000000000000000000001111111111111111b
 zero_protected_mode_table_gdt_32bit_end:
 
@@ -33,13 +33,13 @@ zero_protected_mode_header_gdt_32bit:
 	dd	zero_protected_mode_table_gdt_32bit
 
 ;===============================================================================
-; 32 bitowy kod programu rozruchowego ==========================================
+; 32-bit boot program code ==========================================
 ;===============================================================================
 [bits 32]
 
 zero_protected_mode_entry:
-	; ustaw deskryptory danych, ekstra i stosu na przestrzeń danych
+	; point the data, extra and stack descriptors at the data space
 	mov	ax,	0x10
-	mov	ds,	ax	; segment danych
-	mov	es,	ax	; segment ekstra
-	mov	ss,	ax	; segment stosu
+	mov	ds,	ax	; data segment
+	mov	es,	ax	; extra segment
+	mov	ss,	ax	; stack segment

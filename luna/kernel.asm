@@ -2,23 +2,23 @@
 
 ;===============================================================================
 zero_kernel:
-	; wyłącz przerwania sprzętowe na kontrolerze PIC
+	; disable the hardware interrupts on the PIC controller
 	call	zero_pic_disable
 
-	; wyłącz obsługę wyjątków procesora i przerwań sprzętowych
+	; disable processor exception and hardware interrupt handling
 	cli
 
-	; zwróć informację o adresie i rozmiarze mapy pamięci
+	; return information about the address and size of the memory map
 	mov	ebx,	dword [rel zero_memory_map_address]
 
-	; zwróć informację o adresie tablicy ZERO_STRUCTURE_GRAPHICS_MODE_INFO_BLOCK
+	; return information about the address of the ZERO_STRUCTURE_GRAPHICS_MODE_INFO_BLOCK table
 	mov	edx,	dword [rel zero_graphics_mode_info_block_address]
 
-	; wyczyść pozostałę rejestry
+	; clear the remaining registers
 	xor	eax,	eax
 	xor	ecx,	ecx
 	xor	esi,	esi
 	xor	edi,	edi
 
-	; wykonaj kod jądra systemu
+	; run the kernel code
 	jmp	0x0000000000100000

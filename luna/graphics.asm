@@ -51,65 +51,65 @@ endstruc
 
 ;===============================================================================
 zero_graphics:
-	; wyrównaj adres końca mapy pamięci do pełnej strony
+	; bring the end address of the memory map to a full page
 	call	zero_page_align_up
 
-	; zachowaj adres tablicy GRAPHICS_MODE_INFO_BLOCK
+	; store the address of the GRAPHICS_MODE_INFO_BLOCK table
 	mov	dword [zero_graphics_mode_info_block_address],	edi
 
-	; pobierz dostępne tryby graficzne
+	; fetch the available graphics modes
 	mov	ax,	0x4F00
 	add	edi,	ZERO_GRAPHICS_MODE_INFO_BLOCK_SIZE_byte
 	int	0x10
 
-	; funkcja wywołana prawidłowo?
+	; function called successfully?
 	test	ax,	0x4F00
-	jnz	.error	; nie
+	jnz	.error	; no
 
-	; przeszukaj tablicę dostępnych trybów za porządanym
+	; scan the table of available modes for the wanted one
 	mov	esi,	dword [di + ZERO_STRUCTURE_GRAPHICS_VGA_INFO_BLOCK.video_mode_ptr]
 
 .loop:
-	; koniec tablicy?
+	; end of the table?
 	cmp	word [esi],	0xFFFF
-	je	.error	; tak
+	je	.error	; yes
 
-	; pobierz właściwości danego trybu graficznego
+	; fetch the properties of the given graphics mode
 	mov	ax,	0x4F01
 	mov	cx,	word [esi]
 	mov	edi,	dword [zero_graphics_mode_info_block_address]
 	int	0x10
 
-	; oczekiwana szerokość w pikselach?
+	; expected width in pixels?
 	cmp	word [di + ZERO_STRUCTURE_GRAPHICS_MODE_INFO_BLOCK.x_resolution],	SELECTED_VIDEO_WIDTH_pixel
-	jne	.next	; nie
+	jne	.next	; no
 
-	; oczekiwana wysokość w pikselach?
+	; expected height in pixels?
 	cmp	word [di + ZERO_STRUCTURE_GRAPHICS_MODE_INFO_BLOCK.y_resolution],	SELECTED_VIDEO_HEIGHT_pixel
-	jne	.next	; nie
+	jne	.next	; no
 
-	; oczekiwana głębia kolorów?
+	; expected color depth?
 	cmp	byte [di + ZERO_STRUCTURE_GRAPHICS_MODE_INFO_BLOCK.bits_per_pixel],	ZERO_GRAPHICS_DEPTH_bit
-	je	.found	; tak
+	je	.found	; yes
 
 .next:
-	; przesuń wskaźnik na następny wpis
+	; advance the pointer to the next entry
 	add	esi,	0x02
 
-	; sprawdź następny tryb
+	; check the next mode
 	jmp	.loop
 
 .error:
-	; zatrzymaj dalsze wykonywanie kodu
+	; stop further execution of the code
 	jmp	$
 
 .found:
-	; włącz dany tryb graficzny
+	; enable the given graphics mode
 	mov	ax,	0x4F02
 	mov	bx,	word [esi]
 	or	bx,	ZERO_GRAPHICS_MODE_linear | ZERO_GRAPHICS_MODE_clean
 	int	0x10
 
-	; operacja wykonana pomyślnie?
+	; operation completed successfully?
 	test	ah,	ah
-	jnz	.error	; nie
+	jnz	.error	; no

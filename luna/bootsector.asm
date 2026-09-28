@@ -1,61 +1,61 @@
 ;===============================================================================
 
 ;===============================================================================
-; 16 bitowy kod programu rozruchowego ==========================================
+; 16-bit boot program code ==========================================
 ;===============================================================================
 [bits 16]
 
-; pozycja kodu/danych w przestrzeni pamięci fizycznej
+; code/data position in physical memory space
 [org 0x7C00]
 
 ;===============================================================================
 bootsector:
-	; wyłącz przerwania (modyfikujemy rejestry segmentowe)
+	; disable interrupts (we modify the segment registers)
 	cli
 
-	; ustaw adres segmentu kodu (CS) na początek pamięci fizycznej
+	; set the code segment (CS) address to the start of physical memory
 	jmp	0x0000:.repair_cs
 
 .repair_cs:
-	; ustaw adresy segmentów danych (DS), ekstra (ES) i stosu (SS) na początek pamięci fizycznej
+	; set the data (DS), extra (ES) and stack (SS) segment addresses to the start of physical memory
 	xor	ax,	ax
-	mov	ds,	ax	; segment danych
-	mov	ss,	ax	; segment stosu
+	mov	ds,	ax	; data segment
+	mov	ss,	ax	; stack segment
 
-	; ustaw wskaźnik szczytu stosu na gwarantowaną wolną przestrzeń pamięci
+	; point the stack top at guaranteed free memory
 	mov	sp,	bootsector
 
-	; włącz przerwania
+	; enable interrupts
 	sti
 
 	;-----------------------------------------------------------------------
-	; wczytaj główny kod programu rozruchowego
+	; load the main boot program code
 	;-----------------------------------------------------------------------
 	mov	ah,	0x42
 	mov	si,	bootsector_table_disk_address_packet
 	int	0x13
 
-	; jeśli wczytano poprawnie główny kod programu rozruchowego, wykonaj
+	; if the main boot program code loaded correctly, run it
 	jnc	0x1000
 
-	; zatrzymaj dalsze wykonywanie kodu programu rozruchowego
+	; stop further execution of the boot program code
 	jmp	$
 
 ;-------------------------------------------------------------------------------
-; format danych w postaci tablicy, wykorzystywany przez funkcję AH=0x42, przerwanie 0x13
+; table-formatted data block used by function AH=0x42, interrupt 0x13
 ; http://www.ctyme.com/intr/rb-0708.htm
 ;-------------------------------------------------------------------------------
-; wszystkie tablice trzymamy pod pełnym adresem
+; we keep all tables at a full address
 align 0x04
 bootsector_table_disk_address_packet:
-	db	0x10	; rozmiar tablicy
-	db	0x00	; wartość zastrzeżona
-	dw	ZERO_FILE_SIZE_bytes / 0x0200	; oblicz rozmiar pliku dołączonego do sektora rozruchowego
-	dw	0x1000	; przesunięcie
+	db	0x10	; table size
+	db	0x00	; reserved value
+	dw	ZERO_FILE_SIZE_bytes / 0x0200	; compute the size of the file appended to the boot sector
+	dw	0x1000	; offset
 	dw	0x0000	; segment
-	dq	0x0000000000000001	; adres LBA pierwszego sektora dołączonego pliku
+	dq	0x0000000000000001	; LBA address of the first sector of the appended file
 
 ;-------------------------------------------------------------------------------
-; znacznik sektora rozruchowego
+; boot sector signature
 times	510 - ($ - $$)	db	0x00
-			dw	0xAA55	; czysta magija ;>
+			dw	0xAA55	; pure magic ;></

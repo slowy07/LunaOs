@@ -24,7 +24,7 @@ KERNEL_VFS_FILE_MODE_OTHER_write			equ	0000000000000010b
 KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse		equ	0000000000000001b
 KERNEL_VFS_FILE_MODE_OTHER_full_control			equ	0000000000000111b
 
-; struktura supła w drzewie katalogu głównego
+; knot structure in the root directory tree
 struc	KERNEL_VFS_STRUCTURE_KNOT
 	.data						resb	8
 	.size						resb	8

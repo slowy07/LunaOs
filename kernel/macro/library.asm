@@ -1,13 +1,13 @@
 ;===============================================================================
 
 %MACRO	macro_library	1
-	; zachowaj wartość procesu
+	; preserve the frame pointer
 	push	rbp
 
-	; odłóż na stos adres procedury docelowej
+	; store the address of the target routine on the stack
 	mov	rbp,	LIBRARY_BASE_address + %1
-	call	qword [rbp]	; wykonaj skok do biblioteki
+	call	qword [rbp]	; jump into the library
 
-	; przywróć wartość procesu
+	; restore the frame pointer
 	pop	rbp
 %ENDMACRO

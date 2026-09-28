@@ -1,31 +1,31 @@
 ;===============================================================================
 
 ;===============================================================================
-; 16 bitowy kod głównego programu rozruchowego =================================
+; 16-bit main boot program code =================================
 ;===============================================================================
 [bits 16]
 
 ;===============================================================================
-; wejście:
-;	di - adres w przestrzeni logicznej
-; wyjście:
-;	di - adres wyrównany do pełnej strony
+; in:
+;	di - address in logical address space
+; out:
+;	di - address aligned up to a full page
 zero_page_align_up:
-	; utwórz zmienną lokalną
+	; create a local variable
 	push	edi
 
-	; usuń młodszą część adresu
+	; clear the low part of the address
 	and	edi,	0xF000
 
-	; sprawdź czy adres jest identyczny z zmienną lokalną
+	; check whether the address equals the local variable
 	cmp	edi,	dword [esp]
-	je	.end	; jeśli tak, koniec
+	je	.end	; if so, we are done
 
-	; przesuń adres o jedną ramkę do przodu
+	; advance the address by one frame
 	add	edi,	0x1000
 .end:
-	; usuń zmienną lokalną
+	; drop the local variable
 	add	esp,	0x04
 
-	; powrót z procedury
+	; return from the routine
 	ret

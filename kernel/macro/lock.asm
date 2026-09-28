@@ -3,7 +3,7 @@
 %macro	macro_lock	2
 	push	rax
 
-.1:	; zamknij dostęp do %1
+.1:	; close access to %1
 	mov	al,	STATIC_TRUE
 %ifidn	%1,	rbx
 	xchg	byte [%1 + %2],	al
@@ -11,7 +11,7 @@
 	xchg	byte [rel %1 + %2],	al
 %endif
 	test	al,	al
-	jz	.1	; spróbuj raz jeszczy
+	jz	.1	; try once more
 
 	pop	rax
 %endmacro

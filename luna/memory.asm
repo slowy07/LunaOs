@@ -2,36 +2,36 @@
 
 ;===============================================================================
 zero_memory:
-	; pozpocznij mapowanie od początku przestrzeni fizycznej pamięci
+	; begin mapping from the start of the physical memory space
 	xor	ebx,	ebx
 
-	; ciąg znaków "SMAP", specjalna wartość wymagana przez procedurę
+	; the "SMAP" string, a special value the routine requires
 	mov	edx,	0x534D4150
 
-	; utwórz mapę pamięci pod fizycznym adresem 0x0000:0x1000
+	; build the memory map at physical address 0x0000:0x1000
 	mov	edi,	zero_end
 	call	zero_page_align_up
 
-	; zachowaj adres dla jądra systemu
+	; store the address for the kernel
 	mov	dword [zero_memory_map_address],	edi
 
 .loop:
-	; pobierz informacje o przestrzeni pamięci
+	; fetch information about the memory space
 	mov	eax,	0xE820	; funkcja Get System Memory Map
-	mov	ecx,	0x14	; rozmiar wpisu w Bajtach, generowanej tablicy
+	mov	ecx,	0x14	; entry size in bytes of the generated table
 	int	0x15
 
 .error:
-	; błąd podczas generowania?
-	jc	.error	; tak
+	; error during generation?
+	jc	.error	; yes
 
-	; przesuń wskaźnik do następnego wpisu
+	; advance the pointer to the next entry
 	add	edi,	0x14
 
-	; zakończyć generowanie tablicy?
+	; finished generating the table?
 	test	ebx,	ebx
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
-	; wstaw pusty wpis na koniec tablicy
+	; append an empty entry at the end of the table
 	xor	al,	al
 	rep	stosb

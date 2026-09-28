@@ -2,38 +2,38 @@
 
 ;===============================================================================
 zero_storage:
-	; inicjalizuj dostępne nośniki
+	; initialise the available drives
 	call	driver_ide_init
 
-	; TODO: systemy plików, więcej sektorów na raz
+	; TODO: file systems, more sectors at a time
 
-	; wczytaj plik jądra systemu
+	; load the kernel file
 
-	; pierwszy sektor zawierający dane pliku jądra systemu
+	; first sector holding the kernel file data
 	mov	eax,	((zero_end - zero) + 0x200) / 0x200
 
-	; nośnik Master na kontrolerze IDE0
+	; Master drive on the IDE0 controller
 	xor	ebx,	ebx
 
-	; odczytujemy plik po jednym sektorze na raz
+	; we read the file one sector at a time
 	mov	ecx,	1
 
-	; rozmiar pliku jądra systemu w sektorach
+	; kernel file size in sectors
 	mov	edx,	(KERNEL_FILE_SIZE_bytes / 0x200)
 
-	; wskaźnik docelowy w przestrzeni pamięci fizycznej/logicznej
+	; destination pointer in physical/logical memory space
 	mov	edi,	0x00100000
 
 .loop:
-	; wczytaj sektor
+	; load the sector
 	call	driver_ide_read
 
-	; następny sektor
+	; next sector
 	inc	eax
 
-	; przesuń wskaźnik docelowy
+	; advance the destination pointer
 	add	edi,	0x0200
 
-	; koniec sektorów należących do pliku?
+	; end of the sectors belonging to the file?
 	dec	edx
-	jnz	.loop	; nie
+	jnz	.loop	; no

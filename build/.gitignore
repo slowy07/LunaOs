@@ -10,7 +10,7 @@ wello
 free
 
 # upstream (make.sh)
-zero
+luna_stage2
 bootsector
 library
 disk.raw

@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 KERNEL_IO_APIC_ioregsel			equ	0x00
 KERNEL_IO_APIC_iowin			equ	0x10

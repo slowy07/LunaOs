@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 SERVICE_NETWORK_MAC_mask				equ	0x0000FFFFFFFFFFFF
 

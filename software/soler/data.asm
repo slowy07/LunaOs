@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
 soler_fpu_float_result				dq	STATIC_EMPTY

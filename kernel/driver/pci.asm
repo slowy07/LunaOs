@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 DRIVER_PCI_PORT_command			equ	0x0CF8
 DRIVER_PCI_PORT_data			equ	0x0CFC

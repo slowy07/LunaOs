@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 kernel_wm_semaphore					db	STATIC_FALSE
 kernel_wm_pid						dq	STATIC_EMPTY

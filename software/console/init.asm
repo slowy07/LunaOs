@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 	; przygotuj przestrzeń pod dane przychodzące z standardowego wejścia
 	mov	ax,	KERNEL_SERVICE_PROCESS_memory_alloc

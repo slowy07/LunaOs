@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 KERNEL_VFS_FILE_TYPE_regular_file			equ	1 << 0
 KERNEL_VFS_FILE_TYPE_directory				equ	1 << 1

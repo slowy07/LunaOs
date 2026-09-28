@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 KERNEL_STREAM_FLAG_active	equ	00000001b	; strumień jest wykorzystywany
 KERNEL_STREAM_FLAG_meta		equ	00000010b	; meta dane są aktualne

@@ -1,17 +1,11 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 %define	SERVICE_HTTP_version	"0"
 %define	SERVICE_HTTP_revision	"8"
 
 %macro	service_http_macro_foot	0
 	db	"<hr />", STATIC_SCANCODE_NEW_LINE
-	db	"Cyjon v", KERNEL_version, ".", KERNEL_revision, " (HTTP Service v", SERVICE_HTTP_version, ".", SERVICE_HTTP_revision, ")"
+	db	"LunaOs v", KERNEL_version, ".", KERNEL_revision, " (HTTP Service v", SERVICE_HTTP_version, ".", SERVICE_HTTP_revision, ")"
 	db	"<style>* { font: 12px/150% 'Courier New', 'DejaVu Sans Mono', Monospace, Verdana; color: #F5F5F5; } body { background-color: #282922; }</style>", STATIC_SCANCODE_NEW_LINE
 %endmacro
 

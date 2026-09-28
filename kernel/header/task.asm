@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 KERNEL_TASK_FLAG_active			equ	0000000000000001b	; oznaczenie wpisu gotowego do uruchomienia
 KERNEL_TASK_FLAG_closed			equ	0000000000000010b	; oznaczenie wpisu gotowego do zamknięcia

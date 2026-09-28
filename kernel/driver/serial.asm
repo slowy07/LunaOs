@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 DRIVER_SERIAL_PORT_COM1				equ	0x03F8
 DRIVER_SERIAL_PORT_COM2				equ	0x02F8

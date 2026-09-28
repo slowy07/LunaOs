@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 KERNEL_TASK_EFLAGS_if			equ	000000000000001000000000b
 KERNEL_TASK_EFLAGS_zf			equ	000000000000000001000000b

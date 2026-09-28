@@ -1,12 +1,6 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
-%define	KERNEL_name					"cyjon"
+%define	KERNEL_name					"LunaOs"
 %define	KERNEL_version					"0"
 %define	KERNEL_revision					"1403"
 %define	KERNEL_architecture				"x86_64"

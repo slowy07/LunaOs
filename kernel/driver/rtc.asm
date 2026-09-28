@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 DRIVER_RTC_IRQ_number					equ	0x08
 DRIVER_RTC_IO_APIC_register				equ	KERNEL_IO_APIC_iowin + (DRIVER_RTC_IRQ_number * 0x02)

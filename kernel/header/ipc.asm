@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 KERNEL_IPC_TYPE_SYSTEM			equ	0x00	; komunikat zawiera dane: system
 KERNEL_IPC_TYPE_KEYBOARD		equ	0x01	; komunikat zawiera dane: klawiatury

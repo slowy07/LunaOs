@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 ; Font: Canele (https://addy-dclxvi.github.io/post/bitmap-fonts/)
 ; Migrated via:
 ;	"vga text font designer II ver 1.0" by Paweł Szcześniak from 01.09.1998 :D

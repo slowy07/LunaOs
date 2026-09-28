@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 ACPI_MADT_ENTRY_lapic			equ	0x00
 ACPI_MADT_ENTRY_ioapic			equ	0x01

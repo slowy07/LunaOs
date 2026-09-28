@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 	; poproś właściciela strumienia o zmianę tytułu okna (jeśli istnieje)
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out

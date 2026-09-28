@@ -1,10 +1,4 @@
 ;===============================================================================
-; Copyright (C) Andrzej Adamczyk (at https://blackdev.org/). All rights reserved.
-; GPL-3.0 License
-;
-; Main developer:
-;	Andrzej Adamczyk
-;===============================================================================
 
 DRIVER_IDE_CHANNEL_PRIMARY				equ	0x01F0
 DRIVER_IDE_CHANNEL_SECONDARY				equ	0x0170

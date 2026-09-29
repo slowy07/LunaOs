@@ -9,95 +9,70 @@ Multitasking operating system written in x86-64 assembly (formerly aidenOS). Fea
 
 ## Building & Running
 
-```asm
-nasm -f bin kernel/init/boot.asm -o build/boot
-nasm -f bin kernel/kernel.asm -o build/kernel
-nasm -f bin luna/luna.asm -o build/luna.raw
-qemu-system-x86_64 -drive file=build/luna.raw,media=disk,format=raw -m 2 -smp 1 -rtc base=localtime
+```sh
+make          # builds build/luna_disk.raw
+make run-qemu # builds and boots it in QEMU (16 MiB RAM, 2 CPUs, 1280x720)
+make debug    # builds and starts QEMU paused, waiting for gdb
 ```
+
+The build is driven by the Makefile: the boot sector, stage 2, kernel, support
+library, and every application under `software/` are assembled with nasm and
+packed into one 1 MiB disk image.
 
 ## Documentation
 
+Per-module docs live in a `docs/` directory next to the code they describe.
+
 ### Root
-- `docs/config.txt`  Global constants (page sizes, shifts, colors, ASCII)
+- `docs/config.txt`  Global constants (page sizes, shifts, ASCII, colors)
 
 ### Kernel (`kernel/docs/`)
 | File | Description |
 |------|-------------|
 | `kernel.txt` | Main kernel module |
-| `config.txt` | Kernel configuration constants |
 | `init.txt` | Initialization chain |
-| `data.txt` | GDT, TSS, IDT headers, string constants |
-| `video.txt` | LFB framebuffer video output |
-| `memory.txt` | Bitmap-based page allocator + SIMD copy |
-| `page.txt` | 4-level page tables and virtual memory |
-| `idt.txt` | Interrupt Descriptor Table management |
-| `task.txt` | Task scheduler |
-| `thread.txt` | Thread management |
-| `panic.txt` | Panic handler |
-| `apic.txt` | Local APIC |
-| `io_apic.txt` | IO-APIC |
-| `ipc.txt` | Inter-process communication |
+| `data.txt` | Static data tables and string constants |
+| `vfs.txt` | Virtual file system |
+| `service.txt` | Service (syscall) dispatcher |
+| `exec.txt` | Process execution |
 | `macro_lock.txt` | Semaphore lock macro |
-| `macro_apic.txt` | APIC ID macro |
-| `debug.txt` | Debug mode handler (register dump, process name, PID) |
-| `macro_debug.txt` | Debug logging macro |
-| `macro_copy.txt` | SIMD 256-byte memory copy macro |
 
 ### Kernel Init (`kernel/init/docs/`)
 | File | Description |
 |------|-------------|
-| `long_mode.txt` | 32-bit to 64-bit transition |
-| `multiboot.txt` | Multiboot header |
-| `video.txt` | Framebuffer initialization (banner + resolution display) |
-| `font.txt` | Font name display |
-| `memory.txt` | Physical memory map setup (RAM size display) |
-| `acpi.txt` | ACPI RSDP/RSDT/XSDT/MADT parsing |
-| `page.txt` | Virtual memory setup |
-| `gdt.txt` | GDT initialization |
-| `idt.txt` | IDT initialization |
-| `rtc.txt` | RTC timer setup (1024 Hz, sti enabled here) |
-| `ps2.txt` | PS/2 mouse + keyboard init (reset, config, IRQ 12 + IRQ 1) |
-| `task.txt` | Scheduler startup |
-| `ipc.txt` | IPC initialization |
-| `panic.txt` | Panic handler setup |
-| `data.txt` | Data/strings initialization |
+| `vfs.txt` | Initial VFS layout and embedded file records |
+| `data.txt` | Static definitions used during init |
+| `ps2.txt` | PS/2 mouse + keyboard initialization |
 | `serial.txt` | COM1 serial port initialization |
 
 ### Kernel Services (`kernel/service/docs/`)
 | File | Description |
 |------|-------------|
-| `shell.txt` | Interactive shell loop |
-| `prompt.txt` | Command dispatch (clear, ip, etc.) |
-| `data.txt` | Shell strings and cache buffer |
-| `config.txt` | Shell configuration |
-| `network.txt` | Network service (7 sub-files: config, data, checksum, arp, icmp, tcp, wrap) |
-| `http.txt` | HTTP server service (port 80, IPC receive loop) |
-| `tx.txt` | Network transmit service |
-| `tresher.txt` | Task reaper service |
 | `desu.txt` | Desktop environment service (compositor, window management, mouse cursor) |
-| `workbench.txt` | Workbench service (desktop background, menu bar) |
 
-### Drivers (`kernel/driver/`)
+### Drivers (`kernel/driver/docs/`)
 | File | Description |
 |------|-------------|
-| `driver_docs.txt` | RTC driver |
-| `ide.txt` | IDE ATA/ATAPI storage driver |
-| `ps2.txt` | PS/2 keyboard (interrupt flow, scan codes, I/O ports) + mouse (3-byte packet parsing, position tracking with bounds clamping) |
-| `pci.txt` | PCI enumeration |
-| `network/i82540em.txt` | Intel 82540EM Gigabit Ethernet |
-| `serial.txt` | COM1 serial port (115200 baud, 8N1, FIFO, string send) |
+| `serial.txt` | COM1 serial driver (115200 baud, 8N1, FIFO, string send) |
 
-### Library (`library/docs/`)
-| File | Description |
-|------|-------------|
-| `page_align_up.txt` | Page alignment utility |
-| `page_from_size.txt` | Size to page count conversion |
-| `string_digits.txt` | String digit validation |
-| `string_cut.txt` | String trimming |
-| `string_to_integer.txt` | ASCII to integer conversion |
-| `color.txt` | Alpha blending and color inversion |
-| `bosu.txt` | BOSU library (font constants, bitmap font data) |
+## Applications
+
+The kernel mounts these applications under `/bin` as its initial VFS image:
+
+| App | Path |
+|-----|------|
+| calculator | `/bin/calculator` |
+| cat | `/bin/cat` |
+| console | `/bin/console` |
+| hello | `/bin/hello` |
+| ls | `/bin/ls` |
+| moko | `/bin/moko` |
+| redia | `/bin/redia` |
+| shell | `/bin/shell` |
+| tetris | `/bin/tetris` |
+| tm | `/bin/tm` |
+
+`/etc/hostname` and `/var/welcome.txt` complete the initial file system.
 
 
 ## Key Systems

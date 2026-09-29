@@ -1,12 +1,12 @@
 ;===============================================================================
 
 ;===============================================================================
-; wyjście:
-;	Flaga CF - jeśli błąd
-;	rcx - ilość znaków w nazwie pliku
-;	rsi - wskaźnik do ciągu przechowującego nazwę/ścieżkę pliku
+; exit:
+;	CF flag - if error
+;	rcx - number of characters in the file name
+;	rsi - pointer to the string holding the file name/path
 moko_shortcut_file:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rbx
 	push	rdx
@@ -14,16 +14,16 @@ moko_shortcut_file:
 	push	rsi
 	push	rcx
 
-	; zwolnij klawisz CTRL
+	; release the CTRL key
 	mov	byte [moko_key_ctrl_semaphore],	STATIC_FALSE
 
-	; zachowaj pozycję kursora
+	; save the cursor position
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_cursor_save_end - moko_string_cursor_save
 	mov	rsi,	moko_string_cursor_save
 	int	KERNEL_SERVICE
 
-	; ustaw kursor na pozycję komunikacji z użyszkodnikiem
+	; set the cursor to the user communication position
 	mov	ecx,	moko_string_document_cursor_end - moko_string_document_cursor
 	mov	rsi,	moko_string_document_cursor
 	mov	word [moko_string_document_cursor.x],	STATIC_EMPTY
@@ -31,47 +31,47 @@ moko_shortcut_file:
 	inc	word [moko_string_document_cursor.y]
 	int	KERNEL_SERVICE
 
-	; wyświetl zapytanie o nazwę pliku
+	; display the file name query
 	mov	ecx,	moko_string_menu_read_end - moko_string_menu_read
 	mov	rsi,	moko_string_menu_read
 	int	KERNEL_SERVICE
 
-	; pobierz nazwę pliku(ścieżkę)
-	mov	rbx,	qword [moko_cache_size_byte]	; rozmiar bufora
-	xor	ecx,	ecx	; bufor pusty
-	mov	rdx,	moko_ipc	; obsługa wyjątków
+	; fetch the file name(path)
+	mov	rbx,	qword [moko_cache_size_byte]	; buffer size
+	xor	ecx,	ecx	; the buffer is empty
+	mov	rdx,	moko_ipc	; exception handling
 	mov	rsi,	qword [moko_cache_address]
 	mov	rdi,	moko_ipc_data
 	macro_library	LIBRARY_STRUCTURE_ENTRY.input
 
-	; zachowaj oryginalne rejestry oraz stan flagi CF
+	; save the original registers and the state of the CF flag
 	pushf
 	push	rcx
 	push	rsi
 
-	; usuń zapytanie o nazwę pliku
+	; remove the file name query
 	mov	ecx,	moko_string_line_clean_end - moko_string_line_clean
 	mov	rsi,	moko_string_line_clean
 	int	KERNEL_SERVICE
 
-	; przywróć oryginalne rejestry oraz stan flagi CF
+	; restore the original registers and the state of the CF flag
 	pop	rsi
 	pop	rcx
 	popf
 
-	; nie pobrano nazwy pliku/ścieżki?
-	jc	.end	; tak
+	; no file name/path fetched?
+	jc	.end	; yes
 
-	; usuń z ciągu "białe znaki"
+	; remove the "white characters" from the string
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_trim
-	jc	.end	; pusty ciąg
+	jc	.end	; empty string
 
-	; zwróć informacje o ciągu
+	; return the information about the string
 	mov	qword [rsp],	rcx
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rsi
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rsi
 	pop	rdi
@@ -79,140 +79,140 @@ moko_shortcut_file:
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	ax - kod klawisza
+; entry:
+;	ax - key code
 moko_shortcut:
-	; przytrzymano klawisz CTRL?
+	; is the CTRL key held down?
 	cmp	byte [moko_key_ctrl_semaphore],	STATIC_FALSE
-	je	.no_key	; nie
+	je	.no_key	; no
 
-	; naciśnięto klawisz "x"?
+	; was the "x" key pressed?
 	cmp	ax,	"x"
-	je	moko.end	; tak
+	je	moko.end	; yes
 
-	; naciśnięto klawisz "r"?
+	; was the "r" key pressed?
 	cmp	ax,	"r"
-	je	.read_file	; tak
+	je	.read_file	; yes
 
-	; naciśnięto klawisz "o"?
+	; was the "o" key pressed?
 	cmp	ax,	"o"
-	je	.write_file	; tak
+	je	.write_file	; yes
 
-	; nie rozpoznano skrótu klawiszowego
+	; unrecognized keyboard shortcut
 	jmp	.no_key
 
 .restore_cursor:
-	; przywróć pozycję kursora
+	; restore the cursor position
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_cursor_restore_end - moko_string_cursor_restore
 	mov	rsi,	moko_string_cursor_restore
 	int	KERNEL_SERVICE
 
 .no_key:
-	; nie rozpoznano skrótu klawiszowego
+	; unrecognized keyboard shortcut
 	stc
 
 .end:
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;-------------------------------------------------------------------------------
 .write_file:
-	; pobierrz nazwę pliku od użyszkodnika
+	; fetch the file name from the user
 	call	moko_shortcut_file
-	jc	moko_shortcut.restore_cursor	; nie podano nazwy pliku
+	jc	moko_shortcut.restore_cursor	; no file name given
 
-	; zachowaj właściwości pliku
+	; save the file properties
 	push	rcx
 	push	rsi
-	push	STATIC_FALSE	; zmienna lokalna
+	push	STATIC_FALSE	; local variable
 
-	; sprawdź czy plik o podanej nazwie już istnieje
+	; check whether a file of the given name already exists
 	mov	ax,	KERNEL_SERVICE_VFS_exist
 	int	KERNEL_SERVICE
-	jc	.write_file_ready	; nie istnieje
+	jc	.write_file_ready	; does not exist
 
-	; zapytaj czy nadpisać plik
+	; ask whether to overwrite the file
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_menu_overwrite_end - moko_string_menu_overwrite
 	mov	rsi,	moko_string_menu_overwrite
 	int	KERNEL_SERVICE
 
 .write_file_wait:
-	; pobierz komunikat "znak z bufora klawiatury"
+	; fetch the "character from the keyboard buffer" message
 	mov	ax,	KERNEL_SERVICE_PROCESS_ipc_receive
 	mov	rdi,	moko_ipc_data
 	int	KERNEL_SERVICE
-	jc	.write_file_wait	; brak komunikatu
+	jc	.write_file_wait	; no message
 
-	; komunikat typu: klawiatura?
+	; message of the keyboard type?
 	cmp	byte [rdi + KERNEL_IPC_STRUCTURE.type],	KERNEL_IPC_TYPE_KEYBOARD
-	jne	.write_file_wait	; tak
+	jne	.write_file_wait	; yes
 
-	; klawisz "Enter"?
+	; "Enter" key?
 	cmp	word [rdi + KERNEL_IPC_STRUCTURE.data],	STATIC_SCANCODE_RETURN
-	je	.write_file_answer	; tak
+	je	.write_file_answer	; yes
 
-	; klawisz "Esc"?
+	; "Esc" key?
 	cmp	word [rdi + KERNEL_IPC_STRUCTURE.data],	STATIC_SCANCODE_ESCAPE
-	jne	.write_file_wait	; nie, czekaj dalej
+	jne	.write_file_wait	; no, keep waiting
 
 .write_file_answer:
-	; usuń zapytanie o nadpisanie pliku
+	; remove the file overwrite query
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_menu_answer_end - moko_string_menu_answer
 	mov	rsi,	moko_string_menu_answer
 	int	KERNEL_SERVICE
 
 .write_file_ready:
-	; przywróć właściwości pliku
-	add	rsp,	STATIC_QWORD_SIZE_byte	; zwolnij zmienną lokalną
+	; restore the file properties
+	add	rsp,	STATIC_QWORD_SIZE_byte	; free the local variable
 	pop	rsi
 	pop	rcx
 
-	; odpowiedź negatywna?
+	; negative answer?
 	cmp	word [rdi + KERNEL_IPC_STRUCTURE.data],	STATIC_SCANCODE_ESCAPE
 	je	moko_shortcut.restore_cursor
 
-	; zapisz zawartość dokumentu do pliku o podanej nazwie
+	; store the document contents in a file of the given name
 	mov	ax,	KERNEL_SERVICE_VFS_write
 	mov	rdx,	qword [moko_document_size]
 	mov	rdi,	qword [moko_document_start_address]
 	int	KERNEL_SERVICE
 	jnc	moko_shortcut.restore_cursor
 
-	; wyświetl komunikat błędu
+	; display the error message
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_menu_failed_write_end - moko_string_menu_failed_write
 	mov	rsi,	moko_string_menu_failed_write
 	int	KERNEL_SERVICE
 
-	; koniec obsługi skrótu klawiszowego
+	; end of the keyboard shortcut handling
 	jmp	moko_shortcut.restore_cursor
 
 	macro_debug	"moko_shortcut.save_file"
 
 ;-------------------------------------------------------------------------------
 .read_file:
-	; pobierz nazwę pliku od użyszkodnika
+	; fetch the file name from the user
 	call	moko_shortcut_file
-	jc	moko_shortcut.restore_cursor	; nie podano nazwy pliku
+	jc	moko_shortcut.restore_cursor	; no file name given
 
-	; przetwórz dokument/plik
+	; process the document/file
 	call	moko_document_format
 	jnc	moko_shortcut.end
 
-	; wyświetl informacje o braku pliku do odczytu
+	; display the information about the missing file to read
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_menu_not_found_end - moko_string_menu_not_found
 	mov	rsi,	moko_string_menu_not_found
 	int	KERNEL_SERVICE
 
-	; koniec obsługi skrótu klawiszowego
+	; end of the keyboard shortcut handling
 	jmp	moko_shortcut.restore_cursor
 
 	macro_debug	"moko_shortcut.read_file"

@@ -1,36 +1,36 @@
 ;===============================================================================
 
 	;-----------------------------------------------------------------------
-	; stałe, zmienne, globalne, struktury, obiekty, makra, nagłówki
+	; constants, variables, globals, structures, objects, macros, headers
 	;-----------------------------------------------------------------------
 	%include	"kernel/header.asm"
 	;-----------------------------------------------------------------------
 
-; 64 bitowy kod inicjalizacyjny jądra systemu
+; 64 bit initialization code of the system kernel
 [bits 64]
 
-; położenie kodu jądra systemu w pamięci fizycznej
+; location of the system kernel code in the physical memory
 [org KERNEL_BASE_address]
 
 init:
 	;-----------------------------------------------------------------------
-	; Init - inicjalizacja środowiska pracy jądra systemu
+	; Init - initialization of the system kernel working environment
 	;-----------------------------------------------------------------------
 	%include	"kernel/init.asm"
 
 kernel:
-	; pobierz wskaźnik do aktualnego zadania (jądro) w kolejce
+	; fetch the pointer to the current task (the kernel) in the queue
 	call	kernel_task_active
 
-	; wyłącz proces z obiegu
+	; remove the process from the rotation
 	and	word [rdi + KERNEL_TASK_STRUCTURE.flags],	~KERNEL_TASK_FLAG_active
 
-	; czekaj na wywłaszczenie
+	; wait for the preemption
 	jmp	$
 
 	;-----------------------------------------------------------------------
-	; procedury, dane, biblioteki, usługi - wszystko co niezbędne
-	; do prawidłowej pracy jądra/usług systemu
+	; procedures, data, libraries, services - everything needed
+	; for the correct operation of the kernel/system services
 	;-----------------------------------------------------------------------
 	%include	"kernel/apic.asm"
 	%include	"kernel/data.asm"
@@ -65,7 +65,7 @@ kernel:
 	%include	"kernel/library/page_from_size.asm"
 	;-----------------------------------------------------------------------
 
-; wyrównaj kod jądra systemu do pełnej strony
+; move the system kernel code up to a full page boundary
 align	STATIC_PAGE_SIZE_byte
 
 kernel_end:

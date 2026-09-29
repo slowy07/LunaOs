@@ -1,121 +1,121 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	qword [soler_fpu_precision] - ilość miejsc po przecinku
-;	qword [soler_fpu_fraction] - wartość frakcji w formie całkowitej
-; wyjście:
-;	qword [soler_fpu_float_result] - wartość zmiennoprzecinkowa
+; entry:
+;	qword [soler_fpu_precision] - number of places after the comma
+;	qword [soler_fpu_fraction] - value of the fraction in integer form
+; exit:
+;	qword [soler_fpu_float_result] - floating point value
 soler_fpu_fraction_to_float:
-	finit	; reset koprocesora
+	finit	; reset the coprocessor
 	fld1	; st2
 	fild	qword [soler_fpu_precision_value]	; st1
 	fild	qword [soler_fpu_fraction]	; st0
 
 .loop:
-	; przeliczać na ułamek?
+	; convert to a fraction?
 	dec	qword [soler_fpu_precision]
-	js	.end	; nie
-	jz	.ready	; koniec
+	js	.end	; no
+	jz	.ready	; end
 
-	; zamień liczbę w ułamek
+	; convert the number into a fraction
 	fdiv	st0,	st1	; div	st1
-	jmp	.loop	; kontynuuj
+	jmp	.loop	; continue
 
 .ready:
-	; zachowaj wynik operacji przekształcenia
+	; save the result of the conversion operation
 	fstp	qword [soler_fpu_float_result]
 
 .end:
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	qword [soler_fpu_precision] - ilość cyfr do zinterpretowania
-;	qword [soler_fpu_float_result] - wartość całkowita z zmiennoprzecinkową (integer.float)
-; wyjście:
-;	qword [soler_fpu_fraction] - wartość całkowita z ZMIENNOPRZECINKOWEJ
+; entry:
+;	qword [soler_fpu_precision] - number of digits to interpret
+;	qword [soler_fpu_float_result] - integer part of the floating point value (integer.float)
+; exit:
+;	qword [soler_fpu_fraction] - integer part of the FLOATING POINT value
 soler_fpu_float_to_fraction:
-	; zachowaj oryginalne rejestry/zmienne
+	; save the original registers/variables
 	push	rcx
 
-	; pobierz rozmiar precyzji
+	; fetch the precision size
 	mov	rcx,	qword [soler_fpu_precision]
 
-	; usuń wartość całkowitą
+	; remove the integer part
 	call	soler_fpu_float_only
 
-	finit	; reset koprocesora
+	finit	; reset the coprocessor
 	fild	qword [soler_fpu_precision_value]	; mov	st1,	qword [soler_fpu_precision]
 	fld	qword [soler_fpu_float_result]	; mov	st0,	qword [soler_fpu_float_result]
 
 .loop:
-	; przeliczać na ułamek?
+	; convert to a fraction?
 	dec	rcx
-	js	.end	; nie
-	jz	.ready	; koniec
+	js	.end	; no
+	jz	.ready	; end
 
-	; zamień ułamek w liczbę
+	; convert the fraction into a number
 	fmul	st0,	st1
-	jmp	.loop	; kontynuuj
+	jmp	.loop	; continue
 
 .ready:
 	fistp	qword [soler_fpu_fraction]	; mov	qword [soler_fpu_fraction],	st0
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	qword [soler_fpu_float_result] - wartość zmiennoprzecinkowa (integer.float)
-; wyjście:
-;	qword [soler_fpu_integer] - wartość całkowita z zmiennoprzecinkowej (integer)
+; entry:
+;	qword [soler_fpu_float_result] - floating point value (integer.float)
+; exit:
+;	qword [soler_fpu_integer] - integer part of the floating point value (integer)
 soler_fpu_float_to_integer:
-	finit	; reset koprocesora
-	fldcw	word [soler_fpu_control]	; wczytaj flagi koprocesora z zmiennej
+	finit	; reset the coprocessor
+	fldcw	word [soler_fpu_control]	; load the coprocessor flags from the variable
 	fld	qword [soler_fpu_float_result]	; mov	st0,	qword [soler_fpu_float_result]
 	fistp	qword [soler_fpu_integer]	; mov	qword [soler_fpu_integer],	st0
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	qword [soler_fpu_integer] - wartość całkowita (integer)
-; wyjście:
-;	qword [soler_fpu_float_result] - wartość zmiennoprzecinkowa (integer.0)
+; entry:
+;	qword [soler_fpu_integer] - integer value (integer)
+; exit:
+;	qword [soler_fpu_float_result] - floating point value (integer.0)
 soler_fpu_integer_to_float:
-	finit	; reset koprocesora
+	finit	; reset the coprocessor
 	fild	qword [soler_fpu_integer]
 	fst	qword [soler_fpu_float_result]
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	qword [soler_fpu_float_result] - wartość całkowita z zmiennoprzecinkową
-; wyjście:
-;	qword [soler_fpu_float_result] - wartość zmiennoprzecinkowa (0.float)
+; entry:
+;	qword [soler_fpu_float_result] - integer part of the floating point value
+; exit:
+;	qword [soler_fpu_float_result] - floating point value (0.float)
 soler_fpu_float_only:
-	; zachowaj oryginalne zmienne
+	; save the original variables
 	push	qword [soler_fpu_integer]
 
-	; zachowaj osobno wartość całkowitą z zmiennoprzecinkowej
+	; store the integer part of the floating point value separately
 	call	soler_fpu_float_to_integer
 
-	finit	; reset koprocesora
+	finit	; reset the coprocessor
 	fld	qword [soler_fpu_float_result]	; mov	st1,	qword [soler_fpu_float_result]
         fisub	dword [soler_fpu_integer]	; sub	st0, dword [soler_fpu_integer]
         fstp	qword [soler_fpu_float_result]	; mov	qword [soler_fpu_float_result],	st0
 
-	; przywróć oryginalne zmienne
+	; restore the original variables
 	pop	qword [soler_fpu_integer]
 
-	; powrót z procedury
+	; return from the procedure
 	ret

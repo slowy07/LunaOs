@@ -1,140 +1,140 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar ciągu
-;	rsi - wskaźnik do aktualnego początku danych w buforze
+; entry:
+;	rcx - size of the string
+;	rsi - pointer to the current beginning of the data in the buffer
 shell_prompt_relocate:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rcx
 	push	rdi
 
-	; początek przestrzeni bufora
+	; beginning of the buffer space
 	mov	rdi,	shell_cache
 
-	; zawartość bufora na początku jego przestrzeni?
+	; buffer contents at the beginning of its space?
 	cmp	rsi,	shell_cache
-	je	.at_begin	; tak
+	je	.at_begin	; yes
 
-	; przesuń zawartość bufora na początek przestrzeni
+	; move the buffer contents to the beginning of the space
 	rep	movsb
 
-	; zwróć nowy wskaźnik początku ciągu
+	; return the new pointer to the beginning of the string
 	mov	rsi,	shell_cache
 
 .at_begin:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	rbx - poprzedni rozmiar "słowa"
-;	r8 - aktualny rozmiar ciągu
-;	rsi - wskaźnik do aktualnej pozycji w ciągu
-; wyjście:
-;	Flaga CF, jeśli ciąg pusty
-;	rejestry zaktualizowane
+; entry:
+;	rbx - previous size of the "word"
+;	r8 - current size of the string
+;	rsi - pointer to the current position in the string
+; exit:
+;	CF flag, if the string is empty
+;	registers updated
 shell_prompt_clean:
-	; przesuń wskaźnik za polecenie "ip" i zmniejsz ilość znaków w pozostałym ciągu
+	; move the pointer past the "ip" command and decrease the number of characters in the remaining string
 	add	rsi,	rbx
 	sub	r8,	rbx
 
-	; usuń białe znaki z początku i końca reszty ciągu
+	; remove the white characters from the beginning and the end of the rest of the string
 	mov	rcx,	r8
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_trim
 
-	; zachowaj pozostały rozmiar polecenia
+	; save the remaining size of the command
 	mov	r8,	rcx
 
 .error:
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	rbx - rozmiar polecenia w znakach
-;	rsi - wskaźnik do polecenia
+; entry:
+;	rbx - size of the command in characters
+;	rsi - pointer to the command
 shell_prompt_internal:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rdi
 	push	rcx
 
-	; prawdopodobnie polecenie: clear
+	; probably the command: clear
 	cmp	rbx,	shell_command_clear_end - shell_command_clear
-	jne	.no_clear	; nie
+	jne	.no_clear	; no
 
-	; sprawdź czy polecenie "clear"
-	mov	ecx,	ebx	; rozmiar porównywanego ciągu
+	; check for the "clear" command
+	mov	ecx,	ebx	; size of the compared string
 	mov	rdi,	shell_command_clear
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_compare
-	jc	.no_clear	; ciągi rózne
+	jc	.no_clear	; the strings differ
 
-	; wyślij sekwencje czyszczenia przestrzeni znakowej
+	; send the character space clearing sequence
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	shell_string_sequence_clear_end - shell_string_sequence_clear
 	mov	rsi,	shell_string_sequence_clear
 	int	KERNEL_SERVICE
 
-	; wykonano polecenie
+	; the command has been executed
 	jmp	.end
 
 .no_clear:
 	;-----------------------------------------------------------------------
-	; prawdopodobnie polecenie: exit
+	; probably the command: exit
 	cmp	rbx,	shell_command_exit_end - shell_command_exit
-	jne	.no_exit	; nie
+	jne	.no_exit	; no
 
-	; sprawdź czy polecenie "exit"
-	mov	ecx,	ebx	; rozmiar porównywanego ciągu
+	; check for the "exit" command
+	mov	ecx,	ebx	; size of the compared string
 	mov	rdi,	shell_command_exit
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_compare
-	jc	.no_exit	; ciągi różne
+	jc	.no_exit	; the strings differ
 
-	; zakończ działanie powłoki
+	; terminate the shell
 	xor	ax,	ax
 	int	KERNEL_SERVICE
 
 .no_exit:
 	;-----------------------------------------------------------------------
-	; prawdopodobnie polecenie: cd
+	; probably the command: cd
 	cmp	rbx,	shell_command_cd_end - shell_command_cd
-	jne	.no_cd	; nie
+	jne	.no_cd	; no
 
-	; sprawdź czy polecenie "cd"
-	mov	ecx,	ebx	; rozmiar porównywanego ciągu
+	; check for the "cd" command
+	mov	ecx,	ebx	; size of the compared string
 	mov	rdi,	shell_command_cd
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_compare
-	jc	.no_cd	; ciągi różne
+	jc	.no_cd	; the strings differ
 
-	; ustaw rejestry na ścieżkę dostępu
+	; set the registers to the access path
 	mov	rcx,	qword [rsp]
 	sub	rcx,	rbx
 	add	rsi,	rbx
 
-	; usuń z ścieżki "białe znaku" znajdujące się na początku i końcu ciągu
+	; remove the "white characters" from the path, at the beginning and the end of the string
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_trim
 
-	; zmień katalog roboczy
+	; change the working directory
 	mov	ax,	KERNEL_SERVICE_PROCESS_dir_change
 	int	KERNEL_SERVICE
 
-	; wykonano polecenie
+	; the command has been executed
 	jmp	.end
 
 .no_cd:
-	; nie rozpoznano polecenia wewnętrznego
+	; unrecognized internal command
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rdi
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

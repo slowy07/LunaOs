@@ -2,35 +2,35 @@
 
 ;===============================================================================
 console_window_close:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rbx
 	push	rdi
 
-	; poinformuj proces potomny o konieczności zakończenia pracy
+	; inform the child process that it has to terminate
 	mov	byte [console_ipc_data + KERNEL_IPC_STRUCTURE.type],	KERNEL_IPC_TYPE_SYSTEM
 	mov	byte [console_ipc_data + KERNEL_IPC_STRUCTURE.data],	KERNEL_IPC_DATA_SYSTEM_kill
 	call	console_transfer
 
 .wait:
-	; pobierz odpowiedź
+	; fetch the answer
 	mov	ax,	KERNEL_SERVICE_PROCESS_ipc_receive
 	mov	rdi,	console_ipc_data
 	int	KERNEL_SERVICE
-	jc	.wait	; brak wiadomości, czekaj dalej
+	jc	.wait	; no message, keep waiting
 
-	; komunikat od procesu potomnego?
+	; message from the child process?
 	mov	rbx,	qword [console_shell_pid]
 	cmp	qword [rdi + KERNEL_IPC_STRUCTURE.pid_source],	rbx
-	jne	.wait	; nie, czekaj dalej
+	jne	.wait	; no, keep waiting
 
-	; koniec procesu
+	; end of the process
 	jmp	console.close
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

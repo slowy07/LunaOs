@@ -6,86 +6,86 @@
 
 ;===============================================================================
 tm:
-	; inicjalizuj środowisko pracy menedżera zadań
+	; initialize the working environment of the task manager
 	%include	"software/tm/init.asm"
 
 .check:
-	; pobierz informacje o strumieniu wyjścia
+	; fetch the output stream information
 	call	tm_stream_info
 
 .loop:
-	; ustaw kursor na pozycję "uptime"
+	; set the cursor to the "uptime" position
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	tm_string_uptime_position_and_color_end - tm_string_uptime_position_and_color
 	mov	rsi,	tm_string_uptime_position_and_color
 	int	KERNEL_SERVICE
 
-	; pobierz aktualne zegary systemu
+	; fetch the current system clocks
 	mov	ax,	KERNEL_SERVICE_SYSTEM_time
 	int	KERNEL_SERVICE
 
-	; wyświetl uptime systemu
+	; display the system uptime
 	call	tm_uptime
 
-	; wyświetl wykorzystanie pamięci RAM
+	; display the RAM usage
 	call	tm_ram
 
-	; wyświetl ilość i listę aktywnych procesów
+	; display the number and the list of the active processes
 	call	tm_task
 
-	; koleja aktualizacja stanu za 1 sekundę
+	; next state update in 1 second
 	add	rax,	1024
 	mov	qword [tm_microtime],	rax
 
 .event:
-	; pobierz microtime systemu
+	; fetch the system microtime
 	mov	ax,	KERNEL_SERVICE_SYSTEM_time
 	int	KERNEL_SERVICE
 
-	; odczekano 1 sekundę?
+	; has 1 second elapsed?
 	cmp	rax,	qword [tm_microtime]
-	jnb	.check	; tak
+	jnb	.check	; yes
 
 	;-----------------------------------------------------------------------
-	; pobierz wiadomość
+	; fetch the message
 	mov	ax,	KERNEL_SERVICE_PROCESS_ipc_receive
 	mov	rdi,	tm_ipc_data
 	int	KERNEL_SERVICE
-	jc	.no_event	; brak wiadomości
+	jc	.no_event	; no message
 
-	; komunikat typu: klawiatura?
+	; message of the keyboard type?
 	cmp	byte [rdi + KERNEL_IPC_STRUCTURE.type],	KERNEL_IPC_TYPE_KEYBOARD
-	jne	.no_event	; nie, zignoruj
+	jne	.no_event	; no, ignore
 
-	; naciśnięto klawisz "q"?
+	; was the "q" key pressed?
 	cmp	word [rdi + KERNEL_IPC_STRUCTURE.data],	"q"
-	je	.end	; tak, zakończ działanie procesu
+	je	.end	; yes, terminate the process
 
-	; naciśnięto klawisz "d"?
+	; was the "d" key pressed?
 	cmp	word [rdi + KERNEL_IPC_STRUCTURE.data],	"d"
-	jne	.no_event	; tak, zakończ działanie procesu
+	jne	.no_event	; yes, terminate the process
 
-	; włącz tryb debugowania (Bochs)
+	; enable the debug mode (Bochs)
 	xchg	bx,bx
 	jmp	.loop
 
 .no_event:
-	; zwolnij pozostały czas procesora
+	; free the remaining processor time
 	mov	ax,	KERNEL_SERVICE_PROCESS_sleep
-	xor	ecx,	ecx	; brak oczekiwania w czasie
+	xor	ecx,	ecx	; no waiting in time
 	int	KERNEL_SERVICE
 
-	; powrót do głównej pętli
+	; return to the main loop
 	jmp	.event
 
 .end:
-	; przesuń wirtualny kursor na koniec przestrzeni ekranu tekstowego
+	; move the virtual cursor to the end of the text screen space
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	tm_string_end_of_work_end - tm_string_end_of_work
 	mov	rsi,	tm_string_end_of_work
 	int	KERNEL_SERVICE
 
-	; zakończ proces
+	; terminate the process
 	xor	ax,	ax
 	int	KERNEL_SERVICE
 

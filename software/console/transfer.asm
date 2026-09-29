@@ -2,20 +2,20 @@
 
 ;===============================================================================
 console_transfer:
-	; ustaw wskaźnik na komunikat
+	; set the pointer to the message
 	mov	rsi,	console_ipc_data
 
-	; typ komunikatu: klawiatura
+	; message type: keyboard
 	mov	byte [rsi + KERNEL_IPC_STRUCTURE.type],	KERNEL_IPC_TYPE_KEYBOARD
 
-	; kod klawisza
+	; key code
 	mov	word [rsi + KERNEL_IPC_STRUCTURE.data],	dx
 
-	; wyślij komunikat do powłoki
+	; send the message to the shell
 	mov	rax,	KERNEL_SERVICE_PROCESS_ipc_send
 	mov	rbx,	qword [console_shell_pid]
-	xor	ecx,	ecx	; domyślny rozmiar komunikatu
+	xor	ecx,	ecx	; default message size
 	int	KERNEL_SERVICE
 
-	; powrót z procedury
+	; return from the procedure
 	ret

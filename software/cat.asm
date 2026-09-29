@@ -6,90 +6,90 @@
 
 ;===============================================================================
 cat:
-	; wyłącz wirtualny kursor (nie jest potrzebny, program nie wchodzi w interakcje, oszczędzamy czas procesora)
+	; disable the virtual cursor (it is not needed, the program does not interact, we save processor time)
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	cat_string_init_end - cat_string_init
 	mov	rsi,	cat_string_init
 	int	KERNEL_SERVICE
 
-	; pobierz rozmiar listy argumentów przesłanych do procesu
+	; fetch the size of the argument list passed to the process
 	pop	rcx
 
-	; przesłano argumenty do procesu?
+	; were the arguments passed to the process?
 	test	rcx,	rcx
-	jz	.not_found	; nie
+	jz	.not_found	; no
 
-	; ustaw wskaźnik na listę argumentów
+	; point the pointer at the argument list
 	mov	rsi,	rsp
 
-	; usuń z początku i końca listy wszystkie białe znaki
+	; remove all the white characters from the beginning and the end of the list
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_trim
-	jc	.not_found	; niepoprawna ścieżka do pliku lub nie istnieje
+	jc	.not_found	; wrong path to the file or it does not exist
 
-	; wczytaj dane pliku na koniec programu
+	; load the file data at the end of the program
 	mov	ax,	KERNEL_SERVICE_VFS_read
 	int	KERNEL_SERVICE
-	jc	.not_found	; nie znaleziono podanego pliku
+	jc	.not_found	; the given file was not found
 
 	;-----------------------------------------------------------------------
 
-	; zapamiętaj rozmiar wczytanego pliku
+	; remember the size of the loaded file
 	mov	rbx,	rcx
 
-	; wyświetl kolejno Bajty z pliku
+	; display the bytes from the file in sequence
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out_char
-	mov	ecx,	STATIC_BYTE_SIZE_byte	; po jednym znaku
+	mov	ecx,	STATIC_BYTE_SIZE_byte	; one character at a time
 
-	; ustaw wskaźnik na dane pliku
+	; set the pointer to the file data
 	mov	rsi,	rdi
 
 .loop:
-	; pobierz kod ASCII
+	; fetch the ASCII code
 	mov	dl,	byte [rsi]
 
-	; znak drukowalny?
+	; printable character?
 	cmp	dl,	STATIC_SCANCODE_TILDE
-	ja	.no	; nie
+	ja	.no	; no
 	cmp	dl,	STATIC_SCANCODE_SPACE
-	jae	.yes	; tak
+	jae	.yes	; yes
 
-	; znak nowej linii?
+	; newline character?
 	cmp	dl,	STATIC_SCANCODE_NEW_LINE
-	je	.yes	; tak, wyświetl
+	je	.yes	; yes, display
 
-	; znak karetki?
+	; caret character?
 	cmp	dl,	STATIC_SCANCODE_RETURN
-	je	.yes	; tak, wyświetl
+	je	.yes	; yes, display
 
 .no:
-	; zamień na znak kropki
+	; convert into a dot character
 	mov	dl,	STATIC_SCANCODE_DOT
 
 .yes:
-	; wyświetl
+	; display
 	int	KERNEL_SERVICE
 
-	; ustaw wskaźnik na następny Bajt z pliku
+	; set the pointer to the next byte from the file
 	inc	rsi
 
-	; wyświetlić pozostałą część?
+	; display the remaining part?
 	dec	rbx
-	jnz	.loop	; tak
+	jnz	.loop	; yes
 
-	; koniec programu
+	; end of the program
 	jmp	.end
 
 	;-----------------------------------------------------------------------
 
 .not_found:
-	; wyświetl komunikat błędu
+	; display the error message
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	rcx,	cat_string_not_found_end - cat_string_not_found
 	mov	rsi,	cat_string_not_found
 	int	KERNEL_SERVICE
 
 .end:
-	; wyjdź z programu
+	; leave the program
 	xor	ax,	ax
 	int	KERNEL_SERVICE
 

@@ -2,313 +2,313 @@
 
 ;===============================================================================
 soler_operation_insert:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rcx
 	push	rsi
 
-	; komponuj obydwie wartości jeśli istnieją
+	; compose both values if they exist
 	call	soler_operation_compose
 
-	; wprowadzono pierwszą wartość?
+	; has the first value been entered?
 	cmp	r11b,	STATIC_TRUE
-	je	.first_exist	; tak
+	je	.first_exist	; yes
 
-	; zaakceptuj pierwszą wartość
+	; accept the first value
 
-	; zamień ciąg wprowadzony przez użyszkodnika na wartość zmiennoprzecinkową
+	; convert the string entered by the user into a floating point value
 	movzx	ecx,	byte [soler_window.element_label_value_length]
 	mov	rsi,	soler_window.element_label_value_string
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_to_float
 
-	; zachowaj wartość i podnieś flagę
+	; save the value and raise the flag
 	mov	qword [soler_value_first],	rax
 	mov	r11b,	STATIC_TRUE
 
-	; koniec operacji
+	; end of the operation
 	jmp	.end
 
 .first_exist:
-	; zaakceptuj drugą wartość
+	; accept the second value
 
-	; zamień ciąg wprowadzony przez użyszkodnika na wartość zmiennoprzecinkową
+	; convert the string entered by the user into a floating point value
 	movzx	ecx,	byte [soler_window.element_label_value_length]
 	mov	rsi,	soler_window.element_label_value_string
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_to_float
 
-	; zachowaj wartość i podnieś flagę
+	; save the value and raise the flag
 	mov	qword [soler_value_second],	rax
 	mov	r12b,	STATIC_TRUE
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	; debug
 	macro_debug	"software: soler_operation_insert"
 
 ;===============================================================================
-; wejście:
+; entry:
 ;	byte [soler_value_exec]
 ;	qword [soler_value_first]
 ;	qword [soler_value_second]
-; wyjście:
+; exit:
 ;	qword [soler_value_first]
 soler_operation_compose:
-	; spełniono kryteria?
+	; have the criteria been met?
 
-	; wybrano typ opreracji?
+	; has the operation type been chosen?
 	cmp	byte [soler_value_exec],	STATIC_EMPTY
-	je	.no_result	; nie
+	je	.no_result	; no
 
-	; załadowano pierwszą wartość
+	; the first value has been loaded
 	cmp	r11b,	STATIC_FALSE
-	je	.no_result	; nie
+	je	.no_result	; no
 
-	; załadowano drugą wartość?
+	; has the second value been loaded?
 	cmp	r12b,	STATIC_FALSE
-	je	.no_result	; nie
+	je	.no_result	; no
 
 	;-----------------------------------------------------------------------
 
-	finit	; reset koprocesora
+	finit	; reset the coprocessor
 	fld	qword [soler_value_first]
 	fld	qword [soler_value_second]
 
-	; operacja dodawania?
+	; addition operation?
 	cmp	byte [soler_value_exec],	"+"
-	jne	.no_add	; nie
+	jne	.no_add	; no
 
-	; wykonaj operację
+	; perform the operation
 	fadd
 
-	; koniec operacji
+	; end of the operation
 	jmp	.result
 
 .no_add:
-	; operacja odejmowania?
+	; subtraction operation?
 	cmp	byte [soler_value_exec],	"-"
-	jne	.no_sub	; nie
+	jne	.no_sub	; no
 
-	; wykonaj operację
+	; perform the operation
 	fsub
 
-	; koniec operacji
+	; end of the operation
 	jmp	.result
 
 .no_sub:
-	; operacja mnożenia?
+	; multiplication operation?
 	cmp	byte [soler_value_exec],	"*"
-	jne	.no_multiply	; nie
+	jne	.no_multiply	; no
 
-	; wykonaj operację
+	; perform the operation
 	fmul
 
-	; koniec operacji
+	; end of the operation
 	jmp	.result
 
 .no_multiply:
-	; operacja mnożenia?
+	; multiplication operation?
 	cmp	byte [soler_value_exec],	"/"
-	jne	.no_result	; nie
+	jne	.no_result	; no
 
-	; wykonaj operację
+	; perform the operation
 	fdiv
 
 .result:
-	; zwróć wynik w pierwszej wartości zmiennoprzecinkowej
+	; return the result in the first floating point value
 	fst	qword [soler_value_first]
 
-	; druga wartość jest przeterminowana
+	; the second value has expired
 	mov	r12b,	STATIC_FALSE
 
 .no_result:
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	; debug
 	macro_debug	"software: soler_operation_compose"
 
 ;===============================================================================
-; wejście:
-;	ax - wartość z klawiatury bądź myszki
+; entry:
+;	ax - value from the keyboard or the mouse
 soler_operation:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rsi
 
-	; przetwarzany ciąg i jego rozmiar
+	; the processed string and its size
 	movzx	ecx,	byte [soler_window.element_label_value_length]
 	mov	rsi,	soler_window.element_label_value_string
 
-	; modyfikacja wartości?
+	; modification of the value?
 	cmp	ax,	STATIC_SCANCODE_DIGIT_0
-	jb	.no_digit	; nie
+	jb	.no_digit	; no
 	cmp	ax,	STATIC_SCANCODE_DIGIT_9
-	ja	.no_digit	; nie
+	ja	.no_digit	; no
 
 .dot:
-	; przecinek?
+	; comma?
 	cmp	ax,	","
-	jne	.not_dot	; nie
+	jne	.not_dot	; no
 
-	; wstawiono już przecinek?
+	; has the comma already been inserted?
 	test	r10b,	r10b
-	jz	.error	; tak, zignoruj
+	jz	.error	; yes, ignore
 
-	; oznacz flagą wstawienie przecinka w liczbie
+	; mark with a flag the insertion of a comma into the number
 	mov	r10b,	STATIC_TRUE
 
-	; czy pierwsza i jedyna cyfra w wartości jest ZEREM?
+	; is the first and only digit of the value a ZERO?
 	cmp	byte [soler_window.element_label_value_length],	STATIC_BYTE_SIZE_byte
-	jne	.not_dot	; nie
+	jne	.not_dot	; no
 	cmp	byte [soler_window.element_label_value_string],	STATIC_SCANCODE_DIGIT_0
-	jne	.not_dot	; nie
+	jne	.not_dot	; no
 
-	; nie czyść wartości
+	; do not clear the value
 	mov	r13b,	STATIC_FALSE
 
 .not_dot:
-	; osiągnięto limit wejścia?
+	; has the input limit been reached?
 	cmp	cl,	SOLER_INPUT_VALUE_WIDTH_char
-	jnb	.error	; tak, zignoruj cyfrę
+	jnb	.error	; yes, ignore the digit
 
-	; wyczyścić wartość przed dołączeniem cyfry/przecinka?
+	; clear the value before appending a digit/comma?
 	cmp	r13b,	STATIC_FALSE
-	je	.empty	; nie
+	je	.empty	; no
 
-	; wyłącz flagę
+	; clear the flag
 	mov	r13b,	STATIC_FALSE
 
-	; zresetuj rozmiar ciągu wartości
+	; reset the size of the value string
 	xor	cl,	cl
 	mov	byte [soler_window.element_label_value_length],	STATIC_EMPTY
 
 .empty:
-	; użyszkodnik chce wstawić cyfrę ZERO?
+	; does the user want to insert the ZERO digit?
 	cmp	al,	STATIC_SCANCODE_DIGIT_0
-	jne	.not_zero	; nie
+	jne	.not_zero	; no
 
-	; na początku ciągu wartości?
+	; at the beginning of the value string?
 	test	cl,	cl
-	jz	.error	; tak
+	jz	.error	; yes
 
 .not_zero:
-	; dołącz cyfrę na koniec ciągu
+	; append the digit to the end of the string
 	mov	byte [rsi + rcx],	al
 
-	; rozmiar ciągu
+	; size of the string
 	inc	byte [soler_window.element_label_value_length]
 
-	; operacja wykonana
+	; the operation has been performed
 	clc
 
-	; wykonano operację
+	; the operation has been executed
 	jmp	.end
 
 .error:
-	; nie wykonano operacji
+	; the operation has not been performed
 	stc
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.end
 
 .no_digit:
-	; suma operacji?
+	; sum of the operations?
 	cmp	ax,	"+"
-	je	.add	; tak
+	je	.add	; yes
 
-	; różnica operacji?
+	; difference of the operations?
 	cmp	ax,	"-"
-	je	.sub	; tak
+	je	.sub	; yes
 
-	; iloczyn operacji?
+	; product of the operations?
 	cmp	ax,	"*"
-	je	.multiply	; tak
+	je	.multiply	; yes
 
-	; iloraz operacji?
+	; quotient of the operations?
 	cmp	ax,	"/"
-	je	.divide	; tak
+	je	.divide	; yes
 
-	; wstawić część ułamkową?
+	; insert the fractional part?
 	cmp	ax,	","
-	je	.dot	; tak
+	je	.dot	; yes
 
-	; przetworzyć?
+	; process it?
 	cmp	ax,	"="
-	je	.result	; tak
+	je	.result	; yes
 
-	; cofnij wartość?
+	; step the value back?
 	cmp	ax,	STATIC_SCANCODE_BACKSPACE
-	je	.backspace	; tak
+	je	.backspace	; yes
 
-	; przetworzyć?
+	; process it?
 	cmp	ax,	STATIC_SCANCODE_RETURN
-	jne	.error	; nie
+	jne	.error	; no
 
 ;-------------------------------------------------------------------------------
 .result:
-	; załaduj wartość do zmiennej
+	; load the value into the variable
 	call	soler_operation_insert
-	jc	.end	; brak przesłanej wartości
+	jc	.end	; no value passed
 
-	; komponuj obydwie wartości jeśli istnieją
+	; compose both values if they exist
 	call	soler_operation_compose
 
-	; zachowaj znak operacji
+	; save the operation character
 	mov	byte [soler_value_exec],	"="
 
-	; koniec obsługi operacji
+	; end of the operation handling
 	jmp	.preserve
 
 ;-------------------------------------------------------------------------------
 .backspace:
-	; ciąg wartości zawiera tylko jedną cyfrę/przecinek?
+	; does the value string contain only a single digit/comma?
 	cmp	cl,	STATIC_BYTE_SIZE_byte
-	jne	.backspace_prepare	; nie
+	jne	.backspace_prepare	; no
 
-	; podmień pierwszą cyfrę na ZERO
+	; replace the first digit with a ZERO
 	mov	byte [soler_window.element_label_value_string],	STATIC_SCANCODE_DIGIT_0
 
-	; koniec obsługi operacji
+	; end of the operation handling
 	jmp	.preserve
 
 .backspace_prepare:
-	; usuń ostatnią cyfrę (lub przecinek) z ciągu
+	; remove the last digit (or the comma) from the string
 	dec	cl
 
-	; usuniętym znakiem jest przecinek?
+	; is the removed character a comma?
 	cmp	byte [rsi + rcx],	","
-	jne	.backspace_ready	; nie
+	jne	.backspace_ready	; no
 
-	; zwolnij flagę przecinka
+	; release the comma flag
 	mov	r10b,	STATIC_FALSE
 
 .backspace_ready:
-	; aktulizuj rozmiar ciągu
+	; update the size of the string
 	mov	byte [soler_window.element_label_value_length],	cl
 
-	; koniec obsługi operacji
+	; end of the operation handling
 	jmp	.end
 
 ;-------------------------------------------------------------------------------
 .add:
-	; załaduj wartość do zmiennej
+	; load the value into the variable
 	call	soler_operation_insert
-	jc	.end	; brak przesłanej wartości
+	jc	.end	; no value passed
 
-	; zachowaj znak operacji
+	; save the operation character
 	mov	byte [soler_value_exec],	"+"
 
-	; wyczyść wartość przed modyfikacją
+	; clear the value before modifying it
 	mov	r13b,	STATIC_TRUE
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.preserve
 
 ;-------------------------------------------------------------------------------
@@ -319,20 +319,20 @@ soler_operation:
 
 ;-------------------------------------------------------------------------------
 .divide:
-	; koniec obsługi operacji
+	; end of the operation handling
 	jmp	.end
 
 ;-------------------------------------------------------------------------------
 .preserve:
-	; wyczyść wartość przed modyfikacją
+	; clear the value before modifying it
 	mov	r13b,	STATIC_TRUE
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	; debug

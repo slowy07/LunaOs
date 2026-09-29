@@ -6,7 +6,7 @@
 
 ;===============================================================================
 redia:
-	; zakończ pracę programu
+	; terminate the program
 	xor	ax,	ax
 	int	KERNEL_SERVICE
 

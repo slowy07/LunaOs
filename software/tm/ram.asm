@@ -2,7 +2,7 @@
 
 ;===============================================================================
 tm_ram:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rbx
 	push	rcx
@@ -13,45 +13,45 @@ tm_ram:
 	push	r9
 	push	r10
 
-	; pobierz informacje o przestrzeni pamięci RAM
+	; fetch the RAM space information
 	mov	ax,	KERNEL_SERVICE_SYSTEM_memory
 	int	KERNEL_SERVICE
 
-	; ustaw kursor na pozycję "total"
+	; set the cursor to the "total" position
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	tm_string_memory_total_position_and_color_end - tm_string_memory_total_position_and_color
 	mov	rsi,	tm_string_memory_total_position_and_color
 	int	KERNEL_SERVICE
 
-	; wyświetl wartość w KiB
+	; display the value in KiB
 	mov	rax,	r8
 	call	.show
 
-	; ustaw kursor na pozycję "free"
+	; set the cursor to the "free" position
 	mov	ecx,	tm_string_memory_total_end - tm_string_memory_total
 	mov	rsi,	tm_string_memory_total
 	int	KERNEL_SERVICE
 
-	; wyświetl wartość w KiB
+	; display the value in KiB
 	mov	rax,	r9
 	call	.show
 
-	; ustaw kursor na pozycję "used"
+	; set the cursor to the "used" position
 	mov	ecx,	tm_string_memory_free_end - tm_string_memory_free
 	mov	rsi,	tm_string_memory_free
 	int	KERNEL_SERVICE
 
-	; wyświetl wartość w KiB
+	; display the value in KiB
 	mov	rax,	r8
 	sub	rax,	r9
 	call	.show
 
-	; zakończ
+	; terminate
 	mov	ecx,	tm_string_memory_used_end - tm_string_memory_used
 	mov	rsi,	tm_string_memory_used
 	int	KERNEL_SERVICE
 
-	; przyróć oryginalne rejestry
+	; restore the original registers
 	pop	r10
 	pop	r9
 	pop	r8
@@ -62,22 +62,22 @@ tm_ram:
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"software: tm_ram"
 
 ;-------------------------------------------------------------------------------
-; wejście:
-;	rax - wartość do wyświetlenia w KiB
+; entry:
+;	rax - value to display in KiB
 .show:
-	; zamień rozmiar całkowity przestrzeni na KiB
-	shl	rax,	STATIC_MULTIPLE_BY_PAGE_shift	; zamień strony na Bajty
+	; convert the total size of the space into KiB
+	shl	rax,	STATIC_MULTIPLE_BY_PAGE_shift	; convert pages into bytes
 	mov	ecx,	1024
 	xor	edx,	edx
-	div	rcx	; zamień KiB
+	div	rcx	; convert the KiB
 
-	; wyświetl wartość
+	; display the value
 	mov	qword [tm_string_number.value],	rax
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	byte [tm_string_number.prefix],	STATIC_EMPTY
@@ -85,7 +85,7 @@ tm_ram:
 	mov	rsi,	tm_string_number
 	int	KERNEL_SERVICE
 
-	; powrót z podprocedury
+	; return from the subprocedure
 	ret
 
 	macro_debug	"software: tm_ram.show"

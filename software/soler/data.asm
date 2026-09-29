@@ -3,7 +3,7 @@
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
 soler_fpu_float_result				dq	STATIC_EMPTY
 soler_fpu_precision				dq	STATIC_EMPTY
-soler_fpu_precision_value			dq	10	; jedno miejsce po przecinku
+soler_fpu_precision_value			dq	10	; a single place after the comma
 soler_fpu_control				dw	0
 
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
@@ -20,17 +20,17 @@ soler_ipc_data:
 
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
 ;===============================================================================
-soler_window:					dw	STATIC_EMPTY	; pozycja na osi X
-						dw	STATIC_EMPTY	; pozycja na osi Y
-						dw	SOLER_WINDOW_WIDTH_pixel	; szerokość okna
-						dw	SOLER_WINDOW_HEIGHT_pixel	; wysokość okna
-						dq	STATIC_EMPTY	; wskaźnik do przestrzeni danych okna (uzupełnia Bosu)
-.extra:						dd	STATIC_EMPTY	; rozmiar przestrzeni danych okna w Bajtach (uzupełnia Bosu)
+soler_window:					dw	STATIC_EMPTY	; position on the X axis
+						dw	STATIC_EMPTY	; position on the Y axis
+						dw	SOLER_WINDOW_WIDTH_pixel	; window width
+						dw	SOLER_WINDOW_HEIGHT_pixel	; window height
+						dq	STATIC_EMPTY	; pointer to the window data space (filled in by Bosu)
+.extra:						dd	STATIC_EMPTY	; size of the window data space in bytes (filled in by Bosu)
 						dw	LIBRARY_BOSU_WINDOW_FLAG_visible | LIBRARY_BOSU_WINDOW_FLAG_header | LIBRARY_BOSU_WINDOW_FLAG_border | LIBRARY_BOSU_WINDOW_FLAG_BUTTON_close
-						dq	STATIC_EMPTY	; identyfikator okna (uzupełnia Bosu)
+						dq	STATIC_EMPTY	; window identifier (filled in by Bosu)
 						db	5
-						db	"Soler                          "	; wypełnij do 31 Bajtów znakami STATIC_SCANCODE_SPACE
-						dq	STATIC_EMPTY	; szerokość okna w Bajtach (uzupełnia Bosu)
+						db	"Soler                          "	; fill up to 31 bytes with STATIC_SCANCODE_SPACE characters
+						dq	STATIC_EMPTY	; window width in bytes (filled in by Bosu)
 .elements:					;-------------------------------
 						; element "window close"
 						;-------------------------------
@@ -68,16 +68,16 @@ times	SOLER_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 .element_label_value_end:			;-------------------------------
 						; element "button C"
 						;-------------------------------
-.element_button_C:				db	LIBRARY_BOSU_ELEMENT_TYPE_button	; typ
-						dw	.element_button_C_end - .element_button_C	; rozmiar elementu
+.element_button_C:				db	LIBRARY_BOSU_ELEMENT_TYPE_button	; type
+						dw	.element_button_C_end - .element_button_C	; size of the element
 						dw	SOLER_WINDOW_PADDING_pixel	; x
 						dw	LIBRARY_BOSU_HEADER_HEIGHT_pixel + SOLER_INPUT_HEIGHT_pixel + SOLER_WINDOW_ELEMENT_MARGIN_pixel	; y
-						dw	SOLER_WINDOW_ELEMENT_SIZE_pixel	; szerokość
-						dw	SOLER_WINDOW_ELEMENT_SIZE_pixel	; wysokość
-						dq	STATIC_SCANCODE_ESCAPE	; wartość przechowywana przez element
+						dw	SOLER_WINDOW_ELEMENT_SIZE_pixel	; width
+						dw	SOLER_WINDOW_ELEMENT_SIZE_pixel	; height
+						dq	STATIC_SCANCODE_ESCAPE	; value held by the element
 						db	LIBRARY_BOSU_ELEMENT_BUTTON_FLAG_ALIGN_default
-						db	1	; ilość znaków reprezentujących nazwę przycisku
-						db	"C"	; ciąg znaków reprezentujący nazwę przycisku
+						db	1	; number of characters representing the button name
+						db	"C"	; string of characters representing the button name
 .element_button_C_end:				;-------------------------------
 						; element "button 7"
 						;-------------------------------
@@ -287,7 +287,7 @@ times	SOLER_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	1
 						db	"="
 .element_button_RESULT_end:			;-------------------------------
-						; koniec elementów okna
+						; end of the window elements
 						;-------------------------------
 						db	STATIC_EMPTY
 soler_window_end:

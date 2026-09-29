@@ -1,10 +1,10 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rax - wartość
+; entry:
+;	rax - value
 tm_percent:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rcx
 	push	rdx
 	push	r8
@@ -12,21 +12,21 @@ tm_percent:
 	push	r10
 	push	rax
 
-	; pobierz informacje o przestrzeni pamięci RAM
+	; fetch the RAM space information
 	mov	ax,	KERNEL_SERVICE_SYSTEM_memory
 	int	KERNEL_SERVICE
 
-	; zamień wartość na procent bez reszty
+	; convert the value into a percentage without the remainder
 	mov	rax,	qword [rsp]
 	xor	edx,	edx
 	mov	rcx,	100
 	mul	rcx
 	div	r8
 
-	; zwróć wynik
+	; return the result
 	mov	qword [rsp],	rax
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rax
 	pop	r10
 	pop	r9
@@ -34,7 +34,7 @@ tm_percent:
 	pop	rdx
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"software: tm_percent"

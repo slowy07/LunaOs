@@ -1,11 +1,11 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar dokumentu w Bajtach
-;	rdi - wskaźnik początku dokumentu
+; entry:
+;	rcx - size of the document in bytes
+;	rdi - pointer to the beginning of the document
 moko_document_analyze:
-	; resetuj zmienne lokalne i globalne do domyślnych wartości
+	; reset the local and global variables to their default values
 	mov	qword [moko_document_show_from_line],	STATIC_EMPTY
 	mov	qword [moko_document_line_begin_last],	STATIC_EMPTY
 	mov	qword [moko_document_line_index_last],	STATIC_EMPTY
@@ -16,455 +16,455 @@ moko_document_analyze:
 	xor	r14,	r14
 	xor	r15,	r15
 
-	; usuń z dokumentu znaki "karetki", domyślnie Moko ich nie obsługuje
+	; remove the "caret" characters from the document, Moko does not handle them by default
 	mov	rsi,	rdi
 	call	moko_document_enter_remove
 
-	; ustaw rozmiar dokumentu w Bajtach
+	; set the size of the document in bytes
 	mov	qword [moko_document_size],	rcx
 
-	; zachowaj wskaźnik końca dokumentu
+	; save the pointer to the end of the document
 	add	rdi,	rcx
 	mov	qword [moko_document_end_address],	rdi
 
-	; pobierz informacje o pierwszej linii dokumentu
+	; fetch the information about the first line of the document
 	xor	ecx,	ecx
 	call	moko_line_this
-	jc	.end	; pusty dokument
+	jc	.end	; empty document
 
-	; rozmiar aktualnej linii w znakach
+	; size of the current line in characters
 	mov	r13,	rcx
 
-	; przesuń wskaźnik za pierwszą linię dokumentu
+	; move the pointer past the first line of the document
 	add	rsi,	r13
 	mov	rcx,	qword [moko_document_size]
 	sub	rcx,	r13
 
 .loop:
-	; koniec dokumentu?
+	; end of the document?
 	cmp	rsi,	rdi
-	je	.end	; tak
+	je	.end	; yes
 
-	; zlicz ilość linii w dokumencie
+	; count the number of lines in the document
 	cmp	byte [rsi],	STATIC_SCANCODE_NEW_LINE
-	jne	.next	; następny
+	jne	.next	; next
 
-	; znaleziono koniec linii
+	; end of line found
 	inc	qword [moko_document_line_count]
 
 .next:
-	; następny znak z dokumentu
+	; next character from the document
 	inc	rsi
 
-	; znaleziono wszystkie?
+	; all found?
 	dec	rcx
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
 .end:
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar dokumentu w Bajtach
-;	rsi - wskaźnik początku dokumentu
+; entry:
+;	rcx - size of the document in bytes
+;	rsi - pointer to the beginning of the document
 moko_document_enter_remove:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rsi
 	push	rdi
 	push	rcx
 
 .loop:
-	; znak "karetki"?
+	; "caret" character?
 	cmp	byte [rsi],	STATIC_SCANCODE_RETURN
-	jne	.next	; nie
+	jne	.next	; no
 
-	; zachowaj wskaźnik i rozmiar pozostałego dokumentu do przetworzenia
+	; save the pointer and the size of the remaining document to process
 	push	rcx
 	push	rsi
 
-	; usuń znak "karetki" z dokumentu
+	; remove the "caret" character from the document
 	mov	rdi,	rsi
 	inc	rsi
 	rep	movsb
 
-	; przywróć wskaźnik i rozmiar pozostałego dokumentu do przetworzenia
+	; restore the pointer and the size of the remaining document to process
 	pop	rsi
 	pop	rcx
 
-	; rozmiar dokumentu zmniejszył się
+	; the document size has decreased
 	dec	qword [rsp]
 
-	; kontynuuj
+	; continue
 	jmp	.return
 
 .next:
-	; przesuń wskaźnik na następny znak
+	; move the pointer to the next character
 	inc	rsi
 
 .return:
-	; dokument przetworzony?
+	; has the document been processed?
 	dec	rcx
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 	pop	rdi
 	pop	rsi
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 moko_document_reload:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rsi
 
-	; rozpocznij dokument od podanych linii
+	; start the document at the given lines
 	xor	ebx,	ebx
 	mov	rcx,	qword [moko_document_show_from_line]
 
-	; rozpocznij
+	; start
 	jmp	.init
 
 .loop:
-	; wyświetl kolejną linię dokumentu
+	; display the next line of the document
 	inc	rbx
 	inc	rcx
 
 .init:
-	; wyświetl "pierwszą" linię dokumentu
+	; display the "first" line of the document
 	call	moko_line_number
-	jc	.ready	; wyświetlono pozostałe linie dokumentu
+	jc	.ready	; the remaining document lines have been displayed
 
-	; koniec przestrzeni dokumentu?
+	; end of the document space?
 	cmp	rbx,	r9
-	jb	.loop	; nie
+	jb	.loop	; no
 
 .ready:
-	; wyczyść kolejne linie dokumentu
+	; clear the next lines of the document
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_line_clean_next_end - moko_string_line_clean_next
 	mov	rsi,	moko_string_line_clean_next
 
 .clean:
-	; wyczyszczono pozostałe linie dokumentu?
+	; have the remaining document lines been cleared?
 	cmp	rbx,	r9
-	ja	.end	; tak
+	ja	.end	; yes
 
-	; wyczyść
+	; clear
 	int	KERNEL_SERVICE
 
-	; następna linia dokumentu
+	; next line of the document
 	inc	rbx
 
-	; kontynuuj
+	; continue
 	jmp	.clean
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 moko_document_remove:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; ilość znaków do przesunięcia
+	; number of characters to shift
 	mov	rdi,	r10
 	sub	rdi,	qword [moko_document_start_address]
 	mov	rcx,	qword [moko_document_size]
 	sub	rcx,	rdi
 
-	; rozpocznij w
+	; start in
 	mov	rdi,	r10
 	mov	rsi,	rdi
 	inc	rsi
 
-	; wykonaj operacje
+	; perform the operations
 	rep	movsb
 
-	; ilość znaków w dokumencie mniejszyła się
+	; the number of characters in the document has decreased
 	dec	qword [moko_document_size]
 
-	; przesuń wskaźnik końca dokumentu
+	; move the end of the document pointer
 	dec	qword [moko_document_end_address]
 
-	; zmodyfikowano status dokumentu
+	; the document status has been modified
 	mov	byte [moko_modified_semaphore],	STATIC_TRUE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	ax - kod ASCII znaku
-;	bl - aktualizowanie zmiennych globalnych == STATIC_EMPTY
-; wyjście:
-;	Flaga CF - jeśli znak nie jest drukowalny
+; entry:
+;	ax - ASCII code of the character
+;	bl - updating the global variables == STATIC_EMPTY
+; exit:
+;	CF flag - if the character is not printable
 moko_document_insert:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rbx
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; wstawić znak na koniec dokumentu?
+	; insert a character at the end of the document?
 	cmp	r10,	qword [moko_document_end_address]
-	je	.at_end_of_document	; tak
+	je	.at_end_of_document	; yes
 
-	; wstawiamy znak nowej linii?
+	; are we inserting a newline character?
 	cmp	ax,	STATIC_SCANCODE_NEW_LINE
-	je	.no_insert_key	; zignoruj klawisz insert
+	je	.no_insert_key	; ignore the insert key
 
-	; klawisz Insert aktywny?
+	; is the Insert key active?
 	cmp	byte [moko_key_insert_semaphore],	STATIC_FALSE
-	je	.no_insert_key	; nie
+	je	.no_insert_key	; no
 
-	; aktualnie w tym miejscu znajduje się znak nowej linii?
+	; is there a newline character at this position now?
 	cmp	byte [r10],	STATIC_SCANCODE_NEW_LINE
-	je	.no_insert_key	; zignoruj klawisz Insert
+	je	.no_insert_key	; ignore the Insert key
 
-	; podmień znak w linii
+	; swap the character in the line
 	mov	byte [r10],	al
 
-	; koryguj zmienne
+	; correct the variables
 	jmp	.inserted
 
 .no_insert_key:
-	; przesuń zawartość dokumentu względem wskaźnika o jeden znak w przód
+	; move the document contents one character forward relative to the pointer
 
-	; ilość znaków do przemieszczenia
+	; number of characters to move
 	mov	rcx,	qword [moko_document_end_address]
 	sub	rcx,	r10
 
-	; rozpocznij od ostatniego znaku w dokumencie
+	; start from the last character in the document
 	mov	rdi,	qword [moko_document_end_address]
 	mov	rsi,	rdi
 	dec	rsi
 
-	; wykonaj operację wstecz
-	std	; włącz Direction Flag
+	; perform the operation backwards
+	std	; set the Direction Flag
 	rep	movsb
-	cld	; wyłącz Direction Flag
+	cld	; clear the Direction Flag
 
 .at_end_of_document:
-	; zapisz znak do dokumentu
+	; store the character in the document
 	mov	byte [r10],	al
 
-	; ilość znaków w dokumencie +1
+	; number of characters in the document + 1
 	inc	qword [moko_document_size]
 
-	; ustaw wskaźnik końca dokumentu o jedną pozycję dalej
+	; set the end of the document pointer one position further
 	inc	qword [moko_document_end_address]
 
-	; nie modyfikować rozmiaru linii?
+	; do not modify the line size?
 	test	bl,	bl
-	jnz	.end	; tak
+	jnz	.end	; yes
 
-	; zwiększ rozmiar linii
+	; increase the line size
 	inc	r13
 
 .inserted:
-	; nie modyfikować właściwości aktualnej linii i kursora?
+	; do not modify the properties of the current line and the cursor?
 	test	bl,	bl
-	jnz	.end	; tak
+	jnz	.end	; yes
 
-	; przesuń wskaźnik pozycji kursora w przestrzeni dokumentu do następnej pozycji
+	; move the cursor position pointer in the document space to the next position
 	inc	r10
 
-	; przestaw kursor do następnej kolumny
+	; move the cursor to the next column
 	inc	r14
 
-	; przesuń wskaźnik pozycji wew. linii na następny znak
+	; move the inner line position pointer to the next character
 	inc	r11
 
-	; zachowaj ostatni znany wskaźnik pozycji wew. linii
+	; save the last known inner line position pointer
 	mov	qword [moko_document_line_index_last],	r11
 
-	; kursor wyszedł poza ekran?
+	; has the cursor gone off screen?
 	cmp	r14,	r8
-	jb	.end	; nie
+	jb	.end	; no
 
-	; cofnij kursor do poprzedniej kolumny
+	; move the cursor back to the previous column
 	dec	r14
 
-	; wyświetl zawartość linii od następnego znaku
+	; display the line contents from the next character
 	inc	r12
 
-	; zachowaj ostatni znany wskaźnik początku wyświetlanej linii
+	; save the last known pointer to the beginning of the displayed line
 	mov	qword [moko_document_line_begin_last],	r12
 
 .end:
-	; zmodyfikowano status dokumentu
+	; the document status has been modified
 	mov	byte [moko_modified_semaphore],	STATIC_TRUE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar listy argumentów w Bajtach
-;	rsi - wskaźnik do ciągu argumentów
+; entry:
+;	rcx - size of the argument list in bytes
+;	rsi - pointer to the argument string
 moko_document_area:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rdi
 
 .retry:
-	; pobierz informacje o strumieniu wyjścia
+	; fetch the output stream information
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_meta
 	mov	bl,	KERNEL_SERVICE_PROCESS_STREAM_META_FLAG_get | KERNEL_SERVICE_PROCESS_STREAM_META_FLAG_out
 	mov	rdi,	moko_stream_meta
 	int	KERNEL_SERVICE
-	jc	.retry	; brak aktualnych informacji, spróbuj raz jeszcze
+	jc	.retry	; no current information, try once more
 
-	; pobierz z meta danych strumienia
-	; informacje o szerokości i wysokości przestrzeni znakowej
+	; fetch from the stream meta data
+	; information about the width and the height of the character space
 	movzx	r8,	word [rdi + CONSOLE_STRUCTURE_STREAM_META.width]
 	movzx	r9,	word [rdi + CONSOLE_STRUCTURE_STREAM_META.height]
 
-	; zmniejsz przestrzeń dokumentu o menu oraz zmień wartość na liczoną od zera
+	; shrink the document space by the menu and turn the value into a zero based one
 	sub	r9,	MOKO_MENU_HEIGHT_char + STATIC_BYTE_SIZE_byte
 
-	; przesłano argumenty?
+	; were the arguments passed?
 	test	rcx,	rcx
-	jz	.no_args	; nie
+	jz	.no_args	; no
 
-	; wczytaj i przetwórz zawartość pliku
+	; load and process the contents of the file
 	call	moko_document_format
-	jnc	.end	; wykonano poprawnie
+	jnc	.end	; executed correctly
 
 .no_args:
-	; przygotuj miejsce pod pusty dokument (domyślnie 4 KiB ~ około 4000 znaków)
+	; prepare room for an empty document (4 KiB by default, about 4000 characters)
 	mov	ax,	KERNEL_SERVICE_PROCESS_memory_alloc
 	mov	rcx,	MOKO_DOCUMENT_AREA_SIZE_default
 	int	KERNEL_SERVICE
-	jc	moko.end	; brak wystarczającej ilości pamięci
+	jc	moko.end	; not enough memory
 
 .set_up:
-	; aktualizuj właściwości dokumentu
+	; update the properties of the document
 	mov	qword [moko_document_start_address],	rdi
 	mov	qword [moko_document_end_address],	rdi
 
-	; aktualizuj pozycje kursora wew. dokumentu
+	; update the cursor positions inside the document
 	mov	r10,	rdi
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	Flaga CF - jeśli nie przetworzono nowego dokumentu
-;	rcx - ilość znaków w ciągu
-;	rsi - wskaźnik do ciągu
+; entry:
+;	CF flag - if no new document was processed
+;	rcx - number of characters in the string
+;	rsi - pointer to the string
 moko_document_format:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; pobierz typ pliku
+	; fetch the file type
 	mov	ax,	KERNEL_SERVICE_VFS_exist
 	int	KERNEL_SERVICE
-	jc	.end	; pliku nie znaleziono
+	jc	.end	; file not found
 
-	; zwykły plik tekstowy?
+	; a plain text file?
 	cmp	bl,	KERNEL_VFS_FILE_TYPE_regular_file
-	je	.regular_file	; tak
+	je	.regular_file	; yes
 
-	; brak obsługi
+	; not handled
 	stc
 
-	; koniec obsługi
+	; end of handling
 	jmp	.end
 
 .regular_file:
-	; załaduj podany plik
+	; load the given file
 	mov	ax,	KERNEL_SERVICE_VFS_read
 	int	KERNEL_SERVICE
-	jc	.end	; pliku nie znaleziono lub nie udało się wczytać
+	jc	.end	; file not found or it could not be loaded
 
-	; zachowaj rozmiar wczytanego dokumentu
+	; save the size of the loaded document
 	mov	qword [moko_document_size],	rcx
 
-	; podmień wskaźnik dokumentu
+	; swap the document pointer
 	xchg	qword [moko_document_start_address],	rdi
 
-	; zwolnić przestrzeń starego dokumentu?
+	; free the space of the old document?
 	test	rdi,	rdi
-	jz	.no	; nie
+	jz	.no	; no
 
-	; jeśli rozmiar dokumentu nie został zainicjowany
+	; if the document size has not been initialized
 	test	rcx,	rcx
-	jnz	.sized	; został
+	jnz	.sized	; remainder
 
-	; ustaw domyślny
+	; set the default
 	mov	ecx,	STATIC_PAGE_SIZE_byte
 
 .sized:
-	; zwolnij przestrzeń starego dokumentu
+	; free the space of the old document
 	mov	ax,	KERNEL_SERVICE_PROCESS_memory_release
 	int	KERNEL_SERVICE
 
 .no:
-	; analizuj zawartość dokumentu
+	; analyse the contents of the document
 	mov	rcx,	qword [moko_document_size]
 	mov	rdi,	qword [moko_document_start_address]
 	call	moko_document_analyze
 
-	; wyświetl zawartość dokumentu
+	; display the document contents
 	call	moko_document_reload
 
-	; ustaw kursor na początek dokumentu
+	; set the cursor to the beginning of the document
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_document_cursor_end - moko_string_document_cursor
 	mov	rsi,	moko_string_document_cursor
 	mov	dword [moko_string_document_cursor.joint],	STATIC_EMPTY
 	int	KERNEL_SERVICE
 
-	; zapamiętaj informację o wyświetleniu komunikatu
+	; remember the information about displaying the message
 	mov	byte [moko_status_semaphore],	STATIC_TRUE
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

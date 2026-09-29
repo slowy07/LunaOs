@@ -2,26 +2,26 @@
 
 ;===============================================================================
 tm_static:
-	; pobierz informacje o strumieniu wyjścia
+	; fetch the output stream information
 	call	tm_stream_info
 
-	; wyświetl uptime systemu
+	; display the system uptime
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	tm_string_uptime_end - tm_string_uptime
 	mov	rsi,	tm_string_uptime
 	int	KERNEL_SERVICE
 
-	; wyświetl ilość procesów
+	; display the number of processes
 	mov	ecx,	tm_string_tasks_end - tm_string_tasks
 	mov	rsi,	tm_string_tasks
 	int	KERNEL_SERVICE
 
-	; wyświetl wykorzystanie pamięci RAM
+	; display the RAM usage
 	mov	ecx,	tm_string_memory_end - tm_string_memory
 	mov	rsi,	tm_string_memory
 	int	KERNEL_SERVICE
 
-	; wyświetl nagłówek tablicy procesów
+	; display the process table header
 	mov	ecx,	tm_string_header_end - tm_string_header_position
 	mov	rsi,	tm_string_header_position
 	int	KERNEL_SERVICE
@@ -31,13 +31,13 @@ tm_static:
 	mov	dl,	STATIC_SCANCODE_SPACE
 	int	KERNEL_SERVICE
 
-	; wyświetl menu programu
+	; display the program menu
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	tm_string_menu_end - tm_string_menu
 	mov	rsi,	tm_string_menu
 	int	KERNEL_SERVICE
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"software: tm_static"

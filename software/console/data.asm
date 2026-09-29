@@ -55,17 +55,17 @@ console_stream_meta:				dw	CONSOLE_WINDOW_WIDTH_char
 
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
 ;===============================================================================
-console_window					dw	STATIC_EMPTY	; pozycja na osi X
-						dw	STATIC_EMPTY	; pozycja na osi Y
-						dw	CONSOLE_WINDOW_WIDTH_pixel	; szerokość okna
-						dw	CONSOLE_WINDOW_HEIGHT_pixel	; wysokość okna
-						dq	STATIC_EMPTY	; wskaźnik do przestrzeni danych okna (uzupełnia Bosu)
-.extra:						dd	STATIC_EMPTY	; rozmiar przestrzeni danych okna w Bajtach (uzupełnia Bosu)
+console_window					dw	STATIC_EMPTY	; position on the X axis
+						dw	STATIC_EMPTY	; position on the Y axis
+						dw	CONSOLE_WINDOW_WIDTH_pixel	; window width
+						dw	CONSOLE_WINDOW_HEIGHT_pixel	; window height
+						dq	STATIC_EMPTY	; pointer to the window data space (filled in by Bosu)
+.extra:						dd	STATIC_EMPTY	; size of the window data space in bytes (filled in by Bosu)
 						dw	LIBRARY_BOSU_WINDOW_FLAG_visible | LIBRARY_BOSU_WINDOW_FLAG_header | LIBRARY_BOSU_WINDOW_FLAG_border | LIBRARY_BOSU_WINDOW_FLAG_BUTTON_close
-						dq	STATIC_EMPTY	; identyfikator okna (uzupełnia Bosu)
+						dq	STATIC_EMPTY	; window identifier (filled in by Bosu)
 						db	7
-						db	"Console                        "	; wypełnij do 31 Bajtów znakami STATIC_SCANCODE_SPACE
-						dq	STATIC_EMPTY	; szerokość okna w Bajtach (uzupełnia Bosu)
+						db	"Console                        "	; fill up to 31 bytes with STATIC_SCANCODE_SPACE characters
+						dq	STATIC_EMPTY	; window width in bytes (filled in by Bosu)
 .elements:					;-------------------------------
 .element_button_close:				; element "window close"
 						;-------------------------------
@@ -77,30 +77,30 @@ console_window					dw	STATIC_EMPTY	; pozycja na osi X
 						;-------------------------------
 .element_terminal:				db	LIBRARY_BOSU_ELEMENT_TYPE_draw
 						dw	.element_terminal_end - .element_terminal
-						dw	0	; pozycja na osi X względem przestrzeni danych okna
+						dw	0	; position on the X axis relative to the window data space
 						dw	LIBRARY_BOSU_HEADER_HEIGHT_pixel
 						dw	CONSOLE_WINDOW_WIDTH_pixel
 						dw	CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel
-						dq	STATIC_EMPTY	; wskaźnik przestrzeni danych (uzupełnia Bosu)
+						dq	STATIC_EMPTY	; data space pointer (filled in by Bosu)
 .element_terminal_end:				;-------------------------------
-						; koniec elementów okna
+						; end of the window elements
 						;-------------------------------
 						db	STATIC_EMPTY
 console_window_end:
 
 ;===============================================================================
-console_terminal_table				dq	CONSOLE_WINDOW_WIDTH_pixel	; szerokość w pikselach
-						dq	CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel	; wysokość w pikselach
-						dq	STATIC_EMPTY	; wskaźnik do przestrzeni danych terminala
-						dq	(CONSOLE_WINDOW_WIDTH_pixel * (CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel)) << KERNEL_VIDEO_DEPTH_shift	; rozmiar przestrzeni w Bajtach
-						dq	STATIC_NOTHING	; scanline w Bajtach - uzupełniane podczas inicjalizacji programu
-						dq	STATIC_EMPTY	; wskaźnik pozycji wirtualnego kursora w przestrzeni danych terminala
-						dq	STATIC_EMPTY	; szerokość terminala w znakach
-						dq	STATIC_EMPTY	; wysokość terminala w znakach
+console_terminal_table				dq	CONSOLE_WINDOW_WIDTH_pixel	; width in pixels
+						dq	CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel	; height in pixels
+						dq	STATIC_EMPTY	; pointer to the terminal data space
+						dq	(CONSOLE_WINDOW_WIDTH_pixel * (CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel)) << KERNEL_VIDEO_DEPTH_shift	; size of the space in bytes
+						dq	STATIC_NOTHING	; scanline in bytes - filled in during the program initialization
+						dq	STATIC_EMPTY	; pointer to the virtual cursor position in the terminal data space
+						dq	STATIC_EMPTY	; terminal width in characters
+						dq	STATIC_EMPTY	; terminal height in characters
 						dq	STATIC_EMPTY	; scanline_char
-						dq	STATIC_EMPTY	; pozycja kursora na osi X.Y
-						dq	STATIC_EMPTY	; blokada wirtualnego kursora
-						dd	STATIC_COLOR_default	; kolor czcionki
-						dd	STATIC_COLOR_BACKGROUND_default	; kolor tła
+						dq	STATIC_EMPTY	; cursor position on the X.Y axis
+						dq	STATIC_EMPTY	; virtual cursor lock
+						dd	STATIC_COLOR_default	; font color
+						dd	STATIC_COLOR_BACKGROUND_default	; background color
 
 console_terminal_cursor_position_save		dq	STATIC_EMPTY

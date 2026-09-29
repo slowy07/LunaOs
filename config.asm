@@ -21,7 +21,7 @@ SOFTWARE_STACK_pointer					equ	0x0000700000000000
 SOFTWARE_STACK_limit					equ	STATIC_PAGE_SIZE_byte >> STATIC_DIVIDE_BY_PAGE_shift
 
 ;===============================================================================
-; STAŁE OGÓLNEGO PRZEZNACZENIA
+; GENERAL PURPOSE CONSTANTS
 ;===============================================================================
 STATIC_REPLACE_AL_WITH_HIGH_shift			equ	8
 STATIC_REPLACE_AX_WITH_HIGH_shift			equ	16
@@ -152,22 +152,22 @@ STATIC_NUMBER_SYSTEM_hexadecimal			equ	0x10
 
 STATIC_SEQUENCE_length_min				equ	0x05
 
-%define STATIC_SEQUENCE_CLEAR					"^[t0]"	; wyczyść przestrzeń konsoli/terminala
-%define STATIC_SEQUENCE_CURSOR					"^[t1;__--]"	; ustaw kursor na pozycji xxxx(16),yyyy(16)
-%define	STATIC_SEQUENCE_CURSOR_ENABLE				"^[t2;0]"	; włącz kursor tekstowy
-%define	STATIC_SEQUENCE_CURSOR_DISABLE				"^[t2;1]"	; wyłącz kursor tekstowy
-%define	STATIC_SEQUENCE_CURSOR_PUSH				"^[t2;2]"	; zapamiętaj pozycję
-%define	STATIC_SEQUENCE_CURSOR_POP				"^[t2;3]"	; przywróć pozycję
-%define	STATIC_SEQUENCE_CURSOR_RESET				"^[t2;4]"	; resetuj blokadę kursora (wymuś pokazanie kursora)
-%define	STATIC_SEQUENCE_CURSOR_UP				"^[t2;C]"	; przesuń kursor o pozycję w górę
-%define	STATIC_SEQUENCE_CURSOR_DOWN				"^[t2;D]"	; przesuń kursor o pozycję w dół
-%define	STATIC_SEQUENCE_CURSOR_LEFT				"^[t2;E]"	; przesuń kursor o pozycję w lewo
-%define	STATIC_SEQUENCE_CURSOR_RIGHT				"^[t2;F]"	; przesuń kursor o pozycję w prawo
-%define	STATIC_SEQUENCE_CLEAR_LINE				"^[t3]"		; wyczyść aktualną linię
-%define	STATIC_SEQUENCE_SCROOL_UP				"^[t4;__--]"	; przewiń zawartość terminala o "__" linii w górę, zaczynając od linii "--"
-%define	STATIC_SEQUENCE_SCROOL_DOWN				"^[t5;__--]"	; przewiń zawartość terminala o "__" linii w dół, zaczynając od linii "--"
-%define	STATIC_SEQUENCE_NUMBER					"^[t6;-=~________]"	; wyświetl wartość "________" o podstawie "-" z prefiksem rozmiaru "=" i wartości "~"
-%define	STATIC_SEQUENCE_COLOR_DEFAULT				"^[c07]"	; kolor jasno-szary na czarnym tle
+%define STATIC_SEQUENCE_CLEAR					"^[t0]"	; clear the console/terminal space
+%define STATIC_SEQUENCE_CURSOR					"^[t1;__--]"	; set the cursor at the position xxxx(16),yyyy(16)
+%define	STATIC_SEQUENCE_CURSOR_ENABLE				"^[t2;0]"	; enable the text cursor
+%define	STATIC_SEQUENCE_CURSOR_DISABLE				"^[t2;1]"	; disable the text cursor
+%define	STATIC_SEQUENCE_CURSOR_PUSH				"^[t2;2]"	; remember the position
+%define	STATIC_SEQUENCE_CURSOR_POP				"^[t2;3]"	; restore the position
+%define	STATIC_SEQUENCE_CURSOR_RESET				"^[t2;4]"	; reset the cursor lock (force the cursor to be shown)
+%define	STATIC_SEQUENCE_CURSOR_UP				"^[t2;C]"	; move the cursor one position up
+%define	STATIC_SEQUENCE_CURSOR_DOWN				"^[t2;D]"	; move the cursor one position down
+%define	STATIC_SEQUENCE_CURSOR_LEFT				"^[t2;E]"	; move the cursor one position to the left
+%define	STATIC_SEQUENCE_CURSOR_RIGHT				"^[t2;F]"	; move the cursor one position to the right
+%define	STATIC_SEQUENCE_CLEAR_LINE				"^[t3]"		; clear the current line
+%define	STATIC_SEQUENCE_SCROOL_UP				"^[t4;__--]"	; scroll the terminal contents up by "__" lines, starting at the line "--"
+%define	STATIC_SEQUENCE_SCROOL_DOWN				"^[t5;__--]"	; scroll the terminal contents down by "__" lines, starting at the line "--"
+%define	STATIC_SEQUENCE_NUMBER					"^[t6;-=~________]"	; display the value "________" in the base "-" with the size prefix "=" and the value "~"
+%define	STATIC_SEQUENCE_COLOR_DEFAULT				"^[c07]"	; light gray color on a black background
 %define	STATIC_SEQUENCE_COLOR_BLACK				"^[c*0]"
 %define	STATIC_SEQUENCE_COLOR_RED				"^[c*1]"
 %define	STATIC_SEQUENCE_COLOR_GREEN				"^[c*2]"

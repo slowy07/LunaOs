@@ -1,11 +1,11 @@
 ;===============================================================================
 
-	; zmień tytuł nagłówka
+	; change the header title
 	call	shell_header
 
-	; pobierz PID rodzica
+	; fetch the parent PID
 	mov	ax,	KERNEL_SERVICE_PROCESS_pid_parent
 	int	KERNEL_SERVICE
 
-	; zachowaj PID rodzica
+	; save the parent PID
 	mov	qword [shell_pid_parent],	rcx

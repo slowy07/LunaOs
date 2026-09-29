@@ -1,10 +1,10 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
+; entry:
 ;	rax - uptime
 tm_uptime:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rbx
 	push	rcx
@@ -15,288 +15,288 @@ tm_uptime:
 
 	; rax - uptime
 
-	; zamień wartość "uptime" na sekundy
+	; convert the "uptime" value into seconds
 	mov	ecx,	1024
 	xor	edx,	edx
 	div	rcx
 
-	; system liczbowy: dziesiętny
+	; number system: decimal
 	mov	ebx,	STATIC_NUMBER_SYSTEM_decimal
 
-	; ciąg znaków reprezentujących wartość
+	; string of characters representing the value
 	mov	rdi,	tm_string_value_format
 
-	; wyczyść flagi
+	; clear the flags
 	xor	r8,	r8
 
 	;-----------------------------------------------------------------------
 
-	; zamień uptime na ilość dni
-	mov	ecx,	60*60*24	; 86400 sekund
+	; convert the uptime into a number of days
+	mov	ecx,	60*60*24	; 86400 seconds
 	xor	edx,	edx
 	div	rcx
 
 	; format: _D.HHd
 	mov	ecx,	0x02
 
-	; zachowaj resztę z dzielenia (godziny)
+	; save the remainder of the division (hours)
 	push	rdx
 
-	; domyśny prefix
+	; default prefix
 	mov	edx,	STATIC_SCANCODE_SPACE
 
-	; brak dni?
+	; no days?
 	test	rax,	rax
-	jz	.no_days	; tak
+	jz	.no_days	; yes
 
-	; zachowaj ilość dni
+	; save the number of days
 	push	rax
 
-	; ilość dni mniejsza od 10?
+	; is the number of days smaller than 10?
 	cmp	rax,	10
-	jb	.day_overflow	; nie
+	jb	.day_overflow	; no
 
 	; format: _DDDDd
 	mov	ecx,	TM_TABLE_CELL_time_width - 0x01
 
 .day_overflow:
-	; konwertuj wartość na ciąg
+	; convert the value to a string
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
 
-	; wyświetl
+	; display
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	rsi,	rdi
 	int	KERNEL_SERVICE
 
-	; przywróć ilość wyświetlonych dni
+	; restore the number of displayed days
 	pop	rax
 
-	; domyślny format "_D.HHd"
+	; default format "_D.HHd"
 	mov	dl,	"."
 
-	; wyświetlamy hodziny?
+	; display the hours?
 	cmp	rax,	10
-	jb	.days	; tak
+	jb	.days	; yes
 
-	; zmień na format "_DDDDd"
+	; convert to the "_DDDDd" format
 	mov	dl,	"d"
 
 .days:
-	; wyświetl typ
+	; display the type
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out_char
-	mov	ecx,	0x01	; jeden znak
+	mov	ecx,	0x01	; single character
 	int	KERNEL_SERVICE
 
-	; ustaw flagę, wyświetlono godziny
+	; set the flag, the hours have been displayed
 	mov	r8,	TM_UPTIME_FLAG_hour
 
 .no_days:
-	; przywróć resztę z dzielenia
+	; restore the remainder of the division
 	pop	rax
 
-	; koniec przetwarzania?
+	; end of processing?
 	cmp	dl,	"d"
-	je	.end	; tak
+	je	.end	; yes
 
 	;-----------------------------------------------------------------------
 
-	; zamień uptime na ilość godzin
-	mov	ecx,	60*60	; 3600 sekund
+	; convert the uptime into a number of hours
+	mov	ecx,	60*60	; 3600 seconds
 	xor	edx,	edx
 	div	rcx
 
 	; format: _H:MMh
 	mov	ecx,	0x02
 
-	; zachowaj resztę z dzielenia (minuty)
+	; save the remainder of the division (minutes)
 	push	rdx
 
-	; domyśny prefix
+	; default prefix
 	mov	edx,	STATIC_SCANCODE_DIGIT_0
 
-	; brak godzin?
+	; no hours?
 	test	rax,	rax
-	jz	.no_hours	; tak
+	jz	.no_hours	; yes
 
-	; zachowaj ilość godzin
+	; save the number of hours
 	push	rax
 
-	; wyświetlono dni?
+	; have the days been displayed?
 	test	r8,	TM_UPTIME_FLAG_day
-	jnz	.hours_only	; tak
+	jnz	.hours_only	; yes
 
-	; prefix dla formatu bez dni
+	; prefix for the format without days
 	mov	dl,	STATIC_SCANCODE_SPACE
 
 .hours_only:
-	; ilość godzin większa od 10?
-	cmp	rax,	10	; 10 godzin
-	jb	.hour_overflow	; nie
+	; is the number of hours greater than 10?
+	cmp	rax,	10	; 10 hours
+	jb	.hour_overflow	; no
 
 	; format: ___HHh
 	mov	ecx,	TM_TABLE_CELL_time_width - 0x01
 
 .hour_overflow:
-	; konwertuj wartość na ciąg
+	; convert the value to a string
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
 
-	; wyświetl
+	; display
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	rsi,	rdi
 	int	KERNEL_SERVICE
 
-	; przywróć ilość wyświetlonych godzin
+	; restore the number of displayed hours
 	pop	rax
 
-	; domyślny format "_H:MMh"
+	; default format "_H:MMh"
 	mov	dl,	":"
 
-	; wyświetlamy minuty?
+	; display the minutes?
 	cmp	rax,	10
-	jb	.hours	; tak
+	jb	.hours	; yes
 
-	; zmień na format "___HHh"
+	; convert to the "___HHh" format
 	mov	dl,	"h"
 
 .hours:
-	; wyświetl typ
+	; display the type
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out_char
-	mov	ecx,	0x01	; jeden znak
+	mov	ecx,	0x01	; single character
 	int	KERNEL_SERVICE
 
-	; ustaw flagę, wyświetlono godziny
+	; set the flag, the hours have been displayed
 	mov	r8,	TM_UPTIME_FLAG_hour
 
 .no_hours:
-	; przywróć resztę z dzielenia
+	; restore the remainder of the division
 	pop	rax
 
-	; koniec przetwarzania?
+	; end of processing?
 	cmp	dl,	"h"
-	je	.end	; tak
+	je	.end	; yes
 
 	;-----------------------------------------------------------------------
 
-	; zamień uptime na ilość minut
-	mov	ecx,	60	; 60 sekund
+	; convert the uptime into a number of minutes
+	mov	ecx,	60	; 60 seconds
 	xor	edx,	edx
 	div	rcx
 
-	; format: _M:SSm lub _H:MMh
+	; format: _M:SSm or _H:MMh
 	mov	ecx,	0x02
 
-	; zachowaj resztę z dzielenia (sekundy)
+	; save the remainder of the division (seconds)
 	push	rdx
 
-	; domyśny prefix
+	; default prefix
 	mov	edx,	STATIC_SCANCODE_DIGIT_0
 
-	; brak minut?
+	; no minutes?
 	test	rax,	rax
-	jz	.no_minutes	; tak
+	jz	.no_minutes	; yes
 
-	; zachowaj ilość minut
+	; save the number of minutes
 	push	rax
 
-	; wyświetlono godziny?
+	; have the hours been displayed?
 	test	r8,	TM_UPTIME_FLAG_hour
-	jnz	.minutes_only	; tak
+	jnz	.minutes_only	; yes
 
-	; prefix dla formatu bez godzin
+	; prefix for the format without hours
 	mov	dl,	STATIC_SCANCODE_SPACE
 
 .minutes_only:
-	; ilość minut mniejsza od 10?
-	cmp	rax,	10	; 10 minut
-	jb	.minutes_overflow	; nie
+	; is the number of minutes smaller than 10?
+	cmp	rax,	10	; 10 minutes
+	jb	.minutes_overflow	; no
 
 	; format: ___MMm
 	mov	ecx,	TM_TABLE_CELL_time_width - 0x01
 
 .minutes_overflow:
-	; konwertuj wartość na ciąg
+	; convert the value to a string
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
 
-	; wyświetl
+	; display
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	rsi,	rdi
 	int	KERNEL_SERVICE
 
-	; przywróć ilość wyświetlonych minut
+	; restore the number of displayed minutes
 	pop	rax
 
-	; domyślny format "_M:SSm"
+	; default format "_M:SSm"
 	mov	dl,	":"
 
-	; wyświetlamy sekundy?
+	; display the seconds?
 	cmp	rax,	10
-	jb	.minutes	; tak
+	jb	.minutes	; yes
 
-	; zmień na format "___MMm"
+	; convert to the "___MMm" format
 	mov	dl,	"m"
 
 .minutes:
-	; wyświetl typ
+	; display the type
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out_char
-	mov	ecx,	0x01	; jeden znak
+	mov	ecx,	0x01	; single character
 	int	KERNEL_SERVICE
 
-	; ustaw flagę, wyświetlono minuty
+	; set the flag, the minutes have been displayed
 	mov	r8,	TM_UPTIME_FLAG_minute
 
 .no_minutes:
-	; przywróć resztę z dzielenia
+	; restore the remainder of the division
 	pop	rax
 
-	; koniec przetwarzania?
+	; end of processing?
 	cmp	dl,	"m"
-	je	.end	; tak
+	je	.end	; yes
 
 	;-----------------------------------------------------------------------
 
 	; format: _M:SSm
 	mov	ecx,	0x02
 
-	; domyśny prefix
+	; default prefix
 	mov	edx,	STATIC_SCANCODE_DIGIT_0
 
-	; wyświetlono minuty?
+	; have the minutes been displayed?
 	test	r8,	TM_UPTIME_FLAG_minute
-	jnz	.second_overflow	; tak
+	jnz	.second_overflow	; yes
 
 	; format: ___SSs
 	mov	ecx,	TM_TABLE_CELL_time_width - 0x01
 
-	; prefix dla formatu bez minut
+	; prefix for the format without minutes
 	mov	dl,	STATIC_SCANCODE_SPACE
 
 .second_overflow:
-	; konwertuj wartość na ciąg
+	; convert the value to a string
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
 
-	; wyświetl
+	; display
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	rsi,	rdi
 	int	KERNEL_SERVICE
 
-	; domyślny format "___SSs"
+	; default format "___SSs"
 	mov	dl,	"s"
 
-	; wyświetlono minuty?
+	; have the minutes been displayed?
 	test	r8,	TM_UPTIME_FLAG_minute
-	jz	.seconds_only	; nie
+	jz	.seconds_only	; no
 
-	; zmień na format "_M:SSm"
+	; convert to the "_M:SSm" format
 	mov	dl,	"m"
 
 .seconds_only:
-	; wyświetl typ
+	; display the type
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out_char
-	mov	ecx,	0x01	; jeden znak
+	mov	ecx,	0x01	; single character
 	int	KERNEL_SERVICE
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r8
 	pop	rdi
 	pop	rsi
@@ -305,7 +305,7 @@ tm_uptime:
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"software: tm_uptime"

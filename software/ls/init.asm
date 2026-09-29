@@ -2,28 +2,28 @@
 
 ;===============================================================================
 ls_init:
-	; wyłącz wirtualny kursor (nie jest potrzebny, program nie wchodzi w interakcje, oszczędzamy czas procesora)
+	; disable the virtual cursor (it is not needed, the program does not interact, we save processor time)
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	ls_string_init_end - ls_string_init
 	mov	rsi,	ls_string_init
 	int	KERNEL_SERVICE
 
-	; pobierz rozmiar listy argumentów przesłanych do procesu
+	; fetch the size of the argument list passed to the process
 	pop	rcx
 
-	; przesłano argumenty do procesu?
+	; were the arguments passed to the process?
 	test	rcx,	rcx
-	jz	.no_arguments	; nie
+	jz	.no_arguments	; no
 
-	; ustaw wskaźnik na listę argumentów
+	; point the pointer at the argument list
 	mov	rsi,	rsp
 
-	; usuń z początku i końca listy wszystkie białe znaki
+	; remove all the white characters from the beginning and the end of the list
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_trim
-	jnc	.trimmed	; przetworzono
+	jnc	.trimmed	; processed
 
 .no_arguments:
-	; wyświetl listę plików w katalogu roboczym procesu
+	; display the list of files in the working directory of the process
 	mov	ecx,	ls_path_local_end - ls_path_local
 	mov	rsi,	ls_path_local
 

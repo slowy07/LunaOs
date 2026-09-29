@@ -2,5 +2,5 @@
 
 ;===============================================================================
 moko_ipc:
-	; powrót z procedury
+	; return from the procedure
 	ret

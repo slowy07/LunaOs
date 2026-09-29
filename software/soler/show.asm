@@ -2,67 +2,67 @@
 
 ;===============================================================================
 soler_show:
-	; pierwsza wartość zatwierdzona?
+	; has the first value been confirmed?
 	cmp	r11b,	STATIC_FALSE
-	je	.end	; nie
+	je	.end	; no
 
-	; rozmiar ciągu wartości
+	; size of the value string
 	xor	edx,	edx
 
-	; wskaźnik początku ciągu wartości
+	; pointer to the beginning of the value string
 	mov	rdi,	soler_window.element_label_value_string
 
-	; pobierz wynik operacji
+	; fetch the result of the operation
 	mov	rax,	qword [soler_value_first]
 
-	; wyodrębnij wartość całkowitą z zmiennoprzecinkowej
+	; extract the integer part from the floating point value
 	mov	qword [soler_fpu_float_result],	rax
 	call	soler_fpu_float_to_integer
-	mov	qword [soler_fpu_precision],	4	; maksymalna ilość miejsc po przecunku
-	call	soler_fpu_float_to_fraction	; oraz frakcji
+	mov	qword [soler_fpu_precision],	4	; maximum number of places after the comma
+	call	soler_fpu_float_to_fraction	; and the fraction
 
-	; wartość ujemna?
+	; negative value?
 	bt	rax,	STATIC_QWORD_BIT_sign
-	jnc	.unsigned	; nie
+	jnc	.unsigned	; no
 
-	; wstaw znak "-" do ciągu wartości
+	; insert a "-" character into the value string
 	mov	byte [soler_window.element_label_value_length],	STATIC_BYTE_SIZE_byte
 	mov	byte [soler_window.element_label_value_string],	STATIC_SCANCODE_MINUS
 
-	; przesuń wskaźnik ciągu wartości na następną pozycję oraz jego rozmiar
+	; move the value string pointer to the next position and its size
 	inc	rdx
 	inc	rdi
 
 .unsigned:
-	; załaduj wartość całkowitą części ułamka
+	; load the integer part of the fraction
 	mov	rax,	qword [soler_fpu_integer]
 	mov	bl,	STATIC_NUMBER_SYSTEM_decimal
 	xor	ecx,	ecx
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
 
-	; przesuń wskaźnik ciągu wartości za całkowitą część ułamka oraz zlicz rozmiar
+	; move the value string pointer past the integer part of the fraction and count the size
 	add	rdx,	rcx
 	add	rdi,	rcx
 
-	; frakcja ułamka jest pusta?
+	; is the fraction of the fraction empty?
 	cmp	qword [soler_fpu_fraction],	STATIC_EMPTY
-	je	.ready	; tak
+	je	.ready	; yes
 
-	; wstaw znak "," do ciągu wartości
+	; insert a "," character into the value string
 	mov	byte [rdi],	","
 
-	; przesuń wskaźnik ciągu wartości na następną pozycję oraz jego rozmiar
+	; move the value string pointer to the next position and its size
 	inc	rdx
 	inc	rdi
 
-	; załaduj wartość całkowitą części ułamka
+	; load the integer part of the fraction
 	mov	rax,	qword [soler_fpu_fraction]
 	mov	bl,	STATIC_NUMBER_SYSTEM_decimal
 	mov	rcx,	qword [soler_fpu_precision]
 	mov	dl,	STATIC_SCANCODE_DIGIT_0
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
 
-	; przesuń wskaźnik ciągu wartości za całkowitą część ułamka oraz zlicz rozmiar
+	; move the value string pointer past the integer part of the fraction and count the size
 	add	rdx,	rcx
 	add	rdi,	rcx
 
@@ -70,5 +70,5 @@ soler_show:
 
 
 .end:
-	; powrót z peocedury
+	; return from the procedure
 	ret

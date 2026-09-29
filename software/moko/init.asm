@@ -1,37 +1,37 @@
 ;===============================================================================
 
-	; poproś właściciela strumienia o zmianę tytułu okna (jeśli istnieje)
+	; ask the stream owner to change the window title (if there is one)
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_console_header_end - moko_string_console_header
 	mov	rsi,	moko_string_console_header
 	int	KERNEL_SERVICE
 
-	; wyświetl interfejs użyszkodnika
+	; display the user interface
 	call	moko_interface
 
-	; pobierz rozmiar listy argumentów przesłanych do procesu
+	; fetch the size of the argument list passed to the process
 	pop	rcx
 
-	; przesłano argumenty do procesu?
+	; were the arguments passed to the process?
 	test	rcx,	rcx
-	jz	.no_arguments	; nie
+	jz	.no_arguments	; no
 
-	; ustaw wskaźnik na listę argumentów
+	; point the pointer at the argument list
 	mov	rsi,	rsp
 
-	; usuń białe znaki z początku i końca ciągu
+	; remove the white characters from the beginning and the end of the string
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_trim
 
 .no_arguments:
-	; przygotuj właściwości przestrzeni pod dokument
+	; prepare the space properties for the document
 	call	moko_document_area
 
-	; rozmiar bufora: szerokość_terminala - ilość znaków w moko_string_menu_read - 0x01
+	; buffer size: terminal width - number of characters in moko_string_menu_read - 0x01
 	mov	rax,	r8
 	sub	rax,	moko_string_menu_read_end - moko_string_menu_read
 	dec	rax
 
-	; zachowaj informacje o buforze
+	; save the information about the buffer
 	sub	rsp,	rax
 	mov	qword [moko_cache_size_byte],	rax
 	mov	qword [moko_cache_address],	rsp

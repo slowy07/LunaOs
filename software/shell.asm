@@ -6,21 +6,21 @@
 
 ;===============================================================================
 shell:
-	; inicjalizuj środowisko pracy powłoki
+	; initialize the working environment of the shell
 	%include	"software/shell/init.asm"
 
 .restart:
-	; pobierz informacje o strumieniu wyjścia
+	; fetch the output stream information
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_meta
 	mov	bl,	KERNEL_SERVICE_PROCESS_STREAM_META_FLAG_get | KERNEL_SERVICE_PROCESS_STREAM_META_FLAG_out
 	mov	rdi,	shell_stream_meta
 	int	KERNEL_SERVICE
-	jc	shell.restart	; brak aktualnych informacji
+	jc	shell.restart	; no current information
 
-	; pobierz od użyszkodnia polecenie
+	; fetch the command from the user
 	%include	"software/shell/input.asm"
 
-	; przetwórz
+	; process
 	%include	"software/shell/exec.asm"
 
 	macro_debug	"software: shell"

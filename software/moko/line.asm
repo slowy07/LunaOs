@@ -2,12 +2,12 @@
 
 ;===============================================================================
 moko_line_clear_last:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rcx
 	push	rsi
 
-	; ustaw kursor na ostatnią linię dokumentu
+	; set the cursor to the last line of the document
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_document_cursor_end - moko_string_document_cursor
 	mov	rsi,	moko_string_document_cursor
@@ -15,105 +15,105 @@ moko_line_clear_last:
 	mov	word [moko_string_document_cursor.y],	r9w
 	int	KERNEL_SERVICE
 
-	; wyczyść
+	; clear
 	mov	ecx,	moko_string_line_clean_end - moko_string_line_clean
 	mov	rsi,	moko_string_line_clean
 	int	KERNEL_SERVICE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	rcx - numer linii do sprawdzenia
-; wyjście:
-;	Flaga CF jeśli błąd
-;	rcx - rozmiar linii dokumentu
-;	rsi - wskaźnik początku linii
+; entry:
+;	rcx - line number to check
+; exit:
+;	CF flag if error
+;	rcx - size of the document line
+;	rsi - pointer to the beginning of the line
 moko_line_this:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rcx
 	push	rsi
 
-	; ustaw wskaźnik na początek przestrzeni dokumentu
+	; set the pointer to the beginning of the document space
 	mov	rsi,	qword [moko_document_start_address]
 
-	; pobrać informacje o pierwszej linii dokumentu?
+	; fetch the information about the first line of the document?
 	test	rcx,	rcx
-	jz	.first_line	; tak
+	jz	.first_line	; yes
 
 .search:
-	; koniec dokumentu?
+	; end of the document?
 	cmp	rsi,	qword [moko_document_end_address]
-	je	.error	; nie znaleziono podanej linii w dokumencie
+	je	.error	; the given line was not found in the document
 
-	; pobierz pierwszy znak linii
+	; fetch the first character of the line
 	lodsb
 
-	; znak nowej linii
+	; newline character
 	cmp	al,	STATIC_SCANCODE_NEW_LINE
-	jne	.search	; nie
+	jne	.search	; no
 
-	; rozpoznano koniec linii, szukać następny?
+	; end of line recognized, look for the next one?
 	dec	rcx
-	jnz	.search	; tak
+	jnz	.search	; yes
 
 .first_line:
-	; zachowaj wskaźnik początku linii w dokumencie
+	; save the pointer to the beginning of the line in the document
 	push	rsi
 
 .length:
-	; koniec dokumentu?
+	; end of the document?
 	cmp	rsi,	qword [moko_document_end_address]
-	je	.ready	; określono rozmiar linii
+	je	.ready	; the line size has been determined
 
-	; szukaj znaku końca linii
+	; look for the end of line character
 	lodsb
 
-	; koniec?
+	; end?
 	cmp	al,	STATIC_SCANCODE_NEW_LINE
-	je	.ready	; tak
+	je	.ready	; yes
 
-	; ilość znaków w linii
+	; number of characters in the line
 	inc	rcx
-	jmp	.length	; kontynuuj
+	jmp	.length	; continue
 
 .ready:
-	; przywróć wskaźnik początku danej linii
+	; restore the pointer to the beginning of the given line
 	pop	rsi
 
-	; zwróć informację o początku danej linii i jej rozmiar
+	; return the information about the beginning of the given line and its size
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rcx
 	mov	qword [rsp],	rsi
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.end
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	rbx - numer wiersza na ekranie
-;	rcx - numer linii dokumentu do wyświetlenia
+; entry:
+;	rbx - row number on the screen
+;	rcx - number of the document line to display
 moko_line_number:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rcx
 	push	rsi
@@ -123,22 +123,22 @@ moko_line_number:
 	push	r13
 	push	r15
 
-	; pobierz informacje o podanej linii
+	; fetch the information about the given line
 	call	moko_line_this
-	jc	.end	; brak informacji o podanej linii
+	jc	.end	; no information about the given line
 
-	; ustaw właściwości poprzedniej linii
-	mov	r10,	rsi	; wskaźnik początku linii w dokumencie
-	xor	r11,	r11	; wskaźnik wew. linii na początku
-	xor	r12,	r12	; wyświetl całą linię od początku
-	mov	r13,	rcx	; rozmiar linii
-	mov	r15,	rbx	; w przewidzianej do tego linii
+	; set the properties of the previous line
+	mov	r10,	rsi	; pointer to the beginning of the line in the document
+	xor	r11,	r11	; inner line pointer at the beginning
+	xor	r12,	r12	; display the whole line from the beginning
+	mov	r13,	rcx	; size of the line
+	mov	r15,	rbx	; in the line provided for it
 
-	; wyświetl
+	; display
 	call	moko_line
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r15
 	pop	r13
 	pop	r12
@@ -148,194 +148,194 @@ moko_line_number:
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	rcx - rozmiar rozpatrywanej linii
-;	rsi - wskaźnik początku rozpatrywanej linii
+; entry:
+;	rcx - size of the examined line
+;	rsi - pointer to the beginning of the examined line
 moko_line_update:
-	; wskaźnik pozycji kursora w przestrzeni dokumentu
+	; pointer to the cursor position in the document space
 	mov	r10,	rsi
 
-	; rozmiar nowej linii
+	; size of the newline
 	mov	r13,	rcx
 
-	; czy ostatnio używany numer kolumny znajduje się w przestrzeni rozmiaru aktualnej linii?
+	; is the last used column number within the size range of the current line?
 	cmp	qword [moko_document_line_index_last],	r13
-	jbe	.in_line	; tak
+	jbe	.in_line	; yes
 
-	; ustaw wskaźnik wew. dokumentu na koniec linii
+	; set the inner document pointer to the end of the line
 	add	r10,	rcx
 
-	; przesunięcie wew. linii ustaw na koniec linii
+	; set the inner line offset to the end of the line
 	mov	r11,	rcx
 
-	; wyświetl linię od pierwszego znaku
+	; display the line from its first character
 	xor	r12,	r12
 
-	; ustaw kursor w kolumnie odpowiadającej pozycji końca linii
+	; set the cursor in the column matching the end of line position
 	mov	r14,	rcx
 
-	; koniec procedury
+	; end of the procedure
 	ret
 
 .in_line:
-	; wyświetl linię na podstawie ostnio znanych właściwości
+	; display the line based on the last known properties
 	mov	r11,	qword [moko_document_line_index_last]
 	mov	r12,	qword [moko_document_line_begin_last]
 
-	; ustaw wskaźnik wew. dokumentu na pozycje
+	; set the inner document pointer to the position
 	add	r10,	r11
 
-	; ustaw kursor w odpowiedniej kolumnie
+	; set the cursor in the matching column
 	mov	r14,	r11
 
-	; cała linia mieści się w przestrzeni ekranu?
+	; does the whole line fit in the screen space?
 	cmp	rcx,	r8
-	jbe	.end	; tak
+	jbe	.end	; yes
 
-	; ustaw kursor w odpowiedniej kolumnie
+	; set the cursor in the matching column
 	mov	r14,	r11
 	sub	r14,	r12
 
 .end:
-	; koniec procedury
+	; end of the procedure
 	ret
 
 ;===============================================================================
-; wyjście:
-;	Flaga CF, jeśli początek dokumentu
-;	rcx - rozmiar poprzedniej linii
-;	rsi - wskaźnik początku poprzedniej linii w dokumencie
+; exit:
+;	CF flag, if the beginning of the document
+;	rcx - size of the previous line
+;	rsi - pointer to the beginning of the previous line in the document
 moko_line_previous:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rsi
 
-	; ustaw wskaźnik przed znakiem nowej linii na podstawie aktualnej linii
+	; set the pointer before the newline character, based on the current line
 	mov	rsi,	r10
 	sub	rsi,	r11
 
-	; początek dokumentu?
+	; beginning of the document?
 	cmp	rsi,	qword [moko_document_start_address]
-	ja	.ok	; nie
+	ja	.ok	; no
 
-	; flaga, błąd
+	; flag, error
 	stc
 
-	; koniec
+	; end
 	jmp	.end
 
 .ok:
-	; rozpocznij przed znakiem nowej linii
+	; start before the newline character
 	dec	rsi
 
-	; określ pozycję i rozmiar poprzedniej linii
-	xor	ecx,	ecx	; rozmiar
+	; determine the position and the size of the previous line
+	xor	ecx,	ecx	; size
 
 .loop:
-	; początek dokumentu?
+	; beginning of the document?
 	cmp	rsi,	qword [moko_document_start_address]
-	je	.found	; tak
+	je	.found	; yes
 
-	; koniec poprzedniej linii?
+	; end of the previous line?
 	cmp	byte [rsi - STATIC_BYTE_SIZE_byte],	STATIC_SCANCODE_NEW_LINE
-	je	.found	; tak
+	je	.found	; yes
 
-	; ilość znaków +1
+	; number of characters + 1
 	inc	rcx
 
-	; następny (poprzedni) znak w linii
+	; next (previous) character in the line
 	dec	rsi
 
-	; koniec dokumentu?
+	; end of the document?
 	cmp	rsi,	qword [moko_document_start_address]
-	jne	.loop	; nie
+	jne	.loop	; no
 
 .found:
-	; zwróć informacje o pozycji początku poprzedniej linii w dokumencie
+	; return the information about the start position of the previous line in the document
 	mov	qword [rsp],	rsi
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wyjście:
-;	Flaga CF - jeśli koniec dokumentu
-;	rcx - rozmiar linii w znakach
-;	rsi - wskaźnik początku następnej linii
+; exit:
+;	CF flag - if end of the document
+;	rcx - line size in characters
+;	rsi - pointer to the beginning of the next line
 moko_line_next:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rsi
 
-	; ustaw wskaźnik przed znakiem nowej linii na podstawie aktualnej linii
+	; set the pointer before the newline character, based on the current line
 	mov	rsi,	r10
 	sub	rsi,	r11
 	add	rsi,	r13
 
-	; koniec dokumentu?
+	; end of the document?
 	cmp	rsi,	qword [moko_document_end_address]
-	jb	.ok	; nie
+	jb	.ok	; no
 
-	; flaga, błąd
+	; flag, error
 	stc
 
-	; koniec
+	; end
 	jmp	.end
 
 .ok:
-	; rozpocznij za znakiem nowej linii
+	; start after the newline character
 	inc	rsi
 
-	; określ pozycję i rozmiar poprzedniej linii
-	xor	ecx,	ecx	; rozmiar
+	; determine the position and the size of the previous line
+	xor	ecx,	ecx	; size
 
 .loop:
-	; koniec dokumentu?
+	; end of the document?
 	cmp	rsi,	qword [moko_document_end_address]
-	je	.found	; tak
+	je	.found	; yes
 
-	; koniec następnej linii?
+	; end of the next line?
 	cmp	byte [rsi],	STATIC_SCANCODE_NEW_LINE
-	je	.found	; tak
+	je	.found	; yes
 
-	; ilość znaków +1
+	; number of characters + 1
 	inc	rcx
 
-	; następny znak w linii
+	; next character in the line
 	inc	rsi
 
-	; kontynuuj
+	; continue
 	jmp	.loop
 
 .found:
-	; ustaw wskaźnik na początek linii
+	; set the pointer to the beginning of the line
 	sub	rsi,	rcx
 
-	; zwróć informacje o pozycji początku następnej linii w dokumencie
+	; return the information about the start position of the next line in the document
 	mov	qword [rsp],	rsi
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
 moko_line:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rcx
 	push	rdx
 	push	rsi
 
-	; ustaw kursor na początek aktualnego wiersza przestrzeni znakowej
+	; set the cursor to the beginning of the current row of the character space
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_document_cursor_end - moko_string_document_cursor
 	mov	rsi,	moko_string_document_cursor
@@ -343,43 +343,43 @@ moko_line:
 	mov	word [moko_string_document_cursor.y],	r15w
 	int	KERNEL_SERVICE
 
-	; ustaw wskaźnik na początek/fragment linii do wyświetlenia
+	; set the pointer to the beginning/fragment of the line to display
 	mov	rsi,	r10
 	sub	rsi,	r11
 	add	rsi,	r12
 
-	; ilość znaków z linii do wyświetlenia
+	; number of characters of the line to display
 	mov	rcx,	r13
 	sub	rcx,	r12
 	cmp	rcx,	r8
-	jb	.visible	; ilość znaków mniejsza od szerokości ekranu
+	jb	.visible	; number of characters smaller than the screen width
 
-	; wyświetl maksymalną ilość znaków na ekran
+	; display the maximum number of characters on the screen
 	mov	rcx,	r8
-	dec	rcx	; ostatnia kolumna zawsze pusta
+	dec	rcx	; the last column is always empty
 
 .visible:
-	; linia jest pusta?
+	; is the line empty?
 	test	rcx,	rcx
-	jz	.empty	; tak
+	jz	.empty	; yes
 
-	; wyświetl kolejno ciąg znaków o określonej długości
+	; display a string of the given length in sequence
 	int	KERNEL_SERVICE
 
 .empty:
-	; wyczyścić resztę linii?
+	; clear the rest of the line?
 	cmp	r8,	rcx
-	je	.no	; nie
+	je	.no	; no
 
-	; pozostałą część linii za pomocą znaku spacji
+	; the remaining part of the line with a space character
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out_char
 	sub	rcx,	r8
-	not	rcx	; zamień na wartość bezwzględną
+	not	rcx	; convert into an absolute value
 	mov	dl,	STATIC_SCANCODE_SPACE
 	int	KERNEL_SERVICE
 
 .no:
-	; ustaw kursor na pozycję
+	; set the cursor to the position
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_document_cursor_end - moko_string_document_cursor
 	mov	rsi,	moko_string_document_cursor
@@ -387,11 +387,11 @@ moko_line:
 	mov	word [moko_string_document_cursor.y],	r15w
 	int	KERNEL_SERVICE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rdx
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

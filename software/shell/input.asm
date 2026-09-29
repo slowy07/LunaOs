@@ -1,45 +1,45 @@
 ;===============================================================================
 
 ;===============================================================================
-; wyjście:
-;	rbx - rozmiar całego ciągu w Bajtach
-;	rcx - rozmiar pierwszego "słowa" w Bajtach
-;	rsi - wskaźnik do ciągu
+; exit:
+;	rbx - size of the whole string in bytes
+;	rcx - size of the first "word" in bytes
+;	rsi - pointer to the string
 shell_input:
-	; domyślnie, znak zachęty od nowej linii
+	; by default, the prompt character from the new line
 	mov	ecx,	shell_string_prompt_end - shell_string_prompt_with_new_line
 	mov	rsi,	shell_string_prompt_with_new_line
 
-	; kursor znajduje się w na początku wiersza?
+	; is the cursor at the beginning of the row?
 	cmp	word [rdi + CONSOLE_STRUCTURE_STREAM_META.x],	STATIC_EMPTY
-	jne	.prompt	; nie
+	jne	.prompt	; no
 
-	; znak zachęty bez nowej linii
+	; prompt character without a newline
 	mov	ecx,	shell_string_prompt_end - shell_string_prompt
 	mov	rsi,	shell_string_prompt
 
 .prompt:
-	; wyświetl znak zachęty
+	; display the prompt character
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	int	KERNEL_SERVICE
 
 .continue:
-	; pobierz polecenie od użyszkodnika
-	mov	rbx,	SHELL_CACHE_SIZE_byte	; rozmiar maksymalny bufora
-	xor	ecx,	ecx	; bufor pusty
-	mov	rdx,	shell_event	; obsługa zaistniałych wyjątków
-	mov	rsi,	shell_cache	; lokalizacja bufora w przestrzeni procesu
-	mov	rdi,	shell_ipc_data	; lokalizacja przestrzeni procesu dla przychodzących wyjątków
+	; fetch the command from the user
+	mov	rbx,	SHELL_CACHE_SIZE_byte	; maximum buffer size
+	xor	ecx,	ecx	; the buffer is empty
+	mov	rdx,	shell_event	; handling of the exceptions that occurred
+	mov	rsi,	shell_cache	; location of the buffer in the process space
+	mov	rdi,	shell_ipc_data	; location of the process space for the incoming exceptions
 	macro_library	LIBRARY_STRUCTURE_ENTRY.input
-	jc	shell.restart	; bufor pusty lub przerwano wprowadzanie
+	jc	shell.restart	; the buffer is empty or the input was interrupted
 
-	; usuń białe znaki z początku i końca bufora
+	; remove the white characters from the beginning and the end of the buffer
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_trim
-	jc	shell.restart	; bufor zawierał tylko "białe znaki"
+	jc	shell.restart	; the buffer contained only "white characters"
 
-	; przemieść zawartość bufora na jego początek (jeśli wystąpiły "białe znaki" na jego początku)
+	; move the buffer contents to its beginning (if there were "white characters" at its beginning)
 	call	shell_prompt_relocate
 
-	; pobierz rozmiar pierwszego "słowa" w ciągu
+	; fetch the size of the first "word" in the string
 	mov	al,	STATIC_SCANCODE_SPACE	; separator
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_word_next

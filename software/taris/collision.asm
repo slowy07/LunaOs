@@ -1,60 +1,60 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	bx - model bloku
+; entry:
+;	bx - block pattern
 taris_collision:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rdx
 	push	r9
 
-	; zamienna lokalna
+	; local variable
 	push	TARIS_BRICK_STRUCTURE_height
 
 .loop:
-	; pobierz pierwszą linię struktury bloku
+	; fetch the first line of the block structure
 	mov	al,	bl
 	and	al,	STATIC_BYTE_LOW_mask
 
-	; przesuń linię struktury bloku na miejsce
+	; move the line of the block structure into the place
 	mov	cl,	r8b
 	shl	ax,	cl
 
-	; pobierz linię przestrzeni planszy odpowiadającej pozycji linii struktury bloku
+	; fetch the board space line matching the line position of the block structure
 	mov	rdx,	taris_brick_platform
 	mov	dx,	word [rdx + r9 * STATIC_WORD_SIZE_byte]
 
-	; wystąpiła kolizja?
+	; did a collision occur?
 	test	ax,	dx
-	jz	.no_collision	; nie
+	jz	.no_collision	; no
 
-	; cdn.
+	; etc.
 	nop
 
 .no_collision:
-	; następna linia struktury modelu bloku
+	; next line of the block pattern structure
 	shr	bx,	STATIC_MOVE_AL_HALF_TO_LOW_shift
 
-	; następna linia przestrzeni planszy
+	; next line of the board space
 	inc	r9
 
-	; przetworzono cały model bloku?
+	; has the whole block pattern been processed?
 	dec	qword [rsp]
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
 .end:
-	; zwolnij zmienną lokalną
+	; free the local variable
 	pop	rax
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r9
 	pop	rdx
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

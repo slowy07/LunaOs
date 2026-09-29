@@ -1,72 +1,72 @@
 ;===============================================================================
 
 ;===============================================================================
-; wyjście:
-;	bx - model wylosowanego bloku
+; exit:
+;	bx - pattern of the drawn block
 taris_random_block:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rdx
 
-	; pobierz aktualny czas
+	; fetch the current time
 	mov	ax,	KERNEL_SERVICE_SYSTEM_time
 	int	KERNEL_SERVICE
 
-	; modyfikuj ziarno o aktualny uptime systemu
+	; modify the seed by the current system uptime
 	add	dword [taris_seed],	eax
 
-	; pobierz pseudo losową wartość
+	; fetch a pseudo random value
 	mov	eax,	dword [taris_seed]
 	macro_library	LIBRARY_STRUCTURE_ENTRY.xorshift32
 
-	; zachowaj wynik jako następne ziarno
+	; save the result as the next seed
 	mov	dword [taris_seed],	eax
 
-	; zwróć wartość z przedziału ilości dostępnych bloków
+	; return a value from the range of the number of available blocks
 	div	qword [taris_limit]
 
-	; zwróć wynik
+	; return the result
 	mov	rbx,	taris_bricks
 	mov	rbx,	qword [rbx + rdx * STATIC_QWORD_SIZE_byte]
-	call	taris_random_model	; wybierz jeden z możliwych modeli
+	call	taris_random_model	; choose one of the possible patterns
 
-	; usuń pozostałe modele z pamięci
+	; remove the remaining patterns from memory
 	and	rbx,	STATIC_WORD_mask
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	bx - wylosowany blok
-; wyjście:
-;	bx - jeden z modeli wylosowanego bloku
+; entry:
+;	bx - drawn block
+; exit:
+;	bx - one of the patterns of the drawn block
 taris_random_model:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rcx
 	push	rdx
 
-	; pobierz pseudo losową wartość
+	; fetch a pseudo random value
 	mov	eax,	dword [taris_seed]
 	macro_library	LIBRARY_STRUCTURE_ENTRY.xorshift32
 
-	; zwróć wartość z przedziału ilości dostępnych modeli
+	; return a value from the range of the number of available patterns
 	div	qword [taris_limit_model]
 
-	; modyfikuj
+	; modify
 	shl	rdx,	STATIC_MULTIPLE_BY_16_shift
 	mov	cl,	dl
 	ror	rbx,	cl
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

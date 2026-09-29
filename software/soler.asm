@@ -6,105 +6,105 @@
 
 ;===============================================================================
 soler:
-	; inicjalizacja przestrzeni konsoli
+	; initialization of the console space
 	%include	"software/soler/init.asm"
 
 .reset:
-	; flaga, przecinek
-	mov	r10b,	STATIC_FALSE	; wprowadzono znak części ułamkowej
+	; flag, comma
+	mov	r10b,	STATIC_FALSE	; a fractional part character has been entered
 
-	; flaga, pierwsza i druga wartość
-	mov	r11b,	STATIC_FALSE	; zatwierdzono pierwszą wartość
-	mov	r12b,	STATIC_FALSE	; zatwierdzono drugą wartość
+	; flag, the first and the second value
+	mov	r11b,	STATIC_FALSE	; the first value has been confirmed
+	mov	r12b,	STATIC_FALSE	; the second value has been confirmed
 
-	; flaga, przyrostek
-	mov	r13b,	STATIC_TRUE	; wyczyść wartość przed modyfikacją
+	; flag, increment
+	mov	r13b,	STATIC_TRUE	; clear the value before modifying it
 
-	; flaga, znak wartości
-	mov	r14b,	STATIC_FALSE	; dodatnia
+	; flag, value character
+	mov	r14b,	STATIC_FALSE	; positive
 
-	; wyczyść zawartość etykiet
+	; clear the contents of the labels
 	mov	byte [soler_window.element_label_operation_string],	STATIC_SCANCODE_SPACE
 	mov	byte [soler_window.element_label_value_string],	STATIC_SCANCODE_DIGIT_0
 	mov	byte [soler_window.element_label_value_length],	STATIC_BYTE_SIZE_byte
 
 .refresh:
-	; wyświelt wynik/stan ostatniej operacji
+	; display the result/state of the last operation
 	call	soler_show
 
-	; aktualizuj zawartość etykiet
+	; update the contents of the labels
 	mov	rdi,	soler_window
 
-	; etykieta operacji
+	; operation label
 	mov	rsi,	soler_window.element_label_operation
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_element_label
 
-	; etykieta wartości
+	; value label
 	mov	rsi,	soler_window.element_label_value
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_element_label
 
-	; aktualizuj zawartość okna
+	; update the window contents
 	mov	al,	KERNEL_WM_WINDOW_update
 	mov	rsi,	soler_window
 	or	qword [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.SIZE + LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA.flags],	LIBRARY_BOSU_WINDOW_FLAG_flush
 	int	KERNEL_WM_IRQ
 
 .loop:
-	; pobierz wiadomość
+	; fetch the message
 	mov	ax,	KERNEL_SERVICE_PROCESS_ipc_receive
 	mov	rdi,	soler_ipc_data
 	int	KERNEL_SERVICE
-	jc	.loop	; brak wiadomości
+	jc	.loop	; no message
 
-	; komunikat typu: urządzenie wskazujące (myszka)?
+	; message of the pointing device (mouse) type?
 	cmp	byte [rdi + KERNEL_IPC_STRUCTURE.type],	KERNEL_IPC_TYPE_MOUSE
-	je	.mouse	; tak
+	je	.mouse	; yes
 
-	; komunikat typu: urządzenie wskazujące (klwiatura)?
+	; message of the pointing device (keyboard) type?
 	cmp	byte [rdi + KERNEL_IPC_STRUCTURE.type],	KERNEL_IPC_TYPE_KEYBOARD
-	jne	.loop	; nie, zignoruj klawizs
+	jne	.loop	; no, ignore the key
 
-	; pobierz kod klawisza
+	; fetch the key code
 	mov	ax,	word [rdi + KERNEL_IPC_STRUCTURE.data]
 
 .operation:
-	; zrestartować wszystkie operacje?
+	; restart all the operations?
 	cmp	ax,	STATIC_SCANCODE_ESCAPE
-	je	.reset	; tak
+	je	.reset	; yes
 
-	; wykonaj operację związaną z klawiszem
+	; perform the operation bound to the key
 	call	soler_operation
-	jc	.loop	; brak działań
+	jc	.loop	; no actions
 
-	; powrót do procedury
+	; return to the procedure
 	jmp	.refresh
 
 .mouse:
-	; naciśnięcie lewego klawisza myszki?
+	; left mouse button press?
 	cmp	byte [rdi + KERNEL_IPC_STRUCTURE.data + KERNEL_IPC_STRUCTURE_DATA_MOUSE.event],	KERNEL_IPC_MOUSE_EVENT_left_press
-	jne	.loop	; nie, zignoruj wiadomość
+	jne	.loop	; no, ignore the message
 
-	; pobierz współrzędne kursora
+	; fetch the cursor coordinates
 	movzx	r8d,	word [rdi + KERNEL_IPC_STRUCTURE.data + KERNEL_IPC_STRUCTURE_DATA_MOUSE.x]	; x
 	movzx	r9d,	word [rdi + KERNEL_IPC_STRUCTURE.data + KERNEL_IPC_STRUCTURE_DATA_MOUSE.y]	; y
 
-	; pobierz wskaźnik do elementu biorącego udział w zdarzeniu
+	; fetch the pointer to the element taking part in the event
 	mov	rsi,	soler_window
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_element
-	jc	.loop	; nie znaleziono elementu zależnego
+	jc	.loop	; the dependent element was not found
 
-	; element typu "Button Close"?
+	; an element of the "Button Close" type?
 	cmp	byte [rsi],	LIBRARY_BOSU_ELEMENT_TYPE_button_close
-	je	.close	; tak
+	je	.close	; yes
 
-	; pobierz wartość elementu
+	; fetch the value of the element
 	movzx	eax,	word [rsi + LIBRARY_BOSU_STRUCTURE_ELEMENT_BUTTON.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.event]
 
-	; wykonaj operację
+	; perform the operation
 	jmp	.operation
 
 .close:
-	; zakończ pracę programu
+	; terminate the program
 	xor	ax,	ax
 	int	KERNEL_SERVICE
 

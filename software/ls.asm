@@ -6,71 +6,71 @@
 
 ;===============================================================================
 ls:
-	; inicjalizuj środowisko pracy
+	; initialize the working environment
 	%include	"software/ls/init.asm"
 
-	; wczytaj listę plików z podanego katalogu
+	; load the list of files from the given directory
 	mov	ax,	KERNEL_SERVICE_VFS_dir
 	int	KERNEL_SERVICE
-	jc	.error	; błędna ścieżka do katalogu lub pliku nie znaleziono
+	jc	.error	; wrong directory path or the file was not found
 
-	; ustaw licznik wpisów
+	; set the entry counter
 	mov	rbx,	rcx
 
 .loop:
-	; domyślnie kolorystyka dla pliku
+	; default color scheme for the file
 	mov	ecx,	ls_string_color_file_end - ls_string_color_file
 	mov	rsi,	ls_string_color_file
 
-	; plik typu katalog?
+	; a file of the directory type?
 	test	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.type],	KERNEL_VFS_FILE_TYPE_directory
-	jz	.no_directory	; nie
+	jz	.no_directory	; no
 
-	; ustaw kolorystykę dla katalogu
+	; set the color scheme for the directory
 	mov	rsi,	ls_string_color_directory
 
 .no_directory:
-	; zmień kolorystykę
+	; change the color scheme
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	int	KERNEL_SERVICE
 
-	; ustaw wskaźnik na nazwę pliku
+	; set the pointer to the file name
 	mov	rsi,	rdi
 	add	rsi,	KERNEL_VFS_STRUCTURE_KNOT.name
 
-	; plik jest ukryty?
+	; is the file hidden?
 	cmp	byte [rsi],	STATIC_SCANCODE_DOT
-	je	.hidden	; tak
+	je	.hidden	; yes
 
-	; wyświetl nazwę pliku
+	; display the file name
 	mov	cl,	byte [rdi + KERNEL_VFS_STRUCTURE_KNOT.length]
 	int	KERNEL_SERVICE
 
-	; wyświetl separator
+	; display the separator
 	mov	cl,	ls_string_separator_end - ls_string_separator
 	mov	rsi,	ls_string_separator
 	int	KERNEL_SERVICE
 
 .hidden:
-	; wyświetlono wszyskie pliki?
+	; have all the files been displayed?
 	dec	rbx
-	jz	.end	; tak
+	jz	.end	; yes
 
-	; przesuń wskaźnik na następny plik
+	; move the pointer to the next file
 	add	rdi,	KERNEL_VFS_STRUCTURE_KNOT.SIZE
 
-	; wyświetl pozostałe pliki
+	; display the remaining files
 	jmp	.loop
 
 .error:
-	; wyświetl komunikat
+	; display the message
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	ls_string_error_not_found_end - ls_string_error_not_found
 	mov	rsi,	ls_string_error_not_found
 	int	KERNEL_SERVICE
 
 .end:
-	; zakończ pracę programu
+	; terminate the program
 	xor	ax,	ax
 	int	KERNEL_SERVICE
 

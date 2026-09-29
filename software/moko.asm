@@ -6,58 +6,58 @@
 
 ;===============================================================================
 moko:
-	; inicjalizuj środowisko pracy edytora tekstu
+	; initialize the working environment of the text editor
 	%include	"software/moko/init.asm"
 
 .loop:
-	; pobierz komunikat "znak z bufora klawiatury"
+	; fetch the "character from the keyboard buffer" message
 	mov	ax,	KERNEL_SERVICE_PROCESS_ipc_receive
 	mov	rdi,	moko_ipc_data
 	int	KERNEL_SERVICE
-	jc	.loop	; brak komunikatu
+	jc	.loop	; no message
 
-	; aktualizuj pasek stanu dokumentu
+	; update the document status bar
 	call	moko_status
 
-	; komunikat typu: klawiatura?
+	; message of the keyboard type?
 	cmp	byte [rdi + KERNEL_IPC_STRUCTURE.type],	KERNEL_IPC_TYPE_KEYBOARD
-	jne	.loop	; zignoruj
+	jne	.loop	; ignore
 
-	; pobierz kod klawisza
+	; fetch the key code
 	mov	ax,	word [rdi + KERNEL_IPC_STRUCTURE.data]
 
-	; wywołano skrót klawiszowy?
+	; was the keyboard shortcut invoked?
 	call	moko_shortcut
-	jnc	.loop	; tak
+	jnc	.loop	; yes
 
-	; klawisz funkcyjny?
+	; function key?
 	call	moko_key
-	jnc	.loop	; tak
+	jnc	.loop	; yes
 
-	; znak drukowalny?
+	; printable character?
 	cmp	ax,	STATIC_SCANCODE_SPACE
-	jb	.loop	; nie
+	jb	.loop	; no
 	cmp	ax,	STATIC_SCANCODE_TILDE
-	ja	.loop	; tak
+	ja	.loop	; yes
 
-	; wstaw znak do dokumentu
-	xor	bl,	bl	; aktualizuj wszystkie zmienne globalne
+	; insert a character into the document
+	xor	bl,	bl	; update all the global variables
 	call	moko_document_insert
 
-	; wyświetl ponownie zawartość aktualnej linii na ekran
+	; display the current line contents on the screen again
 	call	moko_line
 
-	; powrót do pętli głównej
+	; return to the main loop
 	jmp	.loop
 
 .end:
-	; przesuń kursor na koniec przestrzeni znakowej
+	; move the cursor to the end of the character space
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_close_end - moko_string_close
 	mov	rsi,	moko_string_close
 	int	KERNEL_SERVICE
 
-	; zakończ działanie programu
+	; terminate the program
 	xor	ax,	ax
 	int	KERNEL_SERVICE
 

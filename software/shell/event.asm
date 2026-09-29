@@ -1,35 +1,35 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rdi - wskaźnik do komunikatu
+; entry:
+;	rdi - pointer to the message
 shell_event:
-	; brak obsługi
+	; not handled
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	rcx - PID procesu docelowego
+; entry:
+;	rcx - PID of the target process
 shell_event_transfer:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rcx
 	push	rsi
 
-	; prześlij komunikat do procesu potomnego
+	; pass the message to the child process
 	mov	rax,	KERNEL_SERVICE_PROCESS_ipc_send
 	mov	rbx,	rcx
-	xor	ecx,	ecx	; domyślny rozmiar komunikatu
+	xor	ecx,	ecx	; default message size
 	mov	rsi,	shell_ipc_data
 	int	KERNEL_SERVICE
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

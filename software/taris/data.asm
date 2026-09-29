@@ -10,17 +10,17 @@ taris_seed					dd	0x681560BA
 
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
 ;===============================================================================
-taris_window					dw	STATIC_EMPTY	; pozycja na osi X
-						dw	STATIC_EMPTY	; pozycja na osi Y
-						dw	TARIS_WINDOW_WIDTH_pixel	; szerokość okna
-						dw	TARIS_WINDOW_HEIGHT_pixel	; wysokość okna
-						dq	STATIC_EMPTY	; wskaźnik do przestrzeni danych okna (uzupełnia Bosu)
-.extra:						dd	STATIC_EMPTY	; rozmiar przestrzeni danych okna w Bajtach (uzupełnia Bosu)
+taris_window					dw	STATIC_EMPTY	; position on the X axis
+						dw	STATIC_EMPTY	; position on the Y axis
+						dw	TARIS_WINDOW_WIDTH_pixel	; window width
+						dw	TARIS_WINDOW_HEIGHT_pixel	; window height
+						dq	STATIC_EMPTY	; pointer to the window data space (filled in by Bosu)
+.extra:						dd	STATIC_EMPTY	; size of the window data space in bytes (filled in by Bosu)
 						dw	LIBRARY_BOSU_WINDOW_FLAG_visible | LIBRARY_BOSU_WINDOW_FLAG_header | LIBRARY_BOSU_WINDOW_FLAG_border | LIBRARY_BOSU_WINDOW_FLAG_BUTTON_close
-						dq	STATIC_EMPTY	; identyfikator okna (uzupełnia Bosu)
+						dq	STATIC_EMPTY	; window identifier (filled in by Bosu)
 						db	5
-						db	"Taris                          "	; wypełnij do 31 Bajtów znakami STATIC_SCANCODE_SPACE
-						dq	STATIC_EMPTY	; szerokość okna w Bajtach (uzupełnia Bosu)
+						db	"Taris                          "	; fill up to 31 bytes with STATIC_SCANCODE_SPACE characters
+						dq	STATIC_EMPTY	; window width in bytes (filled in by Bosu)
 .elements:					;-------------------------------
 .element_button_close:				; element "window close"
 						;-------------------------------
@@ -32,13 +32,13 @@ taris_window					dw	STATIC_EMPTY	; pozycja na osi X
 						;-------------------------------
 .element_playground:				db	LIBRARY_BOSU_ELEMENT_TYPE_draw
 						dw	.element_playground_end - .element_playground
-						dw	0	; pozycja na osi X względem przestrzeni danych okna
+						dw	0	; position on the X axis relative to the window data space
 						dw	LIBRARY_BOSU_HEADER_HEIGHT_pixel
 						dw	TARIS_PLAYGROUND_WIDTH_pixel
 						dw	TARIS_WINDOW_HEIGHT_pixel
-						dq	STATIC_EMPTY	; wskaźnik przestrzeni danych (uzupełnia Bosu)
+						dq	STATIC_EMPTY	; data space pointer (filled in by Bosu)
 .element_playground_end:			;-------------------------------
-						; koniec elementów okna
+						; end of the window elements
 						;-------------------------------
 						db	STATIC_EMPTY
 taris_window_end:

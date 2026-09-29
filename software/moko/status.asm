@@ -2,18 +2,18 @@
 
 ;===============================================================================
 moko_status:
-	; zachowaj oryginalne rejestry
+	; save the original registers
 	push	rax
 	push	rcx
 	push	rsi
 
-	; zachowaj pozycję kursora
+	; save the cursor position
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	mov	ecx,	moko_string_cursor_save_end - moko_string_cursor_save
 	mov	rsi,	moko_string_cursor_save
 	int	KERNEL_SERVICE
 
-	; ustaw kursor na pozycję komunikacji z użyszkodnikiem
+	; set the cursor to the user communication position
 	mov	ecx,	moko_string_document_cursor_end - moko_string_document_cursor
 	mov	rsi,	moko_string_document_cursor
 	mov	word [moko_string_document_cursor.x],	r8w
@@ -22,28 +22,28 @@ moko_status:
 	inc	word [moko_string_document_cursor.y]
 	int	KERNEL_SERVICE
 
-	; dokument został zmodyfikowany od ostatniego zapisu/odczytu?
+	; has the document been modified since the last write/read?
 	cmp	byte [moko_modified_semaphore],	STATIC_FALSE
-	je	.no_modified	; nie
+	je	.no_modified	; no
 
-	; wyświetl informacje o zmodyfikowanym dokumencie
+	; display the information about the modified document
 	mov	ecx,	moko_string_modified_end - moko_string_modified
 	mov	rsi,	moko_string_modified
 	int	KERNEL_SERVICE
 
-	; wyświetlono status dokumentu
+	; the document status has been displayed
 	mov	byte [moko_modified_semaphore],	STATIC_FALSE
 
 .no_modified:
-	; przywróć pozycję kursora
+	; restore the cursor position
 	mov	ecx,	moko_string_cursor_restore_end - moko_string_cursor_restore
 	mov	rsi,	moko_string_cursor_restore
 	int	KERNEL_SERVICE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

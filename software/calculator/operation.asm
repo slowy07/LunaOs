@@ -1,14 +1,14 @@
 ;===============================================================================
 
 ;===============================================================================
-soler_operation_insert:
+calculator_operation_insert:
 	; save the original registers
 	push	rax
 	push	rcx
 	push	rsi
 
 	; compose both values if they exist
-	call	soler_operation_compose
+	call	calculator_operation_compose
 
 	; has the first value been entered?
 	cmp	r11b,	STATIC_TRUE
@@ -17,12 +17,12 @@ soler_operation_insert:
 	; accept the first value
 
 	; convert the string entered by the user into a floating point value
-	movzx	ecx,	byte [soler_window.element_label_value_length]
-	mov	rsi,	soler_window.element_label_value_string
+	movzx	ecx,	byte [calculator_window.element_label_value_length]
+	mov	rsi,	calculator_window.element_label_value_string
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_to_float
 
 	; save the value and raise the flag
-	mov	qword [soler_value_first],	rax
+	mov	qword [calculator_value_first],	rax
 	mov	r11b,	STATIC_TRUE
 
 	; end of the operation
@@ -32,12 +32,12 @@ soler_operation_insert:
 	; accept the second value
 
 	; convert the string entered by the user into a floating point value
-	movzx	ecx,	byte [soler_window.element_label_value_length]
-	mov	rsi,	soler_window.element_label_value_string
+	movzx	ecx,	byte [calculator_window.element_label_value_length]
+	mov	rsi,	calculator_window.element_label_value_string
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_to_float
 
 	; save the value and raise the flag
-	mov	qword [soler_value_second],	rax
+	mov	qword [calculator_value_second],	rax
 	mov	r12b,	STATIC_TRUE
 
 .end:
@@ -50,20 +50,20 @@ soler_operation_insert:
 	ret
 
 	; debug
-	macro_debug	"software: soler_operation_insert"
+	macro_debug	"software: calculator_operation_insert"
 
 ;===============================================================================
 ; entry:
-;	byte [soler_value_exec]
-;	qword [soler_value_first]
-;	qword [soler_value_second]
+;	byte [calculator_value_exec]
+;	qword [calculator_value_first]
+;	qword [calculator_value_second]
 ; exit:
-;	qword [soler_value_first]
-soler_operation_compose:
+;	qword [calculator_value_first]
+calculator_operation_compose:
 	; have the criteria been met?
 
 	; has the operation type been chosen?
-	cmp	byte [soler_value_exec],	STATIC_EMPTY
+	cmp	byte [calculator_value_exec],	STATIC_EMPTY
 	je	.no_result	; no
 
 	; the first value has been loaded
@@ -77,11 +77,11 @@ soler_operation_compose:
 	;-----------------------------------------------------------------------
 
 	finit	; reset the coprocessor
-	fld	qword [soler_value_first]
-	fld	qword [soler_value_second]
+	fld	qword [calculator_value_first]
+	fld	qword [calculator_value_second]
 
 	; addition operation?
-	cmp	byte [soler_value_exec],	"+"
+	cmp	byte [calculator_value_exec],	"+"
 	jne	.no_add	; no
 
 	; perform the operation
@@ -92,7 +92,7 @@ soler_operation_compose:
 
 .no_add:
 	; subtraction operation?
-	cmp	byte [soler_value_exec],	"-"
+	cmp	byte [calculator_value_exec],	"-"
 	jne	.no_sub	; no
 
 	; perform the operation
@@ -103,7 +103,7 @@ soler_operation_compose:
 
 .no_sub:
 	; multiplication operation?
-	cmp	byte [soler_value_exec],	"*"
+	cmp	byte [calculator_value_exec],	"*"
 	jne	.no_multiply	; no
 
 	; perform the operation
@@ -114,7 +114,7 @@ soler_operation_compose:
 
 .no_multiply:
 	; multiplication operation?
-	cmp	byte [soler_value_exec],	"/"
+	cmp	byte [calculator_value_exec],	"/"
 	jne	.no_result	; no
 
 	; perform the operation
@@ -122,7 +122,7 @@ soler_operation_compose:
 
 .result:
 	; return the result in the first floating point value
-	fst	qword [soler_value_first]
+	fst	qword [calculator_value_first]
 
 	; the second value has expired
 	mov	r12b,	STATIC_FALSE
@@ -132,19 +132,19 @@ soler_operation_compose:
 	ret
 
 	; debug
-	macro_debug	"software: soler_operation_compose"
+	macro_debug	"software: calculator_operation_compose"
 
 ;===============================================================================
 ; entry:
 ;	ax - value from the keyboard or the mouse
-soler_operation:
+calculator_operation:
 	; save the original registers
 	push	rax
 	push	rsi
 
 	; the processed string and its size
-	movzx	ecx,	byte [soler_window.element_label_value_length]
-	mov	rsi,	soler_window.element_label_value_string
+	movzx	ecx,	byte [calculator_window.element_label_value_length]
+	mov	rsi,	calculator_window.element_label_value_string
 
 	; modification of the value?
 	cmp	ax,	STATIC_SCANCODE_DIGIT_0
@@ -165,9 +165,9 @@ soler_operation:
 	mov	r10b,	STATIC_TRUE
 
 	; is the first and only digit of the value a ZERO?
-	cmp	byte [soler_window.element_label_value_length],	STATIC_BYTE_SIZE_byte
+	cmp	byte [calculator_window.element_label_value_length],	STATIC_BYTE_SIZE_byte
 	jne	.not_dot	; no
-	cmp	byte [soler_window.element_label_value_string],	STATIC_SCANCODE_DIGIT_0
+	cmp	byte [calculator_window.element_label_value_string],	STATIC_SCANCODE_DIGIT_0
 	jne	.not_dot	; no
 
 	; do not clear the value
@@ -175,7 +175,7 @@ soler_operation:
 
 .not_dot:
 	; has the input limit been reached?
-	cmp	cl,	SOLER_INPUT_VALUE_WIDTH_char
+	cmp	cl,	CALCULATOR_INPUT_VALUE_WIDTH_char
 	jnb	.error	; yes, ignore the digit
 
 	; clear the value before appending a digit/comma?
@@ -187,7 +187,7 @@ soler_operation:
 
 	; reset the size of the value string
 	xor	cl,	cl
-	mov	byte [soler_window.element_label_value_length],	STATIC_EMPTY
+	mov	byte [calculator_window.element_label_value_length],	STATIC_EMPTY
 
 .empty:
 	; does the user want to insert the ZERO digit?
@@ -203,7 +203,7 @@ soler_operation:
 	mov	byte [rsi + rcx],	al
 
 	; size of the string
-	inc	byte [soler_window.element_label_value_length]
+	inc	byte [calculator_window.element_label_value_length]
 
 	; the operation has been performed
 	clc
@@ -254,14 +254,14 @@ soler_operation:
 ;-------------------------------------------------------------------------------
 .result:
 	; load the value into the variable
-	call	soler_operation_insert
+	call	calculator_operation_insert
 	jc	.end	; no value passed
 
 	; compose both values if they exist
-	call	soler_operation_compose
+	call	calculator_operation_compose
 
 	; save the operation character
-	mov	byte [soler_value_exec],	"="
+	mov	byte [calculator_value_exec],	"="
 
 	; end of the operation handling
 	jmp	.preserve
@@ -273,7 +273,7 @@ soler_operation:
 	jne	.backspace_prepare	; no
 
 	; replace the first digit with a ZERO
-	mov	byte [soler_window.element_label_value_string],	STATIC_SCANCODE_DIGIT_0
+	mov	byte [calculator_window.element_label_value_string],	STATIC_SCANCODE_DIGIT_0
 
 	; end of the operation handling
 	jmp	.preserve
@@ -291,7 +291,7 @@ soler_operation:
 
 .backspace_ready:
 	; update the size of the string
-	mov	byte [soler_window.element_label_value_length],	cl
+	mov	byte [calculator_window.element_label_value_length],	cl
 
 	; end of the operation handling
 	jmp	.end
@@ -299,11 +299,11 @@ soler_operation:
 ;-------------------------------------------------------------------------------
 .add:
 	; load the value into the variable
-	call	soler_operation_insert
+	call	calculator_operation_insert
 	jc	.end	; no value passed
 
 	; save the operation character
-	mov	byte [soler_value_exec],	"+"
+	mov	byte [calculator_value_exec],	"+"
 
 	; clear the value before modifying it
 	mov	r13b,	STATIC_TRUE
@@ -336,4 +336,4 @@ soler_operation:
 	ret
 
 	; debug
-	macro_debug	"software: soler_operation"
+	macro_debug	"software: calculator_operation"

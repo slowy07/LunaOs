@@ -1,29 +1,29 @@
 ;===============================================================================
 
 	;-----------------------------------------------------------------------
-	%include	"software/taris/config.asm"
+	%include	"software/tetris/config.asm"
 	;-----------------------------------------------------------------------
 
 ;===============================================================================
-taris:
+tetris:
 	; create the window
-	mov	rsi,	taris_window
+	mov	rsi,	tetris_window
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu
-	jc	taris.close	; not enough memory space
+	jc	tetris.close	; not enough memory space
 
 	; randomly pick a block and its pattern
-	call	taris_random_block
+	call	tetris_random_block
 
 	; starting position of the block
-	mov	r8,	TARIS_BRICK_START_POSITION_x
-	mov	r9,	TARIS_BRICK_START_POSITION_y
+	mov	r8,	TETRIS_BRICK_START_POSITION_x
+	mov	r9,	TETRIS_BRICK_START_POSITION_y
 
 .loop:
 	; check whether the new block collides with the currently existing ones
-	call	taris_collision
+	call	tetris_collision
 
 	; check the incoming events
-	mov	rsi,	taris_window
+	mov	rsi,	tetris_window
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_event
 
 	; etc.
@@ -34,10 +34,10 @@ taris:
 	xor	ax,	ax
 	int	KERNEL_SERVICE
 
-	macro_debug	"software: taris"
+	macro_debug	"software: tetris"
 
 	;-----------------------------------------------------------------------
-	%include	"software/taris/data.asm"
-	%include	"software/taris/random.asm"
-	%include	"software/taris/collision.asm"
+	%include	"software/tetris/data.asm"
+	%include	"software/tetris/random.asm"
+	%include	"software/tetris/collision.asm"
 	;-----------------------------------------------------------------------

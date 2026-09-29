@@ -1,0 +1,27 @@
+;===============================================================================
+
+	;-----------------------------------------------------------------------
+	; constants, variables, globals, structures, objects, macros
+	;-----------------------------------------------------------------------
+	%include	"software/header.asm"
+	;-----------------------------------------------------------------------
+
+%define	PROGRAM_NAME			"calculator"
+%define	PROGRAM_VERSION			"0.3"
+
+CALCULATOR_WINDOW_PADDING_pixel		equ	0x01
+CALCULATOR_WINDOW_WIDTH_pixel		equ	CALCULATOR_WINDOW_ELEMENT_MARGIN_pixel + (CALCULATOR_WINDOW_ELEMENT_AREA_pixel * CALCULATOR_WINDOW_WIDTH_element)
+CALCULATOR_WINDOW_HEIGHT_pixel		equ	LIBRARY_BOSU_HEADER_HEIGHT_pixel + CALCULATOR_INPUT_HEIGHT_pixel + CALCULATOR_WINDOW_ELEMENT_MARGIN_pixel + (CALCULATOR_WINDOW_ELEMENT_AREA_pixel * CALCULATOR_WINDOW_HEIGHT_element)
+
+CALCULATOR_WINDOW_ELEMENT_MARGIN_pixel	equ	0x01
+CALCULATOR_WINDOW_ELEMENT_SIZE_pixel		equ	0x10
+CALCULATOR_WINDOW_ELEMENT_AREA_pixel		equ	CALCULATOR_WINDOW_ELEMENT_SIZE_pixel + CALCULATOR_WINDOW_ELEMENT_MARGIN_pixel
+
+CALCULATOR_WINDOW_WIDTH_element		equ	0x04
+CALCULATOR_WINDOW_HEIGHT_element		equ	0x05
+
+CALCULATOR_INPUT_HEIGHT_pixel		equ	12
+CALCULATOR_INPUT_VALUE_WIDTH_char		equ	(CALCULATOR_WINDOW_WIDTH_pixel / LIBRARY_FONT_WIDTH_pixel) - CALCULATOR_INPUT_OPERATION_WIDTH_char
+CALCULATOR_INPUT_VALUE_WIDTH_pixel		equ	(CALCULATOR_WINDOW_WIDTH_pixel - CALCULATOR_INPUT_OPERATION_WIDTH_pixel) - (CALCULATOR_WINDOW_PADDING_pixel << STATIC_MULTIPLE_BY_2_shift)
+CALCULATOR_INPUT_OPERATION_WIDTH_char	equ	1
+CALCULATOR_INPUT_OPERATION_WIDTH_pixel	equ	CALCULATOR_INPUT_OPERATION_WIDTH_char * LIBRARY_FONT_WIDTH_pixel

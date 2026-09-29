@@ -11,7 +11,7 @@ bad() { echo "FAIL  $1"; FAIL=$((FAIL+1)); }
 
 # The ten applications the kernel embeds as its initial VFS image. The three
 # LunaOs applications (free, init, wello) join this list when they are ported.
-APPS="cat console hello ls moko redia shell soler taris tm"
+APPS="cat console hello ls moko redia shell calculator tetris tm"
 
 # --- check 1: clean build, no errors, no warnings -----------------------
 BUILD_LOG=$(mktemp)

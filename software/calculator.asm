@@ -1,13 +1,13 @@
 ;===============================================================================
 
 	;-----------------------------------------------------------------------
-	%include	"software/soler/config.asm"
+	%include	"software/calculator/config.asm"
 	;-----------------------------------------------------------------------
 
 ;===============================================================================
-soler:
+calculator:
 	; initialization of the console space
-	%include	"software/soler/init.asm"
+	%include	"software/calculator/init.asm"
 
 .reset:
 	; flag, comma
@@ -24,35 +24,35 @@ soler:
 	mov	r14b,	STATIC_FALSE	; positive
 
 	; clear the contents of the labels
-	mov	byte [soler_window.element_label_operation_string],	STATIC_SCANCODE_SPACE
-	mov	byte [soler_window.element_label_value_string],	STATIC_SCANCODE_DIGIT_0
-	mov	byte [soler_window.element_label_value_length],	STATIC_BYTE_SIZE_byte
+	mov	byte [calculator_window.element_label_operation_string],	STATIC_SCANCODE_SPACE
+	mov	byte [calculator_window.element_label_value_string],	STATIC_SCANCODE_DIGIT_0
+	mov	byte [calculator_window.element_label_value_length],	STATIC_BYTE_SIZE_byte
 
 .refresh:
 	; display the result/state of the last operation
-	call	soler_show
+	call	calculator_show
 
 	; update the contents of the labels
-	mov	rdi,	soler_window
+	mov	rdi,	calculator_window
 
 	; operation label
-	mov	rsi,	soler_window.element_label_operation
+	mov	rsi,	calculator_window.element_label_operation
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_element_label
 
 	; value label
-	mov	rsi,	soler_window.element_label_value
+	mov	rsi,	calculator_window.element_label_value
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_element_label
 
 	; update the window contents
 	mov	al,	KERNEL_WM_WINDOW_update
-	mov	rsi,	soler_window
+	mov	rsi,	calculator_window
 	or	qword [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.SIZE + LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA.flags],	LIBRARY_BOSU_WINDOW_FLAG_flush
 	int	KERNEL_WM_IRQ
 
 .loop:
 	; fetch the message
 	mov	ax,	KERNEL_SERVICE_PROCESS_ipc_receive
-	mov	rdi,	soler_ipc_data
+	mov	rdi,	calculator_ipc_data
 	int	KERNEL_SERVICE
 	jc	.loop	; no message
 
@@ -73,7 +73,7 @@ soler:
 	je	.reset	; yes
 
 	; perform the operation bound to the key
-	call	soler_operation
+	call	calculator_operation
 	jc	.loop	; no actions
 
 	; return to the procedure
@@ -89,7 +89,7 @@ soler:
 	movzx	r9d,	word [rdi + KERNEL_IPC_STRUCTURE.data + KERNEL_IPC_STRUCTURE_DATA_MOUSE.y]	; y
 
 	; fetch the pointer to the element taking part in the event
-	mov	rsi,	soler_window
+	mov	rsi,	calculator_window
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_element
 	jc	.loop	; the dependent element was not found
 
@@ -108,11 +108,11 @@ soler:
 	xor	ax,	ax
 	int	KERNEL_SERVICE
 
-	macro_debug	"software: soler"
+	macro_debug	"software: calculator"
 
 	;-----------------------------------------------------------------------
-	%include	"software/soler/data.asm"
-	%include	"software/soler/operation.asm"
-	%include	"software/soler/show.asm"
-	%include	"software/soler/fpu.asm"
+	%include	"software/calculator/data.asm"
+	%include	"software/calculator/operation.asm"
+	%include	"software/calculator/show.asm"
+	%include	"software/calculator/fpu.asm"
 	;-----------------------------------------------------------------------

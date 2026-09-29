@@ -3,7 +3,7 @@
 ;===============================================================================
 ; exit:
 ;	bx - pattern of the drawn block
-taris_random_block:
+tetris_random_block:
 	; save the original registers
 	push	rax
 	push	rdx
@@ -13,22 +13,22 @@ taris_random_block:
 	int	KERNEL_SERVICE
 
 	; modify the seed by the current system uptime
-	add	dword [taris_seed],	eax
+	add	dword [tetris_seed],	eax
 
 	; fetch a pseudo random value
-	mov	eax,	dword [taris_seed]
+	mov	eax,	dword [tetris_seed]
 	macro_library	LIBRARY_STRUCTURE_ENTRY.xorshift32
 
 	; save the result as the next seed
-	mov	dword [taris_seed],	eax
+	mov	dword [tetris_seed],	eax
 
 	; return a value from the range of the number of available blocks
-	div	qword [taris_limit]
+	div	qword [tetris_limit]
 
 	; return the result
-	mov	rbx,	taris_bricks
+	mov	rbx,	tetris_bricks
 	mov	rbx,	qword [rbx + rdx * STATIC_QWORD_SIZE_byte]
-	call	taris_random_model	; choose one of the possible patterns
+	call	tetris_random_model	; choose one of the possible patterns
 
 	; remove the remaining patterns from memory
 	and	rbx,	STATIC_WORD_mask
@@ -45,18 +45,18 @@ taris_random_block:
 ;	bx - drawn block
 ; exit:
 ;	bx - one of the patterns of the drawn block
-taris_random_model:
+tetris_random_model:
 	; save the original registers
 	push	rax
 	push	rcx
 	push	rdx
 
 	; fetch a pseudo random value
-	mov	eax,	dword [taris_seed]
+	mov	eax,	dword [tetris_seed]
 	macro_library	LIBRARY_STRUCTURE_ENTRY.xorshift32
 
 	; return a value from the range of the number of available patterns
-	div	qword [taris_limit_model]
+	div	qword [tetris_limit_model]
 
 	; modify
 	shl	rdx,	STATIC_MULTIPLE_BY_16_shift

@@ -3,7 +3,7 @@
 ;===============================================================================
 ; entry:
 ;	bx - block pattern
-taris_collision:
+tetris_collision:
 	; save the original registers
 	push	rax
 	push	rbx
@@ -12,7 +12,7 @@ taris_collision:
 	push	r9
 
 	; local variable
-	push	TARIS_BRICK_STRUCTURE_height
+	push	TETRIS_BRICK_STRUCTURE_height
 
 .loop:
 	; fetch the first line of the block structure
@@ -24,7 +24,7 @@ taris_collision:
 	shl	ax,	cl
 
 	; fetch the board space line matching the line position of the block structure
-	mov	rdx,	taris_brick_platform
+	mov	rdx,	tetris_brick_platform
 	mov	dx,	word [rdx + r9 * STATIC_WORD_SIZE_byte]
 
 	; did a collision occur?

@@ -9,10 +9,10 @@ kernel_gui_background_mixer		dd	0x001B1B1B, 0x00212121
 
 kernel_gui_event_console_file		db	"/bin/console"
 kernel_gui_event_console_file_end:
-kernel_gui_event_soler_file		db	"/bin/soler"
-kernel_gui_event_soler_file_end:
-kernel_gui_event_taris_file		db	"/bin/taris"
-kernel_gui_event_taris_file_end:
+kernel_gui_event_calculator_file		db	"/bin/calculator"
+kernel_gui_event_calculator_file_end:
+kernel_gui_event_tetris_file		db	"/bin/tetris"
+kernel_gui_event_tetris_file_end:
 
 align	STATIC_QWORD_SIZE_byte,		db	STATIC_NOTHING
 
@@ -117,10 +117,10 @@ kernel_gui_window_menu			dw	160	; position on the X axis relative to the cursor 
 					dw	LIBRARY_BOSU_HEADER_HEIGHT_pixel + 0x10	; position on the Y axis relative to the window data space
 					dw	((.element_label_1_end - .element_label_1_string) * LIBRARY_FONT_WIDTH_pixel)	; element width
 					dw	0x10	; element height
-					dq	kernel_gui_event_soler
+					dq	kernel_gui_event_calculator
 					db	LIBRARY_BOSU_ELEMENT_LABEL_FLAG_ALIGN_default
 					db	.element_label_1_end - .element_label_1_string
-.element_label_1_string:		db	"Soler"
+.element_label_1_string:		db	"Calculator"
 .element_label_1_end:			;---------------------------------------
 					; element "label 2"
 					;---------------------------------------
@@ -130,10 +130,10 @@ kernel_gui_window_menu			dw	160	; position on the X axis relative to the cursor 
 					dw	LIBRARY_BOSU_HEADER_HEIGHT_pixel + 0x10 * 0x02	; position on the Y axis relative to the window data space
 					dw	((.element_label_2_end - .element_label_2_string) * LIBRARY_FONT_WIDTH_pixel)	; element width
 					dw	0x10	; element height
-					dq	kernel_gui_event_taris
+					dq	kernel_gui_event_tetris
 					db	LIBRARY_BOSU_ELEMENT_LABEL_FLAG_ALIGN_default
 					db	.element_label_2_end - .element_label_2_string
-.element_label_2_string:		db	"Taris"
+.element_label_2_string:		db	"Tetris"
 .element_label_2_end:			;---------------------------------------
 					; end of the window elements
 					;---------------------------------------

@@ -1,9 +1,9 @@
 ;===============================================================================
 
 	; create the window
-	mov	rsi,	soler_window
+	mov	rsi,	calculator_window
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu
-	jc	soler.close	; not enough memory space
+	jc	calculator.close	; not enough memory space
 
 	; display the window
 	mov	al,	KERNEL_WM_WINDOW_update
@@ -12,6 +12,6 @@
 
 	; initialize the coprocessor mode
 	finit
-        fstcw	word [soler_fpu_control]	; store the coprocessor flags in the variable
-	or	word [soler_fpu_control],	110000000000b	; do not store the value after the comma
-        fldcw	word [soler_fpu_control]	; load the new coprocessor flags from the variable
+        fstcw	word [calculator_fpu_control]	; store the coprocessor flags in the variable
+	or	word [calculator_fpu_control],	110000000000b	; do not store the value after the comma
+        fldcw	word [calculator_fpu_control]	; load the new coprocessor flags from the variable

@@ -1,7 +1,7 @@
 ;===============================================================================
 
 ;===============================================================================
-soler_show:
+calculator_show:
 	; has the first value been confirmed?
 	cmp	r11b,	STATIC_FALSE
 	je	.end	; no
@@ -10,24 +10,24 @@ soler_show:
 	xor	edx,	edx
 
 	; pointer to the beginning of the value string
-	mov	rdi,	soler_window.element_label_value_string
+	mov	rdi,	calculator_window.element_label_value_string
 
 	; fetch the result of the operation
-	mov	rax,	qword [soler_value_first]
+	mov	rax,	qword [calculator_value_first]
 
 	; extract the integer part from the floating point value
-	mov	qword [soler_fpu_float_result],	rax
-	call	soler_fpu_float_to_integer
-	mov	qword [soler_fpu_precision],	4	; maximum number of places after the comma
-	call	soler_fpu_float_to_fraction	; and the fraction
+	mov	qword [calculator_fpu_float_result],	rax
+	call	calculator_fpu_float_to_integer
+	mov	qword [calculator_fpu_precision],	4	; maximum number of places after the comma
+	call	calculator_fpu_float_to_fraction	; and the fraction
 
 	; negative value?
 	bt	rax,	STATIC_QWORD_BIT_sign
 	jnc	.unsigned	; no
 
 	; insert a "-" character into the value string
-	mov	byte [soler_window.element_label_value_length],	STATIC_BYTE_SIZE_byte
-	mov	byte [soler_window.element_label_value_string],	STATIC_SCANCODE_MINUS
+	mov	byte [calculator_window.element_label_value_length],	STATIC_BYTE_SIZE_byte
+	mov	byte [calculator_window.element_label_value_string],	STATIC_SCANCODE_MINUS
 
 	; move the value string pointer to the next position and its size
 	inc	rdx
@@ -35,7 +35,7 @@ soler_show:
 
 .unsigned:
 	; load the integer part of the fraction
-	mov	rax,	qword [soler_fpu_integer]
+	mov	rax,	qword [calculator_fpu_integer]
 	mov	bl,	STATIC_NUMBER_SYSTEM_decimal
 	xor	ecx,	ecx
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
@@ -45,7 +45,7 @@ soler_show:
 	add	rdi,	rcx
 
 	; is the fraction of the fraction empty?
-	cmp	qword [soler_fpu_fraction],	STATIC_EMPTY
+	cmp	qword [calculator_fpu_fraction],	STATIC_EMPTY
 	je	.ready	; yes
 
 	; insert a "," character into the value string
@@ -56,9 +56,9 @@ soler_show:
 	inc	rdi
 
 	; load the integer part of the fraction
-	mov	rax,	qword [soler_fpu_fraction]
+	mov	rax,	qword [calculator_fpu_fraction]
 	mov	bl,	STATIC_NUMBER_SYSTEM_decimal
-	mov	rcx,	qword [soler_fpu_precision]
+	mov	rcx,	qword [calculator_fpu_precision]
 	mov	dl,	STATIC_SCANCODE_DIGIT_0
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
 

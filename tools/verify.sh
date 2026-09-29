@@ -79,6 +79,16 @@ fi
 kill "$QPID" 2>/dev/null
 rm -f "$PPM" "$SOCK"
 
+# --- check 7: debug handler dumps registers on a fault -----------------
+# The handler is defined in kernel/debug.asm and wired into the exception
+# handlers in kernel/idt.asm, ahead of the halt.
+if grep -q '^kernel_debug_dump' kernel/debug.asm 2>/dev/null \
+   && grep -q 'call[[:space:]]*kernel_debug_dump' kernel/idt.asm kernel/panic.asm 2>/dev/null; then
+  ok "7 debug handler is defined and called from the exception path"
+else
+  bad "7 kernel_debug_dump is missing or not wired into the exception path"
+fi
+
 # --- check 8: no upstream project name or attribution in code ----------
 # This file is excluded: it has to name the forbidden strings to search for them.
 UPSTREAM='cy[j]on|black[d]ev|adam[c]zyk|black[e]nd'

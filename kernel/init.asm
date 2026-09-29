@@ -2,7 +2,8 @@
 
 	; logical processor?
 	cmp	byte [rel kernel_init_smp_semaphore],	STATIC_FALSE
-	je	kernel_init	; no
+	je	kernel_init	; no
+
 
 	; ;-----------------------------------------------------------------------
 	; ; AP - logical processor initialisation
@@ -131,7 +132,8 @@ kernel_init:
 
 	; have all logical processors been initialised?
 	cmp	al,	byte [rel kernel_apic_count]
-	jne	.wait	; no, wait
+	jne	.wait	; no, wait
+
 
 	;-----------------------------------------------------------------------
 	; INITIALISATION COMPLETE

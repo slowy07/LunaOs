@@ -100,6 +100,9 @@ kernel_idt_update:
 ;===============================================================================
 ; default handler of a processor exception
 kernel_idt_exception_default:
+	; dump the faulting context on the COM1 port
+	call	kernel_debug_dump
+
 	; break into the Bochs debugger
 	xchg	bx,bx
 
@@ -112,6 +115,9 @@ kernel_idt_exception_default:
 
 ;===============================================================================
 kernel_idt_exception_general_protection_fault:
+	; dump the faulting context on the COM1 port
+	call	kernel_debug_dump
+
 	; break into the Bochs debugger
 	xchg	bx,bx
 
@@ -125,6 +131,9 @@ kernel_idt_exception_general_protection_fault:
 
 ;===============================================================================
 kernel_idt_exception_page_fault:
+	; dump the faulting context on the COM1 port
+	call	kernel_debug_dump
+
 	; preserve the original registers
 	push	rcx
 	push	rsi

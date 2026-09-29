@@ -91,6 +91,16 @@ else
   git grep -liE "$UPSTREAM" $CODEGLOBE
 fi
 
+# --- check 9: no Polish characters in assembly -------------------------
+# The upstream comments are all translated; this makes "English only" a gate.
+POLISH=$(git grep -lP '[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]' -- '*.asm' 2>/dev/null | wc -l)
+if [ "$POLISH" -eq 0 ]; then
+  ok "9 no Polish characters in any .asm file"
+else
+  bad "9 Polish characters remain in $POLISH file(s):"
+  git grep -lP '[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]' -- '*.asm'
+fi
+
 # --- check 10: no commented-out code -----------------------------------
 # `or`, `and` and `not` are excluded: they are also ordinary English words and
 # would flag prose in translated comments.
@@ -102,8 +112,6 @@ else
   bad "10 commented-out code remains on $DEAD line(s):"
   git grep -nIE "$DEADCODE" -- '*.asm' | head -20
 fi
-
-# Check 9 (no Polish characters) lands once the comments are translated.
 
 echo
 echo "passed: $PASS   failed: $FAIL"

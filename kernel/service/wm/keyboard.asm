@@ -1,27 +1,27 @@
 ;===============================================================================
 
 ;===============================================================================
-; wyjście:
-;	Flaga ZF - jeśli brak klawisza (lub okno nie było do tego uprawnione)
-;	ax - kod ASCII klawisza lub jego sekwencja
+; output:
+;	ZF flag - if no key (or the window was not entitled to it)
+;	ax - ASCII code of the key or its sequence
 kernel_wm_keyboard:
-	; pobierz kod klawisza z bufora
+	; fetch the key code from the buffer
 	call	driver_ps2_keyboard_read
-	jz	.end	; brak
+	jz	.end	; none
 
-	; pobierz wskaźnik do aktywnego obiektu, który otrzyma komunikat
+	; fetch the pointer to the active object which will receive the message
 	mov	rsi,	qword [rel kernel_wm_object_active_pointer]
 
-	; brak wybranego obiektu?
+	; no selected object?
 	test	rsi,	rsi
-	jz	.end	; tak, zignoruj klawisz
+	jz	.end	; yes, ignore the key
 
-	; wyślij do procesu będącego właścicielem obiektu informacje o klawiaturze
+	; send the keyboard information to the process owning the object
 	call	kernel_wm_ipc_keyboard
 
 .end:
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_wm_keyboard"

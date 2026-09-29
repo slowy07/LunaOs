@@ -11,101 +11,101 @@
 
 ;===============================================================================
 service_network:
-	; upewnij się by nie korzystać z stron zarezerwowanych
+	; make sure not to use reserved pages
 	xor	ebp,	ebp
 
-	; pobierz własny PID
+	; fetch own PID
 	call	kernel_task_active
 	mov	rax,	qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
-	; zachowaj informacje o własnym PID dla pozostałych procesów
+	; save the information about own PID for the other processes
 	mov	qword [rel service_network_pid],	rax
 
 .loop:
-	; pobierz wiadomość do nas
+	; fetch a message addressed to us
 	mov	rdi,	service_network_ipc_message
 	call	kernel_ipc_receive
-	jc	.loop	; brak, sprawdź raz jeszcze
+	jc	.loop	; none, check once again
 
-	; pobierz rozmiar i wskaźnik do przestrzeni
+	; fetch the size and the pointer to the space
 	mov	rcx,	qword [rdi + KERNEL_IPC_STRUCTURE.size]
 	mov	rsi,	qword [rdi + KERNEL_IPC_STRUCTURE.pointer]
 
-	; protokół ARP?
+	; the ARP protocol?
 	cmp	word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.type],	SERVICE_NETWORK_FRAME_ETHERNET_TYPE_arp
-	je	service_network_arp	; tak
+	je	service_network_arp	; yes
 
-	; protokół IP?
+	; the IP protocol?
 	cmp	word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.type],	SERVICE_NETWORK_FRAME_ETHERNET_TYPE_ip
-	je	service_network_ip	; tak
+	je	service_network_ip	; yes
 
-	; protokół nieobsługiwany
+	; unsupported protocol
 	xchg	bx,bx
 
 .end:
-	; przestrzeń pakietu została przekazana do innego procesu?
+	; has the packet space been handed over to another process?
 	test	rsi,	rsi
-	jz	.loop	; tak
+	jz	.loop	; yes
 
-	; zwolnij przestrzeń danych pakietu
+	; release the packet data space
 	mov	rdi,	rsi
 	call	kernel_memory_release_page
 
-	; powrót do pętli głównej
+	; return to the main loop
 	jmp	.loop
 
 	macro_debug	"service_network"
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do pakietu przychodzącego
+; input:
+;	rsi - pointer to the incoming packet
 service_network_ip:
-	; protokół ICMP?
+	; the ICMP protocol?
 	cmp	byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.protocol],	SERVICE_NETWORK_FRAME_IP_PROTOCOL_ICMP
-	je	service_network_icmp	; tak
+	je	service_network_icmp	; yes
 
-	; protokół TCP?
+	; the TCP protocol?
 	cmp	byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.protocol],	SERVICE_NETWORK_FRAME_IP_PROTOCOL_TCP
-	je	service_network_tcp	; tak
+	je	service_network_tcp	; yes
 
 .end:
-	; powrót z procedury
+	; return from the procedure
 	jmp	service_network.end
 
 	macro_debug	"service_network_ip"
 
 ;===============================================================================
-; wejście:
-;	rax - rozmiar pakietu w Bajtach
-;	rdi - wskaźnik do przestrzeni padanych pakietu
-; wyjście:
-;	Flaga CF, jeśli nie udało się wysłać
+; input:
+;	rax - packet size in Bytes
+;	rdi - pointer to the packet data space
+; output:
+;	CF flag, if the send failed
 service_network_transfer:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rsi
 
-	; usługa wysyłania danych przez interfejs sieciowy gotowa?
+	; is the data sending service via the network interface ready?
 	mov	rbx,	qword [rel service_tx_pid]
 	test	rbx,	rbx
-	jz	.error	; usługa nie gotowa
+	jz	.error	; the service is not ready
 
-	; rejestry na swoje miejsce
+	; registers to their places
 	mov	rcx,	rax
 	mov	rsi,	rdi
 	call	kernel_ipc_insert
-	jnc	.end	; wysłano wiadomość
+	jnc	.end	; the message was sent
 
 .error:
-	; flaga, błąd
+	; the flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret

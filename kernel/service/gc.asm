@@ -2,134 +2,134 @@
 
 ;===============================================================================
 kernel_gc:
-	; szukaj zakończonego procesu
+	; search for a finished process
 	call	kernel_gc_search
 
-	; zamknij wszystkie okna utworzone przez proces
+	; close all windows created by the process
 	mov	rcx,	qword [rsi + KERNEL_TASK_STRUCTURE.pid]
 	call	kernel_wm_object_drain
 
-	; pobierz identyfikator strumienia wejścia procesu
+	; fetch the process input stream identifier
 	mov	rdi,	qword [rsi + KERNEL_TASK_STRUCTURE.in]
 
-	; ilość procesów korzystających z strumienia
+	; number of processes using the stream
 	dec	qword [rdi + KERNEL_STREAM_STRUCTURE_ENTRY.lock]
 
-	; ze strumienia korzysta tylko jeden proces?
+	; does only one process use the stream?
 	cmp	qword [rdi + KERNEL_STREAM_STRUCTURE_ENTRY.lock],	STATIC_EMPTY
-	jne	.stream_not_unique	; nie
+	jne	.stream_not_unique	; no
 
-	; zwolnij strumień
+	; release the stream
 	call	kernel_stream_release
 
 .stream_not_unique:
-	; pobierz identyfikator strumienia wyjścia procesu
+	; fetch the process output stream identifier
 	mov	rdi,	qword [rsi + KERNEL_TASK_STRUCTURE.out]
 
-	; ilość procesów korzystających z strumienia
+	; number of processes using the stream
 	dec	qword [rdi + KERNEL_STREAM_STRUCTURE_ENTRY.lock]
 
-	; ze strumienia korzysta tylko jeden proces?
+	; does only one process use the stream?
 	cmp	qword [rdi + KERNEL_STREAM_STRUCTURE_ENTRY.lock],	STATIC_EMPTY
-	jne	.stream_out_unique	; nie
+	jne	.stream_out_unique	; no
 
-	; zwolnij strumień
+	; release the stream
 	call	kernel_stream_release
 
 .stream_out_unique:
-	; zapamiętaj adres tablicy PML4 procesu
+	; remember the address of the process PML4 table
 	mov	r11,	qword [rsi + KERNEL_TASK_STRUCTURE.cr3]
 
-	; ustaw wskaźnik na podstawę przestrzeni stosu kontekstu procesu
+	; set the pointer to the base of the process context stack space
 	mov	rax,	SOFTWARE_BASE_address
-	movzx	ecx,	word [rsi + KERNEL_TASK_STRUCTURE.stack]	; rozmiar stosu kontekstu wątku
-	shl	rcx,	STATIC_PAGE_SIZE_shift	; zamień na Bajty
-	sub	rax,	rcx	; koryguj pozycję wskaźnika
+	movzx	ecx,	word [rsi + KERNEL_TASK_STRUCTURE.stack]	; size of the thread context stack
+	shl	rcx,	STATIC_PAGE_SIZE_shift	; convert to Bytes
+	sub	rax,	rcx	; correct the pointer position
 
-	; zwolnij przestrzeń stosu kontekstu wątku
+	; release the thread context stack space
 	shr	rcx,	STATIC_PAGE_SIZE_shift
 	call	kernel_memory_release_task
 
-	; zwolnij przestrzeń kodu/danych procesu
+	; release the process code/data space
 	mov	rax,	SOFTWARE_BASE_address
 	mov	rcx,	KERNEL_PAGE_SOFTWARE_PML4_records
 	call	kernel_page_purge
 
-	; zwolnij przestrzeń tablicy PML4 wątku
+	; release the thread PML4 table space
 	mov	rdi,	r11
-	call	kernel_memory_release_page	; zwolnij przestrzeń tablicy PML4
+	call	kernel_memory_release_page	; release the PML4 table space
 
-	; strona odzyskana z tablic stronicowania
+	; page recovered from the paging tables
 	dec	qword [rel kernel_page_paged_count]
 
 .child:
-	; odszukaj proces potomny lub wątek rodzica
+	; find the child process or the thread of the parent
 	call	kernel_task_child
-	jc	.end	; brak procesów potomnych/wątków
+	jc	.end	; no child processes/threads
 
-	; wymuś zamknięcie procesu
+	; force the process to close
 	and	word [rdi + KERNEL_TASK_STRUCTURE.flags],	~KERNEL_TASK_FLAG_active
 	or	word [rdi + KERNEL_TASK_STRUCTURE.flags],	KERNEL_TASK_FLAG_closed
 
-	; odszukaj pozostałe procesy
+	; find the remaining processes
 	jmp	.child
 
 .end:
-	; zwolnij wpis w kolejce zadań
+	; release the entry in the task queue
 	mov	word [rsi + KERNEL_TASK_STRUCTURE.flags],	STATIC_EMPTY
 
-	; ilość zadań w kolejce
+	; number of tasks in the queue
 	dec	qword [rel kernel_task_count]
 
-	; ilość dostępnych rekordów w kolejce zadań
+	; number of free records in the task queue
 	inc	qword [rel kernel_task_free]
 
-	; szukaj nowego procesu do zwolnienia
+	; search for a new process to release
 	jmp	kernel_gc
 
 	macro_debug	"kernel_gc"
 
 ;===============================================================================
-; wyjście:
-;	rsi - wskaźnik do znalezionego rekordu
+; output:
+;	rsi - pointer to the found record
 kernel_gc_search:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 
-	; przeszukaj od początku kolejkę za zamkniętym wpisem
+	; search the queue from the beginning for a closed entry
 	mov	rsi,	qword [rel kernel_task_address]
 
 .restart:
-	; ilość wpisów na blok danych kolejki zadań
+	; number of entries in one data block of the task queue
 	mov	rcx,	STATIC_STRUCTURE_BLOCK.link / KERNEL_TASK_STRUCTURE.SIZE
 
 .next:
-	; sprawdź flagę zamkniętego procesu
+	; check the closed process flag
 	test	word [rsi + KERNEL_TASK_STRUCTURE.flags],	KERNEL_TASK_FLAG_closed
 	jnz	.found
 
-	; przesuń wskaźnik na następny rekord
+	; move the pointer to the next record
 	add	rsi,	KERNEL_TASK_STRUCTURE.SIZE
 
-	; szukaj dalej?
+	; keep searching?
 	dec	rcx
-	jnz	.next	; tak
+	jnz	.next	; yes
 
-	; zwolnij pozostały czas procesora
+	; release the remaining processor time
 	call	kernel_sleep
 
-	; pobierz adres następnego bloku kolejki zadań
+	; fetch the address of the next task queue block
 	and	si,	STATIC_PAGE_mask
 	mov	rsi,	qword [rsi + STATIC_STRUCTURE_BLOCK.link]
 
-	; przeszukaj ponownie serpentynę
+	; search the serpentine again
 	jmp	.restart
 
 .found:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_gc_search"

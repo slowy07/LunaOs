@@ -1,63 +1,63 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rax - pusty lub kontynuacja poprzedniej sumy kontrolnej
-;	rcx - rozmiar przestrzeni w słowach (po 2 Bajty)
-;	rdi - wskaźnik do przeliczanej przestrzeni
-; wyjście:
-;	ax - suma kontrolna (Little-Endian)
+; input:
+;	rax - empty or continuation of the previous checksum
+;	rcx - space size in words (2 Bytes each)
+;	rdi - pointer to the converted space
+; output:
+;	ax - checksum (Little-Endian)
 service_network_checksum:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rdi
 
-	; ustaw wynik wstępny
+	; set the preliminary result
 	xor	ebx,	ebx
 	xchg	rbx,	rax
 
 .calculate:
-	; pobierz 2 Bajty z przeliczanej przestrzeni
+	; fetch 2 Bytes from the converted space
 	mov	ax,	word [rdi]
 	rol	ax,	STATIC_REPLACE_AL_WITH_HIGH_shift	; Big-Endian
 
-	; dodaj do akumulatora
+	; sum it into the accumulator
 	add	rbx,	rax
 
-	; przesuń wskaźnik na następny fragment
+	; move the pointer to the next fragment
 	add	rdi,	STATIC_WORD_SIZE_byte
 
-	; przetwórz pozostałą przestrzeń
+	; process the remaining space
 	loop	.calculate
 
-	; koryguj sumę kontrolną o przepełnienie
+	; correct the checksum for the overflow
 	mov	ax,	bx
 	shr	ebx,	STATIC_MOVE_HIGH_TO_AX_shift
 	add	rax,	rbx
 
-	; zwróć wynik w odwrotnej notacji
+	; return the result in reverse notation
 	not	ax
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"service_network_checksum"
 
 ;===============================================================================
-; wejście:
-;	rax - pusty lub kontynuacja poprzedniej sumy kontrolnej
-;	ecx - rozmiar przestrzeni w słowach (po 2 Bajty)
-;	rdi - wskaźnik do przeliczanej przestrzeni
-; wyjście:
-;	ax - suma kontrolna (Little-Endian)
+; input:
+;	rax - empty or continuation of the previous checksum
+;	ecx - space size in words (2 Bytes each)
+;	rdi - pointer to the converted space
+; output:
+;	ax - checksum (Little-Endian)
 service_network_checksum_part:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rdi
@@ -65,25 +65,25 @@ service_network_checksum_part:
 	xor	ebx,	ebx
 
 .calculate:
-	; pobierz 2 Bajty z przeliczanej przestrzeni
+	; fetch 2 Bytes from the converted space
 	mov	bx,	word [rdi]
 	rol	bx,	STATIC_REPLACE_AL_WITH_HIGH_shift	; Big-Endian
 
-	; dodaj do akumulatora
+	; sum it into the accumulator
 	add	rax,	rbx
 
-	; przesuń wskaźnik na następny fragment
+	; move the pointer to the next fragment
 	add	rdi,	STATIC_WORD_SIZE_byte
 
-	; przetwórz pozostałą przestrzeń
+	; process the remaining space
 	loop	.calculate
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"service_network_checksum_part"

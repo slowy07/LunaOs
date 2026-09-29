@@ -2,20 +2,20 @@
 
 ;===============================================================================
 kernel_gui_init:
-	; menedżer okien w gotowości?
+	; is the window manager ready?
 	cmp	byte [rel kernel_wm_semaphore],	STATIC_FALSE
-	je	kernel_gui_init	; nie, czekaj
+	je	kernel_gui_init	; no, wait
 
-	; zachowaj własny numer PID
+	; preserve own PID number
 	call	kernel_task_active_pid
 	mov	qword [rel kernel_gui_pid],	rax
 
 	;-----------------------------------------------------------------------
-	; skonfiguruj przestrzeń roboczą
+	; configure the workbench space
 	;-----------------------------------------------------------------------
 	mov	rsi,	kernel_gui_window_workbench
 
-	; ustaw szerokość, wysokość i rozmiar przestrzeni roboczej
+	; set the width, height and size of the workbench space
 	mov	ax,	word [rel kernel_video_width_pixel]
 	mov	bx,	word [rel kernel_video_height_pixel]
 	mov	ecx,	dword [rel kernel_video_size_byte]
@@ -23,183 +23,183 @@ kernel_gui_init:
 	mov	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.height],	bx
 	mov	dword [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.size],	ecx
 
-	; przygotuj miejsce pod przestrzeń roboczą
+	; prepare space for the workbench
 	call	library_page_from_size
 	call	kernel_memory_alloc
 
-	; zachowaj adres przestrzeni
+	; save the address of the space
 	mov	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT.address],	rdi
 
 	;-----------------------------------------------------------------------
 
-	; pobierz miks kolorów
+	; fetch the color mix
 	mov	rax,	qword [rel kernel_gui_background_mixer]
 
-	; szerokość i wysokość przestrzeni
+	; width and height of the space
 	mov	bx,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width]
 	mov	dx,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.height]
 
-	; przesunięcie linii pionowych
+	; offset of the vertical lines
 	xor	r9w,	r9w
 
-	; szerokość fragmentu na podstawie rozdzielszości
+	; fragment width based on the resolution
 	mov	r10w,	word [rel kernel_video_width_pixel]
 	shr	r10w,	STATIC_DIVIDE_BY_16_shift
 
 .background_reload:
-	; rozpocznij od fragmentu o rozmiarze 64 pikseli
+	; start with a fragment of 64 pixels
 	movzx	ecx,	r10w
 
 .background_loop:
-	; szerokość mniejsza od fragmentu?
+	; width smaller than the fragment?
 	cmp	bx,	r10w
-	jb	.fill	; tak, koryguj
+	jb	.fill	; yes, correct
 
-	; wypełnij fragment kolorem
-	rol	rax,	STATIC_REPLACE_EAX_WITH_HIGH_shift	; zamień kolorystykę
+	; fill the fragment with color
+	rol	rax,	STATIC_REPLACE_EAX_WITH_HIGH_shift	; swap the color scheme
 	rep	stosd
 
-	; pozostała szerokość przestrzeni
+	; remaining width of the space
 	sub	bx,	r10w
-	jz	.offset	; pierwszy wiersz gotowy
-	jns	.background_reload	; brak przepełnienia, kontynuuj
+	jz	.offset	; first row ready
+	jns	.background_reload	; no overflow, continue
 
 .fill:
-	; pozostała szerokość do wypełnienia
+	; remaining width to fill
 	movzx	ecx,	bx
-	rol	rax,	STATIC_REPLACE_EAX_WITH_HIGH_shift	; zamień kolorystykę
+	rol	rax,	STATIC_REPLACE_EAX_WITH_HIGH_shift	; swap the color scheme
 	rep	stosd
 
 .offset:
-	; następny wiersz przesunięty o kolejny piksel
+	; next row shifted by the next pixel
 	inc	r9w
 
-	; przesunięcie większe od szerokości fragmentu?
+	; offset greater than the fragment width?
 	cmp	r9w,	r10w
-	jb	.offset_ok	; nie
+	jb	.offset_ok	; no
 
-	; resetuj pozycję przesunięcia
+	; reset the offset position
 	xor	r9w,	r9w
 
-	; zamień kolorystykę
+	; swap the color scheme
 	rol	rax,	STATIC_REPLACE_EAX_WITH_HIGH_shift
 
-	; kontynuuj
+	; continue
 	jmp	.offset_end
 
 .offset_ok:
-	; wypełnij fragment przesunięcia
+	; fill the offset fragment
 	movzx	ecx,	r9w
 	rep	stosd
 
 .offset_end:
-	; szrokość przestrzeni
+	; width of the space
 	mov	bx,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width]
 
-	; koryguj szerokość przestrzeni o przesunięcie fragmentu
+	; correct the space width by the fragment offset
 	sub	bx,	r9w
 
-	; koniec przestrzeni na wysokość
+	; end of the space on the height
 	dec	dx
-	jnz	.background_reload	; nie
+	jnz	.background_reload	; no
 
 	;-----------------------------------------------------------------------
 
-	; przydziel identyfikator dla okna
+	; allocate an identifier for the window
 	call	kernel_wm_object_id_new
 	mov	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.id],	rcx
 
-	; zarejestruj okno
+	; register the window
 	call	kernel_wm_object_insert
 
 	;-----------------------------------------------------------------------
-	; skonfiguruj przestrzeń paska zadań
+	; configure the taskbar space
 	;-----------------------------------------------------------------------
 	mov	rsi,	kernel_gui_window_taskbar
 
-	; ustaw pozycję paska zadań na dole ekranu
+	; put the taskbar at the bottom of the screen
 	mov	bx,	word [rel kernel_video_height_pixel]
 	sub	bx,	KERNEL_GUI_WINDOW_TASKBAR_HEIGHT_pixel
 	mov	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.y],	bx
 
-	; ustaw szerokość paska zadań na cały ekran
+	; stretch the taskbar across the whole screen
 	mov	ax,	word [rel kernel_video_width_pixel]
 	mov	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width],	ax
 
-	; ustaw etykietę "zegar" na końcu paska zadań
+	; put the "clock" label at the end of the taskbar
 	sub	ax,	word [rel kernel_gui_window_taskbar.element_label_clock + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
 	mov	word [rel kernel_gui_window_taskbar.element_label_clock + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.x],	ax
 
-	; oblicz rozmiar przestrzeni danych okna w Bajtach
+	; compute the size of the window data space in Bytes
 	movzx	eax,	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
 	shl	eax,	KERNEL_VIDEO_DEPTH_shift
 	movzx	ebx,	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.height]
 	mul	ebx
 
-	; przygotuj miejsce pod przestrzeń okna
+	; prepare space for the window
 	mov	ecx,	eax
 	call	library_page_from_size
 	call	kernel_memory_alloc
 
-	; zachowaj adres przestrzeni
+	; save the address of the space
 	mov	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT.address],	rdi
 
-	; utwórz okno paska zadań
+	; create the taskbar window
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu
 
-	; przydziel identyfikator dla okna
+	; allocate an identifier for the window
 	call	kernel_wm_object_id_new
 	mov	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.id],	rcx
 
-	; zarejestruj okno w menedżerze okien
+	; register the window in the window manager
 	call	kernel_wm_object_insert
 
 	;-----------------------------------------------------------------------
-	; utwórz menu kontekstowe
+	; create the context menu
 	;-----------------------------------------------------------------------
 	mov	rsi,	kernel_gui_window_menu
 
-	; ilość elementów wchodzących w skład menu oraz ich łączna wysokość względem siebie
+	; the number of elements of the menu and their total height relative to each other
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_elements_specification
 
-	; ustaw szerokość i wysokość okna menu
+	; set the width and height of the menu window
 	mov	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width],	r8w
 	mov	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.height],	r9w
 
-	; oblicz rozmiar przestrzeni danych okna w Bajtach
+	; compute the size of the window data space in Bytes
 	movzx	eax,	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
 	shl	rax,	KERNEL_VIDEO_DEPTH_shift
 	movzx	ebx,	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.height]
 	mul	ebx
 
-	; przygotuj miejsce pod przestrzeń okna
+	; prepare space for the window
 	mov	ecx,	eax
 	call	library_page_from_size
 	call	kernel_memory_alloc
 
-	; zachowaj adres przestrzeni
+	; save the address of the space
 	mov	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT.address],	rdi
 
-	; utwórz okno paska zadań
+	; create the taskbar window
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu
 
-	; przydziel identyfikator dla okna
+	; allocate an identifier for the window
 	call	kernel_wm_object_id_new
 	mov	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.id],	rcx
 
-	; zarejestruj okno w menedżerze okien
+	; register the window in the window manager
 	call	kernel_wm_object_insert
 
-	; zachowaj informacje o ostatniej modyfikacji listy okien
+	; save the information about the last modification of the window list
 	mov	rax,	qword [rel kernel_wm_object_list_modify_time]
 	mov	qword [rel kernel_gui_window_taskbar_modify_time],	rax
 
-	; przygotuj listę kolejności okien
+	; prepare the window order list
 	call	kernel_memory_alloc_page
 	call	kernel_page_drain
-	mov	qword [rel kernel_gui_taskbar_list_address],	rdi	; zachowaj wskaźnik
+	mov	qword [rel kernel_gui_taskbar_list_address],	rdi	; save the pointer
 
-	; uruchom domyślnie program Console
+	; run the Console program by default
 	call	kernel_gui_event_console
 
 	macro_debug	"kernel_gui_init"

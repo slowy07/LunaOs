@@ -5,67 +5,67 @@
 	;-----------------------------------------------------------------------
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do pakietu przychodzącego
+; input:
+;	rsi - pointer to the incoming packet
 service_network_tcp:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rdx
 
-	; pobierz numer portu docelowego
+	; fetch the destination port number
 	movzx	eax,	word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.port_target]
 	rol	ax,	STATIC_REPLACE_AL_WITH_HIGH_shift
 
-	; port wspierany?
+	; is the port supported?
 	cmp	ax,	512
-	jnb	.end	; nie, zignoruj pakiet
+	jnb	.end	; no, ignore the packet
 
-	; port docelowy jest pusty?
+	; is the destination port empty?
 	mov	ecx,	SERVICE_NETWORK_STRUCTURE_PORT.SIZE
 	mul	ecx
 	add	rax,	qword [rel service_network_port_table]
 	cmp	qword [rax],	STATIC_EMPTY
-	je	.end	; tak, zignoruj pakiet
+	je	.end	; yes, ignore the packet
 
-	; prośba o nawiązanie połączenia?
+	; a request to establish a connection?
 	cmp	byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.flags],	SERVICE_NETWORK_FRAME_TCP_FLAGS_syn
-	je	service_network_tcp_syn	; tak
+	je	service_network_tcp_syn	; yes
 
-	; odszukaj połączenie dotyczące pakietu
+	; find the connection related to the packet
 	call	service_network_tcp_find
-	jc	.end	; brak nawiązanego połączenia z danym pakietem
+	jc	.end	; no established connection for the given packet
 
-	; akceptacja wysłanych danych?
+	; acceptance of the sent data?
 	cmp	byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.flags],	SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
-	je	service_network_tcp_ack	; tak
+	je	service_network_tcp_ack	; yes
 
-	; zakończenie połączenia?
+	; end of the connection?
 	test	byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.flags],	SERVICE_NETWORK_FRAME_TCP_FLAGS_fin
-	jnz	service_network_tcp_fin	; tak
+	jnz	service_network_tcp_fin	; yes
 
-	; przesłanie danych do właściciela portu?
+	; sending data to the port owner?
 	test	byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.flags],	SERVICE_NETWORK_FRAME_TCP_FLAGS_psh
-	jnz	service_network_tcp_psh	; tak
+	jnz	service_network_tcp_psh	; yes
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdx
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	jmp	service_network.end
 
 	macro_debug	"service_network_tcp"
 
 ;===============================================================================
-; wejście:
-;	rbx - rozmiar nagłówka IP
-;	rsi - wskaźnik do pakietu przychodzącego
-;	rdi - wskaźnik do połączenia na stosie
+; input:
+;	rbx - IP header size
+;	rsi - pointer to the incoming packet
+;	rdi - pointer to the connection on the stack
 service_network_tcp_psh:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
@@ -73,58 +73,58 @@ service_network_tcp_psh:
 	push	rdi
 	push	rsi
 
-	; pobierz numer portu docelowego
+	; fetch the destination port number
 	movzx	eax,	word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + rbx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.port_target]
 	rol	ax,	STATIC_REPLACE_AL_WITH_HIGH_shift	; Little-Endian
 	mov	ecx,	SERVICE_NETWORK_STRUCTURE_PORT.SIZE
-	mul	ecx	; zamień na przesunięcie wew. tablicy portów
+	mul	ecx	; convert to an offset inside the port table
 
-	; pobierz rozmiar danych w ramce TCP
+	; fetch the data size in the TCP frame
 	movzx	ecx,	word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.total_length]
 	rol	cx,	STATIC_REPLACE_AL_WITH_HIGH_shift	; Little-Endian
-	sub	cx,	bx	; koryguj rozmiar o nagłówek IP
+	sub	cx,	bx	; correct the size by the IP header
 
-	; zachowaj rozmiar danych ramki TCP w zmiennej lokalnej
+	; save the data size of the TCP frame in a local variable
 	push	rcx
 
-	; oblicz rozmiar nagłówka TCP
+	; compute the size of the TCP header
 	movzx	edx,	byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + rbx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.header_length]
-	shr	dl,	STATIC_MOVE_AL_HALF_TO_HIGH_shift	; przesuń ilość podwójnych słów na młodszą pozycję
-	shl	dx,	STATIC_MULTIPLE_BY_4_shift	; zamień ilość podwójnych słów na Bajty
+	shr	dl,	STATIC_MOVE_AL_HALF_TO_HIGH_shift	; move the number of double words to the lower position
+	shl	dx,	STATIC_MULTIPLE_BY_4_shift	; convert the number of double words to Bytes
 
-	; przesuń na początek przestrzeni pakietu
+	; move to the beginning of the packet space
 	mov	rdi,	rsi
 
-	; zawartość danych ramki TCP
+	; content of the TCP frame data
 	add	rsi,	SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE
 	add	rsi,	rbx
 	add	rsi,	rdx
 
-	; wykonaj
+	; execute
 	rep	movsb
 
-	; wyczyść pozostałą przestrzeń ramki
+	; clear the remaining frame space
 	mov	rcx,	STATIC_PAGE_SIZE_byte
 	sub	rcx,	qword [rsp]
 	rep	stosb
 
-	; pobierz PID procesu docelowego
+	; fetch the PID of the destination process
 	mov	rbx,	qword [rel service_network_port_table]
 	mov	rbx,	qword [rbx + rax]
 
-	; wyślij komunikat do procesu
+	; send a message to the process
 	xor	ecx,	ecx
 	mov	rsi,	rsp
 	call	kernel_ipc_insert
 
-	; zwolnij zmienną lokalną
+	; release the local variable
 	add	rsp,	STATIC_QWORD_SIZE_byte
 
-	; przestrzeń przekazana do procesu
+	; the space handed over to the process
 	mov	qword [rsp],	STATIC_EMPTY
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rdi
 	pop	rdx
@@ -132,505 +132,505 @@ service_network_tcp_psh:
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	jmp	service_network_tcp.end
 
 	macro_debug	"service_network_tcp_psh_ack"
 
 ;===============================================================================
-; wejście:
-;	rbx - rozmiar nagłówka IP
-;	rsi - wskaźnik do pakietu przychodzącego
-;	rdi - wskaźnik do połączenia na stosie
+; input:
+;	rbx - IP header size
+;	rsi - pointer to the incoming packet
+;	rdi - pointer to the connection on the stack
 service_network_tcp_fin:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; ustaw wskaźnik do połączenia w rejestrze źródłowym
+	; set the pointer to the connection in the source register
 	xchg	rsi,	rdi
 
-	; usuń flagę ACK nawet, jeśli nie była oczekiwana
+	; remove the ACK flag even if it was not expected
 	and	byte [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags_request],	~SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
 
 	;-----------------------------------------------------------------------
 
-	; zachowaj numer sekwencji nadawcy
+	; save the sender sequence number
 	mov	eax,	dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + rbx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.sequence]
-	bswap	eax	; zachowaj w formacie Little-Endian
-	inc	eax	; potwierdź otrzymanie chęci zakończenia połączenia
+	bswap	eax	; save in the Little-Endian format
+	inc	eax	; acknowledge the receipt of the wish to end the connection
 	mov	dword [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.source_sequence],	eax
 
 	;-----------------------------------------------------------------------
 
-	; nasz numer sekwencji
+	; our sequence number
 	mov	eax,	dword [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.request_acknowledgement]
 	inc	eax
 	mov	dword [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.host_sequence],	eax
 
-	; nasz identyfikator
+	; our identifier
 	inc	eax
 	mov	dword [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.request_acknowledgement],	eax
 
 	;-----------------------------------------------------------------------
 
-	; zamknięcie połączenia
+	; closing the connection
 	mov	word [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags],	SERVICE_NETWORK_FRAME_TCP_FLAGS_ack | SERVICE_NETWORK_FRAME_TCP_FLAGS_fin
 
-	; oczekuj flagi ACK w odpowiedzi
+	; expect the ACK flag in the response
 	mov	word [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags_request],	SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
 
 	;-----------------------------------------------------------------------
-	; wyślij odpowiedź
+	; send the response
 	;-----------------------------------------------------------------------
 
-	; przygotuj miejsce na odpowiedź
+	; prepare space for the response
 	call	kernel_memory_alloc_page
 	jc	.error
 
-	; spakuj dane ramki TCP
+	; wrap the TCP frame data
 	mov	bl,	(SERVICE_NETWORK_STRUCTURE_FRAME_TCP.SIZE >> STATIC_DIVIDE_BY_4_shift) << STATIC_MOVE_AL_HALF_TO_HIGH_shift
 	mov	ecx,	SERVICE_NETWORK_STRUCTURE_FRAME_TCP.SIZE
 	call	service_network_tcp_wrap
 
-	; wyślij pakiet
+	; send the packet
 	mov	eax,	SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.SIZE + STATIC_DWORD_SIZE_byte
 	call	service_network_transfer
 
-	; połączenie zatwierdzone
+	; the connection was confirmed
 	jmp	.end
 
 .error:
-	; wyrejestruj połączenie
+	; unregister the connection
 	mov	byte [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.status],	STATIC_EMPTY
 
 .end:
-	; przywóć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	jmp	service_network_tcp.end
 
 	macro_debug	"service_network_tcp_fin"
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do pakietu przychodzącego
-;	rdi - wskaźnik do połączenia na stosie
+; input:
+;	rsi - pointer to the incoming packet
+;	rdi - pointer to the connection on the stack
 service_network_tcp_ack:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rsi
 	push	rdi
 
-	; oczekiwaliśmy potwierdzenia?
+	; did we expect an acknowledgement?
 	test	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags_request],	SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
-	jz	.end	; nie
+	jz	.end	; no
 
-	; usuń oczekiwaną flagę z stosu
+	; remove the expected flag from the stack
 	and	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags_request],	~SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
 
-	; połączenie zostało zakończone?
+	; has the connection been ended?
 	test	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags],	SERVICE_NETWORK_FRAME_TCP_FLAGS_fin | SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
-	jz	.end	; nie
+	jz	.end	; no
 
-	; zwolnij wpis na stosie dotyczący połączenia
+	; free the stack entry related to the connection
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags],	STATIC_EMPTY
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 
-	; powrót z procedury
+	; return from the procedure
 	jmp	service_network_tcp.end
 
 	macro_debug	"service_network_tcp_ack"
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do pakietu przychodzącego
-; wyjście:
-;	rbx - rozmiar nagłówka ramki IP
-;	rdi - wskaźnik do połączenia
+; input:
+;	rsi - pointer to the incoming packet
+; output:
+;	rbx - size of the IP frame header
+;	rdi - pointer to the connection
 service_network_tcp_find:
- 	; zachowaj oryginalne rejestry
+ 	; preserve the original registers
  	push	rax
  	push	rcx
 	push	rbx
  	push	rdi
 
-	; rozmiar nagłówka ramki IP
+	; size of the IP frame header
 	movzx	ebx,	byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.version_and_ihl]
 	and	bl,	SERVICE_NETWORK_FRAME_IP_HEADER_LENGTH_mask
 	shl	bl,	STATIC_MULTIPLE_BY_4_shift
 
-	; przeszukaj stos TCP
+	; search the TCP stack
 	mov	rcx,	(SERVICE_NETWORK_STACK_SIZE_page << STATIC_PAGE_SIZE_shift) / SERVICE_NETWORK_STRUCTURE_TCP_STACK.SIZE
 	mov	rdi,	qword [rel service_network_stack_address]
 
 .loop:
-	; adres MAC klienta, poprawny?
+	; is the client MAC address correct?
 	mov	eax,	dword [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.source]
 	rol	rax,	STATIC_REPLACE_EAX_WITH_HIGH_shift
 	mov	ax,	word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.source + SERVICE_NETWORK_STRUCTURE_MAC.4]
 	ror	rax,	STATIC_REPLACE_EAX_WITH_HIGH_shift
 	cmp	qword [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.source_mac],	rax
-	jne	.next	; nie, następny wpis
+	jne	.next	; no, next entry
 
-	; adres IPv4 klienta, poprawny?
+	; is the client IPv4 address correct?
 	mov	eax,	dword [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.source_ipv4]
 	cmp	dword [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.source_address],	eax
-	jne	.next	; nie, następny wpis
+	jne	.next	; no, next entry
 
-	; port docelowy poprawny?
+	; is the destination port correct?
 	mov	ax,	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.host_port]
 	cmp	word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + rbx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.port_target],	ax
-	jne	.next	; nie, następny wpis
+	jne	.next	; no, next entry
 
-	; port źródłowy, porawny?
+	; is the source port correct?
 	mov	ax,	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.source_port]
 	cmp	word [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + rbx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.port_source],	ax
-	je	.found	; nie, następny wpis
+	je	.found	; no, next entry
 
 .next:
-	; przesuń wskaźnik na następny wpis
+	; move the pointer to the next entry
 	add	rdi,	SERVICE_NETWORK_STRUCTURE_TCP_STACK.SIZE
 
-	; koniec stosu?
+	; end of the stack?
 	dec	rcx
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
-	; brak zarejestrowanego połączenia dla pakietu przychodzącego
+	; no registered connection for the incoming packet
  	stc
 
- 	; koniec procedury
+ 	; end of the procedure
  	jmp	.end
 
 .found:
-	; zwróć rozmiar nagłówka IPv4
+	; return the size of the IPv4 header
 	mov	qword [rsp + STATIC_QWORD_SIZE_byte],	rbx
 
-	; zwróć wskaźnik do połączenia
+	; return the pointer to the connection
 	mov	qword [rsp],	rdi
 
 .end:
- 	; przywróć oryginalne rejestry
+ 	; restore the original registers
  	pop	rdi
 	pop	rbx
  	pop	rcx
  	pop	rax
 
- 	; powrót z procedury
+ 	; return from the procedure
  	ret
 
 	macro_debug	"service_network_tcp_find"
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do pakietu przychodzącego
+; input:
+;	rsi - pointer to the incoming packet
 service_network_tcp_syn:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; przeszukaj stos TCP
+	; search the TCP stack
 	mov	rcx,	(SERVICE_NETWORK_STACK_SIZE_page << STATIC_PAGE_SIZE_shift) / SERVICE_NETWORK_STRUCTURE_TCP_STACK.SIZE
 	mov	rdi,	qword [rel service_network_stack_address]
 
 .search:
-	; za wolnym miejscem
+	; for a free slot
 	lock	bts word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.status],	SERVICE_NETWORK_STACK_FLAG_busy
-	jnc	.found	; znaleziono
+	jnc	.found	; found
 
-	; przesuń wskaźnik na następny wpis połączenia
+	; move the pointer to the next connection entry
 	add	rdi,	SERVICE_NETWORK_STRUCTURE_TCP_STACK.SIZE
 
-	; przeszukano cały stos TCP?
+	; has the whole TCP stack been searched?
 	dec	rcx
-	jnz	.search	; nie, szukaj dalej
+	jnz	.search	; no, keep searching
 
-	; brak miejsca na zarejestrowanie nowego połączenia
+	; no space to register a new connection
 	jmp	.end
 
 .found:
 	;-----------------------------------------------------------------------
-	; zarejestruj połączenie na stosie
+	; register the connection on the stack
 	;-----------------------------------------------------------------------
 
-	; oblicz rozmiar ramki IP
+	; compute the size of the IP frame
 	movzx	ecx,	byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.version_and_ihl]
 	and	cl,	SERVICE_NETWORK_FRAME_IP_HEADER_LENGTH_mask
 	shl	cl,	STATIC_MULTIPLE_BY_4_shift
 
-	; zamień na pozycję bezwzględną ramki TCP
+	; convert to the absolute position of the TCP frame
 	add	ecx,	SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE
 
 	;-----------------------------------------------------------------------
 
-	; zachowaj numer portu usługi
+	; save the service port number
 	mov	ax,	word [rsi + rcx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.port_target]
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.host_port],	ax
 
-	; zachowaj numer portu nadawcy
+	; save the sender port number
 	mov	ax,	word [rsi + rcx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.port_source]
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.source_port],	ax
 
-	; zachowaj numer sekwencji nadawcy
+	; save the sender sequence number
 	mov	eax,	dword [rsi + rcx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.sequence]
-	bswap	eax	; w formacie Little-Endian
+	bswap	eax	; in the Little-Endian format
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.source_sequence],	eax
 
-	; zachowaj adres MAC nadawcy
+	; save the sender MAC address
 	mov	rcx,	qword [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.source]
 	shl	rcx,	STATIC_MOVE_AX_TO_HIGH_shift
 	shr	rcx,	STATIC_MOVE_HIGH_TO_AX_shift
 	mov	qword [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.source_mac],	rcx
 
-	; zachowaj adres IPv4 nadawcy
+	; save the sender IPv4 address
 	mov	ecx,	dword [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.source_address]
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.source_ipv4],	ecx
 
 	;-----------------------------------------------------------------------
 
-	; nasz numer sekwencji
+	; our sequence number
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.host_sequence],	STATIC_EMPTY
 
-	; domyślny rozmiar okna
+	; default window size
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.window_size],	SERVICE_NETWORK_FRAME_TCP_WINDOW_SIZE_default
 
 	;-----------------------------------------------------------------------
 
-	; aktualne flagi połączenia
+	; current flags of the connection
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags],	SERVICE_NETWORK_FRAME_TCP_FLAGS_syn | SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
 
-	; oczekuj flagi ACK w odpowiedzi
+	; expect the ACK flag in the response
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags_request],	SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
 
 	;-----------------------------------------------------------------------
-	; połączenie zarejestrowane
+	; connection registered
 	;-----------------------------------------------------------------------
 	mov	rsi,	rdi
 
 	;-----------------------------------------------------------------------
-	; wyślij odpowiedź
+	; send the response
 	;-----------------------------------------------------------------------
 	call	service_network_tcp_reply
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	jmp	service_network_tcp.end
 
 	macro_debug	"service_network_tcp_syn"
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do połączenia na stosie
+; input:
+;	rsi - pointer to the connection on the stack
 service_network_tcp_reply:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rdi
 
-	; przygotuj miejsce na odpowiedź
+	; prepare space for the response
 	call	kernel_memory_alloc_page
 
-	; spakuj dane ramki TCP
+	; wrap the TCP frame data
 	mov	bl,	(SERVICE_NETWORK_STRUCTURE_FRAME_TCP.SIZE >> STATIC_DIVIDE_BY_4_shift) << STATIC_MOVE_AL_HALF_TO_HIGH_shift
 	mov	ecx,	SERVICE_NETWORK_STRUCTURE_FRAME_TCP.SIZE
 	call	service_network_tcp_wrap
 
-	; wyślij pakiet
+	; send the packet
 	mov	eax,	SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.SIZE + STATIC_DWORD_SIZE_byte
 	call	service_network_transfer
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 ;===============================================================================
-; wejście:
-;	ecx - rozmiar ramki TCP w Bajtach
-;	rsi - wskaźnik do właściwości połączenia
-;	rdi - wskaźnik do przestrzeni pakietu do wysłania
-; wyjście:
-;	eax - suma kontrolna pseudo nagłówka
+; input:
+;	ecx - TCP frame size in Bytes
+;	rsi - pointer to the connection properties
+;	rdi - pointer to the space of the packet to send
+; output:
+;	eax - checksum of the pseudo header
 service_network_tcp_pseudo_header:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdi
 
-	; konfiguruj pseudo nagłówek
+	; configure the pseudo header
 
-	; nadawca
+	; sender
 	mov	eax,	dword [rel driver_nic_i82540em_ipv4_address]
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE - SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.source_ipv4],	eax
 
-	; adresat
+	; recipient
 	mov	eax,	dword [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.source_ipv4]
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE - SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.target_ipv4],	eax
 
-	; wyczyść wartość zarezerwowaną
+	; clear the reserved value
 	mov	byte [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE - SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.reserved],	STATIC_EMPTY
 
-	; protokół
+	; protocol
 	mov	byte [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE - SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.protocol],	SERVICE_NETWORK_FRAME_TCP_PROTOCOL_default
 
-	; rozmiar ramki TCP
-	rol	cx,	STATIC_REPLACE_AL_WITH_HIGH_shift	; zamień na Big-Endian
+	; size of the TCP frame
+	rol	cx,	STATIC_REPLACE_AL_WITH_HIGH_shift	; convert to Big-Endian
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE - SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.segment_length],	cx
 
-	; oblicz sumę kontrolną pseudo nagłówka
+	; compute the checksum of the pseudo header
 	xor	eax,	eax
 	mov	ecx,	SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.SIZE >> STATIC_DIVIDE_BY_2_shift
 	add	rdi,	SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE - SERVICE_NETWORK_STRUCTURE_FRAME_TCP_PSEUDO_HEADER.SIZE
 	call	service_network_checksum_part
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 
-	; powrót z podprocedury
+	; return from the subprocedure
 	ret
 
 	macro_debug	"service_network_tcp_pseudo_header"
 
 ;===============================================================================
-; wejście:
-;	cx - numer portu
-; wyjście:
-;	Flags CF, jeśli zajęty
+; input:
+;	cx - port number
+; output:
+;	CF flag, if busy
 service_network_tcp_port_assign:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rdx
 	push	rdi
 
-	; zablokuj dostęp do tablicy portów
+	; lock access to the port table
 	macro_lock	service_network_port_semaphore,	0
 
-	; numer portu obsługiwany?
+	; is the port number supported?
 	cmp	cx,	512
-	jnb	.error	; nie
+	jnb	.error	; no
 
-	; zamień numer portu na wskaźnik pośredni
+	; convert the port number to an indirect pointer
 	mov	eax,	SERVICE_NETWORK_STRUCTURE_PORT.SIZE
 	and	ecx,	STATIC_WORD_mask
 	mul	ecx
 
-	; pobierz PID procesu wywołującego
+	; fetch the PID of the calling process
 	call	kernel_task_active
 	mov	rcx,	qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
-	; załaduj do tablicy portów identyfikator właściciela (zarazem wyczyść flagi)
+	; load the owner identifier into the port table (at the same time clear the flags)
 	mov	rdi,	qword [rel service_network_port_table]
 	test	rdi,	rdi
-	jz	.error	; usługa sieciowa niezainicjowana
+	jz	.error	; the network service is not initialised
 
-	; port zajęty?
+	; is the port busy?
 	cmp	qword [rdi + rcx + SERVICE_NETWORK_STRUCTURE_PORT.pid],	STATIC_EMPTY
-	jne	.error	; tak
+	jne	.error	; yes
 
-	; zarezerwuj port przez proces o danym PID
+	; reserve the port for the process with the given PID
 	mov	qword [rdi + rax + SERVICE_NETWORK_STRUCTURE_PORT.pid],	rcx
 
-	; zarejestrowano
+	; registered
 	jmp	.end
 
 .error:
-	; port niedostępny
+	; the port is unavailable
 	stc
 
 .end:
-	; zwolnij dostęp do tablicy portów
+	; release access to the port table
 	mov	byte [rel service_network_port_semaphore],	STATIC_FALSE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rdx
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"service_network_tcp_port_assign"
 
 ;===============================================================================
-; wejście:
-;	rbx - identyfikator połączenia
-;	rcx - rozmiar danych w Bajtach
-;	rsi - wskaźnik do przestrzeni danych
+; input:
+;	rbx - connection identifier
+;	rcx - data size in Bytes
+;	rsi - pointer to the data space
 service_network_tcp_port_send:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; przygotuj przestrzeń pod odpowiedź
+	; prepare space for the response
 	call	kernel_memory_alloc_page
-	jc	.end	; brak miejsca
+	jc	.end	; no space
 
-	; zachowaj rozmiar i wskaźnik do przestrzeni danych
+	; save the size and the pointer to the data space
 	push	rcx
 	push	rdi
 
-	; dołącz dane odpowiedzi
+	; attach the response data
 	add	rdi,	SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.SIZE
 	rep	movsb
 
-	; przywróć rozmiar i wskaźnik do przestrzeni danych
+	; restore the size and the pointer to the data space
 	pop	rdi
 	pop	rcx
 
 	inc	dword [rbx + SERVICE_NETWORK_STRUCTURE_TCP_STACK.host_sequence]
 	mov	byte [rbx + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags],	SERVICE_NETWORK_FRAME_TCP_FLAGS_psh | SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
 
-	; wypełnij ramki pakietu
+	; fill the packet frames
 	add	rcx,	SERVICE_NETWORK_STRUCTURE_FRAME_TCP.SIZE + 0x01
 	mov	rsi,	rbx
 	mov	bl,	SERVICE_NETWORK_FRAME_TCP_HEADER_LENGTH_default
 	call	service_network_tcp_wrap
 
-	; wyślij pakiet
+	; send the packet
 	mov	rax,	rcx
 	add	rax,	SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE
 	call	service_network_transfer
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"service_network_tcp_port_send"

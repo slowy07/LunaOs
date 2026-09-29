@@ -2,37 +2,37 @@
 
 ;===============================================================================
 kernel_gui_ipc:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rsi
 	push	rdi
 	push	r8
 	push	r9
 
-	; pobierz wiadomość
+	; fetch a message
 	mov	rdi,	kernel_gui_ipc_data
 	call	kernel_ipc_receive
-	jc	.end	; brak wiadomości
+	jc	.end	; no message
 
-	; wiadomość od menedżera okien?
+	; a message from the window manager?
 	mov	rax,	qword [rel kernel_wm_pid]
 	cmp	qword [rdi + KERNEL_IPC_STRUCTURE.pid_source],	rax
-	jne	.no_desu	; nie, zignoruj
+	jne	.no_desu	; no, ignore
 
-	; obsłuż komunikat
+	; handle the message
 	call	kernel_gui_ipc_wm
 
 .no_desu:
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r9
 	pop	r8
 	pop	rdi
 	pop	rsi
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_gui_ipc"

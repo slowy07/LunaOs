@@ -2,102 +2,102 @@
 
 ;===============================================================================
 kernel_gui_ipc_wm:
-	; komunikat niezwiązany z myszką?
+	; a message unrelated to the mouse?
 	cmp	byte [rdi + KERNEL_IPC_STRUCTURE.type],	KERNEL_IPC_TYPE_MOUSE
-	jne	.end	; nie
+	jne	.end	; no
 
-	; pobierz identyfikator okna i koordynary wskaźnika kursora
+	; fetch the window identifier and the coordinates of the cursor pointer
 	mov	rax,	qword [rdi + KERNEL_IPC_STRUCTURE.data + KERNEL_IPC_STRUCTURE_DATA_MOUSE.object_id]
 	mov	r8w,	word [rdi + KERNEL_IPC_STRUCTURE.data + KERNEL_IPC_STRUCTURE_DATA_MOUSE.x]
 	mov	r9w,	word [rdi + KERNEL_IPC_STRUCTURE.data + KERNEL_IPC_STRUCTURE_DATA_MOUSE.y]
 
-	; naciśnięcie prawego klawisza myszki?
+	; right mouse button pressed?
 	cmp	byte [rdi + KERNEL_IPC_STRUCTURE.data + KERNEL_IPC_STRUCTURE_DATA_MOUSE.event],	KERNEL_IPC_MOUSE_EVENT_right_press
-	je	.right_mouse_button	; tak
+	je	.right_mouse_button	; yes
 
-	; akcja dotyczy okna "menu"?
+	; does the action concern the "menu" window?
 	cmp	rax,	qword [rel kernel_gui_window_menu + LIBRARY_BOSU_STRUCTURE_WINDOW.SIZE + LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA.id]
-	jne	.left_mouse_button_no_menu	; nie
+	jne	.left_mouse_button_no_menu	; no
 
-	; okno jest widoczne?
+	; is the window visible?
 	test	word [rel kernel_gui_window_menu + LIBRARY_BOSU_STRUCTURE_WINDOW.SIZE + LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA.flags],	LIBRARY_BOSU_WINDOW_FLAG_visible
-	jz	.end	; nie, zignoruj akcję
+	jz	.end	; no, ignore the action
 
-	; okno zostało automatycznie ukryte, usuń informację
+	; the window was hidden automatically, remove the flag
 	and	word [rel kernel_gui_window_menu + LIBRARY_BOSU_STRUCTURE_WINDOW.SIZE + LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA.flags],	~LIBRARY_BOSU_WINDOW_FLAG_visible
 
-	; sprawdź, którego elementu okna dotyczny akcja
+	; check which window element the action concerns
 	mov	rsi,	kernel_gui_window_menu
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_element
-	jc	.end	; brak akcji
+	jc	.end	; no action
 
-	; element posiada przypisaną procedurę obsługi akcji?
+	; does the element have an action handler procedure assigned?
 	cmp	qword [rsi + LIBRARY_BOSU_STRUCTURE_TYPE.SIZE + LIBRARY_BOSU_STRUCTURE_ELEMENT.event],	STATIC_EMPTY
-	je	.end	; nie, koniec obsługi akcji
+	je	.end	; no, end of the action handling
 
-	; wykonaj procedurę powiązaną z elementem
-	push	.end	; powrót z procedury
+	; run the procedure associated with the element
+	push	.end	; return from the procedure
 	push	qword [rsi + LIBRARY_BOSU_STRUCTURE_TYPE.SIZE + LIBRARY_BOSU_STRUCTURE_ELEMENT.event]
-	ret	; call
+	ret	; invoke it
 
 .left_mouse_button_no_menu:
-	; akcja dotyczy okna "taskbar"?
+	; does the action concern the "taskbar" window?
 	cmp	rax,	qword [rel kernel_gui_window_taskbar + LIBRARY_BOSU_STRUCTURE_WINDOW.SIZE + LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA.id]
-	jne	.end	; nie
+	jne	.end	; no
 
-	; wykonaj działanie związane z paskiem zadań
+	; run the action related to the taskbar
 	call	kernel_gui_taskbar_event
 
-	; koniec obsługi komunikatu
+	; end of the message handling
 	jmp	.end
 
 .right_mouse_button:
-	; akcja dotyczy okna "taskbar"?
+	; does the action concern the "taskbar" window?
 	cmp	rax,	qword [rel kernel_gui_window_taskbar + LIBRARY_BOSU_STRUCTURE_WINDOW.SIZE + LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA.id]
-	je	.end	; tak, brak akcji cdn.
+	je	.end	; yes, no action yet
 
-	; akcja dotyczy okna "background"?
+	; does the action concern the "background" window?
 	cmp	rax,	qword [rel kernel_gui_window_workbench + LIBRARY_BOSU_STRUCTURE_WINDOW.SIZE + LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA.id]
-	jne	.end	; nie
+	jne	.end	; no
 
-	; koryguj pozycje okna "menu"
+	; correct the position of the "menu" window
 	mov	rbx,	qword [rel kernel_gui_window_menu + LIBRARY_BOSU_STRUCTURE_WINDOW.SIZE + LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA.id]
 	call	kernel_wm_object_by_id
 
-	; czy pozycja wskaźnika kursora pozwala na wyświetlenie okna "menu"?
+	; does the cursor pointer position allow displaying the "menu" window?
 	mov	ax,	r8w
 	add	ax,	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
 	cmp	ax,	word [rel kernel_gui_window_workbench + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
-	jl	.y	; tak na osi X
+	jl	.y	; yes on the X axis
 
-	; wyświetl okno "menu" po lewej stronie wskaźnika kursora
+	; display the "menu" window on the left side of the cursor pointer
 	sub	r8w,	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
 
 .y:
-	; czy pozycja wskaźnika kursora pozwala na wyświetlenie okna "menu"? (uwzględniając wysokość okna "taskbar")
+	; does the cursor pointer position allow displaying the "menu" window? (taking the "taskbar" window height into account)
 	mov	ax,	r9w
 	add	ax,	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.height]
 	cmp	ax,	word [rel kernel_gui_window_taskbar + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.y]
-	jl	.visible	; tak na osi Y
+	jl	.visible	; yes on the Y axis
 
-	; wyświetl okno "menu" nad oknem "taskbar"
+	; display the "menu" window above the "taskbar" window
 	mov	r9w,	word [rel kernel_gui_window_taskbar + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.y]
 	sub	r9w,	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.height]
-	dec	r9w	; zachowaj 1 piksel odstępu między oknami "menu" i "taskbar" (rzecz gustu)
+	dec	r9w	; keep 1 pixel of space between the "menu" and "taskbar" windows (a matter of taste)
 
 .visible:
-	; ustaw nową pozycję okna "menu"
+	; set the new position of the "menu" window
 	mov	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.x],	r8w
 	mov	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.y],	r9w
 
-	; ustaw flagi "widoczne" oraz "odśwież" dla okna "menu"
+	; set the "visible" and "flush" flags for the "menu" window
 	or	word [rsi + LIBRARY_BOSU_STRUCTURE_WINDOW.SIZE + LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA.flags],	LIBRARY_BOSU_WINDOW_FLAG_visible | LIBRARY_BOSU_WINDOW_FLAG_flush
 
-	; zapamiętaj
+	; remember
 	or	word [rel kernel_gui_window_menu + LIBRARY_BOSU_STRUCTURE_WINDOW.SIZE + LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA.flags],	LIBRARY_BOSU_WINDOW_FLAG_visible | LIBRARY_BOSU_WINDOW_FLAG_flush
 
 .end:
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_gui_ipc_wm"

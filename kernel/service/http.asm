@@ -13,44 +13,44 @@ service_http_ipc_message:
 	times	KERNEL_IPC_STRUCTURE.SIZE	db	STATIC_EMPTY
 
 service_http:
-	; zarejestruj port 80
+	; register port 80
 	mov	cx,	80
 	call	service_network_tcp_port_assign
-	jc	service_http	; spróbuj raz jeszcze
+	jc	service_http	; try once again
 
 .loop:
-	; odbierz komunikat dla nas
+	; receive a message for us
 	mov	rdi,	service_http_ipc_message
 	call	kernel_ipc_receive
-	jc	.loop	; brak, sprawdź raz jeszcze
+	jc	.loop	; none, check once again
 
-	; pobierz identyfikator połączenia
+	; fetch the connection identifier
 	mov	rbx,	qword [rdi + KERNEL_IPC_STRUCTURE.other]
 
-	; zapytanie o rdzeń usługi?
+	; a query for the service root?
 	mov	ecx,	service_http_get_root_end - service_http_get_root
 	mov	rsi,	qword [rdi + KERNEL_IPC_STRUCTURE.pointer]
 	mov	rdi,	service_http_get_root
 	macro_library	LIBRARY_STRUCTURE_ENTRY.string_compare
-	jc	.no	; nie
+	jc	.no	; no
 
-	; ustaw odpowiedź
+	; set the response
 	mov	ecx,	service_http_200_default_end - service_http_200_default
 	mov	rsi,	service_http_200_default
 
-	; wyślij
+	; send
 	jmp	.answer
 
 .no:
-	; odpowiedź nie istnieje
+	; the response does not exist
 	mov	ecx,	service_http_404_end - service_http_404
 	mov	rsi,	service_http_404
 
 .answer:
-	; wyślij odpowiedź
+	; send the response
 	call	service_network_tcp_port_send
 
-	; zatrzymaj dalsze wykonywanie kodu
+	; stop further code execution
 	jmp	$
 
 service_http_get_root		db	"GET / "

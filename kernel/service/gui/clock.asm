@@ -2,7 +2,7 @@
 
 ;===============================================================================
 kernel_gui_clock:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
@@ -10,57 +10,57 @@ kernel_gui_clock:
 	push	rsi
 	push	rdi
 
-	; pobierz aktualny czas zegara RTC
+	; fetch the current RTC clock time
 	call	driver_rtc_get_date_and_time
 	mov	rax,	qword [rel driver_rtc_date_and_time]
 
-	; czas uległ zmianie?
+	; did the time change?
 	cmp	qword [rel kernel_gui_clock_last_state],	rax
-	je	.end	; nie, koniec obsługi procedury
+	je	.end	; no, end of the procedure handling
 
-	; zachowaj nowy znacznik czasu
+	; save the new time stamp
 	mov	qword [rel kernel_gui_clock_last_state],	rax
 
-	; przy każdej zmianie czasu (sekundy) ukryj/pokaż dwukropek
+	; at each time change (second) hide/show the colon
 	mov	bl,	byte [rel kernel_gui_clock_colon]
 	xchg	bl,	byte [rel kernel_gui_window_taskbar.element_label_clock_char_colon]
 	mov	byte [rel kernel_gui_clock_colon],	bl
 
 	;-----------------------------------------------------------------------
-	; Minuta
+	; Minute
 	;-----------------------------------------------------------------------
-	shr	rax,	STATIC_MOVE_HIGH_TO_AL_shift	; przesuń ilość minut do rejestru AX
-	and	eax,	0xFF	; usuń informacje o godzinie, dniu, miesiącu... itp.
+	shr	rax,	STATIC_MOVE_HIGH_TO_AL_shift	; move the number of minutes to register AX
+	and	eax,	0xFF	; remove the hour, day, month... information
 	mov	ebx,	STATIC_NUMBER_SYSTEM_decimal
-	mov	ecx,	0x02	; wyświetl dwie cyfry (prefix)
-	mov	dl,	STATIC_SCANCODE_DIGIT_0	; prefix to cyfra "0"
+	mov	ecx,	0x02	; display two digits (prefix)
+	mov	dl,	STATIC_SCANCODE_DIGIT_0	; the prefix is the digit "0"
 	mov	rdi,	kernel_gui_window_taskbar.element_label_clock_string_minute
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
 
-	; pobierz aktualny znacznik czasu
+	; fetch the current time stamp
 	mov	rax,	qword [rel kernel_gui_clock_last_state]
 
 	;-----------------------------------------------------------------------
-	; Godzina
+	; Hour
 	;-----------------------------------------------------------------------
-	shr	rax,	STATIC_MOVE_HIGH_TO_AX_shift	; przesuń ilość godzin do rejestru AL
-	and	rax,	0xFF	; usuń informacje o dniu, miesiącu, roku... itp.
-	mov	dl,	STATIC_SCANCODE_SPACE	; prefix to "spacja"
+	shr	rax,	STATIC_MOVE_HIGH_TO_AX_shift	; move the number of hours to register AL
+	and	rax,	0xFF	; remove the day, month, year... information
+	mov	dl,	STATIC_SCANCODE_SPACE	; the prefix is "space"
 	mov	rdi,	kernel_gui_window_taskbar.element_label_clock_string_hour
 	macro_library	LIBRARY_STRUCTURE_ENTRY.integer_to_string
 
-	; aktualizuj element "etykieta zegar" w przestrzeni okna paska zadań
+	; update the "clock label" element in the taskbar window space
 	mov	rdi,	kernel_gui_window_taskbar
 	mov	rsi,	kernel_gui_window_taskbar.element_label_clock
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_element_label
 
-	; ustaw flagę okna: nowa zawartość
+	; set the window flag: new content
 	mov	al,	KERNEL_WM_WINDOW_update
 	mov	rsi,	kernel_gui_window_taskbar
 	int	KERNEL_WM_IRQ
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rdx
@@ -68,7 +68,7 @@ kernel_gui_clock:
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_gui_clock"

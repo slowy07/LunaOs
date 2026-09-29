@@ -1,7 +1,7 @@
 ;===============================================================================
 
 	;-----------------------------------------------------------------------
-	; stałe, zmienne, globalne, struktury, obiekty
+	; constants, variables, globals, structures, objects
 	;-----------------------------------------------------------------------
 	%include	"kernel/service/gui/config.asm"
 	;-----------------------------------------------------------------------
@@ -9,24 +9,24 @@
 ;===============================================================================
 kernel_gui:
 	;-----------------------------------------------------------------------
-	; inicjalizacja interfejsu graficznego
+	; initialisation of the graphical interface
 	;-----------------------------------------------------------------------
 	%include	"kernel/service/gui/init.asm"
 
 .loop:
-	; sprawdż wiadomości przychodzące
+	; check incoming messages
 	call	kernel_gui_ipc
 
-	; sprawdź czy pasek zadań jest aktualny
+	; check whether the taskbar is up to date
 	call	kernel_gui_taskbar
 
-	; aktualizuj etykietę "zegar"
+	; update the "clock" label
 	call	kernel_gui_clock
 
-	; zwolnij pozostały czas procesora
+	; release the remaining processor time
 	call	kernel_sleep
 
-	; powrót do głównej pętli
+	; return to the main loop
 	jmp	.loop
 
 	;-----------------------------------------------------------------------

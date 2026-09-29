@@ -1,7 +1,7 @@
 ;===============================================================================
 
 	;-----------------------------------------------------------------------
-	; stałe, zmienne, globalne, struktury, obiekty
+	; constants, variables, globals, structures, objects
 	;-----------------------------------------------------------------------
 	%include	"kernel/service/wm/config.asm"
 	;-----------------------------------------------------------------------
@@ -9,42 +9,42 @@
 ;===============================================================================
 kernel_wm:
 	;-----------------------------------------------------------------------
-	; inicjalizacja środowiska produkcyjnego
+	; initialisation of the production environment
 	;-----------------------------------------------------------------------
 	%include	"kernel/service/wm/init.asm"
 
 .loop:
 	;-----------------------------------------------------------------------
-	; sprawdź zdarzenia od myszki i klawiatury
+	; check the mouse and keyboard events
 	;-----------------------------------------------------------------------
 	call	kernel_wm_event
 
 	;-----------------------------------------------------------------------
-	; sprawdź, które obiekty aktualizowały ostatnio swoją zawartość
+	; check which objects have recently updated their content
 	;-----------------------------------------------------------------------
 	call	kernel_wm_object
 
 	;-----------------------------------------------------------------------
-	; przetwórz wszystkie zarejestrowane strefy
+	; process all registered zones
 	;-----------------------------------------------------------------------
 	call	kernel_wm_zone
 
 	;-----------------------------------------------------------------------
-	; wypełnij wszystkie zarejestrowane fragmenty
+	; fill all registered fragments
 	;-----------------------------------------------------------------------
 	call	kernel_wm_fill
 
 	;-----------------------------------------------------------------------
-	; sprawdź położenie i stan kursora
+	; check the position and state of the cursor
 	;-----------------------------------------------------------------------
 	call	kernel_wm_cursor
 
 	;-----------------------------------------------------------------------
-	; zwolnij pozostały czas procesora
+	; release the remaining processor time
 	;-----------------------------------------------------------------------
 	call	kernel_sleep
 
-	; powróć do głównej pętli
+	; return to the main loop
 	jmp	.loop
 
 	;-----------------------------------------------------------------------

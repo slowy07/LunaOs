@@ -2,16 +2,16 @@
 
 ;===============================================================================
 kernel_wm_sleep:
-	; brak obiektów na liście?
+	; no objects on the list?
 	cmp	qword [kernel_wm_object_list_length],	STATIC_EMPTY
-	je	.end	; tak
+	je	.end	; yes
 
-	; kontynuuj oczekiwanie
+	; continue waiting
 	jmp	kernel_wm_sleep
 
 .end:
-	; powrót zprocedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_wm_sleep"

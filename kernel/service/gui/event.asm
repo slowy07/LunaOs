@@ -2,73 +2,73 @@
 
 ;===============================================================================
 kernel_gui_event_console:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rsi
 
-	; uruchom program "Console"
+	; run the "Console" program
 	mov	ax,	KERNEL_SERVICE_PROCESS_run
 	mov	ebx,	KERNEL_SERVICE_PROCESS_RUN_FLAG_out_default
 	mov	ecx,	kernel_gui_event_console_file_end - kernel_gui_event_console_file
 	mov	rsi,	kernel_gui_event_console_file
-	xor	r8,	r8	; brak przesyłanych argumentów
+	xor	r8,	r8	; no arguments to pass
 	int	KERNEL_SERVICE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury obsługi akcji
+	; return from the action handler procedure
 	ret
 
 	macro_debug	"kernel_gui_event_console"
 
 ;===============================================================================
 kernel_gui_event_soler:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rsi
 
-	; uruchom program "Console"
+	; run the "Console" program
 	mov	ax,	KERNEL_SERVICE_PROCESS_run
 	mov	ebx,	KERNEL_SERVICE_PROCESS_RUN_FLAG_out_default
 	mov	ecx,	kernel_gui_event_soler_file_end - kernel_gui_event_soler_file
 	mov	rsi,	kernel_gui_event_soler_file
-	xor	r8,	r8	; brak przesyłanych argumentów
+	xor	r8,	r8	; no arguments to pass
 	int	KERNEL_SERVICE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury obsługi akcji
+	; return from the action handler procedure
 	ret
 
 ;===============================================================================
 kernel_gui_event_taris:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rcx
 	push	rsi
 
-	; uruchom program "Taris"
+	; run the "Taris" program
 	mov	ax,	KERNEL_SERVICE_PROCESS_run
 	mov	ebx,	KERNEL_SERVICE_PROCESS_RUN_FLAG_out_default
 	mov	ecx,	kernel_gui_event_taris_file_end - kernel_gui_event_taris_file
 	mov	rsi,	kernel_gui_event_taris_file
-	xor	r8,	r8	; brak przesyłanych argumentów
+	xor	r8,	r8	; no arguments to pass
 	int	KERNEL_SERVICE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rbx
 
-	; powrót z procedury obsługi akcji
+	; return from the action handler procedure
 	ret
 
 	macro_debug	"kernel_gui_event_console"

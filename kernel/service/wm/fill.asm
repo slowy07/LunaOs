@@ -1,123 +1,123 @@
 ;===============================================================================
 
 ;===============================================================================
-; wejście:
-;	rax - wskaźnik do obiektu wypełniającego
-;	r8w - pozycja na osi X
-;	r9w - pozycja na osi Y
-;	r10w - szerokość strefy
-;	r11w - wysokość strefy
+; input:
+;	rax - pointer to the filling object
+;	r8w - position on the X axis
+;	r9w - position on the Y axis
+;	r10w - width of the zone
+;	r11w - height of the zone
 kernel_wm_fill_insert_by_register:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdi
 
-	; maksymalna ilość miejsc na liście
+	; max number of slots on the list
 	mov	ecx,	KERNEL_WM_FILL_LIST_limit
 
-	; ustaw wskaźnik na listy
+	; set the pointer to the list
 	mov	rdi,	qword [rel kernel_wm_fill_list_address]
 
 .loop:
-	; wolne miejsce?
+	; a free slot?
 	cmp	qword [rdi + KERNEL_WM_STRUCTURE_FILL.object],	STATIC_EMPTY
-	jne	.next	; nie
+	jne	.next	; no
 
-	; dodaj do listy nową strefę
+	; put a new zone on the list
 	mov	word [rdi + KERNEL_WM_STRUCTURE_FILL.field + KERNEL_WM_STRUCTURE_FIELD.x],	r8w
 	mov	word [rdi + KERNEL_WM_STRUCTURE_FILL.field + KERNEL_WM_STRUCTURE_FIELD.y],	r9w
 	mov	word [rdi + KERNEL_WM_STRUCTURE_FILL.field + KERNEL_WM_STRUCTURE_FIELD.width],	r10w
 	mov	word [rdi + KERNEL_WM_STRUCTURE_FILL.field + KERNEL_WM_STRUCTURE_FIELD.height],	r11w
 
-	; oraz jej obiekt zależny
+	; and its dependent object
 	mov	qword [rdi + KERNEL_WM_STRUCTURE_FILL.object],	rax
 
-	; zrealizowano
+	; done
 	jmp	.end
 
 .next:
-	; przesuń wskaźnik na następny wpis
+	; move the pointer to the next entry
 	add	rdi,	KERNEL_WM_STRUCTURE_FILL.SIZE
 
-	; koniec wpisów
+	; end of the entries
 	dec	rcx
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
-	; błąd
+	; error
 	xchg	bx,bx
 	jmp	$
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_fill_insert_by_register"
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do obiektu
+; input:
+;	rsi - pointer to the object
 kernel_wm_fill_insert_by_object:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rdi
 	push	rsi
 
-	; maksymalna ilość miejsc na liście
+	; max number of slots on the list
 	mov	ecx,	KERNEL_WM_FILL_LIST_limit
 
-	; ustaw wskaźnik na listy
+	; set the pointer to the list
 	mov	rdi,	qword [rel kernel_wm_fill_list_address]
 
 .loop:
-	; wolne miejsce?
+	; a free slot?
 	cmp	qword [rdi + KERNEL_WM_STRUCTURE_FILL.object],	STATIC_EMPTY
-	jne	.next	; nie
+	jne	.next	; no
 
-	; wstaw właściwości wypełnienia
-	movsw	; pozycja na osi X
-	movsw	; pozycja na osi Y
-	movsw	; szerokość
-	movsw	; wysokość
+	; insert the fill properties
+	movsw	; position on the X axis
+	movsw	; position on the Y axis
+	movsw	; width
+	movsw	; height
 
-	; oraz informacje o obiekcie zależnym
+	; and the information about the dependent object
 	mov	rax,	qword [rsp]
 	mov	qword [rdi],	rax
 
-	; zrealizowano
+	; done
 	jmp	.end
 
 .next:
-	; przesuń wskaźnik na następny wpis
+	; move the pointer to the next entry
 	add	rdi,	KERNEL_WM_STRUCTURE_FILL.SIZE
 
-	; koniec wpisów
+	; end of the entries
 	dec	rcx
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
-	; błąd
+	; error
 	xchg	bx,bx
 	jmp	$
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rdi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_fill_insert_by_object"
 
 ;===============================================================================
 kernel_wm_fill:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rdx
@@ -132,204 +132,204 @@ kernel_wm_fill:
 	push	r14
 	push	r15
 
-	; maksymalna ilość miejsc na liście
+	; max number of slots on the list
 	mov	ecx,	KERNEL_WM_FILL_LIST_limit
 
-	; ustaw wskaźnik na listę wypełnień
+	; set the pointer to the fill list
 	mov	rsi,	qword [rel kernel_wm_fill_list_address]
 
 .loop:
-	; pusta pozycja?
+	; an empty position?
 	cmp	qword [rsi + KERNEL_WM_STRUCTURE_FILL.object],	STATIC_EMPTY
-	je	.next	; tak
+	je	.next	; yes
 
-	; zachowaj wskaźnik i rozmiar listy
+	; save the pointer and the size of the list
 	push	rcx
 	push	rsi
 
 	;-----------------------------------------------------------------------
-	; pobierz właściwości wypełnienia
+	; fetch the fill properties
 	;-----------------------------------------------------------------------
 	movzx	r8d,	word [rsi + KERNEL_WM_STRUCTURE_FILL.field + KERNEL_WM_STRUCTURE_FIELD.x]
 	movzx	r9d,	word [rsi + KERNEL_WM_STRUCTURE_FILL.field + KERNEL_WM_STRUCTURE_FIELD.y]
 	movzx	r10d,	word [rsi + KERNEL_WM_STRUCTURE_FILL.field + KERNEL_WM_STRUCTURE_FIELD.width]
 	movzx	r11d,	word [rsi + KERNEL_WM_STRUCTURE_FILL.field + KERNEL_WM_STRUCTURE_FIELD.height]
 
-	; opisana strefa znajduje się na ujemnej osi X?
+	; is the described zone on the negative X axis?
 	bt	r8w,	STATIC_QWORD_BIT_sign
-	jnc	.x_positive	; nie
+	jnc	.x_positive	; no
 
-	; wytnij niewidoczny fragment
+	; cut out the invisible fragment
 	not	r8w
 	inc	r8w
 	sub	r10w,	r8w
 
-	; przesuń na początek osi X
+	; move to the beginning of the X axis
 	xor	r8w,	r8w
 
 .x_positive:
-	; opisana strefa znajduje się na ujemnej osi Y?
+	; is the described zone on the negative Y axis?
 	bt	r9w,	STATIC_QWORD_BIT_sign
-	jnc	.y_positive	; nie
+	jnc	.y_positive	; no
 
-	; wytnij niewidoczny fragment
+	; cut out the invisible fragment
 	not	r9w
 	inc	r9w
 	sub	r11w,	r9w
 
-	; przesuń na początek osi Y
+	; move to the beginning of the Y axis
 	xor	r9w,	r9w
 
 .y_positive:
-	; opisana strefa wykracza poza oś X?
+	; does the described zone exceed the X axis?
 	mov	ax,	r8w
 	add	ax,	r10w
 	cmp	ax,	word [rel kernel_video_width_pixel]
-	jb	.x_inside	; nie
+	jb	.x_inside	; no
 
-	; ogranicz strefę do przestrzeni ekranu
+	; limit the zone to the screen space
 	sub	ax,	word [rel kernel_video_width_pixel]
 	sub	r10w,	ax
 
 .x_inside:
-	; opisana strefa wykracza poza oś Y?
+	; does the described zone exceed the Y axis?
 	mov	ax,	r9w
 	add	ax,	r11w
 	cmp	ax,	word [rel kernel_video_height_pixel]
-	jb	.y_inside	; nie
+	jb	.y_inside	; no
 
-	; ogranicz strefę do przestrzeni ekranu
+	; limit the zone to the screen space
 	sub	ax,	word [rel kernel_video_height_pixel]
 	sub	r11w,	ax
 
 .y_inside:
 	;-----------------------------------------------------------------------
-	; wylicz zmienne do opracji kopiowania przestrzeni
+	; compute the variables for the space copying operation
 	;-----------------------------------------------------------------------
 
-	; pobierz wskaźnik do obiektu wypełniającego
+	; fetch the pointer to the filling object
 	mov	rsi,	qword [rsi + KERNEL_WM_STRUCTURE_FILL.object]
 
 	;-----------------------------------------------------------------------
 	; scanlines
-	; r12 - scanline wypelnienia w Bajtach
+	; r12 - fill scanline in Bytes
 	movzx	r12d,	r10w
 	shl	r12d,	KERNEL_VIDEO_DEPTH_shift
-	; r13 - scanline obiektu w Bajtach
+	; r13 - object scanline in Bytes
 	movzx	r13d,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width]
 	shl	r13d,	KERNEL_VIDEO_DEPTH_shift
-	; r14 - scanline bufora w Bajtach
+	; r14 - buffer scanline in Bytes
 	movzx	r14d,	word [rel kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width]
 	shl	r14d,	KERNEL_VIDEO_DEPTH_shift
 
-	; wylicz wskaźnik początku wypełnienia w przestrzeni bufora
+	; compute the pointer of the fill start in the buffer space
 	;-----------------------------------------------------------------------
 
-	; pozycja względem osi X
+	; position relative to the X axis
 	movzx	edi,	r8w
 	shl	edi,	KERNEL_VIDEO_DEPTH_shift
 
-	; pozycja względem osi Y
+	; position relative to the Y axis
 	mov	eax,	r14d
 	mul	r9d
 
-	; wskaźnik bezpośredni do przestrzeni wypełnienia w buforze
+	; direct pointer to the fill space in the buffer
 	add	rdi,	rax
 	add	rdi,	qword [rel kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.address]
 
-	; korekta pozycji wypełnienia względem obiektu
+	; correction of the fill position relative to the object
 	; -----------------------------------------------------------------------
 	sub	r8w,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.x]
-	js	.overflow	; obiekt wypełniający poza obszarem fragmentu
+	js	.overflow	; the filling object outside the fragment area
 	sub	r9w,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.y]
-	js	.overflow	; obietk wypełniający poza obszarem fragmentu
+	js	.overflow	; the filling object outside the fragment area
 
-	; wylicz wskaźnik początku wypełnienia w przestrzeni obiektu
+	; compute the pointer of the fill start in the object space
 	;-----------------------------------------------------------------------
 
-	; pozycja na osi Y w Bajtach (względna)
+	; position on the Y axis in Bytes (relative)
 	movzx	eax,	r9w
 	mul	r13d
 
-	; pozycja na osi X w Bajtach (względna)
+	; position on the X axis in Bytes (relative)
 	shl	r8d,	KERNEL_VIDEO_DEPTH_shift
 
-	; przelicz na wskaźnik bezwzględny
+	; convert to an absolute pointer
 	mov	rsi,	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT.address]
 	add	rsi,	rax
 	add	rsi,	r8
 
 	;-----------------------------------------------------------------------
-	; Wypełnianie
+	; Filling
 	;-----------------------------------------------------------------------
 
 .row:
-	; następny wiersz N pikseli
+	; next row of N pixels
 	mov	cx,	r10w
 
 .print:
-	; piksel całkowicie przeźroczysty?
+	; a completely transparent pixel?
 	cmp	byte [rsi + 0x03],	STATIC_MAX_unsigned
-	je	.transparent_max	; tak
+	je	.transparent_max	; yes
 
-	; wypełnij wiersz pikseli wypełniaczem
+	; fill the pixel row with the filler
 	movsd
 
-	; kontynuuj
+	; continue
 	jmp	.continue
 
 .overflow:
-	; przetwórz ponownie fragment jako strefę
+	; process the fragment once again as a zone
 	mov	rax,	qword [rsp]
 	call	kernel_wm_zone_insert_by_object
 	call	kernel_wm_zone
 
-	; pomiń fragment
+	; skip the fragment
 	jmp	.leave
 
 .transparent_max:
-	; pomiń piksel
+	; skip the pixel
 	add	rsi,	STATIC_DWORD_SIZE_byte
 	add	rdi,	STATIC_DWORD_SIZE_byte
 
 .continue:
-	; następny piksel?
+	; next pixel?
 	dec	cx
-	jnz	.print	; tak
+	jnz	.print	; yes
 
-	; przesuń wskaźniki na następną linię
-	; bufor
+	; move the pointers to the next line
+	; buffer
 	sub	rdi,	r12
 	add	rdi,	r14
-	; wypełniacz
+	; filler
 	sub	rsi,	r12
 	add	rsi,	r13
 
-	; pozostały wiersze wypełnienia?
+	; remaining fill rows?
 	dec	r11w
-	jnz	.row	; tak
+	jnz	.row	; yes
 
-	; zawartość bufora uległa modyfikacji
+	; the buffer content has been modified
 	or	word [rel kernel_wm_object_framebuffer + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
 
 .leave:
-	; przywróć wskaźnik i rozmiar listy
+	; restore the pointer and the size of the list
 	pop	rsi
 	pop	rcx
 
-	; zwolnij wypełnienie na liście
+	; free the fill on the list
 	mov	qword [rsi + KERNEL_WM_STRUCTURE_FILL.object],	STATIC_EMPTY
 
 .next:
-	; przesuń wskaźnik na następne wypełnienie
+	; move the pointer to the next fill
 	add	rsi,	KERNEL_WM_STRUCTURE_FILL.SIZE
 
-	; następny wpis na liście?
+	; the next entry on the list?
 	dec	cx
-	jnz	.loop	; tak
+	jnz	.loop	; yes
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r15
 	pop	r14
 	pop	r13
@@ -344,7 +344,7 @@ kernel_wm_fill:
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_fill"

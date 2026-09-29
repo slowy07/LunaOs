@@ -7,36 +7,36 @@ service_tx_ipc_message:
 
 ;===============================================================================
 service_tx:
-	; pobierz własny PID
+	; fetch own PID
 	call	kernel_task_active
 	mov	rax,	qword [rdi + KERNEL_TASK_STRUCTURE.pid]
 
-	; udostepnij własny PID dla pozostałych procesów
+	; share own PID with the other processes
 	mov	qword [rel service_tx_pid],	rax
 
 .loop:
-	; pobierz wiadomość
+	; fetch a message
 	mov	rdi,	service_tx_ipc_message
 	call	kernel_ipc_receive
-	jc	.loop	; brak, sprawdź raz jeszcze
+	jc	.loop	; none, check once again
 
-	; pobierz rozmiar danych pakietu
+	; fetch the packet data size
 	mov	rcx,	qword [rdi + KERNEL_IPC_STRUCTURE.size]
 
-	; brak danych?
+	; no data?
 	test	rcx,	rcx
-	jz	.loop	; tak, zignoruj
+	jz	.loop	; yes, ignore
 
- 	; wyślij
+ 	; send
  	mov	rax,	rcx
  	mov	rdi,	qword [rdi + KERNEL_IPC_STRUCTURE.pointer]
  	call	driver_nic_i82540em_transfer
 
-	; zwolnij przesterzeń
+	; release the space
 	call	library_page_from_size
 	call	kernel_memory_release
 
-	; powrót do pętli głównej
+	; return to the main loop
 	jmp	.loop
 
 	macro_debug	"service_tx"

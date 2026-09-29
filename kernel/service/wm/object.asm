@@ -1,657 +1,657 @@
 ;===============================================================================
 
 ;===============================================================================+
-; wejście:
-;	rsi - wskaźnik do obiektu
-; wyjście:
-;	Flaga CF - jeśli brak miejsca
-;	rsi - wskaźnik do rekordu w tablicy obiektów
+; input:
+;	rsi - pointer to the object
+; output:
+;	CF flag - if there is no space
+;	rsi - pointer to the record in the object table
 kernel_wm_object_insert:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rdi
 	push	rsi
 
-	; lista posiada wolne elementy?
+	; does the list have free entries?
 	cmp	qword [rel kernel_wm_object_list_length],	KERNEL_WM_OBJECT_LIST_limit
-	je	.error	; brak miejsca
+	je	.error	; no space
 
-	; znajdź wolny rekord w tablicy
+	; find a free record in the table
 	call	kernel_wm_object_table_entry
-	jc	.error	 ; brak miejsca
+	jc	.error	 ; no space
 
-	; zachowaj wskaźnik początku rekordu w tablicy
+	; preserve the pointer to the beginning of the record in the table
 	push	rdi
 
-	; załaduj obiekt
+	; load the object
 	mov	rcx,	(KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.SIZE) >> STATIC_DIVIDE_BY_QWORD_shift
 	rep	movsq
 
-	; pobierz wskaźnik początku rekordu w tablicy
+	; fetch the pointer to the beginning of the record in the table
 	mov	rdi,	qword [rsp]
 
-	; pobierz PID procesu (właściciel okna)
+	; fetch the PID of the process (window owner)
 	call	kernel_task_active_pid
 	mov	qword [rdi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.pid],	rax
 
 	;-----------------------------------------------------------------------
 
-	; zablokuj dostęp do modyfikacji listy obiektów
+	; lock access to modifying the object list
 	macro_lock	kernel_wm_object_semaphore,	0
 
-	; ilość elementów listy obiektów
+	; number of entries of the object list
 	mov	rcx,	qword [rel kernel_wm_object_list_length]
 
-	; ustaw wskaźnik na początek listy obiektów
+	; set the pointer to the beginning of the object list
 	mov	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
-	; pobierz wskaźnik obiektu przechowywany w elemencie listy obiektów
+	; fetch the object pointer held in the object list entry
 	lodsq
 
-	; element pusty?
+	; entry empty?
 	test	rax,	rax
-	jz	.found	; tak
+	jz	.found	; yes
 
-	; pozostało N elementów do sprawdzenia
+	; N entries left to check
 	dec	rcx
 
-	; wstaw zarejestrowany obiekt przed arbitrem (jeśli istnieje)
+	; insert the registered object before the arbiter (if it exists)
 
-	; obiekt jest arbitrem?
+	; is the object an arbiter?
 	test	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_arbiter
-	jz	.loop	; nie, szukaj dalej
+	jz	.loop	; no, keep searching
 
-	; wbrak elementów do przesunięcia?
+	; no entries left to shift?
 	test	rcx,	rcx
-	jz	.moved	; tak
+	jz	.moved	; yes
 
-	; przesuń wszystkie kolejne elementy listy obiektów o pozycję dalej
+	; shift all following object list entries one position further
 	shl	rcx,	KERNEL_WM_OBJECT_LIST_ENTRY_SIZE_shift
 
-	; ustaw wskaźnik na ostani i następny element
+	; set the pointer to the last and the next entry
 	add	rsi,	rcx
 
-	; koryguj pozycję wskaźników
+	; correct the position of the pointers
 	mov	rdi,	rsi
 	sub	rsi,	KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.SIZE
 
-	; zachowaj oryginalne flagi procesora
+	; preserve the original processor flags
 	pushf
 
-	; zamień wskaźnik pośredni na licznik
+	; convert the indirect pointer into a counter
 	shr	rcx,	KERNEL_WM_OBJECT_LIST_ENTRY_SIZE_shift
-	inc	rcx	; przesuń wraz z arbitrem
+	inc	rcx	; shift along with the arbiter
 
-	; przesuń elementy
-	std	; wstecz
+	; shift the entries
+	std	; backwards
 	rep	movsq
 
-	; przywróć oryginalne flagi procesora
+	; restore the original processor flags
 	popf
 
-	; koryguj wskaźnik po operacji
+	; correct the pointer after the operation
 	add	rsi,	KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.SIZE
 
 .moved:
-	; koryguj wskaźnik względem arbitra
+	; correct the pointer relative to the arbiter
 	add	rsi,	KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.SIZE
 
 .found:
-	; przywróć wskaźnik pozycji rekordu w tablicy obiektów
+	; restore the pointer to the table record position
 	pop	rax
 
-	; zachowaj wskaźnik w elemencie listy obiektów
+	; store the pointer in the object list entry
 	mov	qword [rsi - KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.SIZE],	rax
 
-	; zwróć wskaźnik zarejestrowanego obiektu
+	; return the pointer of the registered object
 	mov	qword [rsp],	rax
 
-	; zarejestowano obiekt na liście
+	; object registered on the list
 	inc	qword [rel kernel_wm_object_list_length]
 
-	; zwolnij dostęp do modyfikacji listy obiektów
+	; release access to modifying the object list
 	mov	byte [rel kernel_wm_object_semaphore],	STATIC_FALSE
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.end
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rdi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_object_insert"
 
 ;===============================================================================
-; wyjście:
-;	Flaga CF - jeśli brak wolnych rekordów
-;	rdi - wskaźnik do wolnego rekordu tablicy
+; output:
+;	CF flag - if there are no free records
+;	rdi - pointer to the free table record
 kernel_wm_object_table_entry:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; ustaw wskaźnik na początek tablicy obiektów
+	; set the pointer to the beginning of the object table
 	mov	rsi,	qword [rel kernel_wm_object_table_address]
 
 .block:
-	; ilość obiektów na blok danych tablicy obiektów
+	; number of objects per data block of the object table
 	mov	rcx,	STATIC_STRUCTURE_BLOCK.link / (KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.SIZE)
 
 .loop:
-	; rekord wolny?
+	; record free?
 	cmp	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT.address],	STATIC_EMPTY
-	je	.found	; tak
+	je	.found	; yes
 
-	; koniec rekordów w bloku danych tablicy obiektów?
+	; end of the records in the object table data block?
 	dec	rcx
-	jz	.loop	; nie
+	jz	.loop	; no
 
-	; przesuń wskaźnik na następny rekord
+	; move the pointer to the next record
 	add	rsi,	KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.SIZE
 
-	; szukaj dalej
+	; keep searching
 	jmp	.loop
 
 .next:
-	; koniec dostępnych bloków danych tablicy obiektów?
+	; end of the available object table data blocks?
 	and	si,	STATIC_PAGE_mask
 	cmp	qword [rsi + STATIC_STRUCTURE_BLOCK.link],	STATIC_EMPTY
-	je	.resize	; tak
+	je	.resize	; yes
 
 .continue:
-	; załaduj następny blok danych tablicy obiektów
+	; load the next object table data block
 	mov	rsi,	qword [abs STATIC_STRUCTURE_BLOCK.link]
 
-	; kontynuuj przetwarzanie
+	; continue processing
 	jmp	.block
 
 .resize:
-	; przygotuj nowy blok danych dla tablicy obiektów
+	; prepare a new data block for the object table
 	call	kernel_memory_alloc_page
-	jc	.error	; brak miejsca
+	jc	.error	; no space
 
-	; podłącz blok danych na koniec tablicy obiektów
+	; attach the data block to the end of the object table
 	mov	qword [rsi + STATIC_STRUCTURE_BLOCK.link],	rdi
 
-	; załaduj nowy blok danych tablicy obiektów
+	; load the new object table data block
 	jmp	.continue
 
 .found:
-	; zwróć wskaźnik wolnego rekordu tablicy obiektów
+	; return the pointer to the free table record
 	mov	qword [rsp],	rsi
 
-	; koniec procedury
+	; end of the procedure
 	jmp	.end
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_object_table_entry"
 
 ;===============================================================================
 kernel_wm_object:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rsi
 
-	; ustaw wskaźnik na początek listy obiektów
+	; set the pointer to the beginning of the object list
 	mov	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
-	; pobierz wskaźnik obiektu z listy
+	; fetch the object pointer from the list
 	lodsq
 
-	; koniec wpisów?
+	; end of the entries?
 	test	rax,	rax
-	jz	.end	; tak
+	jz	.end	; yes
 
-	; przerysować zawartość pod obiektem?
+	; redraw the content under the object?
 	test	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_undraw
-	jnz	.undraw	; tak
+	jnz	.undraw	; yes
 
-	; obiekt widoczny?
+	; is the object visible?
 	test	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_visible
-	jz	.loop	; nie
+	jz	.loop	; no
 
-	; obiekt aktualizował swoją zawartość?
+	; has the object updated its content?
 	test	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
-	jz	.loop	; nie
+	jz	.loop	; no
 
 .undraw:
-	; przetwórz strefę
-	; rax - wskaźnik do obiektu
+	; process the zone
+	; rax - pointer to the object
 	call	kernel_wm_zone_insert_by_object
 
-	; wyłącz flagę aktualizacji obiektu lub przerysowania zawartości pod obiektem
+	; clear the object update flag or the redraw-under-the-object flag
 	and	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	~KERNEL_WM_OBJECT_FLAG_flush & ~KERNEL_WM_OBJECT_FLAG_undraw
 
-	; wymuś aktualizacje obiektu kursora
+	; force the cursor object to be updated
 	or	word [rel kernel_wm_object_cursor + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
 
-	; kontynuuj
+	; continue
 	jmp	.loop
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_object"
 
 ;===============================================================================
-; wejście:
-;	rcx - PID procesu
+; input:
+;	rcx - PID of the process
 kernel_wm_object_drain:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rsi
 
 .next:
-	; zamknij wszystkie obiekty należące do procesu
+	; close all objects belonging to the process
 	call	kernel_wm_object_by_pid
-	jc	.end	; wszystkie zamknięte
+	jc	.end	; all closed
 
-	; usuń obiekt
+	; remove the object
 	call	kernel_wm_object_delete
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_object_drain"
 
 ;===============================================================================
-; wejście:
-;	rcx - PID procesu
-; wyjście:
-;	Flaga CF, jeśli nie znaleziono
-;	rsi - wskaźnik do obiektu na liście
+; input:
+;	rcx - PID of the process
+; output:
+;	CF flag, if not found
+;	rsi - pointer to the object on the list
 kernel_wm_object_by_pid:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rsi
 
-	; na liście znajdują się obiekty?
+	; are there objects on the list?
 	cmp	qword [rel kernel_wm_object_list_length],	STATIC_EMPTY
-	je	.error	; nie
+	je	.error	; no
 
-	; przeszukaj listę obiektów
+	; search the object list
 	mov	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
-	; pobierz wskaźnik do rekordu tablicy obiektów
+	; fetch the pointer to the object table record
 	lodsq
 
-	; koniec elementów na liście obiektów?
+	; end of the entries on the object list?
 	test	rax,	rax
-	jz	.error	; tak
+	jz	.error	; yes
 
-	; obiekt posiada poszukiwany PID procesu?
+	; does the object carry the searched process PID?
 	cmp	qword [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.pid],	rcx
-	jne	.loop	; nie
+	jne	.loop	; no
 
 .found:
-	; zwróć wskaźnik do obiektu
+	; return the pointer to the object
 	mov	qword [rsp],	rax
 
-	; koniec obsługi procedury
+	; end of the procedure handling
 	jmp	.end
 
 .error:
-	; Flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_wm_object_by_pid"
 
 ;===============================================================================
-; wejście:
-;	rbx - identyfikator okna
-; wyjście:
-;	Flaga CF, jeśli nie znaleziono
-;	rsi - wskaźnik do obiektu na liście
+; input:
+;	rbx - window identifier
+; output:
+;	CF flag, if not found
+;	rsi - pointer to the object on the list
 kernel_wm_object_by_id:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rsi
 
-	; na liście znajdują się obiekty?
+	; are there objects on the list?
 	cmp	qword [rel kernel_wm_object_list_length],	STATIC_EMPTY
-	je	.error	; nie
+	je	.error	; no
 
-	; pobierz wskaźnik początku listy obiektów
+	; fetch the pointer to the beginning of the object list
 	mov	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
-	; pobierz wskaźnik obiektu z listy
+	; fetch the object pointer from the list
 	lodsq
 
-	; obiekt posiada poszukiwany identyfikator?
+	; does the object carry the searched identifier?
 	cmp	qword [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.id],	rbx
-	je	.found	; tak
+	je	.found	; yes
 
-	; koniec elementów na liście obiektów?
+	; end of the entries on the object list?
 	cmp	qword [rsi],	STATIC_EMPTY
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
 .error:
-	; Flaga, błąd
+	; flag, error
 	stc
 
-	; koniec obsługi procedury
+	; end of the procedure handling
 	jmp	.end
 
 .found:
-	; zwróć wskaźnik do obiektu
+	; return the pointer to the object
 	mov	qword [rsp],	rax
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
-	; informacja dla Bochs
+	; information for Bochs
 	macro_debug	"kernel_wm_object_by_id"
 
 
 ;===============================================================================
-; wyjście:
-;	rcx - nowy identyfikator
+; output:
+;	rcx - new identifier
 kernel_wm_object_id_get:
-	; zablokuj dostęp do procedury
+	; lock access to the procedure
 	macro_lock	kernel_wm_object_id_semaphore,	0
 
-	; pobierz wolny identyfikator
+	; fetch the free identifier
 	mov	rcx,	qword [rel kernel_wm_object_id]
 
-	; przygotuj następny
+	; prepare the next one
 	inc	qword [rel kernel_wm_object_id]
 
-	; zwolnij dostęp do procedury
+	; release access to the procedure
 	mov	byte [rel kernel_wm_object_id_semaphore],	STATIC_FALSE
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_object_id_get"
 
 ;===============================================================================
-; wejście:
-;	r8w - pozycja kursora na osi X
-;	r9w - pozycja kursora na osi Y
-; wyjście:
-;	Flaga CF - jeśli nie znaleziono elementu z wskaźnikiem obiektu
-;	rsi - wskaźnik do rekordu tablicy obiektów znajdującego się pod współrzędnymi kursora
+; input:
+;	r8w - cursor position on the X axis
+;	r9w - cursor position on the Y axis
+; output:
+;	CF flag - if no entry with the object pointer was found
+;	rsi - pointer to the object table record located under the cursor coordinates
 kernel_wm_object_find:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
 
-	; na liście znajdują się elementy?
+	; are there entries on the list?
 	cmp	qword [rel kernel_wm_object_list_length],	STATIC_EMPTY
-	je	.error	; nie
+	je	.error	; no
 
-	; ustaw wskaźnik na ostatni element listy obiektów
+	; set the pointer to the last entry of the object list
 	mov	rsi,	qword [rel kernel_wm_object_list_length]
 	shl	rsi,	KERNEL_WM_OBJECT_LIST_ENTRY_SIZE_shift
-	; zamień na adres bezpośredni
+	; convert to a direct address
 	add	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
-	; ustaw wskaźnik na element do sprawdzenia
+	; set the pointer to the entry to check
 	sub	rsi,	KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.SIZE
 
-	; koniec listy obiektów?
+	; end of the object list?
 	cmp	rsi,	qword [rel kernel_wm_object_list_address]
-	jb	.error	; tak
+	jb	.error	; yes
 
-	; pobierz wskaźnik do obiektu z elementu listy
+	; fetch the object pointer from the list entry
 	mov	rax,	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.object_address]
 
-	; obiekt widoczny?
+	; is the object visible?
 	test	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_visible
-	jz	.loop	; nie
+	jz	.loop	; no
 
 	;-----------------------------------------------------------------------
-	; wskaźnik w przestrzeni obiektu względem lewej krawędzi?
+	; pointer within the object space relative to the left edge?
 	cmp	r8w,	word [rax + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.x]
-	jl	.loop	; nie
+	jl	.loop	; no
 
-	; wskaźnik w przestrzeni obiektu względem górnej krawędzi?
+	; pointer within the object space relative to the top edge?
 	cmp	r9w,	word [rax + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.y]
-	jl	.loop	; nie
+	jl	.loop	; no
 
-	; wskaźnik w przestrzeni obiektu względem prawej krawędzi?
+	; pointer within the object space relative to the right edge?
 	mov	cx,	word [rax + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.x]
 	add	cx,	word [rax + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width]
 	cmp	r8w,	cx
-	jge	.loop	; nie
+	jge	.loop	; no
 
-	; wskaźnik w przestrzeni obiektu względem dolnej krawędzi?
+	; pointer within the object space relative to the bottom edge?
 	mov	cx,	word [rax + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.y]
 	add	cx,	word [rax + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.height]
 	cmp	r9w,	cx
-	jge	.loop	; nie
+	jge	.loop	; no
 	;-----------------------------------------------------------------------
 
-	; zwróć wskaźnik do obiektu
+	; return the pointer to the object
 	mov	qword [rsp],	rax
 
-	; flaga, sukces
+	; flag, success
 	clc
 
-	; koniec
+	; end
 	jmp	.end
 
 .error:
-	; flaga, błąd
+	; flag, error
 	stc
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_object_find"
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do rekordu z tablicy obiektów
+; input:
+;	rsi - pointer to the record from the object table
 kernel_wm_object_up:
-	; zachowaj oryginalny rejestr
+	; preserve the original register
 	push	rax
 	push	rcx
 	push	rdi
 	push	rsi
 
-	; zablokuj dostęp do modyfikacji listy obiektów
+	; lock access to modifying the object list
 	macro_lock	kernel_wm_object_semaphore,	0
 
-	; przesunięcie elementu na liście obiektów, nie jest równoznaczne z modyfikacją rekordu w tablicy obiektów
+	; shifting an entry on the object list is not equivalent to modifying the record in the object table
 	push	qword [rel kernel_wm_object_list_modify_time]
 
-	; odszukaj element opisujący rekord tablicy obiektów
+	; look for the entry describing the object table record
 	mov	rcx,	qword [rel kernel_wm_object_list_length]
 	mov	rdi,	qword [rel kernel_wm_object_list_address]
 
 .search:
-	; znaleziono?
+	; found?
 	cmp	rsi,	qword [rdi + KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.object_address]
-	je	.found	; tak
+	je	.found	; yes
 
-	; przesuń wskaźnik na następny element listy obiektów
+	; move the pointer to the next object list entry
 	add	rdi,	KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.SIZE
 
-	; koniec elementów?
+	; end of the entries?
 	dec	rcx
-	jnz	.search	; nie
+	jnz	.search	; no
 
-	; flaga, błąd krytyczny
+	; flag, critical error
 	stc
 
-	; koniec obsługi procedury
+	; end of the procedure handling
 	jmp	.end
 
 .found:
-	; zachowaj wskaźnik obiektu rekordu tablicy
+	; preserve the pointer to the table record object
 	push	rsi
 
-	; przemieść pozostałe elementy listy obiektów na poprzednią pozycję
+	; move the remaining object list entries to the previous position
 	mov	rsi,	rdi
 	add	rsi,	KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.SIZE
 
 .loop:
-	; koniec elementów na liście obiektów?
+	; end of the entries on the object list?
 	dec	rcx
-	jz	.last	; tak
+	jz	.last	; yes
 
-	; element wskazuje na obiekt arbitra?
+	; does the entry point to the arbiter object?
 	mov	rax,	qword [rsi]
 	test	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_arbiter
-	jnz	.last	; tak
+	jnz	.last	; yes
 
-	; przesuń element na poprzednią pozycję
+	; move the entry to the previous position
 	movsq
 
-	; koniec elementów listy obiektów?
+	; end of the object list entries?
 	dec	rcx
-	jnz	.loop	; nie
+	jnz	.loop	; no
 
 .last:
-	; wstaw wskaźnik obiektu do elementu na ostatnią pozycję (lub przed arbitrem)
+	; put the object pointer into the entry at the last position (or before the arbiter)
 	pop	qword [rdi]
 
 .end:
-	; przywróć oryginalny czas ostatniej modyfikacji listy obiektów
+	; restore the original time of the last modification of the object list
 	pop	qword [rel kernel_wm_object_list_modify_time]
 
-	; zwolnij dostęp do modyfikacji listy obiektów
+	; release access to modifying the object list
 	mov	byte [rel kernel_wm_object_semaphore],	STATIC_FALSE
 
-	; przywróć oryginalny rejestr
+	; restore the original register
 	pop	rsi
 	pop	rdi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_object_up"
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do rekordu tablicy obiektów
+; input:
+;	rsi - pointer to the object table record
 kernel_wm_object_remove:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; zablokuj dostęp do modyfikacji listy obiektów
+	; lock access to modifying the object list
 	macro_lock	kernel_wm_object_semaphore,	0
 
-	; odszukaj wskaźnik w elemencie listy obiektów
+	; look for the pointer in the object list entry
 	mov	rcx,	qword [rel kernel_wm_object_list_length]
 	mov	rdi,	qword [rel kernel_wm_object_list_address]
 
 .search:
-	; znaleziono element?
+	; entry found?
 	cmp	rsi,	qword [rdi + KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.object_address]
-	je	.found	; tak
+	je	.found	; yes
 
-	; przesuń wskaźnik na nastepny element z listy obiektów
+	; move the pointer to the next entry of the object list
 	add	rdi,	KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.SIZE
 
-	; koniec listy elementów?
+	; end of the entry list?
 	dec	rcx
-	jnz	.search	; nie
+	jnz	.search	; no
 
-	; flaga, błąd
+	; flag, error
 	stc
 
-	; koniec obsługi procedury
+	; end of the procedure handling
 	jmp	.end
 
 .found:
-	; ustaw wskaźnik źródłowy i docelowy
+	; set the source and destination pointers
 	mov	rsi,	rdi
 	add	rsi,	KERNEL_WM_STRUCTURE_OBJECT_LIST_ENTRY.SIZE
 
-	; przesuń wszystkie pozostałe elementy o pozycję wstecz
+	; shift all remaining entries one position back
 	rep	movsq
 
 .end:
-	; ilość rekordów na liście
+	; number of records on the list
 	dec	qword [rel kernel_wm_object_list_length]
 
-	; zachowaj czas ostatniej modyfikacji listy
+	; preserve the time of the last modification of the list
 	mov	rcx,	qword [rel driver_rtc_microtime]
 	mov	qword [rel kernel_wm_object_list_modify_time],	rcx
 
-	; zwolnij dostęp do modyfikacji listy obiektów
+	; release access to modifying the object list
 	mov	byte [rel kernel_wm_object_semaphore],	STATIC_FALSE
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_object_remove"
 
 ;===============================================================================
-; wejście:
-;	r14 - delta osi X
-;	r15 - delta osi Y
+; input:
+;	r14 - delta of the X axis
+;	r15 - delta of the Y axis
 kernel_wm_object_move:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rsi
 	push	rdi
 	push	r8
@@ -663,125 +663,125 @@ kernel_wm_object_move:
 	push	r14
 	push	r15
 
-	; ustaw wskaźnik na wybrany obiekt
+	; set the pointer to the selected object
 	mov	rsi,	qword [rel kernel_wm_object_selected_pointer]
 
-	; pobierz wskaźnik domyślnego obiektu wypełniającego strefę
+	; fetch the pointer to the default object filling the zone
 	mov	rdi,	qword [rel kernel_wm_object_table_address]
 
-	; obiekt można przemieszczać?
+	; can the object be moved?
 	test	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_fixed_xy
-	jnz	.end	; nie
+	jnz	.end	; no
 
-	; pobierz właściwości obiektu
+	; fetch the object properties
 	mov	r8w,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.x]
 	mov	r9w,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.y]
 	mov	r10w,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.width]
 	mov	r11w,	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.height]
 
-	; ustaw zmienne lokalne
+	; set the local variables
 	mov	r12w,	r8w
 	mov	r13w,	r10w
 
-	; brak przesunięcia na osi X?
+	; no shift on the X axis?
 	test	r14w,	r14w
-	jz	.y	; tak
+	jz	.y	; yes
 
-	; aktualizuj pozycję obiektu na osi X
+	; update the object position on the X axis
 	add	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.x],	r14w
 
-	; przesunięcie na osi X jest dodatnie?
+	; is the shift on the X axis positive?
 	cmp	r14w,	STATIC_EMPTY
-	jl	.to_left	; nie
+	jl	.to_left	; no
 
-	; szerokość strefy
+	; width of the zone
 	mov	r10w,	r14w
 
-	; zarejestruj
+	; register
 	call	kernel_wm_zone_insert_by_register
 
-	; koryguj pozycję strefy na osi X
+	; correct the zone position on the X axis
 	add	r8w,	r14w
 
 .to_left:
-	; przesunięcie na osi X jest ujemne?
+	; is the shift on the X axis negative?
 	cmp	r14w,	STATIC_EMPTY
-	jnl	.x_done	; nie
+	jnl	.x_done	; no
 
-	; zamień przesunięcie na wartość bezwzględną
+	; convert the shift to an absolute value
 	neg	r14w
 
-	; pozycja i szerokość strefy
+	; position and width of the zone
 	add	r8w,	r10w
 	sub	r8w,	r14w
 	mov	r10w,	r14w
 
-	; zarejestruj
+	; register
 	call	kernel_wm_zone_insert_by_register
 
-	; koryguj pozycję strefy na osi X
+	; correct the zone position on the X axis
 	mov	r8w,	r12w
 
 .x_done:
-	; koryguj szerokość strefy
+	; correct the width of the zone
 	mov	r10w,	r13w
 	sub	r10w,	r14w
 
 .y:
-	; ustaw zmienne lokalne
+	; set the local variables
 	mov	r12w,	r9w
 	mov	r13w,	r11w
 
-	; brak przesunięcia na osi X?
+	; no shift on the X axis?
 	test	r15w,	r15w
-	jz	.ready	; tak
+	jz	.ready	; yes
 
-	; aktualizuj pozycję obiektu na osi Y
+	; update the object position on the Y axis
 	add	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.y],	r15w
 
-	; przesunięcie na osi Y jest dodatnie?
+	; is the shift on the Y axis positive?
 	cmp	r15w,	STATIC_EMPTY
-	jl	.to_up	; nie
+	jl	.to_up	; no
 
-	; wysokość strefy
+	; height of the zone
 	mov	r11w,	r15w
 
-	; zarejestruj
+	; register
 	call	kernel_wm_zone_insert_by_register
 
-	; koryguj pozycję strefy na osi Y
+	; correct the zone position on the Y axis
 	add	r9w,	r15w
 
 .to_up:
-	; przesunięcie na osi Y jest ujemne?
+	; is the shift on the Y axis negative?
 	cmp	r15w,	STATIC_EMPTY
-	jnl	.y_done	; nie
+	jnl	.y_done	; no
 
-	; zamień przesunięcie na wartość bezwzględną
+	; convert the shift to an absolute value
 	neg	r15w
 
-	; pozycja i wysokość strefy
+	; position and height of the zone
 	add	r9w,	r11w
 	sub	r9w,	r15w
 	mov	r11w,	r15w
 
-	; zarejestruj
+	; register
 	call	kernel_wm_zone_insert_by_register
 
-	; koryguj pozycję strefy na osi Y
+	; correct the zone position on the Y axis
 	mov	r9w,	r12w
 
 .y_done:
-	; koryguj wysokość strefy
+	; correct the height of the zone
 	mov	r11w,	r13w
 	sub	r11w,	r15w
 
 .ready:
-	; wyświetl ponownie zawartość obiektu
+	; display the object content once again
 	or	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r15
 	pop	r14
 	pop	r13
@@ -793,106 +793,106 @@ kernel_wm_object_move:
 	pop	rdi
 	pop	rsi
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_object_move"
 
 ;===============================================================================
 kernel_wm_object_hide_fragile:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rsi
 
-	; ustaw wskaźnik na początek listy obiektów
+	; set the pointer to the beginning of the object list
 	mov	rsi,	qword [rel kernel_wm_object_list_address]
 
 .loop:
-	; pobierz z elementu wskaźnik do rekordu tablicy obiektów
+	; fetch from the entry the pointer to the object table record
 	lodsq
 
-	; koniec wpisów?
+	; end of the entries?
 	test	rax,	rax
-	jz	.end	; tak
+	jz	.end	; yes
 
-	; obiekt VISIBLE?
+	; is the object VISIBLE?
 	test	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_visible
-	jz	.loop	; nie
+	jz	.loop	; no
 
-	; obiekt FRAGILE?
+	; is the object FRAGILE?
 	test	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_fragile
-	jz	.loop	; nie
+	jz	.loop	; no
 
-	; wyłącz flagę VISIBLE, ustaw flagę UNDRAW
+	; clear the VISIBLE flag, set the UNDRAW flag
 	and	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	~KERNEL_WM_OBJECT_FLAG_visible
 	or	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_undraw
 
-	; kontynuuj
+	; continue
 	jmp	.loop
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rax
 
-	; powrót z podprocedury
+	; return from the subprocedure
 	ret
 
 	macro_debug	"kernel_wm_object_hide_fragile"
 
 ;===============================================================================
-; wyjście:
-;	rcx - nowy identyfikator
+; output:
+;	rcx - new identifier
 kernel_wm_object_id_new:
-	; zablokuj dostęp do procedury
+	; lock access to the procedure
 	macro_lock	kernel_wm_object_id_semaphore,	0
 
-	; pobierz wolny identyfikator
+	; fetch the free identifier
 	mov	rcx,	qword [rel kernel_wm_object_id]
 
-	; przygotuj następny
+	; prepare the next one
 	inc	qword [rel kernel_wm_object_id]
 
-	; zwolnij dostęp do procedury
+	; release access to the procedure
 	mov	byte [rel kernel_wm_object_id_semaphore],	STATIC_FALSE
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_object_id_new"
 
 ;===============================================================================
-; wejście:
-;	rsi - wskaźnik do rekordu tablicy obiektów
+; input:
+;	rsi - pointer to the object table record
 kernel_wm_object_delete:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdi
 
-	; pobierz rozmiar przestrzeni obiektu i zamień na strony
+	; fetch the size of the object space and convert to pages
 	mov	ecx,	dword [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.size]
 	call	library_page_from_size
 
-	; zwolnij przestrzeń obiektu
+	; release the object space
 	mov	rdi,	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT.address]
 	call	kernel_memory_release
 
-	; przerysuj przestrzeń pod obiektem
+	; redraw the space under the object
 	mov	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	~KERNEL_WM_OBJECT_FLAG_visible | KERNEL_WM_OBJECT_FLAG_undraw
 
 .wait:
-	; przestrzeń pod obiektem została przerysowana?
+	; has the space under the object been redrawn?
 	test	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_undraw
-	jnz	.wait	; nie, czekaj
+	jnz	.wait	; no, wait
 
-	; usuń obiekt z listy
+	; remove the object from the list
 	call	kernel_wm_object_remove
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_wm_object_delete"

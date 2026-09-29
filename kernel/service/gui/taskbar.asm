@@ -2,206 +2,206 @@
 
 ;===============================================================================
 kernel_gui_taskbar_reload:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rcx
 	push	rsi
 	push	rdi
 
-	; lista obiektów została zmodyfikowana?
+	; has the object list been modified?
 	mov	rax,	qword [rel kernel_wm_object_list_modify_time]
 	cmp	qword [rel kernel_gui_window_taskbar_modify_time],	rax
-	je	.end	; nie
+	je	.end	; no
 
-	; zablokuj dostęp do modyfikacji listy obiektów
+	; lock access to modifying the object list
 	macro_lock	kernel_wm_object_semaphore,	0
 
-	; nasz numer PID
+	; our PID number
 	mov	rcx,	qword [rel kernel_gui_pid]
 
-	; zarejestruj okna na liście w kolejności ich pojawiania się
+	; register the windows on the list in the order of their appearance
 	mov	rsi,	qword [rel kernel_wm_object_list_address]
 	mov	rdi,	qword [rel kernel_gui_taskbar_list_address]
 
 .loop:
-	; pobierz wskaźnik rekordu tablicy obiektów
+	; fetch the pointer of the object table record
 	lodsq
 
-	; koniec listy okien?
+	; end of the window list?
 	test	rax,	rax
-	jz	.registered	; tak
+	jz	.registered	; yes
 
-	; zarejestrowane okno należy do nas?
+	; does the registered window belong to us?
 	cmp	qword [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.pid],	rcx
-	je	.loop	; tak, pomiń okno
+	je	.loop	; yes, skip the window
 
-	; dodaj do listy
+	; put the entry on the list
 	call	.insert
 
-	; kontynuuj
+	; continue
 	jmp	.loop
 
 .insert:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdi
 
-	; identyfikator okna
+	; window identifier
 	mov	rax,	qword [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.id]
 
-	; ilość identyfikatorów okien na liście
+	; number of window identifiers on the list
 	mov	rcx,	qword [rel kernel_gui_taskbar_list_count]
 
-	; lista jest pusta?
+	; is the list empty?
 	test	rcx,	rcx
-	jz	.insert_new	; tak
+	jz	.insert_new	; yes
 
 .insert_loop:
-	; identyfikator znajduje się na liście?
+	; is the identifier on the list?
 	cmp	rax,	qword [rdi]
-	je	.insert_end	; tak
+	je	.insert_end	; yes
 
-	; następny wpis
+	; next entry
 	add	rdi,	STATIC_QWORD_SIZE_byte
 
-	; koniec listy?
+	; end of the list?
 	dec	rcx
-	jnz	.insert_loop	; nie
+	jnz	.insert_loop	; no
 
 .insert_new:
-	; odłóż na listę identyfikator okna
+	; put the window identifier on the list
 	stosq
 
-	; ilość zarejestrowanych okien
+	; number of registered windows
 	inc	qword [rel kernel_gui_taskbar_list_count]
 
 .insert_end:
-	; przywróć oryginale rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 
-	; powrót z podprocedury
+	; return from the subprocedure
 	ret
 
 .remove:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 
-	; przeszukaj całą listę identyfikatorów za nieistniejącymi oknami
+	; search the whole identifier list for non-existent windows
 	mov	rcx,	qword [rel kernel_gui_taskbar_list_count]
 	mov	rdi,	qword [rel kernel_gui_taskbar_list_address]
 
 .remove_loop:
-	; lista identyfokatorów jest pusta?
+	; is the identifier list empty?
 	test	rcx,	rcx
 	jz	.remove_end
 
-	; sprawdź czy identyfikator okna istnieje
+	; check whether the window identifier exists
 	mov	rbx,	qword [rdi]
 	call	kernel_wm_object_by_id
-	jnc	.remove_next	; istnieje
+	jnc	.remove_next	; it exists
 
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rcx
 	push	rdi
 
-	; usuń identyfikator z listy
+	; remove the identifier from the list
 	mov	rsi,	rdi
 	add	rsi,	STATIC_QWORD_SIZE_byte
 	rep	movsq
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rcx
 
-	; ilość zarejestrowanych identyfikatorów
+	; number of registered identifiers
 	dec	qword [rel kernel_gui_taskbar_list_count]
 
-	; kontynuuj
+	; continue
 	jmp	.remove_step_by
 
 .remove_next:
-	; przesuń wskaźnik na następną pozycję
+	; move the pointer to the next position
 	add	rdi,	STATIC_QWORD_SIZE_byte
 
 .remove_step_by:
-	; koniec listy?
+	; end of the list?
 	dec	rcx
-	jnz	.remove_loop	; nie
+	jnz	.remove_loop	; no
 
 .remove_end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rbx
 
-	; powrót z podprocedury
+	; return from the subprocedure
 	ret
 
 .registered:
-	; zwolnij wszystkie wpisy z nieistniejącymi identyfikatorami
+	; remove all entries with non-existent identifiers
 	call	.remove
 
-	; zwolnij dostęp do modyfikacji listy obiektów
+	; release access to modifying the object list
 	mov	byte [rel kernel_wm_object_semaphore],	STATIC_FALSE
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 	pop	rsi
 	pop	rcx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_gui_taskbar_reload"
 
 ;===============================================================================
-; wejście:
-;	rdi - wskaźnik do komunikatu IPC
+; input:
+;	rdi - pointer to the IPC message
 kernel_gui_taskbar_event:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rbx
 	push	rsi
 
-	; lewy przycisk myszki?
+	; left mouse button?
 	cmp	byte [rdi + KERNEL_IPC_STRUCTURE.data + KERNEL_IPC_STRUCTURE_DATA_MOUSE.event],	KERNEL_IPC_MOUSE_EVENT_left_press
-	jne	.end	; nie
+	jne	.end	; no
 
-	; sprawdź, którego elementu okna dotyczny akcja
+	; check which window element the action concerns
 	mov	rsi,	kernel_gui_window_taskbar
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_element
-	jc	.end	; brak akcji
+	jc	.end	; no action
 
-	; akcja dotyczy elementu zegara?
+	; does the action concern the clock element?
 	cmp	rsi,	kernel_gui_window_taskbar.element_label_clock
-	je	.end	; tak, brak akcji
+	je	.end	; yes, no action
 
-	; pobierz wskaźnik do obiektu na podstawie identyfikatora okna
+	; fetch the pointer to the object based on the window identifier
 	mov	rbx,	qword [rsi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.event]
 	call	kernel_wm_object_by_id
 
-	; zmień widoczność obiektu
+	; change the visibility of the object
 	xor	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_visible
 
-	; poinformuj menedżer okien
+	; notify the window manager
 	or	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_undraw
 
-	; przwtwórz raz jeszcze taskbar
+	; process the taskbar once again
 	mov	qword [rel kernel_gui_window_taskbar_modify_time],	STATIC_EMPTY
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rsi
 	pop	rbx
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_gui_taskbar_event"
 
 ;===============================================================================
 kernel_gui_taskbar:
-	; zachowaj oryginalne rejestry
+	; preserve the original registers
 	push	rax
 	push	rbx
 	push	rcx
@@ -210,100 +210,100 @@ kernel_gui_taskbar:
 	push	rdi
 	push	r8
 
-	; przygotuj aktualną listę identyfikatorów okien
+	; prepare the current list of window identifiers
 	call	kernel_gui_taskbar_reload
 
-	; lista obiektów została zmodyfikowana?
+	; has the object list been modified?
 	mov	rax,	qword [rel kernel_wm_object_list_modify_time]
 	cmp	qword [rel kernel_gui_window_taskbar_modify_time],	rax
-	je	.end	; nie
+	je	.end	; no
 
-	; zablokuj dostęp do modyfikacji listy obiektów
+	; lock access to modifying the object list
 	macro_lock	kernel_wm_object_semaphore,	0
 
-	; wylicz niezbędny rozmiar przestrzeni łańcucha do wypisania wszystkich elementów paska zadań
+	; compute the required size of the chain space to write out all taskbar elements
 	mov	eax,	LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.SIZE + LIBRARY_BOSU_WINDOW_NAME_length
 	mov	rcx,	qword [rel kernel_gui_taskbar_list_count]
-	inc	rcx	; element czyszczący przestrzeń
+	inc	rcx	; the element clearing the space
 	mul	rcx
 
-	; zachowaj rozmiar przestrzeni w stronach
+	; save the size of the space in pages
 	push	rax
 
-	; pobierz aktualny rozmiar przestrzeni łańcucha w stronach
+	; fetch the current size of the chain space in pages
 	mov	rcx,	qword [rel kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.size]
 
-	; aktualny rozmiar łańcucha jest wystarczający?
+	; is the current chain size sufficient?
 	shl	rcx,	STATIC_PAGE_SIZE_shift
 	cmp	rax,	rcx
-	jbe	.enough	; tak
+	jbe	.enough	; yes
 
-	; brak przestrzeni
+	; no space
 	test	rcx,	rcx
-	jz	.new	; tak, zarejestruj nową
+	jz	.new	; yes, register a new one
 
-	; zwolnij aktualną przestrzeń łańcucha
+	; release the current chain space
 	mov	rdi,	qword [rel kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.address]
 	call	kernel_memory_release
 
 .new:
-	; przydziel przestrzeń pod generowane elementy
+	; allocate space for the generated elements
 	mov	rcx,	rax
 	call	library_page_from_size
 	call	kernel_memory_alloc
 
-	; zachowaj nowy wskaźnik przestrzeni łańcucha
+	; save the new chain space pointer
 	mov	qword [rel kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.address],	rdi
 
 .enough:
-	; pobierz aktualny wskaźnik przestrzeni łańcucha
+	; fetch the current chain space pointer
 	mov	rdi,	qword [rel kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.address]
 
 	;-----------------------------------------------------------------------
 
-	; wylicz domyślną szerokość jednego elementu uwzględniająć dostępną przestrzeń paska zadań
+	; compute the default width of one element taking the available taskbar space into account
 	movzx	eax,	word [rel kernel_gui_window_taskbar + LIBRARY_BOSU_STRUCTURE_WINDOW.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
 	sub	ax,	word [rel kernel_gui_window_taskbar.element_label_clock + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.width]
 	mov	rcx,	qword [rel kernel_gui_taskbar_list_count]
 	xor	edx,	edx
 
-	; brak otwartych okien?
+	; no open windows?
 	test	rcx,	rcx
-	jz	.max	; tak
+	jz	.max	; yes
 
-	; wylicz szerokość jednego elementu
+	; compute the width of one element
 	div	rcx
 
 .max:
-	; zachowaj szerokość elementu
+	; save the element width
 	mov	bx,	ax
 	sub	bx,	KERNEL_GUI_WINDOW_TASKBAR_MARGIN_right
 
-	; pozycja pierwszego elementu na osi X
+	; position of the first element on the X axis
 	xor	edx,	edx
 
-	; sprawdź wszystkie okna od początku listy
+	; check all windows from the beginning of the list
 	mov	r8,	qword [rel kernel_gui_taskbar_list_address]
 
-	; brak elementów do wygenerowania?
+	; no elements to generate?
 	test	rcx,	rcx
-	jz	.empty	; tak
+	jz	.empty	; yes
 
 .loop:
-	; koniec listy okien?
+	; end of the window list?
 	cmp	qword [r8],	STATIC_EMPTY
-	je	.ready	; tak
+	je	.ready	; yes
 
-	; pobierz wskaźnik do obiektu
+	; fetch the pointer to the object
 	push	rbx
 	mov	rbx,	qword [r8]
 	call	kernel_wm_object_by_id
 	pop	rbx
 
-	; zachowaj oryginalne rejstry
+	; preserve the original registers
 	push	rdi
 
-	; utwórz pierwszy element opisujący okno na początku paska zadań
+	; create the first element describing the window at the beginning of the taskbar
 	mov	byte [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.type + LIBRARY_BOSU_STRUCTURE_TYPE.set],	LIBRARY_BOSU_ELEMENT_TYPE_taskbar
 	mov	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.size],	LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.SIZE
 	mov	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.x],	dx
@@ -311,88 +311,88 @@ kernel_gui_taskbar:
 	mov	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.width],	bx
 	mov	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.height],	KERNEL_GUI_WINDOW_TASKBAR_HEIGHT_pixel
 	;----------------------------------------------------------------------
-	; pobierz identyfikator okna dla elementu
+	; fetch the window identifier for the element
 	mov	rax,	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.id]
-	mov	qword [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.event],	rax	; identyfikator okna
+	mov	qword [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.event],	rax	; window identifier
 	;-----------------------------------------------------------------------
 	movzx	ecx,	byte [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.length]
 	mov	byte [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.length],	cl
 	add	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.size],	cx
 	;-----------------------------------------------------------------------
 	mov	dword [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.background],	LIBRARY_BOSU_ELEMENT_TASKBAR_BG_color
-	; okno jest widoczne?
+	; is the window visible?
 	test	word [rsi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_visible
-	jnz	.visible	; tak
+	jnz	.visible	; yes
 
-	; oznacz okno na pasku zadań jako widoczne
+	; mark the window on the taskbar as visible
 	mov	dword [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.background],	LIBRARY_BOSU_ELEMENT_TASKBAR_BG_HIDDEN_color
 
 .visible:
 	;-----------------------------------------------------------------------
-	; wstaw nazwę elementu na podstawie nazwy okna
+	; insert the element name based on the window name
 	add	rsi,	KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.name
 	add	rdi,	LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.string
 	rep	movsb
 
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	rdi
 
-	; przesuń wskaźnik przestrzeni łańcucha za utworzony element
+	; move the chain space pointer past the created element
 	movzx	eax,	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.size]
 	add	rdi,	rax
 
-	; następny element z prawej strony aktualnego
+	; next element to the right of the current one
 	add	rdx,	rbx
 
-	; zachowaj szerokość elementów
+	; save the element width
 	push	rbx
 
-	; wstaw margines
+	; insert the margin
 	mov	rbx,	KERNEL_GUI_WINDOW_TASKBAR_MARGIN_right
 	call	kernel_gui_taskbar_margin
 
-	; przywróć szerokość elementów
+	; restore the element width
 	pop	rbx
 
 .next:
-	; przesuń wskaźnik na następny wpis listy okien
+	; move the pointer to the next window list entry
 	add	r8,	STATIC_QWORD_SIZE_byte
 
-	; kontynuuj
+	; continue
 	jmp	.loop
 
 .empty:
-	; wyczyść przestrzeń za pomocą pustej etykiety
-	add	rbx,	KERNEL_GUI_WINDOW_TASKBAR_MARGIN_right	; wraz z prawym marginesem
+	; clear the space with an empty label
+	add	rbx,	KERNEL_GUI_WINDOW_TASKBAR_MARGIN_right	; together with the right margin
 	call	kernel_gui_taskbar_margin
 
 .ready:
-	; aktualizuj rozmiar przestrzeni łańcucha
+	; update the size of the chain space
 	pop	rax
 	mov	word [rel kernel_gui_window_taskbar.element_chain_0 + LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN.size],	ax
 
-	; zakończ listę elementów łańcucha pustym rekordem
+	; end the chain element list with an empty record
 	mov	byte [rdi + LIBRARY_BOSU_STRUCTURE_TYPE.set],	LIBRARY_BOSU_ELEMENT_TYPE_none
 
-	; zwolnij dostęp do modyfikacji listy obiektów
+	; release access to modifying the object list
 	mov	byte [rel kernel_wm_object_semaphore],	STATIC_FALSE
 
-	; przetwórz wszystkie elementy w łańcuchu
+	; process all elements in the chain
 	mov	rsi,	kernel_gui_window_taskbar.element_chain_0
 	mov	rdi,	kernel_gui_window_taskbar
 	macro_library	LIBRARY_STRUCTURE_ENTRY.bosu_element_chain
 
-	; ustaw flagę okna: nowa zawartość
+	; set the window flag: new content
 	mov	al,	KERNEL_WM_WINDOW_update
 	mov	rsi,	kernel_gui_window_taskbar
 	int	KERNEL_WM_IRQ
 
-	; zatwierdź czas ostatniej modyfikacji listy okien
+	; confirm the time of the last modification of the window list
 	mov	rax,	qword [rel kernel_wm_object_list_modify_time]
 	mov	qword [rel kernel_gui_window_taskbar_modify_time],	rax
 
 .end:
-	; przywróć oryginalne rejestry
+	; restore the original registers
 	pop	r8
 	pop	rdi
 	pop	rsi
@@ -401,38 +401,38 @@ kernel_gui_taskbar:
 	pop	rbx
 	pop	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret
 
 	macro_debug	"kernel_gui_taskbar"
 
 ;===============================================================================
-; wejście:
-;	rdx - pozycja elementu na osi X
-;	rdi - wskaźnik do pozycji na liście elementów
-; wyjście:
-;	rdx - pozycja następnego elementu na osi X
-;	rdi - wskaźnik następnej pozycji na liście elementów
+; input:
+;	rdx - element position on the X axis
+;	rdi - pointer to the position on the element list
+; output:
+;	rdx - position of the next element on the X axis
+;	rdi - pointer to the next position on the element list
 kernel_gui_taskbar_margin:
-	; wyczyść przestrzeń za pomocą pustej etykiety
+	; clear the space with an empty label
 	mov	byte [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.type + LIBRARY_BOSU_STRUCTURE_TYPE.set],	LIBRARY_BOSU_ELEMENT_TYPE_label
 	mov	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.size],	LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.SIZE
 	mov	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.x],	dx
 	mov	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.y],	STATIC_EMPTY
 	mov	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.width],	bx
 	mov	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.field + LIBRARY_BOSU_STRUCTURE_FIELD.height],	KERNEL_GUI_WINDOW_TASKBAR_HEIGHT_pixel
-	mov	qword [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.event],	STATIC_EMPTY	; brak akcji
+	mov	qword [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.event],	STATIC_EMPTY	; no action
 	;-----------------------------------------------------------------------
 	mov	byte [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.length],	0x01
 	mov	byte [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.string],	STATIC_SCANCODE_SPACE
 	add	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.size],	0x01
 
-	; przesuń wskaźnik osi X
+	; move the X axis pointer
 	add	dx,	bx
 
-	; przesuń wskaźnik przestrzeni łańcucha za utworzony element
+	; move the chain space pointer past the created element
 	movzx	eax,	word [rdi + LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL.element + LIBRARY_BOSU_STRUCTURE_ELEMENT.size]
 	add	rdi,	rax
 
-	; powrót z procedury
+	; return from the procedure
 	ret

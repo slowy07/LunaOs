@@ -1,5 +1,5 @@
 
-; 16-bit boot program code ==========================================
+; 16-bit boot program code
  [bits 16]
 
 ; code/data position in physical memory space

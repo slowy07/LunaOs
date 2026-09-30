@@ -1,5 +1,5 @@
 
-; 16 bit logical processor boot code ================
+; 16 bit logical processor boot code
  [BITS 16]
 
 ; code position within the CS segment
@@ -48,7 +48,7 @@ boot_header_gdt_32bit:
  dw boot_table_gdt_32bit_end - boot_table_gdt_32bit - 0x01
  dd boot_table_gdt_32bit
 
-; 32 bit logical processor boot code ================
+; 32 bit logical processor boot code
  [BITS 32]
 
 boot_protected_mode:
@@ -98,7 +98,7 @@ boot_header_gdt_64bit:
  dw boot_table_gdt_64bit_end - boot_table_gdt_64bit - 0x01
  dd boot_table_gdt_64bit
 
-; 64 bit logical processor boot code ================
+; 64 bit logical processor boot code
  [BITS 64]
 
 boot_long_mode:

@@ -82,7 +82,7 @@ service_network_icmp:
  ; clear the old checksum of the IPv4 frame
  mov word [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_IP.checksum], STATIC_EMPTY
 
- ; compute the checksum ------------------------------------------------
+ ; compute the checksum
  xor eax, eax
  mov ecx, (SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.SIZE) >> STATIC_DIVIDE_BY_2_shift
  call service_network_checksum
@@ -95,7 +95,7 @@ service_network_icmp:
  mov cx, SERVICE_NETWORK_FRAME_ETHERNET_TYPE_ip
  call service_network_ethernet_wrap
 
- ; send the answer -----------------------------------------------------
+ ; send the answer
  mov eax, SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.SIZE
  call service_network_transfer
 

@@ -20,7 +20,7 @@ library_color_alpha:
  not bl
  inc bl
 
- ; red ------------------------------------------------------------------
+ ; red
  movzx rax, byte [rsi + 0x02]
 
  ; weighting
@@ -32,7 +32,7 @@ library_color_alpha:
  ; partial result
  mov byte [rsp + 0x02], al
 
- ; green ----------------------------------------------------------------
+ ; green
  mov al, byte [rsi + 0x01]
 
  ; weighting
@@ -43,7 +43,7 @@ library_color_alpha:
  ; partial result
  mov byte [rsp + 0x01], al
 
- ; blue -----------------------------------------------------------------
+ ; blue
  mov al, byte [rsi]
 
  ; weighting
@@ -59,7 +59,7 @@ library_color_alpha:
  not bl
  inc bl
 
- ; base red -------------------------------------------------------------
+ ; base red
  mov al, byte [rdi + 0x02]
 
  ; weighting
@@ -70,7 +70,7 @@ library_color_alpha:
  ; partial result
  add byte [rsp + 0x02], al
 
- ; base green -----------------------------------------------------------
+ ; base green
  mov al, byte [rdi + 0x01]
 
  ; weighting
@@ -81,7 +81,7 @@ library_color_alpha:
  ; partial result
  add byte [rsp + 0x01], al
 
- ; base blue ------------------------------------------------------------
+ ; base blue
  mov al, byte [rdi]
 
  ; weighting

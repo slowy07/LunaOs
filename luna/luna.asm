@@ -1,5 +1,5 @@
 
-; 16-bit main boot program code =================================
+; 16-bit main boot program code
  [bits 16]
 
 ; code position within the CS segment space

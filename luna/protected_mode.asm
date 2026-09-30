@@ -30,7 +30,7 @@ zero_protected_mode_header_gdt_32bit:
  dw zero_protected_mode_table_gdt_32bit_end - zero_protected_mode_table_gdt_32bit - 0x01
  dd zero_protected_mode_table_gdt_32bit
 
-; 32-bit boot program code ==========================================
+; 32-bit boot program code
  [bits 32]
 
 zero_protected_mode_entry:

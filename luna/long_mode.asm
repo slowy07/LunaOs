@@ -84,7 +84,7 @@ zero_long_mode_header_gdt_64bit:
  dw zero_long_mode_table_gdt_64bit_end - zero_long_mode_table_gdt_64bit - 0x01
  dd zero_long_mode_table_gdt_64bit
 
-; 64-bit boot program code ==========================================
+; 64-bit boot program code
  [bits 64]
 
 zero_long_mode_entry:

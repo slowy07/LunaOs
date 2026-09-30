@@ -1,4 +1,3 @@
-;===============================================================================
 
 struc	KERNEL_INIT_STRUCTURE_SERVICE
 	.pointer	resb	8
@@ -7,7 +6,6 @@ struc	KERNEL_INIT_STRUCTURE_SERVICE
 	.name:
 endstruc
 
-;===============================================================================
 kernel_init_services:
 	; point at the start of the list of services to start
 	mov	rsi,	kernel_init_services_list

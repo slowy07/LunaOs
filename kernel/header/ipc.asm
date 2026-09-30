@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_IPC_TYPE_SYSTEM			equ	0x00	; message carries data: system
 KERNEL_IPC_TYPE_KEYBOARD		equ	0x01	; message carries data: keyboard

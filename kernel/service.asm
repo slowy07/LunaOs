@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 kernel_service:
 	; preserve the original registers
 	push	rbp
@@ -42,7 +40,6 @@ kernel_service:
 
 	macro_debug	"kernel_service"
 
-;===============================================================================
 .process:
 	; finish the work of the process?
 	cmp	ax,	KERNEL_SERVICE_PROCESS_exit
@@ -403,7 +400,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_stream_out_char"
 
-;===============================================================================
 ; input:
 ;\tbl - read or write
 ;\trsi - source pointer of the data
@@ -605,7 +601,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_list"
 
-;===============================================================================
 ; input:
 ;\trcx - size of the area in Bytes
 ;\trdi - pointer to the area
@@ -751,7 +746,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_dir_change"
 
-;===============================================================================
 .vfs:
 	; check the validity of the path?
 	cmp	ax,	KERNEL_SERVICE_VFS_exist
@@ -1114,7 +1108,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.vfs_exist"
 
-;===============================================================================
 .system:
 	; return the properties of the RAM memory
 	cmp	ax,	KERNEL_SERVICE_SYSTEM_memory

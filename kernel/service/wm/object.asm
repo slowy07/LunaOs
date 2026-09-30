@@ -1,4 +1,3 @@
-;===============================================================================
 
 ;===============================================================================+
 ; input:
@@ -132,7 +131,6 @@ kernel_wm_object_insert:
 
 	macro_debug	"kernel_wm_object_insert"
 
-;===============================================================================
 ; output:
 ;	CF flag - if there are no free records
 ;	rdi - pointer to the free table record
@@ -210,7 +208,6 @@ kernel_wm_object_table_entry:
 
 	macro_debug	"kernel_wm_object_table_entry"
 
-;===============================================================================
 kernel_wm_object:
 	; preserve the original registers
 	push	rax
@@ -263,7 +260,6 @@ kernel_wm_object:
 
 	macro_debug	"kernel_wm_object"
 
-;===============================================================================
 ; input:
 ;	rcx - PID of the process
 kernel_wm_object_drain:
@@ -287,7 +283,6 @@ kernel_wm_object_drain:
 
 	macro_debug	"kernel_wm_object_drain"
 
-;===============================================================================
 ; input:
 ;	rcx - PID of the process
 ; output:
@@ -339,7 +334,6 @@ kernel_wm_object_by_pid:
 	; information for Bochs
 	macro_debug	"kernel_wm_object_by_pid"
 
-;===============================================================================
 ; input:
 ;	rbx - window identifier
 ; output:
@@ -392,7 +386,6 @@ kernel_wm_object_by_id:
 	macro_debug	"kernel_wm_object_by_id"
 
 
-;===============================================================================
 ; output:
 ;	rcx - new identifier
 kernel_wm_object_id_get:
@@ -413,7 +406,6 @@ kernel_wm_object_id_get:
 
 	macro_debug	"kernel_wm_object_id_get"
 
-;===============================================================================
 ; input:
 ;	r8w - cursor position on the X axis
 ;	r9w - cursor position on the Y axis
@@ -495,7 +487,6 @@ kernel_wm_object_find:
 
 	macro_debug	"kernel_wm_object_find"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the record from the object table
 kernel_wm_object_up:
@@ -580,7 +571,6 @@ kernel_wm_object_up:
 
 	macro_debug	"kernel_wm_object_up"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the object table record
 kernel_wm_object_remove:
@@ -643,7 +633,6 @@ kernel_wm_object_remove:
 
 	macro_debug	"kernel_wm_object_remove"
 
-;===============================================================================
 ; input:
 ;	r14 - delta of the X axis
 ;	r15 - delta of the Y axis
@@ -795,7 +784,6 @@ kernel_wm_object_move:
 
 	macro_debug	"kernel_wm_object_move"
 
-;===============================================================================
 kernel_wm_object_hide_fragile:
 	; preserve the original registers
 	push	rax
@@ -837,7 +825,6 @@ kernel_wm_object_hide_fragile:
 
 	macro_debug	"kernel_wm_object_hide_fragile"
 
-;===============================================================================
 ; output:
 ;	rcx - new identifier
 kernel_wm_object_id_new:
@@ -858,7 +845,6 @@ kernel_wm_object_id_new:
 
 	macro_debug	"kernel_wm_object_id_new"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the object table record
 kernel_wm_object_delete:

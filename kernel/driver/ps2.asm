@@ -1,4 +1,3 @@
-;===============================================================================
 
 DRIVER_PS2_KEYBOARD_IRQ_number					equ	0x01	; 1
 DRIVER_PS2_KEYBOARD_IO_APIC_register				equ	KERNEL_IO_APIC_iowin + (DRIVER_PS2_KEYBOARD_IRQ_number * 0x02)
@@ -375,7 +374,6 @@ driver_ps2_string_scancode					dd	STATIC_EMPTY
 								db	STATIC_SCANCODE_RETURN, STATIC_SCANCODE_NEW_LINE, STATIC_SCANCODE_TERMINATOR
 driver_ps2_string_debug_end:
 
-;===============================================================================
 driver_ps2_mouse:
 	; preserve the original registers
 	push	rax
@@ -513,7 +511,6 @@ driver_ps2_mouse:
 	; return from the hardware interrupt
 	iretq
 
-;===============================================================================
 ; output:
 ;	ZF flag, set if there is no key
 ;	ax - ASCII code of the key
@@ -616,7 +613,6 @@ driver_ps2_keyboard_pull:
 	; return from the procedure
 	ret
 
-;===============================================================================
 driver_ps2_keyboard:
 	; preserve the original registers
 	push	rax
@@ -639,7 +635,6 @@ driver_ps2_keyboard:
 	; return from the hardware interrupt
 	iretq
 
-;===============================================================================
 ; input:
 ;	ax - scancode of the key
 ; output:
@@ -727,7 +722,6 @@ driver_ps2_keyboard_shift:
 	; return from the procedure
 	ret
 
-;===============================================================================
 driver_ps2_keyboard_save:
 	; keep the ASCII value of the key in the software buffer
 	shl	qword [rel driver_ps2_keyboard_cache],	STATIC_MOVE_AX_TO_HIGH_shift
@@ -736,7 +730,6 @@ driver_ps2_keyboard_save:
 	; return from the procedure
 	ret
 
-;===============================================================================
 driver_ps2_keyboard_matrix_change:
 	; preserve the original keys
 	push	rax
@@ -759,7 +752,6 @@ driver_ps2_keyboard_matrix_change:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; output:
 ;	ZF flag - set if there is no key
 ;	ax - ASCII code of the key or its sequence
@@ -774,7 +766,6 @@ driver_ps2_keyboard_read:
 	; return from the procedure
 	ret
 
-;===============================================================================
 driver_ps2_check_dummy_answer_or_dump:
 	; preserve the original registers
 	push	rax
@@ -796,7 +787,6 @@ driver_ps2_check_dummy_answer_or_dump:
 	; return from the procedure
 	ret
 
-;===============================================================================
 driver_ps2_send_command_receive_answer:
 	; wait until a command can be sent
 	call	driver_ps2_check_write
@@ -810,7 +800,6 @@ driver_ps2_send_command_receive_answer:
 	; return from the procedure
 	ret
 
-;===============================================================================
 driver_ps2_check_write:
 	; preserve the original registers
 	push	rax
@@ -827,7 +816,6 @@ driver_ps2_check_write:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; output:
 ;	al - response from the controller
 driver_ps2_receive_answer:
@@ -840,7 +828,6 @@ driver_ps2_receive_answer:
 	; return from the procedure
 	ret
 
-;===============================================================================
 driver_ps2_check_read:
 	; preserve the original registers
 	push	rax
@@ -857,7 +844,6 @@ driver_ps2_check_read:
 	; return from the procedure
 	ret
 
-;===============================================================================
 driver_ps2_send_command:
 	; wait until a command can be sent
 	call	driver_ps2_check_write
@@ -868,7 +854,6 @@ driver_ps2_send_command:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; input:
 ;	al - query to the controller
 driver_ps2_send_answer_or_ask_device:

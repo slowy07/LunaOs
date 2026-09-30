@@ -1,4 +1,3 @@
-;===============================================================================
 
 DRIVER_NIC_I82540EM_VENDOR_AND_DEVICE		equ	0x100E8086
 
@@ -188,20 +187,14 @@ driver_nic_i82540em_mac_address			dq	STATIC_EMPTY
 driver_nic_i82540em_tx_queue_empty_semaphore	db	STATIC_TRUE
 driver_nic_i82540em_promiscious_mode_semaphore	db	STATIC_FALSE
 
-; driver_nic_i82540em_ipv4_address		dd	STATIC_EMPTY
 driver_nic_i82540em_ipv4_address		db	10, 0, 0, 64
-; driver_nic_i82540em_ipv4_address		db	192, 168, 0, 64
-; driver_nic_i82540em_ipv4_mask			dd	STATIC_EMPTY
 driver_nic_i82540em_ipv4_mask			db	255, 255, 255, 0
-; driver_nic_i82540em_ipv4_gateway		dd	STATIC_EMPTY
 driver_nic_i82540em_ipv4_gateway		db	10, 0, 0, 1
-; driver_nic_i82540em_ipv4_gateway		db	192, 168, 0, 1
 driver_nic_i82540em_vlan			dw	STATIC_EMPTY
 
 driver_nic_i82540em_rx_count			dq	STATIC_EMPTY
 driver_nic_i82540em_tx_count			dq	STATIC_EMPTY
 
-;===============================================================================
 driver_nic_i82540em_irq:
 	; preserve the original registers
 	push	rax
@@ -270,7 +263,6 @@ driver_nic_i82540em_irq:
 
 	macro_debug	"driver_nic_i82540em_irq"
 
-;===============================================================================
 ; input:
 ;	rdi - pointer to the new receive buffer
 ; output:
@@ -300,7 +292,6 @@ driver_nic_i82540em_rx_release:
 
 	macro_debug	"driver_nic_i82540em_rx_release"
 
-;===============================================================================
 ; input:
 ;	ax - size of the packet to send
 ;	rdi - pointer to the packet
@@ -350,7 +341,6 @@ driver_nic_i82540em_transfer:
 
 	macro_debug	"driver_nic_i82540em_transfer"
 
-;===============================================================================
 ; input:
 ;	rbx - bus
 ;	rcx - device
@@ -452,7 +442,6 @@ driver_nic_i82540em:
 
 	macro_debug	"driver_nic_i82540em"
 
-;===============================================================================
 ; input:
 ;	rsi - address of the controller register space
 driver_nic_i82540em_setup:
@@ -498,7 +487,6 @@ driver_nic_i82540em_setup:
 	or	eax,	DRIVER_NIC_I82540EM_RCTL_UPE	; for myself only
 	or	eax,	DRIVER_NIC_I82540EM_RCTL_BAM	; for everybody
 	or	eax,	DRIVER_NIC_I82540EM_RCTL_SECRC	; strip the CRC from the end of the packet
-	; or	eax,	DRIVER_NIC_I82540EM_RCTL_SBP	; receive corrupted packets
 	or	eax,	DRIVER_NIC_I82540EM_RCTL_MPE	; for most cases
 	mov	dword [rsi + DRIVER_NIC_I82540EM_RCTL],	eax
 

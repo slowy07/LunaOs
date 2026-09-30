@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 kernel_init_task:
 	; fetch the highest Local APIC identifier
 	movzx	ecx,	byte [rel kernel_init_apic_id_highest]

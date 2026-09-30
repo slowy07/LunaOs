@@ -1,8 +1,6 @@
-;===============================================================================
 
 	%include	"kernel/service/network/wrap.asm"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the incoming packet
 service_network_tcp:
@@ -57,7 +55,6 @@ service_network_tcp:
 
 	macro_debug	"service_network_tcp"
 
-;===============================================================================
 ; input:
 ;	rbx - IP header size
 ;	rsi - pointer to the incoming packet
@@ -135,7 +132,6 @@ service_network_tcp_psh:
 
 	macro_debug	"service_network_tcp_psh_ack"
 
-;===============================================================================
 ; input:
 ;	rbx - IP header size
 ;	rsi - pointer to the incoming packet
@@ -213,7 +209,6 @@ service_network_tcp_fin:
 
 	macro_debug	"service_network_tcp_fin"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the incoming packet
 ;	rdi - pointer to the connection on the stack
@@ -246,7 +241,6 @@ service_network_tcp_ack:
 
 	macro_debug	"service_network_tcp_ack"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the incoming packet
 ; output:
@@ -325,7 +319,6 @@ service_network_tcp_find:
 
 	macro_debug	"service_network_tcp_find"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the incoming packet
 service_network_tcp_syn:
@@ -423,7 +416,6 @@ service_network_tcp_syn:
 
 	macro_debug	"service_network_tcp_syn"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the connection on the stack
 service_network_tcp_reply:
@@ -454,7 +446,6 @@ service_network_tcp_reply:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; input:
 ;	ecx - TCP frame size in Bytes
 ;	rsi - pointer to the connection properties
@@ -501,7 +492,6 @@ service_network_tcp_pseudo_header:
 
 	macro_debug	"service_network_tcp_pseudo_header"
 
-;===============================================================================
 ; input:
 ;	cx - port number
 ; output:
@@ -563,7 +553,6 @@ service_network_tcp_port_assign:
 
 	macro_debug	"service_network_tcp_port_assign"
 
-;===============================================================================
 ; input:
 ;	rbx - connection identifier
 ;	rcx - data size in Bytes

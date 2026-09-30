@@ -1,4 +1,3 @@
-;===============================================================================
 
 shell_string_console_header			db	"^[hShell]"
 shell_string_console_header_end:

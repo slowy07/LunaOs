@@ -1,4 +1,3 @@
-;===============================================================================
 
 DRIVER_RTC_IRQ_number					equ	0x08
 DRIVER_RTC_IO_APIC_register				equ	KERNEL_IO_APIC_iowin + (DRIVER_RTC_IRQ_number * 0x02)
@@ -44,7 +43,6 @@ driver_rtc_microtime					dq	STATIC_EMPTY
 
 driver_rtc_date_and_time				dq	STATIC_EMPTY
 
-;===============================================================================
 ; default real time clock interrupt handler
 driver_rtc:
 	; preserve the original registers
@@ -66,7 +64,6 @@ driver_rtc:
 	; return from the hardware interrupt
 	iretq
 
-;===============================================================================
 ; output:
 ;	driver_rtc_date_and_time
 driver_rtc_get_date_and_time:

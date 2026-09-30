@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 kernel_gui_taskbar_reload:
 	; preserve the original registers
 	push	rax
@@ -155,7 +153,6 @@ kernel_gui_taskbar_reload:
 
 	macro_debug	"kernel_gui_taskbar_reload"
 
-;===============================================================================
 ; input:
 ;	rdi - pointer to the IPC message
 kernel_gui_taskbar_event:
@@ -199,7 +196,6 @@ kernel_gui_taskbar_event:
 
 	macro_debug	"kernel_gui_taskbar_event"
 
-;===============================================================================
 kernel_gui_taskbar:
 	; preserve the original registers
 	push	rax
@@ -401,7 +397,6 @@ kernel_gui_taskbar:
 
 	macro_debug	"kernel_gui_taskbar"
 
-;===============================================================================
 ; input:
 ;	rdx - element position on the X axis
 ;	rdi - pointer to the position on the element list

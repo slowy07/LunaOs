@@ -1,4 +1,3 @@
-;===============================================================================
 
 struc	KERNEL_INIT_MEMORY_STRUCTURE_MEMORY_MAP
 	.address	resb	8
@@ -7,7 +6,6 @@ struc	KERNEL_INIT_MEMORY_STRUCTURE_MEMORY_MAP
 	.SIZE:
 endstruc
 
-;===============================================================================
 ; input:
 ;	ebx - pointer to the memory map array
 kernel_init_memory:

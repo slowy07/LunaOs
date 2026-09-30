@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 kernel_init_smp:
 	; is only one logical processor available?
 	cmp	word [rel kernel_apic_count],	STATIC_TRUE

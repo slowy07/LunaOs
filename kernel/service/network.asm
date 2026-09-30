@@ -1,4 +1,3 @@
-;===============================================================================
 
 	%include	"kernel/service/network/config.asm"
 	%include	"kernel/service/network/data.asm"
@@ -7,7 +6,6 @@
 	%include	"kernel/service/network/icmp.asm"
 	%include	"kernel/service/network/tcp.asm"
 
-;===============================================================================
 service_network:
 	; make sure not to use reserved pages
 	xor	ebp,	ebp
@@ -54,7 +52,6 @@ service_network:
 
 	macro_debug	"service_network"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the incoming packet
 service_network_ip:
@@ -72,7 +69,6 @@ service_network_ip:
 
 	macro_debug	"service_network_ip"
 
-;===============================================================================
 ; input:
 ;	rax - packet size in Bytes
 ;	rdi - pointer to the packet data space

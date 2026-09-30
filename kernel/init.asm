@@ -1,4 +1,3 @@
-;===============================================================================
 
 	; logical processor?
 	cmp	byte [rel kernel_init_smp_semaphore],	STATIC_FALSE

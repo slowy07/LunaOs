@@ -1,6 +1,4 @@
-;===============================================================================
 
-;=======================================================================
 ; input:
 ;	rsi - weighted color
 ;	rdi - base color
@@ -108,7 +106,6 @@ library_color_alpha:
 	; information for Bochs
 	macro_debug	"library_color_alpha"
 
-;===============================================================================
 ; input:
 ;	rcx - amount of image data in bytes
 ;	rsi - pointer to the image data

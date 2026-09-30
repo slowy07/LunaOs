@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 kernel_gc:
 	; search for a finished process
 	call	kernel_gc_search
@@ -89,7 +87,6 @@ kernel_gc:
 
 	macro_debug	"kernel_gc"
 
-;===============================================================================
 ; output:
 ;	rsi - pointer to the found record
 kernel_gc_search:
@@ -135,4 +132,3 @@ kernel_gc_search:
 	macro_debug	"kernel_gc_search"
 
 kernel_gc_end:
-;===============================================================================

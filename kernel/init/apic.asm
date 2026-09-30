@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 kernel_init_apic:
 	; fetch the address of the Local ACPI table
 	mov	rsi,	qword [rel kernel_apic_base_address]

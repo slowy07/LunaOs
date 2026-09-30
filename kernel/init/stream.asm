@@ -1,4 +1,3 @@
-;===============================================================================
 
 kernel_init_stream:
 	; prepare room for an empty pipe table

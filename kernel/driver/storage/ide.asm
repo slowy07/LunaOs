@@ -1,4 +1,3 @@
-;===============================================================================
 
 DRIVER_IDE_CHANNEL_PRIMARY				equ	0x01F0
 DRIVER_IDE_CHANNEL_SECONDARY				equ	0x0170
@@ -87,7 +86,6 @@ align	STATIC_QWORD_SIZE_byte,				db	STATIC_NOTHING
 driver_ide_devices:
 	times	DRIVER_IDE_STRUCTURE_DEVICE.SIZE * 0x04	db	STATIC_EMPTY
 
-;===============================================================================
 ; input:
 ;	al - MASTER or SLAVE device
 ;	dx - PRIMARY or SECONDARY channel
@@ -187,7 +185,6 @@ driver_ide_init_drive:
 	; return from the procedure
 	ret
 
-;===============================================================================
 driver_ide_wait:
 	; preserve the original registers
 	push	rax
@@ -207,7 +204,6 @@ driver_ide_wait:
 	; return from the procedure
 	ret
 
-;===============================================================================
 driver_ide_init:
 	; preserve the original registers
 	push	rax
@@ -294,7 +290,6 @@ driver_ide_init:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; input:
 ;	dx - drive identifier
 driver_ide_pool:

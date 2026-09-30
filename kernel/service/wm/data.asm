@@ -1,4 +1,3 @@
-;===============================================================================
 
 kernel_wm_semaphore					db	STATIC_FALSE
 kernel_wm_pid						dq	STATIC_EMPTY

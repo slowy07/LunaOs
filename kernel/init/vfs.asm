@@ -1,4 +1,3 @@
-;===============================================================================
 
 struc	KERNEL_INIT_STRUCTURE_VFS_FILE
 	.data_pointer	resb	8
@@ -9,7 +8,6 @@ struc	KERNEL_INIT_STRUCTURE_VFS_FILE
 	.SIZE:
 endstruc
 
-;===============================================================================
 kernel_init_vfs:
 	; prepare room for the volume tables
 	call	kernel_memory_alloc_page

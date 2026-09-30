@@ -1,4 +1,3 @@
-;===============================================================================
 
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_EMPTY
 moko_stream_meta:

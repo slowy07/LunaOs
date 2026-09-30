@@ -1,4 +1,3 @@
-;===============================================================================
 
 %define	SERVICE_HTTP_version	"0"
 %define	SERVICE_HTTP_revision	"8"

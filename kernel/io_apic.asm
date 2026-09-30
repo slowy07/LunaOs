@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_IO_APIC_ioregsel			equ	0x00
 KERNEL_IO_APIC_iowin			equ	0x10
@@ -9,7 +8,6 @@ KERNEL_IO_APIC_TRIGER_MODE_level	equ	1000000000000000b
 
 kernel_io_apic_base_address		dq	STATIC_EMPTY
 
-;===============================================================================
 ; input:
 ;	eax - relative address of the vector in the IDT table
 ;	ebx - register of the I/O APIC controller

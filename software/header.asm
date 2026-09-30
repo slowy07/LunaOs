@@ -1,4 +1,3 @@
-;===============================================================================
 
 	; constants, variables, globals, structures, objects, macros
 	%include	"kernel/header.asm"

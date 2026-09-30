@@ -1,4 +1,3 @@
-;===============================================================================
 
 struc	KERNEL_INIT_VIDEO_STRUCTURE_MODE_INFO_BLOCK
 	.mode_attributes		resb	2
@@ -33,7 +32,6 @@ struc	KERNEL_INIT_VIDEO_STRUCTURE_MODE_INFO_BLOCK
 	.reserved1			resb	212
 endstruc
 
-;===============================================================================
 kernel_init_video:
 	; fetch and save the address of the graphics card memory area
 	mov	edi,	dword [edx + KERNEL_INIT_VIDEO_STRUCTURE_MODE_INFO_BLOCK.physical_base_address]

@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 ; output:
 ;	ZF flag - if no key (or the window was not entitled to it)
 ;	ax - ASCII code of the key or its sequence

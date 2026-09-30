@@ -1,4 +1,3 @@
-;===============================================================================
 
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
 calculator_fpu_float_result				dq	STATIC_EMPTY
@@ -19,7 +18,6 @@ calculator_ipc_data:
 	times KERNEL_IPC_STRUCTURE.SIZE		db	STATIC_EMPTY
 
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
-;===============================================================================
 calculator_window:					dw	STATIC_EMPTY	; position on the X axis
 						dw	STATIC_EMPTY	; position on the Y axis
 						dw	CALCULATOR_WINDOW_WIDTH_pixel	; window width

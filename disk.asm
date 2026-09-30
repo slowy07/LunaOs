@@ -1,4 +1,3 @@
-;===============================================================================
 
 	; first part of the boot program
 	incbin	"build/bootsector"

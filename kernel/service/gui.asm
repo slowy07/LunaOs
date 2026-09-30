@@ -1,9 +1,7 @@
-;===============================================================================
 
 	; constants, variables, globals, structures, objects
 	%include	"kernel/service/gui/config.asm"
 
-;===============================================================================
 kernel_gui:
 	; initialisation of the graphical interface
 	%include	"kernel/service/gui/init.asm"
@@ -33,4 +31,3 @@ kernel_gui:
 	macro_debug	"kernel_gui"
 
 kernel_gui_end:
-;===============================================================================

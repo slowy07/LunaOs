@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 zero_pic:
 	; switch both chips to initialisation mode
 	mov	al,	0x11
@@ -39,7 +37,6 @@ zero_pic:
 	; continue
 	jmp	zero_pic_end
 
-;===============================================================================
 zero_pic_disable:
 	; disable the interrupts on the PIC controller
 	mov	al,	0xFF
@@ -49,5 +46,4 @@ zero_pic_disable:
 	; return from the routine
 	ret
 
-;===============================================================================
 zero_pic_end:

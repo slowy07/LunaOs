@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 ; input:
 ;	cl - mouse related action type
 ;	rsi - pointer to the dependent object
@@ -50,7 +48,6 @@ kernel_wm_ipc_mouse:
 
 	macro_debug	"kernel_wm_ipc_mouse"
 
-;===============================================================================
 ; input:
 ;	ax - key code
 ;	rsi - pointer to the dependent object

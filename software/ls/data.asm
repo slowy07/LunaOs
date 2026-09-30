@@ -1,4 +1,3 @@
-;===============================================================================
 
 ls_string_init			db	STATIC_SEQUENCE_CURSOR_DISABLE
 ls_string_init_end:

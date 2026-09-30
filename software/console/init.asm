@@ -1,4 +1,3 @@
-;===============================================================================
 
 	; prepare the space for the data coming from the standard input
 	mov	ax,	KERNEL_SERVICE_PROCESS_memory_alloc

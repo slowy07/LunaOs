@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_VFS_FILE_FLAGS_reserved				equ	00000001b
 
@@ -31,7 +30,6 @@ kernel_vfs_magicknot:					dq	STATIC_EMPTY	; data
 
 kernel_vfs_string_directory_local_or_overriding		db	".", "."
 
-;===============================================================================
 ; input:
 ;\trsi - pointer to the metadata
 kernel_vfs_metadata_update:
@@ -40,7 +38,6 @@ kernel_vfs_metadata_update:
 
 	macro_debug	"kernel_vfs_metadata_update"
 
-;===============================================================================
 ; input:
 ;\trsi - pointer to the spool of the parent directory
 ;\trdi - pointer to the spool of the processed directory
@@ -89,7 +86,6 @@ kernel_vfs_dir_symlinks:
 	; information for Bochs
 	macro_debug	"kernel_vfs_dir_symlinks"
 
-;===============================================================================
 ; input:
 ;\trcx - size of the path in characters
 ;\trsi - pointer to the path
@@ -282,7 +278,6 @@ kernel_vfs_path_resolve:
 	; information for Bochs
 	macro_debug	"kernel_vfs_path_resolve"
 
-;===============================================================================
 ; input:
 ;\trcx - number of characters in the file name
 ;\tdl - type of the file
@@ -404,7 +399,6 @@ kernel_vfs_file_touch:
 	; information for Bochs
 	macro_debug	"kernel_vfs_file_touch"
 
-;===============================================================================
 ; input:
 ;\trcx - number of characters in the file name
 ;\trsi - pointer to the file name
@@ -508,7 +502,6 @@ kernel_vfs_file_find:
 	; information for Bochs
 	macro_debug	"kernel_vfs_file_find"
 
-;===============================================================================
 ; input:
 ;\tdl - type of the file
 ;\trdi - spool/identifier of the directory
@@ -591,7 +584,6 @@ kernel_vfs_knot_prepare:
 	; information for Bochs
 	macro_debug	"kernel_vfs_knot_prepare"
 
-;===============================================================================
 ; input:
 ;\trcx - number of the data in Bytes
 ;\trsi - pointer to the data of the file
@@ -737,7 +729,6 @@ kernel_vfs_file_write:
 	; information for Bochs
 	macro_debug	"kernel_vfs_file_write"
 
-;===============================================================================
 ; input:
 ;\trcx - number of the data in Bytes
 ;\trsi - pointer to the data of the file
@@ -885,7 +876,6 @@ kernel_vfs_file_append:
 	; information for Bochs
 	macro_debug	"kernel_vfs_file_append"
 
-;===============================================================================
 ; input:
 ;\trsi - direct pointer to the spool of the file
 ;\trdi - destination address of the data of the file

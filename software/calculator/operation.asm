@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 calculator_operation_insert:
 	; save the original registers
 	push	rax
@@ -52,7 +50,6 @@ calculator_operation_insert:
 	; debug
 	macro_debug	"software: calculator_operation_insert"
 
-;===============================================================================
 ; entry:
 ;	byte [calculator_value_exec]
 ;	qword [calculator_value_first]
@@ -133,7 +130,6 @@ calculator_operation_compose:
 	; debug
 	macro_debug	"software: calculator_operation_compose"
 
-;===============================================================================
 ; entry:
 ;	ax - value from the keyboard or the mouse
 calculator_operation:

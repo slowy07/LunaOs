@@ -1,8 +1,6 @@
-;===============================================================================
 
 	%include	"software/calculator/config.asm"
 
-;===============================================================================
 calculator:
 	; initialization of the console space
 	%include	"software/calculator/init.asm"

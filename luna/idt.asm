@@ -1,4 +1,3 @@
-;===============================================================================
 
 ZERO_IDT_address	equ	0x9000
 
@@ -10,7 +9,6 @@ struc	ZERO_STRUCTURE_IDT_HEADER
 	.address	resb	8
 endstruc
 
-;===============================================================================
 zero_idt:
 	; IDT address
 	mov	edi,	ZERO_IDT_address
@@ -41,12 +39,10 @@ zero_idt:
 	; continue
 	jmp	zero_idt_end
 
-;===============================================================================
 zero_idt_default_exception:
 	; return from a processor exception
 	iretq
 
-;===============================================================================
 zero_idt_default_interrupt:
 	; preserve the original registers
 	push	rax
@@ -61,7 +57,6 @@ zero_idt_default_interrupt:
 	; return from a hardware interrupt
 	iretq
 
-;===============================================================================
 zero_idt_clock:
 	; preserve the original registers
 	push	rax
@@ -79,7 +74,6 @@ zero_idt_clock:
 	; return from a hardware interrupt
 	iretq
 
-;===============================================================================
 ; in:
 ;	rax - logical address of the handler
 ;	bx - type: exception, interrupt (hardware, software)
@@ -134,5 +128,4 @@ zero_idt_set:
 	; return from the routine
 	ret
 
-;===============================================================================
 zero_idt_end:

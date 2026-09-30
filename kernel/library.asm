@@ -1,4 +1,3 @@
-;===============================================================================
 
 	; constants, variables, globals, structures, objects, macros
 	%include	"kernel/header.asm"
@@ -12,7 +11,6 @@
 ; location of the program code in logical memory
 [org LIBRARY_BASE_address]
 
-;===============================================================================
 kernel_library:
 	.bit_find			dq	library_bit_find
 	.bosu				dq	library_bosu

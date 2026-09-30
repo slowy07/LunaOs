@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_IDT_IRQ_offset			equ	0x20
 
@@ -6,7 +5,6 @@ KERNEL_IDT_TYPE_exception		equ	0x8E00
 KERNEL_IDT_TYPE_irq			equ	0x8F00
 KERNEL_IDT_TYPE_isr			equ	0xEF00
 
-;===============================================================================
 ; input:
 ;	rax - interrupt number
 ;	rbx - interrupt identifier (exception, hardware or process)
@@ -40,7 +38,6 @@ kernel_idt_mount:
 
 	macro_debug	"kernel_idt_mount"
 
-;===============================================================================
 ; input:
 ;	rax - logical address of the handler
 ;	bx - type: exception, interrupt (hardware, software)
@@ -97,7 +94,6 @@ kernel_idt_update:
 
 	macro_debug	"kernel_idt_update"
 
-;===============================================================================
 ; default handler of a processor exception
 kernel_idt_exception_default:
 	; dump the faulting context on the COM1 port
@@ -113,7 +109,6 @@ kernel_idt_exception_default:
 
 	macro_debug	"kernel_idt_exception_default"
 
-;===============================================================================
 kernel_idt_exception_general_protection_fault:
 	; dump the faulting context on the COM1 port
 	call	kernel_debug_dump
@@ -129,7 +124,6 @@ kernel_idt_exception_general_protection_fault:
 
 	macro_debug	"kernel_idt_exception_general_protection_fault"
 
-;===============================================================================
 kernel_idt_exception_page_fault:
 	; dump the faulting context on the COM1 port
 	call	kernel_debug_dump
@@ -150,7 +144,6 @@ kernel_idt_exception_page_fault:
 
 	macro_debug	"kernel_idt_exception_page_fault"
 
-;===============================================================================
 ; default handler of a hardware interrupt
 kernel_idt_interrupt_hardware:
 	; preserve the original registers
@@ -168,7 +161,6 @@ kernel_idt_interrupt_hardware:
 
 	macro_debug	"kernel_idt_interrupt_hardware"
 
-;===============================================================================
 ; handler of an invalid software interrupt
 kernel_idt_interrupt_software:
 	; return the error information
@@ -179,7 +171,6 @@ kernel_idt_interrupt_software:
 
 	macro_debug	"kernel_idt_interrupt_software"
 
-;===============================================================================
 ; handler of the "unhandled" interrupt
 kernel_idt_spurious_interrupt:
 	; return to the task

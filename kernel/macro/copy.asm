@@ -1,4 +1,3 @@
-;===============================================================================
 
 ; copy the memory space from RSI to RDI in chunks of 256 bytes
 %macro	macro_copy	0

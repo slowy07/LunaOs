@@ -1,9 +1,7 @@
-;===============================================================================
 
 KERNEL_EXEC_FLAG_accept_childrens	equ	00000001b	; accept the streams of the child processes on the standard input
 KERNEL_EXEC_FLAG_forward_out		equ	00000010b	; redirect the output of the parent to the input of the child process
 
-;===============================================================================
 ; input:
 ;\trcx - number of characters representing the name of the program to run
 ;\trsi - pointer to the program name together with the arguments

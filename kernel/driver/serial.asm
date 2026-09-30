@@ -1,4 +1,3 @@
-;===============================================================================
 
 DRIVER_SERIAL_PORT_COM1				equ	0x03F8
 DRIVER_SERIAL_PORT_COM2				equ	0x02F8
@@ -14,7 +13,6 @@ struc	DRIVER_SERIAL_STRUCTURE_REGISTERS
 	.scratch				resb	1
 endstruc
 
-;===============================================================================
 driver_serial:
 	; preserve the original registers
 	push	rax
@@ -55,7 +53,6 @@ driver_serial:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the data terminated with a zero byte
 driver_serial_send:
@@ -94,7 +91,6 @@ driver_serial_send:
 	ret
 
 
-;===============================================================================
 driver_serial_ready:
 	; preserve the original registers
 	push	rax

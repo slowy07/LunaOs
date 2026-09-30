@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 ; input:
 ;	rax - empty or continuation of the previous checksum
 ;	rcx - space size in words (2 Bytes each)
@@ -49,7 +47,6 @@ service_network_checksum:
 
 	macro_debug	"service_network_checksum"
 
-;===============================================================================
 ; input:
 ;	rax - empty or continuation of the previous checksum
 ;	ecx - space size in words (2 Bytes each)

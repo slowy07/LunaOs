@@ -1,4 +1,3 @@
-;===============================================================================
 
 ZERO_GRAPHICS_MODE_INFO_BLOCK_SIZE_byte	equ	0x1000
 
@@ -49,7 +48,6 @@ struc	ZERO_STRUCTURE_GRAPHICS_MODE_INFO_BLOCK
 	.reserved1			resb	212
 endstruc
 
-;===============================================================================
 zero_graphics:
 	; bring the end address of the memory map to a full page
 	call	zero_page_align_up

@@ -1,4 +1,3 @@
-;===============================================================================
 
 console_shell_file				db	"/bin/shell"
 console_shell_file_end:
@@ -54,7 +53,6 @@ console_stream_meta:				dw	CONSOLE_WINDOW_WIDTH_char
 						dw	STATIC_EMPTY	; y
 
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
-;===============================================================================
 console_window					dw	STATIC_EMPTY	; position on the X axis
 						dw	STATIC_EMPTY	; position on the Y axis
 						dw	CONSOLE_WINDOW_WIDTH_pixel	; window width
@@ -85,7 +83,6 @@ console_window					dw	STATIC_EMPTY	; position on the X axis
 						db	STATIC_EMPTY
 console_window_end:
 
-;===============================================================================
 console_terminal_table				dq	CONSOLE_WINDOW_WIDTH_pixel	; width in pixels
 						dq	CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel	; height in pixels
 						dq	STATIC_EMPTY	; pointer to the terminal data space

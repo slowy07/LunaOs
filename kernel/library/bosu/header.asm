@@ -1,4 +1,3 @@
-;===============================================================================
 
 LIBRARY_BOSU_WINDOW_NAME_length			equ	31
 LIBRARY_BOSU_WINDOW_BACKGROUND_color		equ	0x00151515

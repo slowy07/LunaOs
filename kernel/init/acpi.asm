@@ -1,4 +1,3 @@
-;===============================================================================
 
 ACPI_MADT_ENTRY_lapic			equ	0x00
 ACPI_MADT_ENTRY_ioapic			equ	0x01
@@ -96,7 +95,6 @@ struc	ACPI_STRUCTURE_MADT_NMI	; Non-maskable Interrupts
 	.SIZE:
 endstruc
 
-;===============================================================================
 kernel_init_acpi:
 	; look for the Root/Extended System Description Pointer header
 	mov	rbx,	"RSD PTR "
@@ -149,7 +147,6 @@ kernel_init_acpi:
 
 	; carry on with the remaining values
 	loop	.checksum
-	;=======================================================================
 
 	; restore the pointer to the RSDP header
 	pop	rsi
@@ -191,7 +188,6 @@ kernel_init_acpi:
 	cmp	dword [rdi + ACPI_STRUCTURE_RSDT_or_XSDT.signature],	"XSDT"
 	jne	.error	; not recognised
 
-	;=======================================================================
 
 .found:
 	; fetch the size of the RSDT/XSDT pointer table

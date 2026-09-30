@@ -1,8 +1,6 @@
-;===============================================================================
 
 	%include	"software/ls/config.asm"
 
-;===============================================================================
 ls:
 	; initialize the working environment
 	%include	"software/ls/init.asm"

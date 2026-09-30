@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 ; entry:
 ;	rcx - size of the string
 ;	rsi - pointer to the current beginning of the data in the buffer
@@ -30,7 +28,6 @@ shell_prompt_relocate:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	rbx - previous size of the "word"
 ;	r8 - current size of the string
@@ -54,7 +51,6 @@ shell_prompt_clean:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	rbx - size of the command in characters
 ;	rsi - pointer to the command

@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_TASK_EFLAGS_if			equ	000000000000001000000000b
 KERNEL_TASK_EFLAGS_zf			equ	000000000000000001000000b
@@ -48,7 +47,6 @@ kernel_task_active_list			dq	STATIC_EMPTY
 kernel_task_pid_semaphore		db	STATIC_FALSE
 kernel_task_pid				dq	STATIC_EMPTY
 
-;===============================================================================
 kernel_task:
 	; disable the interrupts and exceptions
 	cli
@@ -222,7 +220,6 @@ kernel_task:
 
 	macro_debug	"kernel_task"
 
-;===============================================================================
 ; input:
 ;\trdi - pointer to the parent process
 ; output:
@@ -289,7 +286,6 @@ kernel_task_child:
 
 	macro_debug	"kernel_task_child"
 
-;===============================================================================
 ; input:
 ;\trbx - pointer to the top of the context stack of the task
 ;\tcl - number of characters in the process name
@@ -373,7 +369,6 @@ kernel_task_add:
 
 	macro_debug	"kernel_task_add"
 
-;===============================================================================
 ; output:
 ;\tCF flag - if the queue is full
 ;\trdi - pointer to the free position in the task queue of the given logical processor
@@ -463,7 +458,6 @@ kernel_task_queue:
 
 	macro_debug	"kernel_task_queue"
 
-;===============================================================================
 ; output:
 ;\tecx - unique identifier
 kernel_task_pid_get:
@@ -487,7 +481,6 @@ kernel_task_pid_get:
 
 	macro_debug	"kernel_task_pid_get"
 
-;===============================================================================
 ; input:
 ;\trcx - PID of the searched process
 ; output:
@@ -554,7 +547,6 @@ kernel_task_pid_check:
 
 	macro_debug	"kernel_task_pid_check"
 
-;===============================================================================
 ; output:
 ;\trax - PID of the active process
 kernel_task_active_pid:
@@ -575,7 +567,6 @@ kernel_task_active_pid:
 
 	macro_debug	"kernel_task_active_pid"
 
-;===============================================================================
 ; output:
 ;\tZF flag - if there is no process pointer for the logical processor
 ;\trdi - pointer to the task position of the logical processor
@@ -608,7 +599,6 @@ kernel_task_active:
 
 	macro_debug	"kernel_task_active"
 
-;===============================================================================
 kernel_task_kill:
 	; fetch the pointer to the thread in the task queue
 	call	kernel_task_active

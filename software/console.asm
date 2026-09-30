@@ -1,8 +1,6 @@
-;===============================================================================
 
 	%include	"software/console/config.asm"
 
-;===============================================================================
 console:
 	; initialization of the console space
 	%include	"software/console/init.asm"

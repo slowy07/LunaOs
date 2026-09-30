@@ -1,8 +1,6 @@
-;===============================================================================
 
 	%include	"software/hello/config.asm"
 
-;===============================================================================
 hello:
 	; display the greeting
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out

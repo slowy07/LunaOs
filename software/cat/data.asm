@@ -1,4 +1,3 @@
-;===============================================================================
 
 cat_string_init		db	STATIC_SEQUENCE_CURSOR_DISABLE
 cat_string_init_end:

@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 moko_line_clear_last:
 	; save the original registers
 	push	rax
@@ -28,7 +26,6 @@ moko_line_clear_last:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	rcx - line number to check
 ; exit:
@@ -108,7 +105,6 @@ moko_line_this:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	rbx - row number on the screen
 ;	rcx - number of the document line to display
@@ -151,7 +147,6 @@ moko_line_number:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	rcx - size of the examined line
 ;	rsi - pointer to the beginning of the examined line
@@ -204,7 +199,6 @@ moko_line_update:
 	; end of the procedure
 	ret
 
-;===============================================================================
 ; exit:
 ;	CF flag, if the beginning of the document
 ;	rcx - size of the previous line
@@ -264,7 +258,6 @@ moko_line_previous:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; exit:
 ;	CF flag - if end of the document
 ;	rcx - line size in characters
@@ -327,7 +320,6 @@ moko_line_next:
 	; return from the procedure
 	ret
 
-;===============================================================================
 moko_line:
 	; save the original registers
 	push	rax

@@ -1,7 +1,5 @@
-;===============================================================================
 
 
-;===============================================================================
 ; input:
 ;	rax - pointer to the object table record
 kernel_wm_zone_insert_by_object:
@@ -58,7 +56,6 @@ kernel_wm_zone_insert_by_object:
 
 	macro_debug	"kernel_wm_zone_insert_by_object"
 
-;===============================================================================
 ; input:
 ;	rdi - pointer to the object table record
 ;	r8 - position on the X axis
@@ -115,7 +112,6 @@ kernel_wm_zone_insert_by_register:
 
 	macro_debug	"kernel_wm_zone_insert_by_register"
 
-;===============================================================================
 kernel_wm_zone:
 	; preserve the original registers
 	push	rax

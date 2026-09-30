@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_MEMORY_MAP_SIZE_page		equ	0x01	; default size 4088 Bytes (~128 MiB of the describable address space)
 
@@ -10,7 +9,6 @@ kernel_memory_real_address		dq	STATIC_EMPTY	; KERNEL_MEMORY_HIGH_REAL_address
 
 kernel_memory_lock_semaphore		db	STATIC_FALSE
 
-;===============================================================================
 ; input:
 ;	rcx - number of pages to mark as allocated
 ;	rsi - pointer to the binary memory map
@@ -42,7 +40,6 @@ kernel_memory_secure:
 
 	macro_debug	"kernel_memory_secure"
 
-;===============================================================================
 ; input:
 ;	rbp - number of pages reserved for use
 ; output:
@@ -66,7 +63,6 @@ kernel_memory_alloc_page:
 
 	macro_debug	"kernel_memory_alloc_page"
 
-;===============================================================================
 ; input:
 ;	rcx - size of the area in pages
 ;	rbp - number of pages reserved for use
@@ -197,7 +193,6 @@ kernel_memory_alloc:
 
 	macro_debug	"kernel_memory_alloc"
 
-;===============================================================================
 kernel_memory_lock:
 	;	block the access to the binary memory map
 	macro_lock	kernel_memory_lock_semaphore, 0
@@ -207,7 +202,6 @@ kernel_memory_lock:
 
 	macro_debug	"kernel_memory_lock"
 
-;===============================================================================
 ; input:
 ;	rdi - address of the page to release
 kernel_memory_release_page:
@@ -262,7 +256,6 @@ kernel_memory_release_page:
 
 	macro_debug	"kernel_memory_release_page"
 
-;===============================================================================
 ; input:
 ;	rcx - number of consecutive pages to release
 ;	rdi - pointer to the first page
@@ -291,7 +284,6 @@ kernel_memory_release:
 
 	macro_debug	"kernel_memory_release"
 
-;===============================================================================
 ; input:
 ;	rax - pointer to the beginning of the area
 ;	rcx - size of the area in pages
@@ -498,7 +490,6 @@ kernel_memory_release_task:
 
 	macro_debug	"kernel_memory_release_task"
 
-;===============================================================================
 ; input:
 ;	rcx % 256 = 0 - size of the area to copy in Bytes
 ;	rsi - source location
@@ -534,7 +525,6 @@ kernel_memory_copy:
 
 	macro_debug	"kernel_memory_copy"
 
-;===============================================================================
 ; input:
 ;	rcx - expected size of the area in pages
 ; output:
@@ -577,7 +567,6 @@ kernel_memory_alloc_task:
 
 	macro_debug	"kernel_memory_alloc_task"
 
-;===============================================================================
 ; input:
 ;	rcx - size of the area in pages
 ; output:
@@ -697,7 +686,6 @@ kernel_memory_alloc_task_secure:
 
 	macro_debug	"kernel_memory_alloc_task_secure"
 
-;===============================================================================
 ; input:
 ;	rcx - size of the area in pages
 ;	rdi - address of the area to release

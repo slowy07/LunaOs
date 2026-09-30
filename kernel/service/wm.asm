@@ -1,9 +1,7 @@
-;===============================================================================
 
 	; constants, variables, globals, structures, objects
 	%include	"kernel/service/wm/config.asm"
 
-;===============================================================================
 kernel_wm:
 	; initialisation of the production environment
 	%include	"kernel/service/wm/init.asm"
@@ -41,4 +39,3 @@ kernel_wm:
 	%include	"kernel/service/wm/keyboard.asm"
 
 kernel_wm_end:
-;===============================================================================

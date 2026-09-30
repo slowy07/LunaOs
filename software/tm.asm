@@ -1,8 +1,6 @@
-;===============================================================================
 
 	%include	"software/tm/config.asm"
 
-;===============================================================================
 tm:
 	; initialize the working environment of the task manager
 	%include	"software/tm/init.asm"

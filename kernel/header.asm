@@ -1,4 +1,3 @@
-;===============================================================================
 
 	; constants, variables, globals, structures, objects, headers
 	%include	"config.asm"

@@ -1,8 +1,6 @@
-;===============================================================================
 
 	%include	"software/shell/config.asm"
 
-;===============================================================================
 shell:
 	; initialize the working environment of the shell
 	%include	"software/shell/init.asm"

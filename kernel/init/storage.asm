@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 kernel_init_storage:
 	; check whether an IDE controller is available
 	mov	eax,	DRIVER_PCI_CLASS_SUBCLASS_ide

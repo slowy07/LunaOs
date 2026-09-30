@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 
 	; the stack is unavailable at this point!
 
@@ -28,14 +26,12 @@
 	; load the Interrupt Descriptor Table
 	lidt	[rel kernel_idt_header]
 
-	;=======================================================================
 	; ONLY ONE LOGICAL PROCESSOR AT A TIME MAY RUN THE PAGING PROCEDURE BELOW
 .wait:	;=======================================================================
 	mov	al,	STATIC_TRUE
 	xchg	byte [rel kernel_init_ap_semaphore],	al
 	test	al,	al	; check whether access has been obtained
 	jz	.wait	; locked, try once more
-	;=======================================================================
 
 	; Page
 

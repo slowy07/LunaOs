@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_TASK_FLAG_active			equ	0000000000000001b	; marks an entry ready to run
 KERNEL_TASK_FLAG_closed			equ	0000000000000010b	; marks an entry ready to close

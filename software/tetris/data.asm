@@ -1,4 +1,3 @@
-;===============================================================================
 
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
 tetris_ipc_data:
@@ -9,7 +8,6 @@ tetris_limit_model				dq	STATIC_QWORD_SIZE_byte / STATIC_WORD_SIZE_byte
 tetris_seed					dd	0x681560BA
 
 align	STATIC_QWORD_SIZE_byte,			db	STATIC_NOTHING
-;===============================================================================
 tetris_window					dw	STATIC_EMPTY	; position on the X axis
 						dw	STATIC_EMPTY	; position on the Y axis
 						dw	TETRIS_WINDOW_WIDTH_pixel	; window width

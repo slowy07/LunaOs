@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_GUI_WINDOW_count				equ	3	; number of windows created by Cero
 

@@ -1,8 +1,6 @@
-;===============================================================================
 
 	%include	"software/moko/config.asm"
 
-;===============================================================================
 moko:
 	; initialize the working environment of the text editor
 	%include	"software/moko/init.asm"

@@ -1,8 +1,6 @@
-;===============================================================================
 
 	%include	"kernel/library/terminal/header.asm"
 
-;===============================================================================
 ; input:
 ;	r8 - pointer to the terminal structure
 library_terminal:
@@ -45,7 +43,6 @@ library_terminal:
 
 	macro_debug	"library_terminal"
 
-;===============================================================================
 ; input:
 ;	r8 - pointer to the terminal structure
 library_terminal_clear:
@@ -101,7 +98,6 @@ library_terminal_clear:
 
 	macro_debug	"library_terminal_clear"
 
-;===============================================================================
 ; input:
 ;	r8 - pointer to the terminal structure
 library_terminal_cursor_disable:
@@ -121,7 +117,6 @@ library_terminal_cursor_disable:
 
 	macro_debug	"library_terminal_cursor_disable"
 
-;===============================================================================
 ; input:
 ;	r8 - pointer to the terminal structure
 library_terminal_cursor_enable:
@@ -145,7 +140,6 @@ library_terminal_cursor_enable:
 
 	macro_debug	"library_terminal_cursor_enable"
 
-;===============================================================================
 ; input:
 ;	r8 - pointer to the terminal structure
 library_terminal_cursor_switch:
@@ -186,7 +180,6 @@ library_terminal_cursor_switch:
 
 	macro_debug	"library_terminal_cursor_switch"
 
-;===============================================================================
 ; input:
 ;	r8 - pointer to the terminal structure
 library_terminal_cursor_set:
@@ -224,7 +217,6 @@ library_terminal_cursor_set:
 
 	macro_debug	"library_terminal_cursor_set"
 
-;===============================================================================
 ; input:
 ;	rax - character ASCII code
 ;	rdi - character position in the screen memory area
@@ -295,7 +287,6 @@ library_terminal_matrix:
 
 	macro_debug	"library_terminal_matrix"
 
-;===============================================================================
 ; input:
 ;	rdi - pointer to the character position
 ;	r8 - pointer to the terminal structure
@@ -346,7 +337,6 @@ library_terminal_empty_char:
 
 	macro_debug	"library_terminal_empty_char"
 
-;===============================================================================
 ; input:
 ;	rax - character ASCII code
 ;	rcx - number of copies of the character to display
@@ -559,7 +549,6 @@ library_terminal_char:
 
 	macro_debug	"library_terminal_char.backspace"
 
-;===============================================================================
 ; input:
 ;	r8 - pointer to the terminal structure
 library_terminal_scroll:
@@ -589,7 +578,6 @@ library_terminal_scroll:
 
 	macro_debug	"library_terminal_scroll"
 
-;===============================================================================
 ; input:
 ;	rbx - number of lines to shift
 ;	rcx - starting line
@@ -677,7 +665,6 @@ library_terminal_scroll_down:
 
 	macro_debug	"library_terminal_scroll_up"
 
-;===============================================================================
 ; input:
 ;	rbx - number of lines to shift
 ;	rcx - starting line
@@ -752,7 +739,6 @@ library_terminal_scroll_up:
 
 	macro_debug	"library_terminal_scroll_up"
 
-;===============================================================================
 ; input:
 ;	rbx - line number on screen
 ;	r8 - pointer to the terminal structure
@@ -811,7 +797,6 @@ library_terminal_empty_line:
 
 	macro_debug	"library_terminal_empty_line"
 
-;===============================================================================
 ; input:
 ;	rcx - number of characters in the string
 ;	rsi - pointer to the string
@@ -873,7 +858,6 @@ library_terminal_string:
 
 	macro_debug	"library_terminal_string"
 
-;===============================================================================
 ; input:
 ;	rax - value to display
 ;	rbx - number base

@@ -1,4 +1,3 @@
-;===============================================================================
 
 LIBRARY_FONT_WIDTH_pixel	equ	6
 LIBRARY_FONT_HEIGHT_pixel	equ	12

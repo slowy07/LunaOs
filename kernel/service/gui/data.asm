@@ -1,4 +1,3 @@
-;===============================================================================
 
 kernel_gui_pid				dq	STATIC_EMPTY
 
@@ -24,7 +23,6 @@ align	STATIC_QWORD_SIZE_byte,		db	STATIC_NOTHING
 kernel_gui_taskbar_list_address		dq	STATIC_EMPTY
 kernel_gui_taskbar_list_count		dq	STATIC_EMPTY
 
-;===============================================================================
 kernel_gui_window_workbench		dw	0	; position on the X axis
 					dw	0	; position on the Y axis
 					dw	STATIC_EMPTY	; window width
@@ -41,7 +39,6 @@ align	STATIC_QWORD_SIZE_byte,		db	STATIC_NOTHING
 
 kernel_gui_window_taskbar_modify_time	dq	STATIC_EMPTY
 
-;===============================================================================
 kernel_gui_window_taskbar		dw	0	; position on the X axis
 					dw	STATIC_EMPTY	; position on the Y axis
 					dw	STATIC_EMPTY	; window width
@@ -79,7 +76,6 @@ kernel_gui_window_taskbar_end:
 
 align	STATIC_QWORD_SIZE_byte,		db	STATIC_NOTHING
 
-;===============================================================================
 kernel_gui_window_menu			dw	160	; position on the X axis relative to the cursor pointer
 					dw	80	; position on the Y axis relative to the cursor pointer
 					dw	STATIC_EMPTY	; window width relative to the element content

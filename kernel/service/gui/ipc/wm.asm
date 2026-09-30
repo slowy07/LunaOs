@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 kernel_gui_ipc_wm:
 	; a message unrelated to the mouse?
 	cmp	byte [rdi + KERNEL_IPC_STRUCTURE.type],	KERNEL_IPC_TYPE_MOUSE

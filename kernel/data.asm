@@ -1,16 +1,11 @@
-;===============================================================================
 
-;===============================================================================
 ; INIT
-;===============================================================================
 kernel_init_semaphore					db	STATIC_TRUE
 
 kernel_init_exec					db	"/bin/init"
 kernel_init_exec_end:
 
-;===============================================================================
 ; GDT
-;===============================================================================
 ; bring the header position to a full address
 align	STATIC_QWORD_SIZE_byte,				db	STATIC_NOTHING
 kernel_gdt_header					dw	STATIC_PAGE_SIZE_byte
@@ -29,18 +24,14 @@ kernel_gdt_tss_table:
 					times	92	db	STATIC_EMPTY
 kernel_gdt_tss_table_end:
 
-;===============================================================================
 ; IDT
-;===============================================================================
 ; bring the header position to a full address
 align	STATIC_QWORD_SIZE_byte,				db	STATIC_NOTHING
 kernel_idt_header:
 							dw	STATIC_PAGE_SIZE_byte
 							dq	STATIC_EMPTY
 
-;===============================================================================
 ; VIDEO
-;===============================================================================
 kernel_video_width_pixel				dq	STATIC_EMPTY	; width in pixels
 kernel_video_height_pixel				dq	STATIC_EMPTY	; height in pixels
 kernel_video_base_address				dq	STATIC_EMPTY	; pointer to the terminal data area

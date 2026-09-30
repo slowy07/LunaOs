@@ -1,4 +1,3 @@
-;===============================================================================
 
 kernel_init_string_name				db	KERNEL_name
 kernel_init_string_name_end:

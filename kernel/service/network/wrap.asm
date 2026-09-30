@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 ; input:
 ;	rax - MAC address of the recipient
 ;	cx - protocol type
@@ -27,7 +25,6 @@ service_network_ethernet_wrap:
 
 	macro_debug	"service_network_ethernet_wrap"
 
-;===============================================================================
 ; input:
 ;	rax - MAC address of the recipient
 ;	bl - protocol type
@@ -97,7 +94,6 @@ service_network_ip_wrap:
 
 	macro_debug	"service_network_ip_wrap"
 
-;===============================================================================
 ; input:
 ;	bl - TCP header size
 ;	ecx - TCP frame size in Bytes

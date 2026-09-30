@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 ls_init:
 	; disable the virtual cursor (it is not needed, the program does not interact, we save processor time)
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out

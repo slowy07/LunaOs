@@ -1,4 +1,3 @@
-;===============================================================================
 
 %macro	macro_apic_id_get	0
 	; fetch the ID of the logical processor

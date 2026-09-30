@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 tm_task:
 	; save the original registers
 	push	rax
@@ -37,7 +35,6 @@ tm_task:
 
 	macro_debug	"software: tm_task"
 
-;===============================================================================
 ; entry:
 ;	rbx - total size of the elements on the list in bytes
 ;	rcx - size of the list space in bytes
@@ -242,7 +239,6 @@ tm_task_show:
 
 	macro_debug	"software: tm_task_show"
 
-;===============================================================================
 ; entry:
 ;	rbx - size of all the elements on the list in bytes
 ;	rsi - pointer to the list
@@ -313,7 +309,6 @@ tm_task_sort:
 
 	macro_debug	"software: tm_task_sort"
 
-;===============================================================================
 ; entry:
 ;	rcx - index of the first element
 ;	rdx - index of the second element

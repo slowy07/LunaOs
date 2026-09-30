@@ -1,10 +1,8 @@
-;===============================================================================
 
 	; constants, variables, structures, objects
 	%include	"kernel/library/bosu/header.asm"
 	%include	"kernel/library/bosu/data.asm"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the window properties
 ; output:
@@ -86,7 +84,6 @@ library_bosu_event:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the window structure
 ; output:
@@ -224,7 +221,6 @@ library_bosu:
 
 	macro_debug	"library_bosu"
 
-;===============================================================================
 ; input:
 ;	cl - number of characters making up the new prefix
 ;	rsi - pointer to the character string
@@ -302,7 +298,6 @@ library_bosu_header_set:
 
 	macro_debug	"library_bosu_header_set"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the element list
 library_bosu_clean:
@@ -318,7 +313,6 @@ library_bosu_clean:
 
 	macro_debug	"library_bosu_clean"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the window specification
 library_bosu_border_correction:
@@ -395,7 +389,6 @@ library_bosu_border_correction:
 
 	macro_debug	"library_bosu_border_correction"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the window properties
 library_bosu_close:
@@ -414,7 +407,6 @@ library_bosu_close:
 
 	macro_debug	"library_bosu_close"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the window properties
 ;	r8 - window width in pixels
@@ -500,7 +492,6 @@ library_bosu_element_button_close:
 
 	macro_debug	"library_bosu_element_button_close"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the window properties
 library_bosu_element_button_minimize:
@@ -511,7 +502,6 @@ library_bosu_element_button_minimize:
 
 	macro_debug	"library_bosu_element_button_minimize"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the window properties
 library_bosu_element_button_maximize:
@@ -522,7 +512,6 @@ library_bosu_element_button_maximize:
 
 	macro_debug	"library_bosu_element_button_maximize"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the window structure
 ; output:
@@ -596,7 +585,6 @@ library_bosu_elements_specification:
 
 	macro_debug	"library_bosu_elements_specification"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the window elements
 library_bosu_elements:
@@ -674,7 +662,6 @@ library_bosu_elements:
 
 	macro_debug	"library_bosu_elements"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the element properties
 ;	rdi - pointer to the window structure
@@ -778,7 +765,6 @@ library_bosu_element_taskbar:
 
 	macro_debug	"library_bosu_element_taskbar"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the "chain" element
 ;	rdi - pointer to the window structure
@@ -837,7 +823,6 @@ library_bosu_element_chain:
 
 	macro_debug	"library_bosu_element_chain"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the window structure
 ;	r8 - window width in pixels
@@ -930,7 +915,6 @@ library_bosu_header_update:
 
 	macro_debug	"library_bosu_header_update"
 
-;===============================================================================
 ; input:
 ;	ebx - font color
 ;	rcx - string size in characters
@@ -986,7 +970,6 @@ library_bosu_string:
 
 	macro_debug	"library_bosu_string"
 
-;===============================================================================
 ; input:
 ;	rax - ASCII code of the character to display
 ;	rbx - font color
@@ -1099,7 +1082,6 @@ library_bosu_char:
 
 	macro_debug	"library_bosu_char"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the element
 ;	rdi - pointer to the window structure
@@ -1200,7 +1182,6 @@ library_bosu_element_button:
 
 	macro_debug	"library_bosu_element_button"
 
-;===============================================================================
 ; input:
 ;	eax - interface background color
 ;	rdi - pointer to the element area in pixels
@@ -1239,7 +1220,6 @@ library_bosu_element_drain:
 
 	macro_debug	"library_bosu_element_drain"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the element
 ;	rdi - pointer to the window structure
@@ -1361,7 +1341,6 @@ library_bosu_element_label:
 
 	macro_debug	"library_bosu_element_label"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the window structure
 ;	r8 - cursor position on the X axis
@@ -1397,7 +1376,6 @@ library_bosu_element:
 
 	macro_debug	"library_bosu_element"
 
-;===============================================================================
 library_bosu_element_subroutine:
 	; preserve the original registers
 	push	rax

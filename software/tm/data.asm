@@ -1,4 +1,3 @@
-;===============================================================================
 
 tm_string_console_header			db	"^[hTask Manager]"
 tm_string_console_header_end:

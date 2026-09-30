@@ -1,10 +1,6 @@
-;===============================================================================
 
-;===============================================================================
 kernel_init_ps2:
-	;=======================================================================
 	; the mouse controller is the most involved, and it has to be configured first
-	;=======================================================================
 
 	; drain the PS2 controller buffer
 	call	driver_ps2_check_dummy_answer_or_dump
@@ -87,7 +83,6 @@ kernel_init_ps2:
 
 	; program the IDT interrupt vector into the I/O APIC
 	mov	eax,	KERNEL_IDT_IRQ_offset + DRIVER_PS2_MOUSE_IRQ_number
-	; or	ax,	KERNEL_IO_APIC_TRIGER_MODE_level
 	mov	ebx,	DRIVER_PS2_MOUSE_IO_APIC_register
 	call	kernel_io_apic_connect
 

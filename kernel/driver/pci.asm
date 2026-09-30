@@ -1,4 +1,3 @@
-;===============================================================================
 
 DRIVER_PCI_PORT_command			equ	0x0CF8
 DRIVER_PCI_PORT_data			equ	0x0CFC
@@ -20,7 +19,6 @@ DRIVER_PCI_CLASS_SUBCLASS_ahci		equ	0x0106
 DRIVER_PCI_CLASS_SUBCLASS_scsi		equ	0x0107
 DRIVER_PCI_CLASS_SUBCLASS_network	equ	0x0200
 
-;============================================================================
 ; input:
 ;	eax - value to look for
 ;		high - device
@@ -110,7 +108,6 @@ driver_pci_find_vendor_and_device:
 	; return from the procedure
 	ret
 
-;============================================================================
 ; input:
 ;	ax - Class & Subclass value to look for
 ; output:
@@ -197,7 +194,6 @@ driver_pci_find_class_and_subclass:
 	; return from the procedure
 	ret
 
-;============================================================================
 ; input:
 ;	eax - address of the register to read
 ;	bl - szyna
@@ -245,7 +241,6 @@ driver_pci_read:
 	; return from the procedure
 	ret
 
-;============================================================================
 ; input:
 ;	eax - value
 ;

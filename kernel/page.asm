@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_PAGE_FLAG_available		equ	1 << 0
 KERNEL_PAGE_FLAG_write			equ	1 << 1
@@ -29,7 +28,6 @@ kernel_page_reserved_count		dq	STATIC_EMPTY
 kernel_page_paged_count			dq	STATIC_EMPTY
 kernel_page_shared_count		dq	STATIC_EMPTY
 
-;===============================================================================
 ; input:
 ;	rax - pointer to the beginning of the area
 ;	rcx - size of the area in pages
@@ -218,7 +216,6 @@ kernel_page_purge:
 
 	macro_debug	"kernel_page_purge"
 
-;===============================================================================
 ; input:
 ;	rax - pointer to the memory area to clear
 ;	rcx - number of the PML4 table records to review
@@ -320,7 +317,6 @@ kernel_page_convert:
 
 	macro_debug	"kernel_page_convert"
 
-;===============================================================================
 ; input:
 ;	rdi - pointer to the page
 ; output:
@@ -356,7 +352,6 @@ kernel_page_empty:
 
 	macro_debug	"kernel_page_empty"
 
-;===============================================================================
 ; input:
 ;	rdi - address of the page to clear
 kernel_page_drain:
@@ -397,7 +392,6 @@ kernel_page_drain:
 
 	macro_debug	"kernel_page_drain.proceed"
 
-;===============================================================================
 ; input:
 ;	rcx - number of consecutive pages to clear
 ;	rdi - pointer to the first page
@@ -417,7 +411,6 @@ kernel_page_drain_few:
 
 	macro_debug	"kernel_page_drain_few"
 
-;===============================================================================
 ; input:
 ;	rax - address of the physical area to describe in the page tables
 ;	bx - flags of the page table records
@@ -500,7 +493,6 @@ kernel_page_map_physical:
 
 	macro_debug	"kernel_page_map_physical"
 
-;===============================================================================
 ; input:
 ;	rax - address of the logical area to describe in the page tables
 ;	bx - flags of the page table records
@@ -605,7 +597,6 @@ kernel_page_map_logical:
 
 	macro_debug	"kernel_page_map_logical"
 
-;===============================================================================
 ; input:
 ;	rcx - size of the area in pages to describe
 ;	rsi - pointer to the kernel address space
@@ -707,7 +698,6 @@ kernel_page_map_virtual:
 
 	macro_debug	"kernel_page_map_virtual"
 
-;===============================================================================
 ; input:
 ;	rax - address of the physical area to describe in the page tables
 ;	bx - flags of the page table records
@@ -913,7 +903,6 @@ kernel_page_prepare:
 
 	macro_debug	"kernel_page_prepare"
 
-;===============================================================================
 ; optionally:
 ;	rbp - number of the reserved pages (if the procedure is to use them)
 ; input:
@@ -1096,7 +1085,6 @@ kernel_page_pml1:
 
 	macro_debug	"kernel_page_pml1"
 
-;===============================================================================
 ; input:
 ;	rsi - source address of the PML4 table
 ;	rdi - destination address of the PML4 table
@@ -1202,7 +1190,6 @@ kernel_page_merge:
 
 	macro_debug	"kernel_page_merge"
 
-;===============================================================================
 ; input:
 ;	rcx - number of pages to reserve
 ; output:

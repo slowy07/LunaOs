@@ -1,4 +1,3 @@
-;===============================================================================
 
 kernel_init_page:
 	; prepare room for the kernel PML4 table

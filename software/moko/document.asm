@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 ; entry:
 ;	rcx - size of the document in bytes
 ;	rdi - pointer to the beginning of the document
@@ -64,7 +62,6 @@ moko_document_analyze:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	rcx - size of the document in bytes
 ;	rsi - pointer to the beginning of the document
@@ -116,7 +113,6 @@ moko_document_enter_remove:
 	; return from the procedure
 	ret
 
-;===============================================================================
 moko_document_reload:
 	; save the original registers
 	push	rax
@@ -175,7 +171,6 @@ moko_document_reload:
 	; return from the procedure
 	ret
 
-;===============================================================================
 moko_document_remove:
 	; save the original registers
 	push	rcx
@@ -213,7 +208,6 @@ moko_document_remove:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	ax - ASCII code of the character
 ;	bl - updating the global variables == STATIC_EMPTY
@@ -325,7 +319,6 @@ moko_document_insert:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	rcx - size of the argument list in bytes
 ;	rsi - pointer to the argument string
@@ -385,7 +378,6 @@ moko_document_area:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	CF flag - if no new document was processed
 ;	rcx - number of characters in the string

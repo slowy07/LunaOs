@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_IPC_SIZE_page_default	equ	1
 KERNEL_IPC_ENTRY_limit		equ	(KERNEL_IPC_SIZE_page_default << STATIC_PAGE_SIZE_shift) / KERNEL_IPC_STRUCTURE.SIZE
@@ -9,7 +8,6 @@ kernel_ipc_semaphore		db	STATIC_FALSE
 kernel_ipc_base_address		dq	STATIC_EMPTY
 kernel_ipc_entry_count		dq	STATIC_EMPTY
 
-;===============================================================================
 ; input:
 ;\trbx - PID of the target process
 ;\tecx - size of the data area in Bytes, or if the value is empty, 40 Bytes from the RSI pointer position
@@ -121,7 +119,6 @@ kernel_ipc_insert:
 	; information for Bochs
 	macro_debug	"kernel_ipc_insert"
 
-;===============================================================================
 ; input:
 ;\trdi - pointer to the destination location
 ; output:

@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 kernel_gui_event_console:
 	; preserve the original registers
 	push	rbx
@@ -25,7 +23,6 @@ kernel_gui_event_console:
 
 	macro_debug	"kernel_gui_event_console"
 
-;===============================================================================
 kernel_gui_event_calculator:
 	; preserve the original registers
 	push	rbx
@@ -48,7 +45,6 @@ kernel_gui_event_calculator:
 	; return from the action handler procedure
 	ret
 
-;===============================================================================
 kernel_gui_event_tetris:
 	; preserve the original registers
 	push	rbx

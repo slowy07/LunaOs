@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_VFS_FILE_TYPE_regular_file			equ	1 << 0
 KERNEL_VFS_FILE_TYPE_directory				equ	1 << 1

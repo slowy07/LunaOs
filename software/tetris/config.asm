@@ -1,4 +1,3 @@
-;===============================================================================
 
 	; constants, variables, globals, structures, objects, macros
 	%include	"software/header.asm"

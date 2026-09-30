@@ -1,4 +1,3 @@
-;===============================================================================
 
 DRIVER_IDE_CHANNEL_PRIMARY				equ	0x01F0
 DRIVER_IDE_CHANNEL_SECONDARY				equ	0x0170
@@ -11,12 +10,6 @@ DRIVER_IDE_REGISTER_lba1				equ	0x0004
 DRIVER_IDE_REGISTER_lba2				equ	0x0005
 DRIVER_IDE_REGISTER_drive_OR_head			equ	0x0006
 DRIVER_IDE_REGISTER_command_OR_status			equ	0x0007
-; DRIVER_IDE_REGISTER_sector_count_1			equ	0x0008	; unused
-; DRIVER_IDE_REGISTER_lba3				equ	0x0009	; unused
-; DRIVER_IDE_REGISTER_lba4				equ	0x000A	; unused
-; DRIVER_IDE_REGISTER_lba5				equ	0x000B	; unused
-; DRIVER_IDE_REGISTER_control_OR_altstatus		equ	0x000C	; unused
-; DRIVER_IDE_REGISTER_device_address			equ	0x000D	; unused
 DRIVER_IDE_REGISTER_channel_control_OR_altstatus	equ	0x0206
 
 DRIVER_IDE_DRIVE_master					equ	11100000b
@@ -88,7 +81,6 @@ align	0x10,						db	0x90
 driver_ide_devices:
       times	DRIVER_IDE_STRUCTURE_DEVICE.SIZE * 0x04	db	0x00
 
-;===============================================================================
 ; in:
 ;	rax - number of the first sector to read (LBA)
 ;	rbx - drive identifier
@@ -179,7 +171,6 @@ driver_ide_read:
       ; return from the routine
       ret
 
-;===============================================================================
 ; in:
 ;	rax - numer pierwszego sektora do odczytu w postaci LBA
 ;	rbx - pointer to the drive identifier
@@ -253,7 +244,6 @@ driver_ide_lba:
       ; return from the routine
       ret
 
-;===============================================================================
 driver_ide_init:
       ; preserve the original registers
       push	rax
@@ -339,7 +329,6 @@ driver_ide_init:
       ; return from the routine
       ret
 
-;===============================================================================
 ; in:
 ;	al - MASTER or SLAVE device
 ;	dx - PRIMARY or SECONDARY channel
@@ -428,7 +417,6 @@ driver_ide_init_drive:
       ; return from the routine
       ret
 
-;===============================================================================
 ; in:
 ;	dx - drive identifier
 driver_ide_pool:

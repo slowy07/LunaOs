@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 ; entry:
 ;	qword [calculator_fpu_precision] - number of places after the comma
 ;	qword [calculator_fpu_fraction] - value of the fraction in integer form
@@ -19,7 +17,7 @@ calculator_fpu_fraction_to_float:
 	jz	.ready	; end
 
 	; convert the number into a fraction
-	fdiv	st0,	st1	; div	st1
+	fdiv	st0,	st1
 	jmp	.loop	; continue
 
 .ready:
@@ -30,7 +28,6 @@ calculator_fpu_fraction_to_float:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	qword [calculator_fpu_precision] - number of digits to interpret
 ;	qword [calculator_fpu_float_result] - integer part of the floating point value (integer.float)
@@ -47,8 +44,8 @@ calculator_fpu_float_to_fraction:
 	call	calculator_fpu_float_only
 
 	finit	; reset the coprocessor
-	fild	qword [calculator_fpu_precision_value]	; mov	st1,	qword [calculator_fpu_precision]
-	fld	qword [calculator_fpu_float_result]	; mov	st0,	qword [calculator_fpu_float_result]
+	fild	qword [calculator_fpu_precision_value]
+	fld	qword [calculator_fpu_float_result]
 
 .loop:
 	; convert to a fraction?
@@ -61,7 +58,7 @@ calculator_fpu_float_to_fraction:
 	jmp	.loop	; continue
 
 .ready:
-	fistp	qword [calculator_fpu_fraction]	; mov	qword [calculator_fpu_fraction],	st0
+	fistp	qword [calculator_fpu_fraction]
 
 .end:
 	; restore the original registers
@@ -70,7 +67,6 @@ calculator_fpu_float_to_fraction:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	qword [calculator_fpu_float_result] - floating point value (integer.float)
 ; exit:
@@ -78,13 +74,12 @@ calculator_fpu_float_to_fraction:
 calculator_fpu_float_to_integer:
 	finit	; reset the coprocessor
 	fldcw	word [calculator_fpu_control]	; load the coprocessor flags from the variable
-	fld	qword [calculator_fpu_float_result]	; mov	st0,	qword [calculator_fpu_float_result]
-	fistp	qword [calculator_fpu_integer]	; mov	qword [calculator_fpu_integer],	st0
+	fld	qword [calculator_fpu_float_result]
+	fistp	qword [calculator_fpu_integer]
 
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	qword [calculator_fpu_integer] - integer value (integer)
 ; exit:
@@ -97,7 +92,6 @@ calculator_fpu_integer_to_float:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; entry:
 ;	qword [calculator_fpu_float_result] - integer part of the floating point value
 ; exit:
@@ -110,9 +104,9 @@ calculator_fpu_float_only:
 	call	calculator_fpu_float_to_integer
 
 	finit	; reset the coprocessor
-	fld	qword [calculator_fpu_float_result]	; mov	st1,	qword [calculator_fpu_float_result]
-        fisub	dword [calculator_fpu_integer]	; sub	st0, dword [calculator_fpu_integer]
-        fstp	qword [calculator_fpu_float_result]	; mov	qword [calculator_fpu_float_result],	st0
+	fld	qword [calculator_fpu_float_result]
+        fisub	dword [calculator_fpu_integer]
+        fstp	qword [calculator_fpu_float_result]
 
 	; restore the original variables
 	pop	qword [calculator_fpu_integer]

@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_STREAM_FLAG_active	equ	00000001b	; the stream is in use
 KERNEL_STREAM_FLAG_meta		equ	00000010b	; the metadata are up to date
@@ -22,7 +21,6 @@ kernel_stream_address		dq	STATIC_EMPTY
 
 kernel_stream_out_default	dq	STATIC_EMPTY
 
-;===============================================================================
 ; input:
 ;\tCF flag - if an error occurred
 ;\tbl - the stream configuration flag
@@ -111,7 +109,6 @@ kernel_stream_set:
 
 	macro_debug	"kernel_stream_set"
 
-;===============================================================================
 ; output:
 ;\tCF flag, if there is no space
 ;\trsi - identifier of the stream
@@ -222,7 +219,6 @@ kernel_stream:
 
 	macro_debug	"kernel_stream"
 
-;===============================================================================
 ; input:
 ;\trdi - identifier of the stream
 kernel_stream_release:
@@ -244,7 +240,6 @@ kernel_stream_release:
 
 	macro_debug	"kernel_stream_release"
 
-;===============================================================================
 ; input:
 ;\trbx - identifier of the stream
 ;\trcx - size of the destination buffer
@@ -335,7 +330,6 @@ kernel_stream_receive:
 
 	macro_debug	"kernel_stream_receive"
 
-;===============================================================================
 ; input:
 ;\trbx - identifier of the pipe
 ;\tcx - number of the data to transfer

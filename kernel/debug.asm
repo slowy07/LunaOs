@@ -1,4 +1,3 @@
-;===============================================================================
 
 struc	KERNEL_DEBUG_STRUCTURE_PRESERVED
 	.rax					resb	8
@@ -63,7 +62,6 @@ kernel_debug_string_r14_end:
 kernel_debug_string_r15			db	13, 10, "r15 "
 kernel_debug_string_r15_end:
 
-;===============================================================================
 ; input:
 ;	al - character to output
 ;	COM1 port must be initialised and the interrupts disabled
@@ -86,7 +84,6 @@ kernel_debug_serial_char:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the output data
 ;	ecx - number of characters to output
@@ -115,7 +112,6 @@ kernel_debug_serial_string:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; input:
 ;	rax - value to output as hexadecimal digits
 ;	COM1 port must be initialised and the interrupts disabled
@@ -164,7 +160,6 @@ kernel_debug_serial_hex:
 	; return from the procedure
 	ret
 
-;===============================================================================
 ; dump of the faulting context on the COM1 port
 ; input:
 ;	the CPU-pushed exception frame on the stack (an error code may precede it)

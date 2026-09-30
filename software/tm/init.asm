@@ -1,4 +1,3 @@
-;===============================================================================
 
 	; ask the stream owner to change the window title (if there is one)
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out

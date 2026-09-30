@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 ; input:
 ;	rax - pointer to the filling object
 ;	r8w - position on the X axis
@@ -57,7 +55,6 @@ kernel_wm_fill_insert_by_register:
 
 	macro_debug	"kernel_wm_fill_insert_by_register"
 
-;===============================================================================
 ; input:
 ;	rsi - pointer to the object
 kernel_wm_fill_insert_by_object:
@@ -115,7 +112,6 @@ kernel_wm_fill_insert_by_object:
 
 	macro_debug	"kernel_wm_fill_insert_by_object"
 
-;===============================================================================
 kernel_wm_fill:
 	; preserve the original registers
 	push	rax

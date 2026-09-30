@@ -1,4 +1,3 @@
-;===============================================================================
 
 ZERO_LONG_MODE_PML4_address		equ	0xA000	; physical address
 
@@ -7,7 +6,6 @@ ZERO_LONG_MODE_PAGE_FLAG_writeable	equ	00000010b
 ZERO_LONG_MODE_PAGE_FLAG_2MiB_size	equ	10000000b
 ZERO_LONG_MODE_PAGE_FLAG_default	equ	ZERO_LONG_MODE_PAGE_FLAG_available | ZERO_LONG_MODE_PAGE_FLAG_writeable
 
-;===============================================================================
 zero_long_mode:
 	; create the base paging tables for 64-bit mode
 
@@ -86,10 +84,7 @@ zero_long_mode_header_gdt_64bit:
 	dw	zero_long_mode_table_gdt_64bit_end - zero_long_mode_table_gdt_64bit - 0x01
 	dd	zero_long_mode_table_gdt_64bit
 
-;===============================================================================
 ; 64-bit boot program code ==========================================
-;===============================================================================
 [bits 64]
 
-;===============================================================================
 zero_long_mode_entry:

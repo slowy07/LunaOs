@@ -1,4 +1,3 @@
-;===============================================================================
 
 KERNEL_APIC_ID_register			equ	0x0020	; APIC ID
 KERNEL_APIC_TP_register			equ	0x0080	; Task Priority Register
@@ -30,7 +29,6 @@ kernel_apic_count			db	STATIC_EMPTY
 
 kernel_apic_id_table	times	0x0100	db	STATIC_EMPTY
 
-;===============================================================================
 ; output:
 ;	rax - identifier of the logical processor
 kernel_apic_id_get:

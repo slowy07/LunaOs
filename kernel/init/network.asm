@@ -1,6 +1,4 @@
-;===============================================================================
 
-;===============================================================================
 kernel_init_network:
 	; scan the PCI buses for a network controller
 	mov	eax,	DRIVER_PCI_CLASS_SUBCLASS_network

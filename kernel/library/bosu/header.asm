@@ -1,154 +1,154 @@
 
-LIBRARY_BOSU_WINDOW_NAME_length			equ	31
-LIBRARY_BOSU_WINDOW_BACKGROUND_color		equ	0x00151515
+LIBRARY_BOSU_WINDOW_NAME_length equ 31
+LIBRARY_BOSU_WINDOW_BACKGROUND_color equ 0x00151515
 
-LIBRARY_BOSU_WINDOW_BORDER_THICKNESS_pixel	equ	0x01
-LIBRARY_BOSU_WINDOW_BORDER_color		equ	0x0028282800303030
+LIBRARY_BOSU_WINDOW_BORDER_THICKNESS_pixel equ 0x01
+LIBRARY_BOSU_WINDOW_BORDER_color equ 0x0028282800303030
 
-LIBRARY_BOSU_WINDOW_FLAG_flush			equ	1 << 0	; the window needs a redraw
+LIBRARY_BOSU_WINDOW_FLAG_flush equ 1 << 0 ; the window needs a redraw
 							; above 1, initialisation flags, interpreted only once
-LIBRARY_BOSU_WINDOW_FLAG_visible		equ	1 << 1	; the window is visible
-LIBRARY_BOSU_WINDOW_FLAG_fixed_xy		equ	1 << 2	; the window is fixed on the X,Y axes
-LIBRARY_BOSU_WINDOW_FLAG_fixed_z		equ	1 << 3	; the window is fixed on the Z axis
-LIBRARY_BOSU_WINDOW_FLAG_fragile		equ	1 << 4	; the window is hidden when an LMB or RMB action occurs
-LIBRARY_BOSU_WINDOW_FLAG_arbiter		equ	1 << 6	; superobject, e.g. decides on the full screen mode (the GUI is that by default)
+LIBRARY_BOSU_WINDOW_FLAG_visible equ 1 << 1 ; the window is visible
+LIBRARY_BOSU_WINDOW_FLAG_fixed_xy equ 1 << 2 ; the window is fixed on the X,Y axes
+LIBRARY_BOSU_WINDOW_FLAG_fixed_z equ 1 << 3 ; the window is fixed on the Z axis
+LIBRARY_BOSU_WINDOW_FLAG_fragile equ 1 << 4 ; the window is hidden when an LMB or RMB action occurs
+LIBRARY_BOSU_WINDOW_FLAG_arbiter equ 1 << 6 ; superobject, e.g. decides on the full screen mode (the GUI is that by default)
 							; above 7, meant for the GUI
-LIBRARY_BOSU_WINDOW_FLAG_unregistered		equ	1 << 8	; do not register the window in the window manager
-LIBRARY_BOSU_WINDOW_FLAG_header			equ	1 << 9	; show the window header
-LIBRARY_BOSU_WINDOW_FLAG_border			equ	1 << 10	; draw a border around the window
-LIBRARY_BOSU_WINDOW_FLAG_BUTTON_close		equ	1 << 11 ; window close button
-LIBRARY_BOSU_WINDOW_FLAG_BUTTON_min		equ	1 << 12 ; window minimize button
+LIBRARY_BOSU_WINDOW_FLAG_unregistered equ 1 << 8 ; do not register the window in the window manager
+LIBRARY_BOSU_WINDOW_FLAG_header equ 1 << 9 ; show the window header
+LIBRARY_BOSU_WINDOW_FLAG_border equ 1 << 10 ; draw a border around the window
+LIBRARY_BOSU_WINDOW_FLAG_BUTTON_close equ 1 << 11 ; window close button
+LIBRARY_BOSU_WINDOW_FLAG_BUTTON_min equ 1 << 12 ; window minimize button
 
-LIBRARY_BOSU_HEADER_HEIGHT_pixel		equ	18
-LIBRARY_BOSU_HEADER_PADDING_LEFT_pixel		equ	0x04
-LIBRARY_BOSU_HEADER_FOREGROUND_color		equ	0x00F5F5F5
-LIBRARY_BOSU_HEADER_BACKGROUND_color		equ	0x00202020
+LIBRARY_BOSU_HEADER_HEIGHT_pixel equ 18
+LIBRARY_BOSU_HEADER_PADDING_LEFT_pixel equ 0x04
+LIBRARY_BOSU_HEADER_FOREGROUND_color equ 0x00F5F5F5
+LIBRARY_BOSU_HEADER_BACKGROUND_color equ 0x00202020
 
-LIBRARY_BOSU_ELEMENT_TYPE_none			equ	0x00
-LIBRARY_BOSU_ELEMENT_TYPE_label			equ	0x01
-LIBRARY_BOSU_ELEMENT_TYPE_draw			equ	0x02
-LIBRARY_BOSU_ELEMENT_TYPE_chain			equ	0x03
-LIBRARY_BOSU_ELEMENT_TYPE_button		equ	0x04
-LIBRARY_BOSU_ELEMENT_TYPE_taskbar		equ	0x05
-LIBRARY_BOSU_ELEMENT_TYPE_button_close		equ	0x06
-LIBRARY_BOSU_ELEMENT_TYPE_button_minimize	equ	0x07
-LIBRARY_BOSU_ELEMENT_TYPE_button_maximize	equ	0x08
-LIBRARY_BOSU_ELEMENT_TYPE_corrupted		equ	0xFF
+LIBRARY_BOSU_ELEMENT_TYPE_none equ 0x00
+LIBRARY_BOSU_ELEMENT_TYPE_label equ 0x01
+LIBRARY_BOSU_ELEMENT_TYPE_draw equ 0x02
+LIBRARY_BOSU_ELEMENT_TYPE_chain equ 0x03
+LIBRARY_BOSU_ELEMENT_TYPE_button equ 0x04
+LIBRARY_BOSU_ELEMENT_TYPE_taskbar equ 0x05
+LIBRARY_BOSU_ELEMENT_TYPE_button_close equ 0x06
+LIBRARY_BOSU_ELEMENT_TYPE_button_minimize equ 0x07
+LIBRARY_BOSU_ELEMENT_TYPE_button_maximize equ 0x08
+LIBRARY_BOSU_ELEMENT_TYPE_corrupted equ 0xFF
 
-LIBRARY_BOSU_ELEMENT_BUTTON_FLAG_ALIGN_left	equ	00000000b
-LIBRARY_BOSU_ELEMENT_BUTTON_FLAG_ALIGN_right	equ	00000001b
-LIBRARY_BOSU_ELEMENT_BUTTON_FLAG_ALIGN_default	equ	00000010b
-LIBRARY_BOSU_ELEMENT_BUTTON_FOREGROUND_color	equ	0x00F5F5F5
-LIBRARY_BOSU_ELEMENT_BUTTON_BACKGROUND_color	equ	0x00303030
+LIBRARY_BOSU_ELEMENT_BUTTON_FLAG_ALIGN_left equ 00000000b
+LIBRARY_BOSU_ELEMENT_BUTTON_FLAG_ALIGN_right equ 00000001b
+LIBRARY_BOSU_ELEMENT_BUTTON_FLAG_ALIGN_default equ 00000010b
+LIBRARY_BOSU_ELEMENT_BUTTON_FOREGROUND_color equ 0x00F5F5F5
+LIBRARY_BOSU_ELEMENT_BUTTON_BACKGROUND_color equ 0x00303030
 
-LIBRARY_BOSU_ELEMENT_BUTTON_CLOSE_width		equ	LIBRARY_BOSU_HEADER_HEIGHT_pixel
+LIBRARY_BOSU_ELEMENT_BUTTON_CLOSE_width equ LIBRARY_BOSU_HEADER_HEIGHT_pixel
 
-LIBRARY_BOSU_ELEMENT_TASKBAR_PADDING_LEFT_pixel	equ	0x04
-LIBRARY_BOSU_ELEMENT_TASKBAR_FOREGROUND_color	equ	0x00F5F5F5
-LIBRARY_BOSU_ELEMENT_TASKBAR_BG_color		equ	0x00282828
-LIBRARY_BOSU_ELEMENT_TASKBAR_BG_HIDDEN_color	equ	0x00101010
+LIBRARY_BOSU_ELEMENT_TASKBAR_PADDING_LEFT_pixel equ 0x04
+LIBRARY_BOSU_ELEMENT_TASKBAR_FOREGROUND_color equ 0x00F5F5F5
+LIBRARY_BOSU_ELEMENT_TASKBAR_BG_color equ 0x00282828
+LIBRARY_BOSU_ELEMENT_TASKBAR_BG_HIDDEN_color equ 0x00101010
 
-LIBRARY_BOSU_ELEMENT_LABEL_FLAG_ALIGN_default	equ	00000000b
-LIBRARY_BOSU_ELEMENT_LABEL_FLAG_ALIGN_right	equ	00000001b
-LIBRARY_BOSU_ELEMENT_LABEL_FLAG_ALIGN_center	equ	00000010b
-LIBRARY_BOSU_ELEMENT_LABEL_FOREGROUND_color	equ	0x00BBBBBB
-LIBRARY_BOSU_ELEMENT_LABEL_BACKGROUND_color	equ	LIBRARY_BOSU_WINDOW_BACKGROUND_color
+LIBRARY_BOSU_ELEMENT_LABEL_FLAG_ALIGN_default equ 00000000b
+LIBRARY_BOSU_ELEMENT_LABEL_FLAG_ALIGN_right equ 00000001b
+LIBRARY_BOSU_ELEMENT_LABEL_FLAG_ALIGN_center equ 00000010b
+LIBRARY_BOSU_ELEMENT_LABEL_FOREGROUND_color equ 0x00BBBBBB
+LIBRARY_BOSU_ELEMENT_LABEL_BACKGROUND_color equ LIBRARY_BOSU_WINDOW_BACKGROUND_color
 
-struc	LIBRARY_BOSU_STRUCTURE_FIELD
-	.x					resb	2
-	.y					resb	2
-	.width					resb	2
-	.height					resb	2
+struc LIBRARY_BOSU_STRUCTURE_FIELD
+	.x resb 2
+	.y resb 2
+	.width resb 2
+	.height resb 2
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_WINDOW
-	.field					resb	LIBRARY_BOSU_STRUCTURE_FIELD.SIZE
-	.address				resb	8
+struc LIBRARY_BOSU_STRUCTURE_WINDOW
+	.field resb LIBRARY_BOSU_STRUCTURE_FIELD.SIZE
+	.address resb 8
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA
-	.size					resb	4
-	.flags					resb	2
-	.id					resb	8
-	.length					resb	1
-	.name					resb	LIBRARY_BOSU_WINDOW_NAME_length
+struc LIBRARY_BOSU_STRUCTURE_WINDOW_EXTRA
+	.size resb 4
+	.flags resb 2
+	.id resb 8
+	.length resb 1
+	.name resb LIBRARY_BOSU_WINDOW_NAME_length
 	;--- Bosu-specific data
-	.scanline_byte				resb	4
-	.reserved				resb	4
+	.scanline_byte resb 4
+	.reserved resb 4
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_TYPE
-	.set					resb	1
+struc LIBRARY_BOSU_STRUCTURE_TYPE
+	.set resb 1
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_ELEMENT
-	.size					resb	2
-	.field					resb	LIBRARY_BOSU_STRUCTURE_FIELD.SIZE
-	.event					resb	8
+struc LIBRARY_BOSU_STRUCTURE_ELEMENT
+	.size resb 2
+	.field resb LIBRARY_BOSU_STRUCTURE_FIELD.SIZE
+	.event resb 8
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL
-	.type					resb	LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
-	.element				resb	LIBRARY_BOSU_STRUCTURE_ELEMENT.SIZE
-	.flags					resb	1
-	.length					resb	1
+struc LIBRARY_BOSU_STRUCTURE_ELEMENT_LABEL
+	.type resb LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
+	.element resb LIBRARY_BOSU_STRUCTURE_ELEMENT.SIZE
+	.flags resb 1
+	.length resb 1
 	.string:
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_ELEMENT_BUTTON
-	.type					resb	LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
-	.element				resb	LIBRARY_BOSU_STRUCTURE_ELEMENT.SIZE
-	.flags					resb	1
-	.length					resb	1
+struc LIBRARY_BOSU_STRUCTURE_ELEMENT_BUTTON
+	.type resb LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
+	.element resb LIBRARY_BOSU_STRUCTURE_ELEMENT.SIZE
+	.flags resb 1
+	.length resb 1
 	.string:
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_ELEMENT_BUTTON_CLOSE
-	.type					resb	LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
-	.size					resb	2
-	.event					resb	8
+struc LIBRARY_BOSU_STRUCTURE_ELEMENT_BUTTON_CLOSE
+	.type resb LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
+	.size resb 2
+	.event resb 8
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_ELEMENT_BUTTON_MINIMIZE
-	.type					resb	LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
-	.size					resb	2
-	.event					resb	8
+struc LIBRARY_BOSU_STRUCTURE_ELEMENT_BUTTON_MINIMIZE
+	.type resb LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
+	.size resb 2
+	.event resb 8
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_ELEMENT_BUTTON_MAXIMIZE
-	.type					resb	LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
-	.size					resb	2
-	.event					resb	8
+struc LIBRARY_BOSU_STRUCTURE_ELEMENT_BUTTON_MAXIMIZE
+	.type resb LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
+	.size resb 2
+	.event resb 8
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR
-	.type					resb	LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
-	.element				resb	LIBRARY_BOSU_STRUCTURE_ELEMENT.SIZE
-	.background				resb	4
-	.length					resb	1
+struc LIBRARY_BOSU_STRUCTURE_ELEMENT_TASKBAR
+	.type resb LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
+	.element resb LIBRARY_BOSU_STRUCTURE_ELEMENT.SIZE
+	.background resb 4
+	.length resb 1
 	.string:
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_ELEMENT_DRAW
-	.type					resb	LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
-	.element				resb	LIBRARY_BOSU_STRUCTURE_ELEMENT.SIZE
+struc LIBRARY_BOSU_STRUCTURE_ELEMENT_DRAW
+	.type resb LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
+	.element resb LIBRARY_BOSU_STRUCTURE_ELEMENT.SIZE
 	.SIZE:
 endstruc
 
-struc	LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN
-	.type					resb	LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
-	.size					resb	2	; area size in bytes
-	.address				resb	8
+struc LIBRARY_BOSU_STRUCTURE_ELEMENT_CHAIN
+	.type resb LIBRARY_BOSU_STRUCTURE_TYPE.SIZE
+	.size resb 2 ; area size in bytes
+	.address resb 8
 	.SIZE:
 endstruc

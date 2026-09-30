@@ -1,6 +1,6 @@
 
 	; constants, variables, globals, structures, objects, macros
-	%include	"software/header.asm"
+	%include "software/header.asm"
 
-%define	PROGRAM_NAME	"ls"
-%define	PROGRAM_VERSION	"0.8"
+%define PROGRAM_NAME "ls"
+%define PROGRAM_VERSION "0.8"

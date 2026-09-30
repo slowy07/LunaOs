@@ -1,3 +1,3 @@
 
-hello_string	db	"Hello, World!"
+hello_string db "Hello, World!"
 hello_string_end:

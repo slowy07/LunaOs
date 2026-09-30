@@ -1,9 +1,9 @@
 
-	%include	"software/redia/config.asm"
+	%include "software/redia/config.asm"
 
 redia:
 	; terminate the program
-	xor	ax,	ax
-	int	KERNEL_SERVICE
+	xor ax, ax
+	int KERNEL_SERVICE
 
-	macro_debug	"software: redia"
+	macro_debug "software: redia"

@@ -1,6 +1,6 @@
 
 	; constants, variables, globals, structures, objects, macros
-	%include	"software/header.asm"
+	%include "software/header.asm"
 
-%define	PROGRAM_NAME		"redia"
-%define	PROGRAM_VERSION		"0.1"
+%define PROGRAM_NAME "redia"
+%define PROGRAM_VERSION "0.1"

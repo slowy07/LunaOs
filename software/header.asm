@@ -1,6 +1,6 @@
 
 	; constants, variables, globals, structures, objects, macros
-	%include	"kernel/header.asm"
+	%include "kernel/header.asm"
 
 ; 64 bit program code
 [bits 64]

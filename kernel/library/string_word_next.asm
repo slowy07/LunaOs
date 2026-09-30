@@ -9,30 +9,30 @@
 ;	or rbx = rcx if the CF flag is set
 library_string_word_next:
 	; preserve the original registers
-	push	rax
-	push	rcx
-	push	rsi
+	push rax
+	push rcx
+	push rsi
 
 	; counter
-	xor	ebx,	ebx
+	xor ebx, ebx
 
 .search:
 	; end of string?
-	dec	rcx
-	js	.not_found	; yes
+	dec rcx
+	js .not_found ; yes
 
 	; separator found?
-	cmp	byte [rsi],	al
-	je	.end	; yes, end of the string chunk
+	cmp byte [rsi], al
+	je .end ; yes, end of the string chunk
 
 	; move the pointer to the next character in the command buffer
-	inc	rsi
+	inc rsi
 
 	; increment the counter of characters belonging to the found word
-	inc	rbx
+	inc rbx
 
 	; keep counting
-	jmp	.search
+	jmp .search
 
 .not_found:
 	; no word found in the character string
@@ -40,11 +40,11 @@ library_string_word_next:
 
 .end:
 	; restore the original registers
-	pop	rsi
-	pop	rcx
-	pop	rax
+	pop rsi
+	pop rcx
+	pop rax
 
 	; return from the procedure
 	ret
 
-	macro_debug	"library_string_word_next"
+	macro_debug "library_string_word_next"

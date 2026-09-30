@@ -1,5 +1,5 @@
 
 zero_pit:
 	; Channel (00b), Access (11b), Operating (000b), Binary Mode (0b)
-	mov	al,	0x00
-	out	0x0043,	al
+	mov al, 0x00
+	out 0x0043, al

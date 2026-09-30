@@ -1,6 +1,6 @@
 
 ; DEBUG
-%define DEBUG
+ %define DEBUG
 
 ; PAGE
 STATIC_PAGE_mask equ 0xF000
@@ -143,54 +143,54 @@ STATIC_NUMBER_SYSTEM_hexadecimal equ 0x10
 
 STATIC_SEQUENCE_length_min equ 0x05
 
-%define STATIC_SEQUENCE_CLEAR "^[t0]" ; clear the console/terminal space
-%define STATIC_SEQUENCE_CURSOR "^[t1;__--]" ; set the cursor at the position xxxx(16),yyyy(16)
-%define STATIC_SEQUENCE_CURSOR_ENABLE "^[t2;0]" ; enable the text cursor
-%define STATIC_SEQUENCE_CURSOR_DISABLE "^[t2;1]" ; disable the text cursor
-%define STATIC_SEQUENCE_CURSOR_PUSH "^[t2;2]" ; remember the position
-%define STATIC_SEQUENCE_CURSOR_POP "^[t2;3]" ; restore the position
-%define STATIC_SEQUENCE_CURSOR_RESET "^[t2;4]" ; reset the cursor lock (force the cursor to be shown)
-%define STATIC_SEQUENCE_CURSOR_UP "^[t2;C]" ; move the cursor one position up
-%define STATIC_SEQUENCE_CURSOR_DOWN "^[t2;D]" ; move the cursor one position down
-%define STATIC_SEQUENCE_CURSOR_LEFT "^[t2;E]" ; move the cursor one position to the left
-%define STATIC_SEQUENCE_CURSOR_RIGHT "^[t2;F]" ; move the cursor one position to the right
-%define STATIC_SEQUENCE_CLEAR_LINE "^[t3]" ; clear the current line
-%define STATIC_SEQUENCE_SCROOL_UP "^[t4;__--]" ; scroll the terminal contents up by "__" lines, starting at the line "--"
-%define STATIC_SEQUENCE_SCROOL_DOWN "^[t5;__--]" ; scroll the terminal contents down by "__" lines, starting at the line "--"
-%define STATIC_SEQUENCE_NUMBER "^[t6;-=~________]" ; display the value "________" in the base "-" with the size prefix "=" and the value "~"
-%define STATIC_SEQUENCE_COLOR_DEFAULT "^[c07]" ; light gray color on a black background
-%define STATIC_SEQUENCE_COLOR_BLACK "^[c*0]"
-%define STATIC_SEQUENCE_COLOR_RED "^[c*1]"
-%define STATIC_SEQUENCE_COLOR_GREEN "^[c*2]"
-%define STATIC_SEQUENCE_COLOR_BROWN "^[c*3]"
-%define STATIC_SEQUENCE_COLOR_BLUE "^[c*4]"
-%define STATIC_SEQUENCE_COLOR_MAGENTA "^[c*5]"
-%define STATIC_SEQUENCE_COLOR_CYAN "^[c*6]"
-%define STATIC_SEQUENCE_COLOR_GRAY_LIGHT "^[c*7]"
-%define STATIC_SEQUENCE_COLOR_GRAY "^[c*8]"
-%define STATIC_SEQUENCE_COLOR_RED_LIGHT "^[c*9]"
-%define STATIC_SEQUENCE_COLOR_GREEN_LIGHT "^[c*A]"
-%define STATIC_SEQUENCE_COLOR_YELLOW "^[c*B]"
-%define STATIC_SEQUENCE_COLOR_BLUE_LIGHT "^[c*C]"
-%define STATIC_SEQUENCE_COLOR_MAGENTA_LIGHT "^[c*D]"
-%define STATIC_SEQUENCE_COLOR_CYAN_LIGHT "^[c*E]"
-%define STATIC_SEQUENCE_COLOR_WHITE "^[c*F]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_BLACK "^[c0*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_RED "^[c1*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_GREEN "^[c2*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_BROWN "^[c3*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_BLUE "^[c4*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_MAGENTA "^[c5*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_CYAN "^[c6*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_GRAY_LIGHT "^[c7*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_GRAY "^[c8*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_RED_LIGHT "^[c9*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_GREEN_LIGHT "^[cA*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_YELLOW "^[cB*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_BLUE_LIGHT "^[cC*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_MAGENTA_LIGHT "^[cD*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_CYAN_LIGHT "^[cE*]"
-%define STATIC_SEQUENCE_COLOR_BACKGROUND_WHITE "^[cF*]"
+ %define STATIC_SEQUENCE_CLEAR "^[t0]" ; clear the console/terminal space
+ %define STATIC_SEQUENCE_CURSOR "^[t1;__--]" ; set the cursor at the position xxxx(16),yyyy(16)
+ %define STATIC_SEQUENCE_CURSOR_ENABLE "^[t2;0]" ; enable the text cursor
+ %define STATIC_SEQUENCE_CURSOR_DISABLE "^[t2;1]" ; disable the text cursor
+ %define STATIC_SEQUENCE_CURSOR_PUSH "^[t2;2]" ; remember the position
+ %define STATIC_SEQUENCE_CURSOR_POP "^[t2;3]" ; restore the position
+ %define STATIC_SEQUENCE_CURSOR_RESET "^[t2;4]" ; reset the cursor lock (force the cursor to be shown)
+ %define STATIC_SEQUENCE_CURSOR_UP "^[t2;C]" ; move the cursor one position up
+ %define STATIC_SEQUENCE_CURSOR_DOWN "^[t2;D]" ; move the cursor one position down
+ %define STATIC_SEQUENCE_CURSOR_LEFT "^[t2;E]" ; move the cursor one position to the left
+ %define STATIC_SEQUENCE_CURSOR_RIGHT "^[t2;F]" ; move the cursor one position to the right
+ %define STATIC_SEQUENCE_CLEAR_LINE "^[t3]" ; clear the current line
+ %define STATIC_SEQUENCE_SCROOL_UP "^[t4;__--]" ; scroll the terminal contents up by "__" lines, starting at the line "--"
+ %define STATIC_SEQUENCE_SCROOL_DOWN "^[t5;__--]" ; scroll the terminal contents down by "__" lines, starting at the line "--"
+ %define STATIC_SEQUENCE_NUMBER "^[t6;-=~________]" ; display the value "________" in the base "-" with the size prefix "=" and the value "~"
+ %define STATIC_SEQUENCE_COLOR_DEFAULT "^[c07]" ; light gray color on a black background
+ %define STATIC_SEQUENCE_COLOR_BLACK "^[c*0]"
+ %define STATIC_SEQUENCE_COLOR_RED "^[c*1]"
+ %define STATIC_SEQUENCE_COLOR_GREEN "^[c*2]"
+ %define STATIC_SEQUENCE_COLOR_BROWN "^[c*3]"
+ %define STATIC_SEQUENCE_COLOR_BLUE "^[c*4]"
+ %define STATIC_SEQUENCE_COLOR_MAGENTA "^[c*5]"
+ %define STATIC_SEQUENCE_COLOR_CYAN "^[c*6]"
+ %define STATIC_SEQUENCE_COLOR_GRAY_LIGHT "^[c*7]"
+ %define STATIC_SEQUENCE_COLOR_GRAY "^[c*8]"
+ %define STATIC_SEQUENCE_COLOR_RED_LIGHT "^[c*9]"
+ %define STATIC_SEQUENCE_COLOR_GREEN_LIGHT "^[c*A]"
+ %define STATIC_SEQUENCE_COLOR_YELLOW "^[c*B]"
+ %define STATIC_SEQUENCE_COLOR_BLUE_LIGHT "^[c*C]"
+ %define STATIC_SEQUENCE_COLOR_MAGENTA_LIGHT "^[c*D]"
+ %define STATIC_SEQUENCE_COLOR_CYAN_LIGHT "^[c*E]"
+ %define STATIC_SEQUENCE_COLOR_WHITE "^[c*F]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_BLACK "^[c0*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_RED "^[c1*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_GREEN "^[c2*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_BROWN "^[c3*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_BLUE "^[c4*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_MAGENTA "^[c5*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_CYAN "^[c6*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_GRAY_LIGHT "^[c7*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_GRAY "^[c8*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_RED_LIGHT "^[c9*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_GREEN_LIGHT "^[cA*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_YELLOW "^[cB*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_BLUE_LIGHT "^[cC*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_MAGENTA_LIGHT "^[cD*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_CYAN_LIGHT "^[cE*]"
+ %define STATIC_SEQUENCE_COLOR_BACKGROUND_WHITE "^[cF*]"
 
 STATIC_COLOR_BACKGROUND_default equ STATIC_COLOR_black
 STATIC_COLOR_default equ STATIC_COLOR_gray_light
@@ -211,8 +211,8 @@ STATIC_COLOR_magenta_light equ 0x00FF00FF
 STATIC_COLOR_yellow equ 0x00FFFF00
 STATIC_COLOR_white equ 0x00FFFFFF
 
-struc STATIC_STRUCTURE_BLOCK
-	.data resb STATIC_PAGE_SIZE_byte - STATIC_QWORD_SIZE_byte
-	.link resb 8
-	.SIZE:
-endstruc
+ struc STATIC_STRUCTURE_BLOCK
+.data resb STATIC_PAGE_SIZE_byte - STATIC_QWORD_SIZE_byte
+.link resb 8
+.SIZE:
+ endstruc

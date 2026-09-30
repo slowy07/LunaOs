@@ -24,14 +24,14 @@ KERNEL_VFS_FILE_MODE_OTHER_execute_or_traverse equ 0000000000000001b
 KERNEL_VFS_FILE_MODE_OTHER_full_control equ 0000000000000111b
 
 ; knot structure in the root directory tree
-struc KERNEL_VFS_STRUCTURE_KNOT
-	.data resb 8
-	.size resb 8
-	.type resb 1
-	.length resb 1
-	.mode resb 2
-	.flags resb 2
-	.time_modified resb 8
-	.name resb 255
-	.SIZE:
-endstruc
+ struc KERNEL_VFS_STRUCTURE_KNOT
+.data resb 8
+.size resb 8
+.type resb 1
+.length resb 1
+.mode resb 2
+.flags resb 2
+.time_modified resb 8
+.name resb 255
+.SIZE:
+ endstruc

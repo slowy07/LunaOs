@@ -1,4 +1,4 @@
 
 moko_ipc:
-	; return from the procedure
-	ret
+ ; return from the procedure
+ ret

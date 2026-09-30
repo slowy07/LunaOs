@@ -1,10 +1,10 @@
 
-%macro macro_debug 1
-%ifdef DEBUG
-	jmp %%skip
+ %macro macro_debug 1
+ %ifdef DEBUG
+ jmp %%skip
 
-	db " [", %1, "] "
+ db " [", %1, "] "
 
-%%skip:
-%endif
-%endmacro
+ %%skip:
+ %endif
+ %endmacro

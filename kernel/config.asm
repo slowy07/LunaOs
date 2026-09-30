@@ -1,8 +1,8 @@
 
-%define KERNEL_name "LunaOs"
-%define KERNEL_version "0"
-%define KERNEL_revision "1403"
-%define KERNEL_architecture "x86_64"
+ %define KERNEL_name "LunaOs"
+ %define KERNEL_version "0"
+ %define KERNEL_revision "1403"
+ %define KERNEL_architecture "x86_64"
 
 KERNEL_BASE_address equ 0x0000000000100000
 

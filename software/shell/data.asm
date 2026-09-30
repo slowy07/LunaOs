@@ -4,9 +4,9 @@ shell_string_console_header_end:
 
 shell_pid_parent dq STATIC_EMPTY
 
-align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+ align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 shell_ipc_data:
-	times KERNEL_IPC_STRUCTURE.SIZE db STATIC_EMPTY
+ times KERNEL_IPC_STRUCTURE.SIZE db STATIC_EMPTY
 
 shell_string_cursor_reset db STATIC_SEQUENCE_CURSOR_ENABLE
 shell_string_cursor_reset_end:
@@ -22,7 +22,7 @@ shell_exec_path db "/bin/"
 shell_exec_path_end:
 
 shell_cache:
-	times SHELL_CACHE_SIZE_byte db STATIC_EMPTY
+ times SHELL_CACHE_SIZE_byte db STATIC_EMPTY
 
 shell_command_clear db "clear"
 shell_command_clear_end:
@@ -34,6 +34,6 @@ shell_command_cd_end:
 shell_command_unknown db STATIC_SEQUENCE_COLOR_GREEN_LIGHT, "?", STATIC_SCANCODE_NEW_LINE
 shell_command_unknown_end:
 
-align STATIC_QWORD_SIZE_byte, db STATIC_EMPTY
+ align STATIC_QWORD_SIZE_byte, db STATIC_EMPTY
 shell_stream_meta:
-	times KERNEL_STREAM_META_SIZE_byte db STATIC_EMPTY
+ times KERNEL_STREAM_META_SIZE_byte db STATIC_EMPTY

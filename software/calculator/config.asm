@@ -1,9 +1,9 @@
 
-	; constants, variables, globals, structures, objects, macros
-	%include "software/header.asm"
+ ; constants, variables, globals, structures, objects, macros
+ %include "software/header.asm"
 
-%define PROGRAM_NAME "calculator"
-%define PROGRAM_VERSION "0.3"
+ %define PROGRAM_NAME "calculator"
+ %define PROGRAM_VERSION "0.3"
 
 CALCULATOR_WINDOW_PADDING_pixel equ 0x01
 CALCULATOR_WINDOW_WIDTH_pixel equ CALCULATOR_WINDOW_ELEMENT_MARGIN_pixel + (CALCULATOR_WINDOW_ELEMENT_AREA_pixel * CALCULATOR_WINDOW_WIDTH_element)

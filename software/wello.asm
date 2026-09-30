@@ -1,11 +1,11 @@
  %include "config.asm"
  %include "kernel/config.asm"
 
-[BITS 64]
+ [BITS 64]
 
-[DEFAULT REL]
+ [DEFAULT REL]
 
-[ORG SOFTWARE_base_address]
+ [ORG SOFTWARE_base_address]
 
 wello:
 

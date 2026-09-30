@@ -14,7 +14,7 @@ kernel_wm_mouse_button_right_semaphore db STATIC_FALSE
 kernel_wm_object_id_semaphore db STATIC_FALSE
 kernel_wm_object_id dq 0x01 ; base value
 
-align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+ align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 
 kernel_wm_object_active_pointer dq STATIC_EMPTY
 kernel_wm_object_selected_pointer dq STATIC_EMPTY
@@ -32,23 +32,23 @@ kernel_wm_zone_list_address dq STATIC_EMPTY
 kernel_wm_zone_list_records dq STATIC_EMPTY
 
 kernel_wm_ipc_data:
-		times KERNEL_IPC_STRUCTURE.SIZE db STATIC_EMPTY
+ times KERNEL_IPC_STRUCTURE.SIZE db STATIC_EMPTY
 
 kernel_wm_object_framebuffer: dw 0
-							dw 0
-							dw STATIC_EMPTY
-							dw STATIC_EMPTY
-							dq STATIC_EMPTY
+ dw 0
+ dw STATIC_EMPTY
+ dw STATIC_EMPTY
+ dq STATIC_EMPTY
 .extra: dd STATIC_EMPTY
-							dq STATIC_EMPTY
+ dq STATIC_EMPTY
 
 kernel_wm_object_cursor: dw 0
-							dw 0
-							dw 12
-							dw 19
-							dq kernel_wm_object_cursor.data
+ dw 0
+ dw 12
+ dw 19
+ dq kernel_wm_object_cursor.data
 .extra: dd kernel_wm_object_cursor.end - kernel_wm_object_cursor.data
-							dw KERNEL_WM_OBJECT_FLAG_pointer | KERNEL_WM_OBJECT_FLAG_flush | KERNEL_WM_OBJECT_FLAG_visible
-							dq STATIC_EMPTY ; the cursor object has no identifier
+ dw KERNEL_WM_OBJECT_FLAG_pointer | KERNEL_WM_OBJECT_FLAG_flush | KERNEL_WM_OBJECT_FLAG_visible
+ dq STATIC_EMPTY ; the cursor object has no identifier
 .data: incbin "kernel/service/wm/gfx/cursor.data"
 .end:

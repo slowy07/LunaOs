@@ -32,10 +32,10 @@ kernel_apic_id_table times 0x0100 db STATIC_EMPTY
 ; output:
 ;	rax - identifier of the logical processor
 kernel_apic_id_get:
-	; macro
-	macro_apic_id_get
+ ; macro
+ macro_apic_id_get
 
-	; return from the procedure
-	ret
+ ; return from the procedure
+ ret
 
-	macro_debug "kernel_apic_id_get"
+ macro_debug "kernel_apic_id_get"

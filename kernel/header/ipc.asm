@@ -10,23 +10,23 @@ KERNEL_IPC_MOUSE_EVENT_left_release equ 1
 KERNEL_IPC_MOUSE_EVENT_right_press equ 2
 KERNEL_IPC_MOUSE_EVENT_right_release equ 3
 
-struc KERNEL_IPC_STRUCTURE
-	.ttl resb 8
-	.pid_source resb 8
-	.pid_destination resb 8
-	.type resb 1
-	.reserved resb 7
-	.data:
-	.size resb 8
-	.pointer resb 8
-	.other resb 32
-	.SIZE:
-endstruc
+ struc KERNEL_IPC_STRUCTURE
+.ttl resb 8
+.pid_source resb 8
+.pid_destination resb 8
+.type resb 1
+.reserved resb 7
+.data:
+.size resb 8
+.pointer resb 8
+.other resb 32
+.SIZE:
+ endstruc
 
-struc KERNEL_IPC_STRUCTURE_DATA_MOUSE
-	.x resb 2
-	.y resb 2
-	.object_id resb 8
-	.event resb 1
-	.reserved resb 7
-endstruc
+ struc KERNEL_IPC_STRUCTURE_DATA_MOUSE
+.x resb 2
+.y resb 2
+.object_id resb 8
+.event resb 1
+.reserved resb 7
+ endstruc

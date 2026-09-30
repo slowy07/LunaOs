@@ -20,81 +20,81 @@ console_string_sequence_color_cyan_light db STATIC_SEQUENCE_COLOR_CYAN_LIGHT
 console_string_sequence_color_white db STATIC_SEQUENCE_COLOR_WHITE
 
 console_table_color: dd STATIC_COLOR_black
-						dd STATIC_COLOR_red
-						dd STATIC_COLOR_green
-						dd STATIC_COLOR_brown
-						dd STATIC_COLOR_blue
-						dd STATIC_COLOR_magenta
-						dd STATIC_COLOR_cyan
-						dd STATIC_COLOR_gray_light
-						dd STATIC_COLOR_gray
-						dd STATIC_COLOR_red_light
-						dd STATIC_COLOR_green_light
-						dd STATIC_COLOR_yellow
-						dd STATIC_COLOR_blue_light
-						dd STATIC_COLOR_magenta_light
-						dd STATIC_COLOR_cyan_light
-						dd STATIC_COLOR_white
+ dd STATIC_COLOR_red
+ dd STATIC_COLOR_green
+ dd STATIC_COLOR_brown
+ dd STATIC_COLOR_blue
+ dd STATIC_COLOR_magenta
+ dd STATIC_COLOR_cyan
+ dd STATIC_COLOR_gray_light
+ dd STATIC_COLOR_gray
+ dd STATIC_COLOR_red_light
+ dd STATIC_COLOR_green_light
+ dd STATIC_COLOR_yellow
+ dd STATIC_COLOR_blue_light
+ dd STATIC_COLOR_magenta_light
+ dd STATIC_COLOR_cyan_light
+ dd STATIC_COLOR_white
 
-align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+ align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 console_cache_address dq STATIC_EMPTY
 
-align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+ align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 console_shell_pid dq STATIC_EMPTY
 
-align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+ align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 console_ipc_data:
-	times KERNEL_IPC_STRUCTURE.SIZE db STATIC_EMPTY
+ times KERNEL_IPC_STRUCTURE.SIZE db STATIC_EMPTY
 
-align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+ align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 console_stream_meta: dw CONSOLE_WINDOW_WIDTH_char
-						dw CONSOLE_WINDOW_HEIGHT_char
-						dw STATIC_EMPTY ; x
-						dw STATIC_EMPTY ; y
+ dw CONSOLE_WINDOW_HEIGHT_char
+ dw STATIC_EMPTY ; x
+ dw STATIC_EMPTY ; y
 
-align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+ align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 console_window dw STATIC_EMPTY ; position on the X axis
-						dw STATIC_EMPTY ; position on the Y axis
-						dw CONSOLE_WINDOW_WIDTH_pixel ; window width
-						dw CONSOLE_WINDOW_HEIGHT_pixel ; window height
-						dq STATIC_EMPTY ; pointer to the window data space (filled in by Bosu)
+ dw STATIC_EMPTY ; position on the Y axis
+ dw CONSOLE_WINDOW_WIDTH_pixel ; window width
+ dw CONSOLE_WINDOW_HEIGHT_pixel ; window height
+ dq STATIC_EMPTY ; pointer to the window data space (filled in by Bosu)
 .extra: dd STATIC_EMPTY ; size of the window data space in bytes (filled in by Bosu)
-						dw LIBRARY_BOSU_WINDOW_FLAG_visible | LIBRARY_BOSU_WINDOW_FLAG_header | LIBRARY_BOSU_WINDOW_FLAG_border | LIBRARY_BOSU_WINDOW_FLAG_BUTTON_close
-						dq STATIC_EMPTY ; window identifier (filled in by Bosu)
-						db 7
-						db "Console                        " ; fill up to 31 bytes with STATIC_SCANCODE_SPACE characters
-						dq STATIC_EMPTY ; window width in bytes (filled in by Bosu)
-.elements: ;-------------------------------
+ dw LIBRARY_BOSU_WINDOW_FLAG_visible | LIBRARY_BOSU_WINDOW_FLAG_header | LIBRARY_BOSU_WINDOW_FLAG_border | LIBRARY_BOSU_WINDOW_FLAG_BUTTON_close
+ dq STATIC_EMPTY ; window identifier (filled in by Bosu)
+ db 7
+ db "Console                        " ; fill up to 31 bytes with STATIC_SCANCODE_SPACE characters
+ dq STATIC_EMPTY ; window width in bytes (filled in by Bosu)
+.elements:
 .element_button_close: ; element "window close"
-						db LIBRARY_BOSU_ELEMENT_TYPE_button_close
-						dw .element_button_close_end - .element_button_close
-						dq console.close
-.element_button_close_end: ;-------------------------------
-						; element "terminal"
+ db LIBRARY_BOSU_ELEMENT_TYPE_button_close
+ dw .element_button_close_end - .element_button_close
+ dq console.close
+.element_button_close_end:
+ ; element "terminal"
 .element_terminal: db LIBRARY_BOSU_ELEMENT_TYPE_draw
-						dw .element_terminal_end - .element_terminal
-						dw 0 ; position on the X axis relative to the window data space
-						dw LIBRARY_BOSU_HEADER_HEIGHT_pixel
-						dw CONSOLE_WINDOW_WIDTH_pixel
-						dw CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel
-						dq STATIC_EMPTY ; data space pointer (filled in by Bosu)
-.element_terminal_end: ;-------------------------------
-						; end of the window elements
-						db STATIC_EMPTY
+ dw .element_terminal_end - .element_terminal
+ dw 0 ; position on the X axis relative to the window data space
+ dw LIBRARY_BOSU_HEADER_HEIGHT_pixel
+ dw CONSOLE_WINDOW_WIDTH_pixel
+ dw CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel
+ dq STATIC_EMPTY ; data space pointer (filled in by Bosu)
+.element_terminal_end:
+ ; end of the window elements
+ db STATIC_EMPTY
 console_window_end:
 
 console_terminal_table dq CONSOLE_WINDOW_WIDTH_pixel ; width in pixels
-						dq CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel ; height in pixels
-						dq STATIC_EMPTY ; pointer to the terminal data space
-						dq (CONSOLE_WINDOW_WIDTH_pixel * (CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel)) << KERNEL_VIDEO_DEPTH_shift ; size of the space in bytes
-						dq STATIC_NOTHING ; scanline in bytes - filled in during the program initialization
-						dq STATIC_EMPTY ; pointer to the virtual cursor position in the terminal data space
-						dq STATIC_EMPTY ; terminal width in characters
-						dq STATIC_EMPTY ; terminal height in characters
-						dq STATIC_EMPTY ; scanline_char
-						dq STATIC_EMPTY ; cursor position on the X.Y axis
-						dq STATIC_EMPTY ; virtual cursor lock
-						dd STATIC_COLOR_default ; font color
-						dd STATIC_COLOR_BACKGROUND_default ; background color
+ dq CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel ; height in pixels
+ dq STATIC_EMPTY ; pointer to the terminal data space
+ dq (CONSOLE_WINDOW_WIDTH_pixel * (CONSOLE_WINDOW_HEIGHT_pixel - LIBRARY_BOSU_HEADER_HEIGHT_pixel)) << KERNEL_VIDEO_DEPTH_shift ; size of the space in bytes
+ dq STATIC_NOTHING ; scanline in bytes - filled in during the program initialization
+ dq STATIC_EMPTY ; pointer to the virtual cursor position in the terminal data space
+ dq STATIC_EMPTY ; terminal width in characters
+ dq STATIC_EMPTY ; terminal height in characters
+ dq STATIC_EMPTY ; scanline_char
+ dq STATIC_EMPTY ; cursor position on the X.Y axis
+ dq STATIC_EMPTY ; virtual cursor lock
+ dd STATIC_COLOR_default ; font color
+ dd STATIC_COLOR_BACKGROUND_default ; background color
 
 console_terminal_cursor_position_save dq STATIC_EMPTY

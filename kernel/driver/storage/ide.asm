@@ -72,267 +72,267 @@ DRIVER_IDE_ERROR_media_changed equ 00100000b
 DRIVER_IDE_ERROR_uncorrectble_data equ 01000000b
 DRIVER_IDE_ERROR_bad_block equ 10000000b
 
-struc DRIVER_IDE_STRUCTURE_DEVICE
-	.channel resb 2
-	.drive resb 1
-	.size_sectors resb 8
-	.SIZE:
-endstruc
+ struc DRIVER_IDE_STRUCTURE_DEVICE
+.channel resb 2
+.drive resb 1
+.size_sectors resb 8
+.SIZE:
+ endstruc
 
 driver_ide_devices_count db STATIC_EMPTY
 
 ; set the array entry to a full address
-align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+ align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 driver_ide_devices:
-	times DRIVER_IDE_STRUCTURE_DEVICE.SIZE * 0x04 db STATIC_EMPTY
+ times DRIVER_IDE_STRUCTURE_DEVICE.SIZE * 0x04 db STATIC_EMPTY
 
 ; input:
 ;	al - MASTER or SLAVE device
 ;	dx - PRIMARY or SECONDARY channel
 driver_ide_init_drive:
-	; preserve the original registers
-	push rcx
-	push rax
-	push rdi
-	push rdx
+ ; preserve the original registers
+ push rcx
+ push rax
+ push rdi
+ push rdx
 
-	; select device X on channel Y
-	add dx, DRIVER_IDE_REGISTER_drive_OR_head
-	out dx, al
+ ; select device X on channel Y
+ add dx, DRIVER_IDE_REGISTER_drive_OR_head
+ out dx, al
 
-	; wait for the command to complete
-	call driver_ide_wait
+ ; wait for the command to complete
+ call driver_ide_wait
 
-	; send the IDENTIFY command	; channel
-	mov al, DRIVER_IDE_COMMAND_identify
-	mov dx, word [rsp]
-	add dx, DRIVER_IDE_REGISTER_command_OR_status
-	out dx, al
+ ; send the IDENTIFY command	; channel
+ mov al, DRIVER_IDE_COMMAND_identify
+ mov dx, word [rsp]
+ add dx, DRIVER_IDE_REGISTER_command_OR_status
+ out dx, al
 
-	; wait for the command to complete
-	call driver_ide_wait
+ ; wait for the command to complete
+ call driver_ide_wait
 
-	; fetch the status of device X on channel Y
-	in al, dx
+ ; fetch the status of device X on channel Y
+ in al, dx
 
-	; no device?
-	test al, al
-	jz .end ; yes
+ ; no device?
+ test al, al
+ jz .end ; yes
 
-	; no device?
-	cmp al, STATIC_MAX_unsigned
-	je .end ; yes
+ ; no device?
+ cmp al, STATIC_MAX_unsigned
+ je .end ; yes
 
-	; did an error occur on the device?
-	test al, DRIVER_IDE_STATUS_error
-	jnz .end ; yes
+ ; did an error occur on the device?
+ test al, DRIVER_IDE_STATUS_error
+ jnz .end ; yes
 
-	; receive the data pending from the IDENTIFY command
-	mov ecx, 256 ; 512 bytes
-	mov dx, word [rsp]
-	add dx, DRIVER_IDE_REGISTER_data
-	rep insw
+ ; receive the data pending from the IDENTIFY command
+ mov ecx, 256 ; 512 bytes
+ mov dx, word [rsp]
+ add dx, DRIVER_IDE_REGISTER_data
+ rep insw
 
-	; restore the pointer to the start of the working buffer
-	mov rdi, qword [rsp + STATIC_QWORD_SIZE_byte]
+ ; restore the pointer to the start of the working buffer
+ mov rdi, qword [rsp + STATIC_QWORD_SIZE_byte]
 
-	; does the device support the LBA Extended mode?
-	mov eax, dword [rdi + DRIVER_IDE_IDENTIFY_command_sets]
-	test eax, DRIVER_IDE_IDENTIFY_COMMAND_SETS_lba_extended
-	jz .end ; no
+ ; does the device support the LBA Extended mode?
+ mov eax, dword [rdi + DRIVER_IDE_IDENTIFY_command_sets]
+ test eax, DRIVER_IDE_IDENTIFY_COMMAND_SETS_lba_extended
+ jz .end ; no
 
-	; drive initialised, register it
-	mov rcx, driver_ide_devices
+ ; drive initialised, register it
+ mov rcx, driver_ide_devices
 
-	; PRIMARY channel?
-	mov dx, word [rsp]
-	cmp dx, DRIVER_IDE_CHANNEL_PRIMARY
-	je .primary ; yes
+ ; PRIMARY channel?
+ mov dx, word [rsp]
+ cmp dx, DRIVER_IDE_CHANNEL_PRIMARY
+ je .primary ; yes
 
-	; no, move on to the SECONDARY entry
-	add rcx, DRIVER_IDE_STRUCTURE_DEVICE.SIZE << STATIC_MULTIPLE_BY_2_shift
+ ; no, move on to the SECONDARY entry
+ add rcx, DRIVER_IDE_STRUCTURE_DEVICE.SIZE << STATIC_MULTIPLE_BY_2_shift
 
 .primary:
-	; MASTER drive?
-	mov al, byte [rsp + STATIC_QWORD_SIZE_byte * 0x02]
-	cmp al, DRIVER_IDE_DRIVE_master
-	je .master ; yes
+ ; MASTER drive?
+ mov al, byte [rsp + STATIC_QWORD_SIZE_byte * 0x02]
+ cmp al, DRIVER_IDE_DRIVE_master
+ je .master ; yes
 
-	; no, move on to the SLAVE entry
-	add rcx, DRIVER_IDE_STRUCTURE_DEVICE.SIZE
+ ; no, move on to the SLAVE entry
+ add rcx, DRIVER_IDE_STRUCTURE_DEVICE.SIZE
 
 .master:
-	; save the drive channel
-	mov word [rcx + DRIVER_IDE_STRUCTURE_DEVICE.channel], dx
+ ; save the drive channel
+ mov word [rcx + DRIVER_IDE_STRUCTURE_DEVICE.channel], dx
 
-	; save the drive device
-	mov byte [rcx + DRIVER_IDE_STRUCTURE_DEVICE.drive], al
+ ; save the drive device
+ mov byte [rcx + DRIVER_IDE_STRUCTURE_DEVICE.drive], al
 
-	; save the drive size in sectors
-	mov eax, dword [rdi + DRIVER_IDE_IDENTIFY_max_lba_extended]
-	mov qword [rcx + DRIVER_IDE_STRUCTURE_DEVICE.size_sectors], rax
+ ; save the drive size in sectors
+ mov eax, dword [rdi + DRIVER_IDE_IDENTIFY_max_lba_extended]
+ mov qword [rcx + DRIVER_IDE_STRUCTURE_DEVICE.size_sectors], rax
 
-	; drive registered
-	inc byte [rel driver_ide_devices_count]
+ ; drive registered
+ inc byte [rel driver_ide_devices_count]
 
 .end:
-	; restore the original registers
-	pop rdx
-	pop rdi
-	pop rax
-	pop rcx
+ ; restore the original registers
+ pop rdx
+ pop rdi
+ pop rax
+ pop rcx
 
-	; return from the procedure
-	ret
+ ; return from the procedure
+ ret
 
 driver_ide_wait:
-	; preserve the original registers
-	push rax
+ ; preserve the original registers
+ push rax
 
-	; fetch the system time stamp in microseconds
-	mov rax, qword [rel driver_rtc_microtime]
-	inc rax ; wait ~1ms
+ ; fetch the system time stamp in microseconds
+ mov rax, qword [rel driver_rtc_microtime]
+ inc rax ; wait ~1ms
 
 .wait:
-	; waited?
-	cmp rax, qword [rel driver_rtc_microtime]
-	jnb .wait ; no
+ ; waited?
+ cmp rax, qword [rel driver_rtc_microtime]
+ jnb .wait ; no
 
-	; restore the original registers
-	pop rax
+ ; restore the original registers
+ pop rax
 
-	; return from the procedure
-	ret
+ ; return from the procedure
+ ret
 
 driver_ide_init:
-	; preserve the original registers
-	push rax
-	push rdx
-	push rdi
+ ; preserve the original registers
+ push rax
+ push rdx
+ push rdi
 
-	; prepare the working buffer
-	call kernel_memory_alloc_page
+ ; prepare the working buffer
+ call kernel_memory_alloc_page
 
-	; disable the interrupts on the PRIMARY channel
-	mov al, DRIVER_IDE_CONTROL_nIEN
-	mov dx, DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
-	out dx, al
+ ; disable the interrupts on the PRIMARY channel
+ mov al, DRIVER_IDE_CONTROL_nIEN
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
+ out dx, al
 
-	; wait for the command to complete
-	mov dx, DRIVER_IDE_CHANNEL_PRIMARY
-	call driver_ide_pool
-	jc .next ; no devices on the channel
+ ; wait for the command to complete
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY
+ call driver_ide_pool
+ jc .next ; no devices on the channel
 
-	; switch the devices on the channel into RESET mode
-	mov al, DRIVER_IDE_CONTROL_SRST
-	mov dx, DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
-	out dx, al
-	; leave RESET mode
-	xor al, al
-	out dx, al
+ ; switch the devices on the channel into RESET mode
+ mov al, DRIVER_IDE_CONTROL_SRST
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
+ out dx, al
+ ; leave RESET mode
+ xor al, al
+ out dx, al
 
-	; wait for the command to complete
-	mov dx, DRIVER_IDE_CHANNEL_PRIMARY
-	call driver_ide_pool
+ ; wait for the command to complete
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY
+ call driver_ide_pool
 
-	; initialise the MASTER device on the PRIMARY channel
-	mov al, DRIVER_IDE_DRIVE_master
-	mov dx, DRIVER_IDE_CHANNEL_PRIMARY
-	call driver_ide_init_drive
+ ; initialise the MASTER device on the PRIMARY channel
+ mov al, DRIVER_IDE_DRIVE_master
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY
+ call driver_ide_init_drive
 
-	; initialise the SLAVE device on the PRIMARY channel
-	mov al, DRIVER_IDE_DRIVE_slave
-	mov dx, DRIVER_IDE_CHANNEL_PRIMARY
-	call driver_ide_init_drive
+ ; initialise the SLAVE device on the PRIMARY channel
+ mov al, DRIVER_IDE_DRIVE_slave
+ mov dx, DRIVER_IDE_CHANNEL_PRIMARY
+ call driver_ide_init_drive
 
 .next:
-	; disable the interrupts on the SECONDARY channel
-	mov al, DRIVER_IDE_CONTROL_nIEN
-	mov dx, DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
-	out dx, al
+ ; disable the interrupts on the SECONDARY channel
+ mov al, DRIVER_IDE_CONTROL_nIEN
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
+ out dx, al
 
-	; wait for the command to complete
-	mov dx, DRIVER_IDE_CHANNEL_SECONDARY
-	call driver_ide_pool
-	jc .end ; no devices on the channel
+ ; wait for the command to complete
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY
+ call driver_ide_pool
+ jc .end ; no devices on the channel
 
-	; switch the devices on the channel into RESET mode
-	mov al, DRIVER_IDE_CONTROL_SRST
-	mov dx, DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
-	out dx, al
-	; leave RESET mode
-	xor al, al
-	out dx, al
+ ; switch the devices on the channel into RESET mode
+ mov al, DRIVER_IDE_CONTROL_SRST
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
+ out dx, al
+ ; leave RESET mode
+ xor al, al
+ out dx, al
 
-	; wait for the command to complete
-	mov dx, DRIVER_IDE_CHANNEL_SECONDARY
-	call driver_ide_pool
+ ; wait for the command to complete
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY
+ call driver_ide_pool
 
-	; initialise the MASTER device on the SECONDARY channel
-	mov al, DRIVER_IDE_DRIVE_master
-	mov dx, DRIVER_IDE_CHANNEL_SECONDARY
-	call driver_ide_init_drive
+ ; initialise the MASTER device on the SECONDARY channel
+ mov al, DRIVER_IDE_DRIVE_master
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY
+ call driver_ide_init_drive
 
-	; initialise the SLAVE device on the SECONDARY channel
-	mov al, DRIVER_IDE_DRIVE_slave
-	mov dx, DRIVER_IDE_CHANNEL_SECONDARY
-	call driver_ide_init_drive
+ ; initialise the SLAVE device on the SECONDARY channel
+ mov al, DRIVER_IDE_DRIVE_slave
+ mov dx, DRIVER_IDE_CHANNEL_SECONDARY
+ call driver_ide_init_drive
 
 .end:
-	; release the working buffer
-	call kernel_memory_release_page
+ ; release the working buffer
+ call kernel_memory_release_page
 
-	; restore the original registers
-	pop rdi
-	pop rdx
-	pop rax
+ ; restore the original registers
+ pop rdi
+ pop rdx
+ pop rax
 
-	; return from the procedure
-	ret
+ ; return from the procedure
+ ret
 
 ; input:
 ;	dx - drive identifier
 driver_ide_pool:
-	; preserve the original registers
-	push rax
-	push rdx
+ ; preserve the original registers
+ push rax
+ push rdx
 
-	; defer the channel status check
-	add dx, DRIVER_IDE_REGISTER_channel_control_OR_altstatus
-	in al, dx
-	in al, dx
-	in al, dx
-	in al, dx
+ ; defer the channel status check
+ add dx, DRIVER_IDE_REGISTER_channel_control_OR_altstatus
+ in al, dx
+ in al, dx
+ in al, dx
+ in al, dx
 
-	; no devices?
-	test al, al
-	jz .error ; yes
+ ; no devices?
+ test al, al
+ jz .error ; yes
 
-	; no devices?
-	cmp al, STATIC_MAX_unsigned
-	jne .wait ; yes
+ ; no devices?
+ cmp al, STATIC_MAX_unsigned
+ jne .wait ; yes
 
 .error:
-	; flag, error
-	stc
+ ; flag, error
+ stc
 
-	; end of the procedure
-	jmp .end
+ ; end of the procedure
+ jmp .end
 
 .wait:
-	; fetch the state of the devices on the channel
-	in al, dx
-	and al, DRIVER_IDE_STATUS_busy | DRIVER_IDE_STATUS_ready
-	cmp al, DRIVER_IDE_STATUS_ready
-	jne .wait ; the devices are still not ready, wait
+ ; fetch the state of the devices on the channel
+ in al, dx
+ and al, DRIVER_IDE_STATUS_busy | DRIVER_IDE_STATUS_ready
+ cmp al, DRIVER_IDE_STATUS_ready
+ jne .wait ; the devices are still not ready, wait
 
-	; flaga, sukces
-	clc
+ ; flaga, sukces
+ clc
 
 .end:
-	; restore the original registers
-	pop rdx
-	pop rax
+ ; restore the original registers
+ pop rdx
+ pop rax
 
-	; return from the procedure
-	ret
+ ; return from the procedure
+ ret

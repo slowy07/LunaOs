@@ -19,16 +19,16 @@ KERNEL_TASK_FLAG_stream_in_bit equ 6
 KERNEL_TASK_FLAG_stream_out_bit equ 7
 KERNEL_TASK_FLAG_sleep_bit equ 8
 
-struc KERNEL_TASK_STRUCTURE_ENTRY
-	.pid resb 8 ; process identifier
-	.parent resb 8 ; parent process identifier
-	.cpu resb 8 ; identifier of the logical processor handling the process at a given time
-	.time resb 8 ; process run time relative to the uptime of the kernel
-	.apic resb 4 ; unused processor time
-	.memory resb 8 ; size of the occupied RAM space in pages (excluding the page tables)
-	.knot resb 8 ; pointer to the knot of the process working directory
-	.flags resb 2 ; process state flags
-	.length resb 1 ; number of characters in the process name
-	.name:
-	.SIZE:
-endstruc
+ struc KERNEL_TASK_STRUCTURE_ENTRY
+.pid resb 8 ; process identifier
+.parent resb 8 ; parent process identifier
+.cpu resb 8 ; identifier of the logical processor handling the process at a given time
+.time resb 8 ; process run time relative to the uptime of the kernel
+.apic resb 4 ; unused processor time
+.memory resb 8 ; size of the occupied RAM space in pages (excluding the page tables)
+.knot resb 8 ; pointer to the knot of the process working directory
+.flags resb 2 ; process state flags
+.length resb 1 ; number of characters in the process name
+.name:
+.SIZE:
+ endstruc

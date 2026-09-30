@@ -29,84 +29,84 @@ DRIVER_PCI_CLASS_SUBCLASS_network equ 0x0200
 ;	ecx - device
 ;	edx - function
 driver_pci_find_vendor_and_device:
-	; zachowaj oryginalne rejestry
-	push rbx
-	push rcx
-	push rdx
-	push rax
+ ; zachowaj oryginalne rejestry
+ push rbx
+ push rcx
+ push rdx
+ push rax
 
-	; bus 0
-	xor ebx, ebx
-	; device 0
-	xor ecx, ecx
-	; function 0
-	xor edx, edx
+ ; bus 0
+ xor ebx, ebx
+ ; device 0
+ xor ecx, ecx
+ ; function 0
+ xor edx, edx
 
 .next:
-	; read the Vendor & Device register
-	mov eax, DRIVER_PCI_REGISTER_vendor_and_device
-	call driver_pci_read
+ ; read the Vendor & Device register
+ mov eax, DRIVER_PCI_REGISTER_vendor_and_device
+ call driver_pci_read
 
-	; looking for Vendor and Device?
-	cmp eax, dword [rsp]
-	je .found ; yes
+ ; looking for Vendor and Device?
+ cmp eax, dword [rsp]
+ je .found ; yes
 
-	; next function
-	inc edx
+ ; next function
+ inc edx
 
-	; end of the functions scanned?
-	cmp edx, 0x0008
-	jb .next ; no
+ ; end of the functions scanned?
+ cmp edx, 0x0008
+ jb .next ; no
 
-	; next device on the bus
-	inc ecx
+ ; next device on the bus
+ inc ecx
 
-	; first function of the device
-	xor edx, edx
+ ; first function of the device
+ xor edx, edx
 
-	; end of the devices on this bus?
-	cmp ecx, 0x0020
-	jb .next ; no
+ ; end of the devices on this bus?
+ cmp ecx, 0x0020
+ jb .next ; no
 
-	; next bus
-	inc ebx
+ ; next bus
+ inc ebx
 
-	; first device on the bus
-	xor ecx, ecx
+ ; first device on the bus
+ xor ecx, ecx
 
-	; end of the available buses?
-	cmp ebx, 0x0100
-	jb .next ; no
+ ; end of the available buses?
+ cmp ebx, 0x0100
+ jb .next ; no
 
 .error:
-	; flag, error
-	stc
+ ; flag, error
+ stc
 
-	; end
-	jmp .end
+ ; end
+ jmp .end
 
 .found:
-	; read the Vendor & Device register
-	mov eax, DRIVER_PCI_REGISTER_bar0
-	call driver_pci_read
+ ; read the Vendor & Device register
+ mov eax, DRIVER_PCI_REGISTER_bar0
+ call driver_pci_read
 
-	; return the device location information
-	mov qword [rsp + STATIC_QWORD_SIZE_byte], rdx
-	mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x02], rcx
-	mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x03], rbx
+ ; return the device location information
+ mov qword [rsp + STATIC_QWORD_SIZE_byte], rdx
+ mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x02], rcx
+ mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x03], rbx
 
-	; flag, success
-	clc
+ ; flag, success
+ clc
 
 .end:
-	; restore the original registers
-	pop rax
-	pop rdx
-	pop rcx
-	pop rbx
+ ; restore the original registers
+ pop rax
+ pop rdx
+ pop rcx
+ pop rbx
 
-	; return from the procedure
-	ret
+ ; return from the procedure
+ ret
 
 ; input:
 ;	ax - Class & Subclass value to look for
@@ -116,83 +116,83 @@ driver_pci_find_vendor_and_device:
 ;	ecx - device
 ;	edx - function
 driver_pci_find_class_and_subclass:
-	; zachowaj oryginalne rejestry
-	push rbx
-	push rcx
-	push rdx
-	push rax
+ ; zachowaj oryginalne rejestry
+ push rbx
+ push rcx
+ push rdx
+ push rax
 
-	; bus 0
-	xor ebx, ebx
-	; device 0
-	xor ecx, ecx
-	; function 0
-	xor edx, edx
+ ; bus 0
+ xor ebx, ebx
+ ; device 0
+ xor ecx, ecx
+ ; function 0
+ xor edx, edx
 
 .next:
-	; read the Class & Subclass register
-	mov eax, DRIVER_PCI_REGISTER_class_and_subclass
-	call driver_pci_read
+ ; read the Class & Subclass register
+ mov eax, DRIVER_PCI_REGISTER_class_and_subclass
+ call driver_pci_read
 
-	; shift the value into AX
-	shr eax, STATIC_MOVE_HIGH_TO_AX_shift
+ ; shift the value into AX
+ shr eax, STATIC_MOVE_HIGH_TO_AX_shift
 
-	; IDE controller?
-	cmp ax, word [rsp]
-	je .found ; yes
+ ; IDE controller?
+ cmp ax, word [rsp]
+ je .found ; yes
 
-	; next function
-	inc edx
+ ; next function
+ inc edx
 
-	; end of the functions scanned?
-	cmp edx, 0x0008
-	jb .next ; no
+ ; end of the functions scanned?
+ cmp edx, 0x0008
+ jb .next ; no
 
-	; next device on the bus
-	inc ecx
+ ; next device on the bus
+ inc ecx
 
-	; first function of the device
-	xor edx, edx
+ ; first function of the device
+ xor edx, edx
 
-	; end of the devices on this bus?
-	cmp ecx, 0x0020
-	jb .next ; no
+ ; end of the devices on this bus?
+ cmp ecx, 0x0020
+ jb .next ; no
 
-	; next bus
-	inc ebx
+ ; next bus
+ inc ebx
 
-	; first device on the bus
-	xor ecx, ecx
+ ; first device on the bus
+ xor ecx, ecx
 
-	; end of the available buses?
-	cmp ebx, 0x0100
-	jb .next ; no
+ ; end of the available buses?
+ cmp ebx, 0x0100
+ jb .next ; no
 
 .error:
-	; flag, error
-	stc
+ ; flag, error
+ stc
 
-	; end
-	jmp .end
+ ; end
+ jmp .end
 
 .found:
-	; return the device location information
-	mov qword [rsp + STATIC_QWORD_SIZE_byte], rdx
-	mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x02], rcx
-	mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x03], rbx
+ ; return the device location information
+ mov qword [rsp + STATIC_QWORD_SIZE_byte], rdx
+ mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x02], rcx
+ mov qword [rsp + STATIC_QWORD_SIZE_byte * 0x03], rbx
 
-	; flag, success
-	clc
+ ; flag, success
+ clc
 
 .end:
-	; restore the original registers
-	pop rax
-	pop rdx
-	pop rcx
-	pop rbx
+ ; restore the original registers
+ pop rax
+ pop rdx
+ pop rcx
+ pop rbx
 
-	; return from the procedure
-	ret
+ ; return from the procedure
+ ret
 
 ; input:
 ;	eax - address of the register to read
@@ -202,44 +202,44 @@ driver_pci_find_class_and_subclass:
 ; output:
 ;	eax - response
 driver_pci_read:
-	; zachowaj oryginalne rejestry
-	push rbx
-	push rcx
-	push rdx
+ ; zachowaj oryginalne rejestry
+ push rbx
+ push rcx
+ push rdx
 
-	; set bit 31
-	or eax, 0x80000000
+ ; set bit 31
+ or eax, 0x80000000
 
-	; load the function number into bits 10..8
-	ror eax, 8
-	or al, dl
+ ; load the function number into bits 10..8
+ ror eax, 8
+ or al, dl
 
-	; load the device number into bits 15..11
-	ror eax, 3
-	or al, cl
+ ; load the device number into bits 15..11
+ ror eax, 3
+ or al, cl
 
-	; load the bus number into bits 23..16
-	ror eax, 5
-	or al, bl
+ ; load the bus number into bits 23..16
+ ror eax, 5
+ or al, bl
 
-	; register number in bits 7..2
-	rol eax, 16
+ ; register number in bits 7..2
+ rol eax, 16
 
-	; ask for the information in the given register
-	mov dx, DRIVER_PCI_PORT_command
-	out dx, eax ; send the command
+ ; ask for the information in the given register
+ mov dx, DRIVER_PCI_PORT_command
+ out dx, eax ; send the command
 
-	; receive the response
-	mov dx, DRIVER_PCI_PORT_data
-	in eax, dx
+ ; receive the response
+ mov dx, DRIVER_PCI_PORT_data
+ in eax, dx
 
-	; restore the original registers
-	pop rdx
-	pop rcx
-	pop rbx
+ ; restore the original registers
+ pop rdx
+ pop rcx
+ pop rbx
 
-	; return from the procedure
-	ret
+ ; return from the procedure
+ ret
 
 ; input:
 ;	eax - value
@@ -248,45 +248,45 @@ driver_pci_read:
 ;	cl - device
 ;	dl - funkcja
 driver_pci_write:
-	; zachowaj oryginalne rejestry
-	push rbx
-	push rcx
-	push rdx
-	push rax
+ ; zachowaj oryginalne rejestry
+ push rbx
+ push rcx
+ push rdx
+ push rax
 
-	; set bit 31
-	or eax, 0x80000000
+ ; set bit 31
+ or eax, 0x80000000
 
-	; load the function number into bits 10..8
-	ror eax, 8
-	or al, dl
+ ; load the function number into bits 10..8
+ ror eax, 8
+ or al, dl
 
-	; load the device number into bits 15..11
-	ror eax, 3
-	or al, cl
+ ; load the device number into bits 15..11
+ ror eax, 3
+ or al, cl
 
-	; load the bus number into bits 23..16
-	ror eax, 5
-	or al, bl
+ ; load the bus number into bits 23..16
+ ror eax, 5
+ or al, bl
 
-	; register number in bits 7..2
-	rol eax, 16
+ ; register number in bits 7..2
+ rol eax, 16
 
-	; ask for the data from the register
-	mov dx, DRIVER_PCI_PORT_command
-	out dx, eax
+ ; ask for the data from the register
+ mov dx, DRIVER_PCI_PORT_command
+ out dx, eax
 
-	; restore the value to be sent
-	pop rax
+ ; restore the value to be sent
+ pop rax
 
-	; send
-	mov dx, DRIVER_PCI_PORT_data
-	out dx, eax
+ ; send
+ mov dx, DRIVER_PCI_PORT_data
+ out dx, eax
 
-	; restore the original registers
-	pop rdx
-	pop rcx
-	pop rbx
+ ; restore the original registers
+ pop rdx
+ pop rcx
+ pop rbx
 
-	; return from the procedure
-	ret
+ ; return from the procedure
+ ret

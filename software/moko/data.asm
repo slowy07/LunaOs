@@ -1,11 +1,11 @@
 
-align STATIC_QWORD_SIZE_byte, db STATIC_EMPTY
+ align STATIC_QWORD_SIZE_byte, db STATIC_EMPTY
 moko_stream_meta:
-	times KERNEL_STREAM_META_SIZE_byte db STATIC_EMPTY
+ times KERNEL_STREAM_META_SIZE_byte db STATIC_EMPTY
 
-align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
+ align STATIC_QWORD_SIZE_byte, db STATIC_NOTHING
 moko_ipc_data:
-	times KERNEL_IPC_STRUCTURE.SIZE db STATIC_EMPTY
+ times KERNEL_IPC_STRUCTURE.SIZE db STATIC_EMPTY
 
 moko_modified_semaphore db STATIC_FALSE
 moko_status_semaphore db STATIC_FALSE
@@ -23,16 +23,16 @@ moko_document_line_count dq STATIC_EMPTY
 moko_document_show_from_line dq STATIC_EMPTY
 
 moko_string_document_cursor db "^[t1;"
-					.joint:
-					.x: dw STATIC_EMPTY
-					.y: dw STATIC_EMPTY
-						db "]"
+.joint:
+.x: dw STATIC_EMPTY
+.y: dw STATIC_EMPTY
+ db "]"
 moko_string_document_cursor_end:
 
 moko_string_cursor_at_menu_and_clear_screen db STATIC_SEQUENCE_CLEAR, "^[t1;"
-						dw STATIC_EMPTY
-						dw STATIC_MAX_unsigned
-						db "]"
+ dw STATIC_EMPTY
+ dw STATIC_MAX_unsigned
+ db "]"
 moko_string_cursor_at_menu_and_clear_screen_end:
 moko_string_cursor_at_begin_of_line db STATIC_SCANCODE_RETURN
 moko_string_cursor_at_begin_of_line_end:
@@ -46,9 +46,9 @@ moko_string_cursor_to_col_next db STATIC_SEQUENCE_CURSOR_RIGHT
 moko_string_cursor_to_col_next_end:
 
 moko_string_close db "^[t1;"
-						dw STATIC_MAX_unsigned
-						dw STATIC_MAX_unsigned
-						db "]"
+ dw STATIC_MAX_unsigned
+ dw STATIC_MAX_unsigned
+ db "]"
 moko_string_close_end:
 
 moko_string_cursor_save db STATIC_SEQUENCE_CURSOR_PUSH
@@ -83,15 +83,15 @@ moko_string_modified db STATIC_SEQUENCE_CLEAR_LINE, STATIC_SEQUENCE_COLOR_GRAY, 
 moko_string_modified_end:
 
 moko_string_scroll_up db "^[t4;"
-					.c: dw STATIC_EMPTY
-					.y: dw STATIC_EMPTY
-						db "]"
+.c: dw STATIC_EMPTY
+.y: dw STATIC_EMPTY
+ db "]"
 moko_string_scroll_up_end:
 
 moko_string_scroll_down db "^[t5;"
-					.c: dw STATIC_EMPTY
-					.y: dw STATIC_EMPTY
-						db "]"
+.c: dw STATIC_EMPTY
+.y: dw STATIC_EMPTY
+ db "]"
 moko_string_scroll_down_end:
 
 moko_key_ctrl_semaphore db STATIC_FALSE

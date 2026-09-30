@@ -6,7 +6,7 @@ KERNEL_GUI_WINDOW_WORKBENCH_BACKGROUND_color equ 0x00101010
 KERNEL_GUI_WINDOW_TASKBAR_HEIGHT_pixel equ 18
 KERNEL_GUI_WINDOW_TASKBAR_MARGIN_right equ 0x02
 
-struc KERNEL_GUI_STRUCTURE_TASKBAR
-	.counter resb 8
-	.list:
-endstruc
+ struc KERNEL_GUI_STRUCTURE_TASKBAR
+.counter resb 8
+.list:
+ endstruc

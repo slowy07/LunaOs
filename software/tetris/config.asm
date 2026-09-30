@@ -1,9 +1,9 @@
 
-	; constants, variables, globals, structures, objects, macros
-	%include "software/header.asm"
+ ; constants, variables, globals, structures, objects, macros
+ %include "software/header.asm"
 
-%define PROGRAM_NAME "tetris"
-%define PROGRAM_VERSION "0.1"
+ %define PROGRAM_NAME "tetris"
+ %define PROGRAM_VERSION "0.1"
 
 TETRIS_BRICK_START_POSITION_x equ 6
 TETRIS_BRICK_START_POSITION_y equ 0

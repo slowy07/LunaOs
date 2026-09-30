@@ -1,10 +1,10 @@
 
-	; constants, variables, globals, structures, objects, macros
-	%include "software/header.asm"
-	%include "software/console/header.asm"
+ ; constants, variables, globals, structures, objects, macros
+ %include "software/header.asm"
+ %include "software/console/header.asm"
 
-%define PROGRAM_NAME "console"
-%define PROGRAM_VERSION "0.27"
+ %define PROGRAM_NAME "console"
+ %define PROGRAM_VERSION "0.27"
 
 CONSOLE_WINDOW_WIDTH_char equ 60
 CONSOLE_WINDOW_HEIGHT_char equ 20

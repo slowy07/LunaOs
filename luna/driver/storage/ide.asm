@@ -263,7 +263,6 @@ driver_ide_init:
       ; point at the work area
       mov	rdi,	0x8000
 
-      ;-----------------------------------------------------------------------
       ; disable the interrupts on the PRIMARY channel
       mov	al,	DRIVER_IDE_CONTROL_nIEN
       mov	dx,	DRIVER_IDE_CHANNEL_PRIMARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
@@ -298,7 +297,6 @@ driver_ide_init:
       call	driver_ide_init_drive
 
 .next:
-      ;-----------------------------------------------------------------------
       ; disable the interrupts on the SECONDARY channel
       mov	al,	DRIVER_IDE_CONTROL_nIEN
       mov	dx,	DRIVER_IDE_CHANNEL_SECONDARY + DRIVER_IDE_REGISTER_channel_control_OR_altstatus
@@ -438,7 +436,6 @@ driver_ide_pool:
       push	rax
       push	rdx
 
-      ;-----------------------------------------------------------------------
       ; defer the channel status check
       add	dx,	DRIVER_IDE_REGISTER_channel_control_OR_altstatus
       in	al,	dx

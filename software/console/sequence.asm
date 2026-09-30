@@ -48,8 +48,6 @@ console_sequence:
 	; return from the procedure
 	ret
 
-;-------------------------------------------------------------------------------
-;-------------------------------------------------------------------------------
 .header:
 	; save the original registers
 	push	rax
@@ -88,8 +86,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	console_sequence.end
 
-;-------------------------------------------------------------------------------
-;-------------------------------------------------------------------------------
 .color:
 	%strlen	THIS_SEQUENCE_LENGTH STATIC_SEQUENCE_COLOR_DEFAULT
 
@@ -155,8 +151,6 @@ console_sequence:
 	; return from the subprocedure
 	ret
 
-;-------------------------------------------------------------------------------
-;-------------------------------------------------------------------------------
 .terminal:
 	; clear the character space?
 	cmp	byte [rsi + STATIC_BYTE_SIZE_byte * 0x03],	"0"
@@ -189,7 +183,6 @@ console_sequence:
 	; sequence not recognized or corrupted
 	jmp	console_sequence.error
 
-;-------------------------------------------------------------------------------
 .terminal_number:
 	%strlen	THIS_SEQUENCE_LENGTH STATIC_SEQUENCE_NUMBER
 
@@ -217,7 +210,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	console_sequence.end
 
-;-------------------------------------------------------------------------------
 .terminal_scroll_up:
 	%strlen	THIS_SEQUENCE_LENGTH STATIC_SEQUENCE_SCROOL_UP
 
@@ -243,7 +235,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	console_sequence.end
 
-;-------------------------------------------------------------------------------
 .terminal_scroll_down:
 	%strlen	THIS_SEQUENCE_LENGTH STATIC_SEQUENCE_SCROOL_DOWN
 
@@ -269,7 +260,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	console_sequence.end
 
-;-------------------------------------------------------------------------------
 .terminal_line_clear:
 	%strlen	THIS_SEQUENCE_LENGTH STATIC_SEQUENCE_CLEAR
 
@@ -284,7 +274,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	console_sequence.end
 
-;-------------------------------------------------------------------------------
 .terminal_clear:
 	%strlen	THIS_SEQUENCE_LENGTH STATIC_SEQUENCE_CLEAR
 
@@ -298,7 +287,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	console_sequence.end
 
-;-------------------------------------------------------------------------------
 .terminal_cursor_position:
 	%strlen	THIS_SEQUENCE_LENGTH STATIC_SEQUENCE_CURSOR
 
@@ -346,7 +334,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	console_sequence.end
 
-;-------------------------------------------------------------------------------
 .terminal_cursor_visibility:
 	; enable the cursor?
 	cmp	byte [rsi + STATIC_BYTE_SIZE_byte * 0x05],	"0"
@@ -395,7 +382,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	console_sequence.end
 
-;-------------------------------------------------------------------------------
 .terminal_cursor_visibility_reset:
 	; reset the lock counter
 	mov	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.lock],	STATIC_EMPTY
@@ -406,7 +392,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	.terminal_cursor_visibility_end
 
-;-------------------------------------------------------------------------------
 .terminal_cursor_visibility_hide:
 	; hide the text cursor
 	macro_library	LIBRARY_STRUCTURE_ENTRY.terminal_cursor_disable
@@ -414,7 +399,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	.terminal_cursor_visibility_end
 
-;-------------------------------------------------------------------------------
 .terminal_cursor_visibility_show:
 	; show the text cursor
 	macro_library	LIBRARY_STRUCTURE_ENTRY.terminal_cursor_enable
@@ -422,7 +406,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	.terminal_cursor_visibility_end
 
-;-------------------------------------------------------------------------------
 .terminal_cursor_visibility_remember:
 	; fetch the current cursor position in the terminal space
 	mov	rax,	qword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor]
@@ -433,7 +416,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	.terminal_cursor_visibility_end
 
-;-------------------------------------------------------------------------------
 .terminal_cursor_visibility_restore:
 	; hide the text cursor
 	macro_library	LIBRARY_STRUCTURE_ENTRY.terminal_cursor_disable
@@ -451,7 +433,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	.terminal_cursor_visibility_end
 
-;-------------------------------------------------------------------------------
 .terminal_cursor_visibility_move_up:
 	; fetch the current cursor position on the Y axis
 	mov	eax,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor + LIBRARY_TERMINAL_STURCTURE_CURSOR.y]
@@ -470,7 +451,6 @@ console_sequence:
 	; return from the subprocedure
 	jmp	.terminal_cursor_visibility_moved
 
-;-------------------------------------------------------------------------------
 .terminal_cursor_visibility_move_down:
 	; fetch the current cursor position on the Y axis
 	mov	eax,	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor + LIBRARY_TERMINAL_STURCTURE_CURSOR.y]
@@ -497,18 +477,15 @@ console_sequence:
 	; return from the subprocedure
 	jmp	.terminal_cursor_visibility_moved
 
-;-------------------------------------------------------------------------------
 .terminal_cursor_visibility_move_left:
 
 	; return from the subprocedure
 	jmp	.terminal_cursor_visibility_end
-;-------------------------------------------------------------------------------
 .terminal_cursor_visibility_move_right:
 
 	; return from the subprocedure
 	jmp	.terminal_cursor_visibility_end
 
-;-------------------------------------------------------------------------------
 .terminal_cursor_visibility_moved:
 	; set the cursor at the position
 	macro_library	LIBRARY_STRUCTURE_ENTRY.terminal_cursor_set

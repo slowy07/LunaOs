@@ -6,7 +6,6 @@ LIBRARY_BOSU_WINDOW_BACKGROUND_color		equ	0x00151515
 LIBRARY_BOSU_WINDOW_BORDER_THICKNESS_pixel	equ	0x01
 LIBRARY_BOSU_WINDOW_BORDER_color		equ	0x0028282800303030
 
-;-------------------------------------------------------------------------------
 LIBRARY_BOSU_WINDOW_FLAG_flush			equ	1 << 0	; the window needs a redraw
 							; above 1, initialisation flags, interpreted only once
 LIBRARY_BOSU_WINDOW_FLAG_visible		equ	1 << 1	; the window is visible
@@ -20,7 +19,6 @@ LIBRARY_BOSU_WINDOW_FLAG_header			equ	1 << 9	; show the window header
 LIBRARY_BOSU_WINDOW_FLAG_border			equ	1 << 10	; draw a border around the window
 LIBRARY_BOSU_WINDOW_FLAG_BUTTON_close		equ	1 << 11 ; window close button
 LIBRARY_BOSU_WINDOW_FLAG_BUTTON_min		equ	1 << 12 ; window minimize button
-;-------------------------------------------------------------------------------
 
 LIBRARY_BOSU_HEADER_HEIGHT_pixel		equ	18
 LIBRARY_BOSU_HEADER_PADDING_LEFT_pixel		equ	0x04

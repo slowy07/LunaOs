@@ -1,13 +1,11 @@
 ;===============================================================================
 
-	;-----------------------------------------------------------------------
 	%include	"kernel/service/network/config.asm"
 	%include	"kernel/service/network/data.asm"
 	%include	"kernel/service/network/checksum.asm"
 	%include	"kernel/service/network/arp.asm"
 	%include	"kernel/service/network/icmp.asm"
 	%include	"kernel/service/network/tcp.asm"
-	;-----------------------------------------------------------------------
 
 ;===============================================================================
 service_network:

@@ -33,13 +33,11 @@ calculator_window:					dw	STATIC_EMPTY	; position on the X axis
 						dq	STATIC_EMPTY	; window width in bytes (filled in by Bosu)
 .elements:					;-------------------------------
 						; element "window close"
-						;-------------------------------
 .element_button_close:				db	LIBRARY_BOSU_ELEMENT_TYPE_button_close
 						dw	.element_button_close_end - .element_button_close
 						dq	calculator.close
 .element_button_close_end:			;-------------------------------
 						; element "label operation"
-						;-------------------------------
 .element_label_operation:			db	LIBRARY_BOSU_ELEMENT_TYPE_label
 						dw	.element_label_operation_end - .element_label_operation
 						dw	CALCULATOR_WINDOW_PADDING_pixel
@@ -53,7 +51,6 @@ calculator_window:					dw	STATIC_EMPTY	; position on the X axis
 times	CALCULATOR_INPUT_OPERATION_WIDTH_char - 0x01	db	STATIC_EMPTY
 .element_label_operation_end:			;-------------------------------
 						; element "label value"
-						;-------------------------------
 .element_label_value:				db	LIBRARY_BOSU_ELEMENT_TYPE_label
 						dw	.element_label_value_end - .element_label_value
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_INPUT_OPERATION_WIDTH_pixel
@@ -67,7 +64,6 @@ times	CALCULATOR_INPUT_OPERATION_WIDTH_char - 0x01	db	STATIC_EMPTY
 times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 .element_label_value_end:			;-------------------------------
 						; element "button C"
-						;-------------------------------
 .element_button_C:				db	LIBRARY_BOSU_ELEMENT_TYPE_button	; type
 						dw	.element_button_C_end - .element_button_C	; size of the element
 						dw	CALCULATOR_WINDOW_PADDING_pixel	; x
@@ -80,7 +76,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"C"	; string of characters representing the button name
 .element_button_C_end:				;-------------------------------
 						; element "button 7"
-						;-------------------------------
 .element_button_7:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_7_end - .element_button_7
 						dw	CALCULATOR_WINDOW_PADDING_pixel
@@ -93,7 +88,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"7"
 .element_button_7_end:				;-------------------------------
 						; element "button 4"
-						;-------------------------------
 .element_button_4:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_4_end - .element_button_4
 						dw	CALCULATOR_WINDOW_PADDING_pixel
@@ -106,7 +100,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"4"
 .element_button_4_end:				;-------------------------------
 						; element "button 1"
-						;-------------------------------
 .element_button_1:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_1_end - .element_button_1
 						dw	CALCULATOR_WINDOW_PADDING_pixel
@@ -119,7 +112,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"1"
 .element_button_1_end:				;-------------------------------
 						; element "button 0"
-						;-------------------------------
 .element_button_0:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_0_end - .element_button_0
 						dw	CALCULATOR_WINDOW_PADDING_pixel
@@ -132,7 +124,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"0"
 .element_button_0_end:				;-------------------------------
 						; element "button DIVIDE"
-						;-------------------------------
 .element_button_DIVIDE:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_DIVIDE_end - .element_button_DIVIDE
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel
@@ -145,7 +136,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"/"
 .element_button_DIVIDE_end:			;-------------------------------
 						; element "button 8"
-						;-------------------------------
 .element_button_8:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_8_end - .element_button_8
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel
@@ -158,7 +148,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"8"
 .element_button_8_end:				;-------------------------------
 						; element "button 5"
-						;-------------------------------
 .element_button_5:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_5_end - .element_button_5
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel
@@ -171,7 +160,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"5"
 .element_button_5_end:				;-------------------------------
 						; element "button 2"
-						;-------------------------------
 .element_button_2:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_2_end - .element_button_2
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel
@@ -184,7 +172,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"2"
 .element_button_2_end:				;-------------------------------
 						; element "button MULTIPLY"
-						;-------------------------------
 .element_button_MULTIPLY:			db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_MULTIPLY_end - .element_button_MULTIPLY
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel * 0x02
@@ -197,7 +184,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"*"
 .element_button_MULTIPLY_end:			;-------------------------------
 						; element "button 9"
-						;-------------------------------
 .element_button_9:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_9_end - .element_button_9
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel * 0x02
@@ -210,7 +196,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"9"
 .element_button_9_end:				;-------------------------------
 						; element "button 6"
-						;-------------------------------
 .element_button_6:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_6_end - .element_button_6
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel * 0x02
@@ -223,7 +208,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"6"
 .element_button_6_end:				;-------------------------------
 						; element "button 3"
-						;-------------------------------
 .element_button_3:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_3_end - .element_button_3
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel * 0x02
@@ -236,7 +220,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"3"
 .element_button_3_end:				;-------------------------------
 						; element "button DOT"
-						;-------------------------------
 .element_button_DOT:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_DOT_end - .element_button_DOT
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel * 0x02
@@ -249,7 +232,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	","
 .element_button_DOT_end:			;-------------------------------
 						; element "button SUB"
-						;-------------------------------
 .element_button_SUB:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_SUB_end - .element_button_SUB
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel * 0x03
@@ -262,7 +244,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"-"
 .element_button_SUB_end:			;-------------------------------
 						; element "button ADD"
-						;-------------------------------
 .element_button_ADD:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_ADD_end - .element_button_ADD
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel * 0x03
@@ -275,7 +256,6 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"+"
 .element_button_ADD_end:			;-------------------------------
 						; element "button RESULT"
-						;-------------------------------
 .element_button_RESULT:				db	LIBRARY_BOSU_ELEMENT_TYPE_button
 						dw	.element_button_RESULT_end - .element_button_RESULT
 						dw	CALCULATOR_WINDOW_PADDING_pixel + CALCULATOR_WINDOW_ELEMENT_AREA_pixel * 0x03
@@ -288,6 +268,5 @@ times	CALCULATOR_INPUT_VALUE_WIDTH_char - 0x01	db	STATIC_EMPTY
 						db	"="
 .element_button_RESULT_end:			;-------------------------------
 						; end of the window elements
-						;-------------------------------
 						db	STATIC_EMPTY
 calculator_window_end:

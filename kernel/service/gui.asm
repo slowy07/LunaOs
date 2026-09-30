@@ -1,16 +1,11 @@
 ;===============================================================================
 
-	;-----------------------------------------------------------------------
 	; constants, variables, globals, structures, objects
-	;-----------------------------------------------------------------------
 	%include	"kernel/service/gui/config.asm"
-	;-----------------------------------------------------------------------
 
 ;===============================================================================
 kernel_gui:
-	;-----------------------------------------------------------------------
 	; initialisation of the graphical interface
-	;-----------------------------------------------------------------------
 	%include	"kernel/service/gui/init.asm"
 
 .loop:
@@ -29,13 +24,11 @@ kernel_gui:
 	; return to the main loop
 	jmp	.loop
 
-	;-----------------------------------------------------------------------
 	%include	"kernel/service/gui/data.asm"
 	%include	"kernel/service/gui/clock.asm"
 	%include	"kernel/service/gui/ipc.asm"
 	%include	"kernel/service/gui/event.asm"
 	%include	"kernel/service/gui/taskbar.asm"
-	;-----------------------------------------------------------------------
 
 	macro_debug	"kernel_gui"
 

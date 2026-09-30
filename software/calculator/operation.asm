@@ -74,7 +74,6 @@ calculator_operation_compose:
 	cmp	r12b,	STATIC_FALSE
 	je	.no_result	; no
 
-	;-----------------------------------------------------------------------
 
 	finit	; reset the coprocessor
 	fld	qword [calculator_value_first]
@@ -251,7 +250,6 @@ calculator_operation:
 	cmp	ax,	STATIC_SCANCODE_RETURN
 	jne	.error	; no
 
-;-------------------------------------------------------------------------------
 .result:
 	; load the value into the variable
 	call	calculator_operation_insert
@@ -266,7 +264,6 @@ calculator_operation:
 	; end of the operation handling
 	jmp	.preserve
 
-;-------------------------------------------------------------------------------
 .backspace:
 	; does the value string contain only a single digit/comma?
 	cmp	cl,	STATIC_BYTE_SIZE_byte
@@ -296,7 +293,6 @@ calculator_operation:
 	; end of the operation handling
 	jmp	.end
 
-;-------------------------------------------------------------------------------
 .add:
 	; load the value into the variable
 	call	calculator_operation_insert
@@ -311,18 +307,14 @@ calculator_operation:
 	; end of the procedure
 	jmp	.preserve
 
-;-------------------------------------------------------------------------------
 .sub:
 
-;-------------------------------------------------------------------------------
 .multiply:
 
-;-------------------------------------------------------------------------------
 .divide:
 	; end of the operation handling
 	jmp	.end
 
-;-------------------------------------------------------------------------------
 .preserve:
 	; clear the value before modifying it
 	mov	r13b,	STATIC_TRUE

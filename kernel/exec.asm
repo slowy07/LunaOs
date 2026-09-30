@@ -59,7 +59,6 @@ kernel_exec:
 	; save the address
 	mov	r11,	rdi
 
-	;-----------------------------------------------------------------------
 	; prepare the space for the code area of the process
 	mov	rax,	SOFTWARE_BASE_address
 	mov	bx,	KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write | KERNEL_PAGE_FLAG_user
@@ -67,7 +66,6 @@ kernel_exec:
 	call	kernel_page_map_logical
 	jc	.error
 
-	;-----------------------------------------------------------------------
 	; prepare the space for the binary memory map of the process
 	shl	r12,	STATIC_PAGE_SIZE_shift
 	add	rax,	r12	; behind the code area of the process
@@ -95,7 +93,6 @@ kernel_exec:
 	add	rcx,	KERNEL_MEMORY_MAP_SIZE_page
 	call	kernel_memory_secure
 
-	;-----------------------------------------------------------------------
 	; prepare the space for the stack of the process
 	mov	rax,	KERNEL_TASK_STACK_address
 	or	bx,	KERNEL_PAGE_FLAG_user
@@ -103,7 +100,6 @@ kernel_exec:
 	call	kernel_page_map_logical
 	jc	.error
 
-	;-----------------------------------------------------------------------
 	; save the passed arguments on the stack of the process
 
 	; size of the list of the passed arguments in Bytes
@@ -139,7 +135,6 @@ kernel_exec:
 	rep	movsb	; copy
 
 .no_arguments:
-	;-----------------------------------------------------------------------
 	; prepare the space for the context stack (belongs to the kernel)
 	mov	rax,	SOFTWARE_BASE_address - KERNEL_STACK_SIZE_byte
 	mov	rbx,	KERNEL_PAGE_FLAG_available | KERNEL_PAGE_FLAG_write
@@ -180,7 +175,6 @@ kernel_exec:
 	; restore the pointer to the file spool
 	mov	rsi,	qword [rsp]
 
-	;-----------------------------------------------------------------------
 	; switch the memory space to the process
 	mov	rax,	cr3
 	mov	cr3,	r11
@@ -192,7 +186,6 @@ kernel_exec:
 
 	; restore the memory space to the parent
 	mov	cr3,	rax
-	;-----------------------------------------------------------------------
 
 	; insert the process into the task queue
 	mov	eax,	KERNEL_ERROR_memory_low	; error code

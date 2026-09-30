@@ -35,7 +35,6 @@ service_network_arp:
 	call	kernel_memory_alloc_page
 	jc	.error	; no free space, do not answer
 
-	;-----------------------------------------------------------------------
 	; fill the frames with default values
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.type],	SERVICE_NETWORK_FRAME_ETHERNET_TYPE_arp
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_ARP.htype],	SERVICE_NETWORK_FRAME_ARP_HTYPE_ethernet

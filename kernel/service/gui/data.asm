@@ -55,13 +55,10 @@ kernel_gui_window_taskbar		dw	0	; position on the X axis
 					dq	STATIC_EMPTY	; window width in Bytes
 .elements:				;---------------------------------------
 					; element "chain 0"
-					;---------------------------------------
 .element_chain_0:			db	LIBRARY_BOSU_ELEMENT_TYPE_chain
 					dw	STATIC_EMPTY	; size of the chain space in Bytes
 					dq	STATIC_EMPTY	; address of the chain space
-					;---------------------------------------
 					; element "clock label"
-					;---------------------------------------
 .element_label_clock:			db	LIBRARY_BOSU_ELEMENT_TYPE_label
 					dw	.element_label_clock_end - .element_label_clock ; element size in Bytes
 					dw	0	; position on the X axis relative to the window
@@ -77,7 +74,6 @@ kernel_gui_window_taskbar		dw	0	; position on the X axis
 .element_label_clock_string_minute:	db	"00  "	; why two spaces?
 .element_label_clock_end:		;---------------------------------------
 					; end of the window elements
-					;---------------------------------------
 					db	LIBRARY_BOSU_ELEMENT_TYPE_none
 kernel_gui_window_taskbar_end:
 
@@ -97,7 +93,6 @@ kernel_gui_window_menu			dw	160	; position on the X axis relative to the cursor 
 					dq	STATIC_EMPTY	; window width in Bytes
 .elements:				;---------------------------------------
 					; element "label 0"
-					;---------------------------------------
 .element_label_0:			db	LIBRARY_BOSU_ELEMENT_TYPE_label
 					dw	.element_label_0_end - .element_label_0 ; element size in Bytes
 					dw	1	; position on the X axis relative to the window data space
@@ -110,7 +105,6 @@ kernel_gui_window_menu			dw	160	; position on the X axis relative to the cursor 
 .element_label_0_string:		db	"Console"
 .element_label_0_end:			;---------------------------------------
 					; element "label 1"
-					;---------------------------------------
 .element_label_1:			db	LIBRARY_BOSU_ELEMENT_TYPE_label
 					dw	.element_label_1_end - .element_label_1 ; element size in Bytes
 					dw	1	; position on the X axis relative to the window data space
@@ -123,7 +117,6 @@ kernel_gui_window_menu			dw	160	; position on the X axis relative to the cursor 
 .element_label_1_string:		db	"Calculator"
 .element_label_1_end:			;---------------------------------------
 					; element "label 2"
-					;---------------------------------------
 .element_label_2:			db	LIBRARY_BOSU_ELEMENT_TYPE_label
 					dw	.element_label_2_end - .element_label_2 ; element size in Bytes
 					dw	1	; position on the X axis relative to the window data space
@@ -136,6 +129,5 @@ kernel_gui_window_menu			dw	160	; position on the X axis relative to the cursor 
 .element_label_2_string:		db	"Tetris"
 .element_label_2_end:			;---------------------------------------
 					; end of the window elements
-					;---------------------------------------
 					db	LIBRARY_BOSU_ELEMENT_TYPE_none
 kernel_gui_window_menu_end:

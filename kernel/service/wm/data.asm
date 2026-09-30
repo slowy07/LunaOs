@@ -35,7 +35,6 @@ kernel_wm_zone_list_records				dq	STATIC_EMPTY
 kernel_wm_ipc_data:
 		times	KERNEL_IPC_STRUCTURE.SIZE	db	STATIC_EMPTY
 
-;-------------------------------------------------------------------------------
 kernel_wm_object_framebuffer:				dw	0
 							dw	0
 							dw	STATIC_EMPTY
@@ -44,7 +43,6 @@ kernel_wm_object_framebuffer:				dw	0
 .extra:							dd	STATIC_EMPTY
 							dq	STATIC_EMPTY
 
-;-------------------------------------------------------------------------------
 kernel_wm_object_cursor:				dw	0
 							dw	0
 							dw	12

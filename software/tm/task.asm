@@ -86,7 +86,6 @@ tm_task_show:
 	test	word [rdi + KERNEL_TASK_STRUCTURE_ENTRY.flags],	KERNEL_TASK_FLAG_service
 	jnz	.next	; yes, skip
 
-	;-----------------------------------------------------------------------
 
 	; display the process PID
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
@@ -97,7 +96,6 @@ tm_task_show:
 	mov	rsi,	tm_string_number
 	int	KERNEL_SERVICE
 
-	;-----------------------------------------------------------------------
 
 	; fetch the APIC value of the first process on the list
 	mov	eax,	dword [rdi + KERNEL_TASK_STRUCTURE_ENTRY.apic]
@@ -111,7 +109,6 @@ tm_task_show:
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	int	KERNEL_SERVICE
 
-	;-----------------------------------------------------------------------
 
 	; fetch the size of the used memory space in pages
 	mov	eax,	dword [rdi + KERNEL_TASK_STRUCTURE_ENTRY.memory]
@@ -125,7 +122,6 @@ tm_task_show:
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out
 	int	KERNEL_SERVICE
 
-	;-----------------------------------------------------------------------
 
 	; fetch the current system clocks
 	mov	ax,	KERNEL_SERVICE_SYSTEM_time
@@ -137,7 +133,6 @@ tm_task_show:
 	; display the value
 	call	tm_uptime
 
-	;-----------------------------------------------------------------------
 
 	; move the cursor to the "Process" column
 	mov	ax,	KERNEL_SERVICE_PROCESS_stream_out_char

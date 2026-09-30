@@ -86,7 +86,6 @@ moko_key:
 	; return from the procedure
 	ret
 
-;-------------------------------------------------------------------------------
 .key_page_up:
 	; is the inner document pointer in the first line?
 	mov	rax,	r10
@@ -156,7 +155,6 @@ moko_key:
 	; continue
 	jmp	.key_page_up_from_other_page
 
-;-------------------------------------------------------------------------------
 .key_page_down:
 	; is the inner document pointer in the last line?
 	mov	rax,	r10
@@ -225,7 +223,6 @@ moko_key:
 	; key released
 	jmp	.refresh
 
-;-------------------------------------------------------------------------------
 .key_backspace:
 	; is the cursor pointer inside the document at the beginning of the document?
 	cmp	r10,	qword [moko_document_start_address]
@@ -351,7 +348,6 @@ moko_key:
 	; key handled
 	jmp	.changed
 
-;-------------------------------------------------------------------------------
 .key_delete:
 	; end of the document
 	cmp	r10,	qword [moko_document_end_address]
@@ -406,7 +402,6 @@ moko_key:
 	; key handled
 	jmp	.changed
 
-;-------------------------------------------------------------------------------
 .key_arrow_up:
 	; is the cursor pointer inside the document in the first line?
 	mov	rax,	r10
@@ -455,7 +450,6 @@ moko_key:
 	; key handled
 	jmp	.refresh
 
-;-------------------------------------------------------------------------------
 .key_arrow_down:
 	; is the cursor pointer inside the document in the last line?
 	mov	rax,	r10
@@ -505,7 +499,6 @@ moko_key:
 	; key handled
 	jmp	.refresh
 
-;-------------------------------------------------------------------------------
 .key_arrow_left:
 	; is the cursor position pointer inside the document at the beginning of the document?
 	cmp	r10,	qword [moko_document_start_address]
@@ -602,7 +595,6 @@ moko_key:
 	; key handled
 	jmp	.changed
 
-;-------------------------------------------------------------------------------
 .key_arrow_right:
 	; is the cursor position pointer inside the document at the end of the document?
 	cmp	r10,	qword [moko_document_end_address]
@@ -689,7 +681,6 @@ moko_key:
 	; key handled
 	jmp	.changed
 
-;-------------------------------------------------------------------------------
 .key_home:
 	; set the cursor position pointer in the document space to the beginning of the current line
 	sub	r10,	r11
@@ -706,7 +697,6 @@ moko_key:
 	; key handled
 	jmp	.changed
 
-;-------------------------------------------------------------------------------
 .key_end:
 	; set the cursor position pointer in the document space to the end of the current line
 	sub	r10,	r11	; move back by the inner line offset
@@ -734,7 +724,6 @@ moko_key:
 	; key handled
 	jmp	.changed
 
-;-------------------------------------------------------------------------------
 .key_enter:
 	; insert a newline character into the document at the current pointer position
 	mov	ax,	STATIC_SCANCODE_NEW_LINE
@@ -816,19 +805,16 @@ moko_key:
 	jmp	.changed
 
 
-;-------------------------------------------------------------------------------
 .ctrl:
 	; raise the flag
 	mov	byte [moko_key_ctrl_semaphore],	STATIC_TRUE
 	jmp	.end	; key handled
 
-;-------------------------------------------------------------------------------
 .ctrl_release:
 	; clear the flag
 	mov	byte [moko_key_ctrl_semaphore],	STATIC_FALSE
 	jmp	.end	; key handled
 
-;-------------------------------------------------------------------------------
 .insert:
 	; change the flag state
 

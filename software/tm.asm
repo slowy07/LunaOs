@@ -1,8 +1,6 @@
 ;===============================================================================
 
-	;-----------------------------------------------------------------------
 	%include	"software/tm/config.asm"
-	;-----------------------------------------------------------------------
 
 ;===============================================================================
 tm:
@@ -46,7 +44,6 @@ tm:
 	cmp	rax,	qword [tm_microtime]
 	jnb	.check	; yes
 
-	;-----------------------------------------------------------------------
 	; fetch the message
 	mov	ax,	KERNEL_SERVICE_PROCESS_ipc_receive
 	mov	rdi,	tm_ipc_data
@@ -91,7 +88,6 @@ tm:
 
 	macro_debug	"software: tm"
 
-	;-----------------------------------------------------------------------
 	%include	"software/tm/data.asm"
 	%include	"software/tm/static.asm"
 	%include	"software/tm/stream.asm"
@@ -99,4 +95,3 @@ tm:
 	%include	"software/tm/uptime.asm"
 	%include	"software/tm/task.asm"
 	%include	"software/tm/percent.asm"
-	;-----------------------------------------------------------------------

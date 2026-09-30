@@ -133,7 +133,6 @@ kernel_init_acpi:
 	; save the pointer to the RSDP or XSDP header
 	push	rsi
 
-	;-----------------------------------------------------------------------
 	; sum all the bytes of the RSDP header
 	xor	al,	al
 	mov	ecx,	ACPI_STRUCTURE_RSDP.SIZE
@@ -265,7 +264,6 @@ kernel_init_acpi:
 	; continue initialising the kernel environment
 	jmp	.end
 
-;-------------------------------------------------------------------------------
 .header:
 	; MADT (Multiple APIC Description Table) header?
 	cmp	dword [rsi + ACPI_STRUCTURE_MADT.signature],	"APIC"
@@ -323,7 +321,6 @@ kernel_init_acpi:
 	; end of the subprocedure
 	ret
 
-;-------------------------------------------------------------------------------
 .madt_apic:
 	; logical processor active?
 	bt	word [rsi + ACPI_STRUCTURE_MADT_APIC.flags],	ACPI_MADT_APIC_FLAG_ENABLED_bit
@@ -346,7 +343,6 @@ kernel_init_acpi:
 	; continue
 	jmp	.madt_next_entry
 
-;-------------------------------------------------------------------------------
 .madt_ioapic:
 	; has an IO APIC already been processed?
 	cmp	byte [rel kernel_init_ioapic_semaphore],	STATIC_TRUE

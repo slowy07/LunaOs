@@ -1,6 +1,5 @@
 ;===============================================================================
 
-;-------------------------------------------------------------------------------
 
 ;===============================================================================
 ; input:
@@ -153,9 +152,7 @@ kernel_wm_zone:
 	cmp	qword [rdi + KERNEL_WM_STRUCTURE_ZONE.object],	STATIC_EMPTY
 	je	.end	; yes
 
-	;-----------------------------------------------------------------------
 	; fetch the zone properties
-	;-----------------------------------------------------------------------
 
 	; left edge on the X axis
 	mov	r8w,	word [rdi + KERNEL_WM_STRUCTURE_ZONE.field + KERNEL_WM_STRUCTURE_FIELD.x]
@@ -183,9 +180,7 @@ kernel_wm_zone:
 	cmp	r11w,	STATIC_EMPTY
 	jle	.loop	; no
 
-	;-----------------------------------------------------------------------
 	; interference
-	;-----------------------------------------------------------------------
 
 	; indirect pointer to the end of the object list
 	mov	rsi,	qword [rel kernel_wm_object_list_length]
@@ -224,7 +219,6 @@ kernel_wm_zone:
 	mov	r15w,	word [rax + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.height]
 	add	r15w,	r13w
 
-	;--------------------------------
 	;      r9	       r13	X
 	;    -------	     -------
 	; r8 |  S  | r10 r12 |  O  | r14
@@ -242,9 +236,7 @@ kernel_wm_zone:
 	cmp	r15w,	r9w	; bottom edge of the object before the top edge of the zone?
 	jle	.object	; yes
 
-	;-----------------------------------------------------------------------
 	; trimming
-	;-----------------------------------------------------------------------
 
 .left: ;)
 	; is the left edge of the zone before the left edge of the object?

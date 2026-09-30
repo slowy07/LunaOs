@@ -10,9 +10,7 @@ kernel_gui_init:
 	call	kernel_task_active_pid
 	mov	qword [rel kernel_gui_pid],	rax
 
-	;-----------------------------------------------------------------------
 	; configure the workbench space
-	;-----------------------------------------------------------------------
 	mov	rsi,	kernel_gui_window_workbench
 
 	; set the width, height and size of the workbench space
@@ -30,7 +28,6 @@ kernel_gui_init:
 	; save the address of the space
 	mov	qword [rsi + KERNEL_WM_STRUCTURE_OBJECT.address],	rdi
 
-	;-----------------------------------------------------------------------
 
 	; fetch the color mix
 	mov	rax,	qword [rel kernel_gui_background_mixer]
@@ -103,7 +100,6 @@ kernel_gui_init:
 	dec	dx
 	jnz	.background_reload	; no
 
-	;-----------------------------------------------------------------------
 
 	; allocate an identifier for the window
 	call	kernel_wm_object_id_new
@@ -112,9 +108,7 @@ kernel_gui_init:
 	; register the window
 	call	kernel_wm_object_insert
 
-	;-----------------------------------------------------------------------
 	; configure the taskbar space
-	;-----------------------------------------------------------------------
 	mov	rsi,	kernel_gui_window_taskbar
 
 	; put the taskbar at the bottom of the screen
@@ -154,9 +148,7 @@ kernel_gui_init:
 	; register the window in the window manager
 	call	kernel_wm_object_insert
 
-	;-----------------------------------------------------------------------
 	; create the context menu
-	;-----------------------------------------------------------------------
 	mov	rsi,	kernel_gui_window_menu
 
 	; the number of elements of the menu and their total height relative to each other

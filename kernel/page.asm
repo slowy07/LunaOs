@@ -238,7 +238,6 @@ kernel_page_convert:
 	push	rcx
 	push	rdx
 
-	;-----------------------------------------------------------------------
 	; compute the entry number in the PML4 table from the given physical/logical address
 	mov	rcx,	KERNEL_PAGE_PML3_SIZE_byte
 	xor	rdx,	rdx	; clear the upper part
@@ -258,7 +257,6 @@ kernel_page_convert:
 	; save the PML3 table pointer
 	mov	r10,	rax
 
-	;-----------------------------------------------------------------------
 	; compute the entry number in the PML3 table from the remaining physical/logical address
 	mov	rax,	rdx	; restore the remainder of the division
 	mov	rcx,	KERNEL_PAGE_PML2_SIZE_byte
@@ -279,7 +277,6 @@ kernel_page_convert:
 	; save the PML2 table pointer
 	mov	r9,	rax
 
-	;-----------------------------------------------------------------------
 	; compute the entry number in the PML2 table from the remaining physical/logical address
 	mov	rax,	rdx	; restore the remainder of the division
 	mov	rcx,	KERNEL_PAGE_PML1_SIZE_byte
@@ -300,7 +297,6 @@ kernel_page_convert:
 	; save the PML2 table pointer
 	mov	r8,	rax
 
-	;-----------------------------------------------------------------------
 	; compute the entry number in the PML1 table from the remaining physical/logical address
 	mov	rax,	rdx	; restore the remainder of the division
 	mov	rcx,	STATIC_PAGE_SIZE_byte
@@ -379,7 +375,6 @@ kernel_page_drain:
 
 	macro_debug	"kernel_page_drain"
 
-;-------------------------------------------------------------------------------
 ; notes:
 ;	rcx - destroyed
 .proceed:

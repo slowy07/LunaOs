@@ -407,7 +407,6 @@ driver_nic_i82540em:
 	mov	r11,	cr3
 	call	kernel_page_map_physical
 
-	;-----------------------------------------------------------------------
 	; documentation, page: 248/410, table: 13-7 // EEPROM Read Register //
 
 	; read the contents of the register at address 0x00
@@ -461,12 +460,9 @@ driver_nic_i82540em_setup:
 	push	rax
 	push	rdi
 
-	;-----------------------------------------------------------------------
 	; receive packet configuration
-	;-----------------------------------------------------------------------
 
 	; reserve room for the receive packet descriptor arrays
-	;-----------------------------------------------------------------------
 	; one entry of the descriptor array holds the information
 	; about the address of the buffer the incoming packet was loaded into
 	; documentation, page 34/410, table 3-1
@@ -506,12 +502,9 @@ driver_nic_i82540em_setup:
 	or	eax,	DRIVER_NIC_I82540EM_RCTL_MPE	; for most cases
 	mov	dword [rsi + DRIVER_NIC_I82540EM_RCTL],	eax
 
-	;-----------------------------------------------------------------------
 	; transmit packet configuration
-	;-----------------------------------------------------------------------
 
 	; reserve room for the transmit packet descriptor arrays
-	;-----------------------------------------------------------------------
 	call	kernel_memory_alloc_page
 	call	kernel_page_drain
 
@@ -545,9 +538,7 @@ driver_nic_i82540em_setup:
 	or	eax,	DRIVER_NIC_I82540EM_TIPG_IPGR2_DEFAULT
 	mov	dword [rsi + DRIVER_NIC_I82540EM_TIPG],	eax
 
-	;-----------------------------------------------------------------------
 	; enable the controller
-	;-----------------------------------------------------------------------
 
 	; clear: LRST, PHY_RST, VME, ILOS, set: SLU, ASDE
 	mov	eax,	dword [rsi + DRIVER_NIC_I82540EM_CTRL]

@@ -84,7 +84,6 @@ shell_prompt_internal:
 	jmp	.end
 
 .no_clear:
-	;-----------------------------------------------------------------------
 	; probably the command: exit
 	cmp	rbx,	shell_command_exit_end - shell_command_exit
 	jne	.no_exit	; no
@@ -100,7 +99,6 @@ shell_prompt_internal:
 	int	KERNEL_SERVICE
 
 .no_exit:
-	;-----------------------------------------------------------------------
 	; probably the command: cd
 	cmp	rbx,	shell_command_cd_end - shell_command_cd
 	jne	.no_cd	; no

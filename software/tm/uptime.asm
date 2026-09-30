@@ -29,7 +29,6 @@ tm_uptime:
 	; clear the flags
 	xor	r8,	r8
 
-	;-----------------------------------------------------------------------
 
 	; convert the uptime into a number of days
 	mov	ecx,	60*60*24	; 86400 seconds
@@ -98,7 +97,6 @@ tm_uptime:
 	cmp	dl,	"d"
 	je	.end	; yes
 
-	;-----------------------------------------------------------------------
 
 	; convert the uptime into a number of hours
 	mov	ecx,	60*60	; 3600 seconds
@@ -175,7 +173,6 @@ tm_uptime:
 	cmp	dl,	"h"
 	je	.end	; yes
 
-	;-----------------------------------------------------------------------
 
 	; convert the uptime into a number of minutes
 	mov	ecx,	60	; 60 seconds
@@ -252,7 +249,6 @@ tm_uptime:
 	cmp	dl,	"m"
 	je	.end	; yes
 
-	;-----------------------------------------------------------------------
 
 	; format: _M:SSm
 	mov	ecx,	0x02

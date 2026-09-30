@@ -1,10 +1,7 @@
 ;===============================================================================
 
-	;-----------------------------------------------------------------------
 	; constants, variables, globals, structures, objects, macros
-	;-----------------------------------------------------------------------
 	%include	"kernel/header.asm"
-	;-----------------------------------------------------------------------
 
 ; 64-bit program code
 [bits 64]
@@ -17,9 +14,7 @@
 
 ;===============================================================================
 kernel_library:
-	;-----------------------------------------------------------------------
 	.bit_find			dq	library_bit_find
-	;-----------------------------------------------------------------------
 	.bosu				dq	library_bosu
 	.bosu_element			dq	library_bosu_element
 	.bosu_element_chain		dq	library_bosu_element_chain
@@ -27,21 +22,14 @@ kernel_library:
 	.bosu_elements_specification	dq	library_bosu_elements_specification
 	.bosu_event			dq	library_bosu_event
 	.bosu_header_set		dq	library_bosu_header_set
-	;-----------------------------------------------------------------------
 	.bresenham			dq	library_bresenham
-	;-----------------------------------------------------------------------
 	.color_alpha			dq	library_color_alpha
 	.color_alpha_invert		dq	library_color_alpha_invert
-	;-----------------------------------------------------------------------
 	.font_matrix			dq	library_font_matrix
-	;-----------------------------------------------------------------------
 	.input				dq	library_input
-	;-----------------------------------------------------------------------
 	.integer_to_string		dq	library_integer_to_string
-	;-----------------------------------------------------------------------
 	.page_align_up			dq	library_page_align_up
 	.page_from_size			dq	library_page_from_size
-	;-----------------------------------------------------------------------
 	.string_compare			dq	library_string_compare
 	.string_cut			dq	library_string_cut
 	.string_digits			dq	library_string_digits
@@ -49,7 +37,6 @@ kernel_library:
 	.string_to_integer		dq	library_string_to_integer
 	.string_trim			dq	library_string_trim
 	.string_word_next		dq	library_string_word_next
-	;-----------------------------------------------------------------------
 	.terminal			dq	library_terminal
 	.terminal_char			dq	library_terminal_char
 	.terminal_clear			dq	library_terminal_clear
@@ -65,13 +52,9 @@ kernel_library:
 	.terminal_scroll_down		dq	library_terminal_scroll_down
 	.terminal_scroll_up		dq	library_terminal_scroll_up
 	.terminal_string		dq	library_terminal_string
-	;-----------------------------------------------------------------------
 	.value_to_size			dq	library_value_to_size
-	;-----------------------------------------------------------------------
 	.xorshift32			dq	library_xorshift32
-	;-----------------------------------------------------------------------
 
-;-------------------------------------------------------------------------------
 %include	"kernel/library/bit.asm"
 %include	"kernel/library/bosu.asm"
 %include	"kernel/library/bresenham.asm"
@@ -91,4 +74,3 @@ kernel_library:
 %include	"kernel/library/terminal.asm"
 %include	"kernel/library/value_to_size.asm"
 %include	"kernel/library/xorshift32.asm"
-;-------------------------------------------------------------------------------

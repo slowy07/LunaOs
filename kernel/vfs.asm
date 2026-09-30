@@ -52,7 +52,6 @@ kernel_vfs_dir_symlinks:
 	push	rsi
 	push	rdi
 
-	;-----------------------------------------------------------------------
 	; create a symbolic link to itself "."
 	mov	ecx,	0x01	; number of the characters in the file name
 	mov	dl,	KERNEL_VFS_FILE_TYPE_symbolic_link
@@ -67,7 +66,6 @@ kernel_vfs_dir_symlinks:
 	cmp	qword [rsp + STATIC_QWORD_SIZE_byte],	rax
 	je	.end	; yes, no symbolic link to the parent directory :)
 
-	;-----------------------------------------------------------------------
 	; create a symbolic link to the parent directory ".."
 	mov	ecx,	0x02	; number of the characters in the file name
 	mov	rdi,	rax	; create it in the processed directory

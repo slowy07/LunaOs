@@ -9,9 +9,7 @@ ZERO_LONG_MODE_PAGE_FLAG_default	equ	ZERO_LONG_MODE_PAGE_FLAG_available | ZERO_L
 
 ;===============================================================================
 zero_long_mode:
-	;-----------------------------------------------------------------------
 	; create the base paging tables for 64-bit mode
-	;-----------------------------------------------------------------------
 
 	; clear every entry in the tables
 	xor	eax,	eax
@@ -47,9 +45,7 @@ zero_long_mode:
 	dec	ecx
 	jnz	.next	; yes
 
-	;-----------------------------------------------------------------------
 	; load the global descriptor table for 64-bit mode
-	;-----------------------------------------------------------------------
 	lgdt	[zero_long_mode_header_gdt_64bit]
 
 	; enable the NX/PAE, PGE and OSFXSR bits in CR4

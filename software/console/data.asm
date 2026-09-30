@@ -68,13 +68,11 @@ console_window					dw	STATIC_EMPTY	; position on the X axis
 						dq	STATIC_EMPTY	; window width in bytes (filled in by Bosu)
 .elements:					;-------------------------------
 .element_button_close:				; element "window close"
-						;-------------------------------
 						db	LIBRARY_BOSU_ELEMENT_TYPE_button_close
 						dw	.element_button_close_end - .element_button_close
 						dq	console.close
 .element_button_close_end:			;-------------------------------
 						; element "terminal"
-						;-------------------------------
 .element_terminal:				db	LIBRARY_BOSU_ELEMENT_TYPE_draw
 						dw	.element_terminal_end - .element_terminal
 						dw	0	; position on the X axis relative to the window data space
@@ -84,7 +82,6 @@ console_window					dw	STATIC_EMPTY	; position on the X axis
 						dq	STATIC_EMPTY	; data space pointer (filled in by Bosu)
 .element_terminal_end:				;-------------------------------
 						; end of the window elements
-						;-------------------------------
 						db	STATIC_EMPTY
 console_window_end:
 

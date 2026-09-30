@@ -61,7 +61,6 @@ service_network_icmp:
 	pop	rdi
 	pop	rsi
 
-	;-----------------------------------------------------------------------
 	; compute the checksum
 	xor	eax,	eax
 	mov	ecx,	SERVICE_NETWORK_STRUCTURE_FRAME_ICMP.SIZE >> STATIC_DIVIDE_BY_2_shift

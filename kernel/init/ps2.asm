@@ -9,7 +9,6 @@ kernel_init_ps2:
 	; drain the PS2 controller buffer
 	call	driver_ps2_check_dummy_answer_or_dump
 
-	;-----------------------------------------------------------------------
 	; fetch the PS2 controller configuration
 	mov	al,	DRIVER_PS2_COMMAND_CONFIGURATION_GET
 	call	driver_ps2_send_command_receive_answer
@@ -31,9 +30,7 @@ kernel_init_ps2:
 	; send the answer
 	call	driver_ps2_send_answer_or_ask_device
 
-	;-----------------------------------------------------------------------
 	; send a reset command to the device on port 1 (pointing device - mouse)
-	;-----------------------------------------------------------------------
 	mov	al,	DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND
 	call	driver_ps2_send_command
 	mov	al,	DRIVER_PS2_DEVICE_RESET
@@ -51,15 +48,11 @@ kernel_init_ps2:
 	cmp	al,	DRIVER_PS2_ANSWER_SELF_TEST_SUCCESS
 	jne	.error	; no
 
-	;-----------------------------------------------------------------------
 	; fetch the device identifier
-	;-----------------------------------------------------------------------
 	call	driver_ps2_receive_answer
 	mov	byte [rel driver_ps2_mouse_type],	al
 
-	;-----------------------------------------------------------------------
 	; set the device to its default values
-	;-----------------------------------------------------------------------
 	mov	al,	DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND
 	call	driver_ps2_send_command
 	mov	al,	DRIVER_PS2_DEVICE_SET_DEFAULT
@@ -70,9 +63,7 @@ kernel_init_ps2:
 	cmp	al,	DRIVER_PS2_ANSWER_COMMAND_ACKNOWLEDGED
 	jne	.error	; no
 
-	;-----------------------------------------------------------------------
 	; enable packet transmission from the device to the controller
-	;-----------------------------------------------------------------------
 	mov	al,	DRIVER_PS2_COMMAND_PORT_SECOND_BYTE_SEND
 	call	driver_ps2_send_command
 	mov	al,	DRIVER_PS2_DEVICE_PACKETS_ENABLE
@@ -88,9 +79,7 @@ kernel_init_ps2:
 	jmp	$
 
 .done:
-	;-----------------------------------------------------------------------
 	; hook up the mouse handlers
-	;-----------------------------------------------------------------------
 	mov	eax,	KERNEL_IDT_IRQ_offset + DRIVER_PS2_MOUSE_IRQ_number
 	mov	bx,	KERNEL_IDT_TYPE_irq
 	mov	rdi,	driver_ps2_mouse
@@ -102,9 +91,7 @@ kernel_init_ps2:
 	mov	ebx,	DRIVER_PS2_MOUSE_IO_APIC_register
 	call	kernel_io_apic_connect
 
-	;-----------------------------------------------------------------------
 	; hook up the keyboard handler
-	;-----------------------------------------------------------------------
 	mov	eax,	KERNEL_IDT_IRQ_offset + DRIVER_PS2_KEYBOARD_IRQ_number
 	mov	bx,	KERNEL_IDT_TYPE_irq
 	mov	rdi,	driver_ps2_keyboard

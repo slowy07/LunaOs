@@ -1,8 +1,6 @@
 ;===============================================================================
 
-	;-----------------------------------------------------------------------
 	%include	"kernel/library/terminal/header.asm"
-	;-----------------------------------------------------------------------
 
 ;===============================================================================
 ; input:
@@ -467,7 +465,6 @@ library_terminal_char:
 
 	macro_debug	"library_terminal_char"
 
-;-------------------------------------------------------------------------------
 .return:
 	; move the pointer and the virtual cursor to the start of the current line
 	mov	dword [r8 + LIBRARY_TERMINAL_STRUCTURE.cursor + LIBRARY_TERMINAL_STURCTURE_CURSOR.x],	STATIC_EMPTY
@@ -484,7 +481,6 @@ library_terminal_char:
 
 	macro_debug	"library_terminal_char.return"
 
-;-------------------------------------------------------------------------------
 .new_line:
 	; preserve the original registers
 	push	rax	; character ASCII code
@@ -514,7 +510,6 @@ library_terminal_char:
 
 	macro_debug	"library_terminal_char.new_line"
 
-;-------------------------------------------------------------------------------
 .backspace:
 	; is the cursor at the start of the line?
 	test	ebx,	ebx

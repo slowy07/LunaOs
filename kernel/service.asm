@@ -119,7 +119,6 @@ kernel_service:
 	; end of the subprocedure handling
 	jmp	kernel_service.error
 
-;-------------------------------------------------------------------------------
 ; output:
 ;\trcx - PID of the parent process
 .process_pid_parent:
@@ -138,7 +137,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_pid_parent"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\tbl - stream behaviour of the process
 ;\trcx - number of characters in the path to the file
@@ -189,7 +187,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_run"
 
-;-------------------------------------------------------------------------------
 .process_check:
 	; look for the process in the task queue
 	call	kernel_task_pid_check
@@ -199,7 +196,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_check"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trcx - size of the area to allocate
 ;\trdi - pointer to the kernel address space
@@ -238,7 +234,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_memory_alloc"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trdi - pointer to the destination of the message
 ; output:
@@ -252,7 +247,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_ipc_receive"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trbx - PID of the target process
 ;\tecx - size of the data area in Bytes, or if the value is empty, 40 Bytes from the RSI pointer position
@@ -268,7 +262,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_ipc_send"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\tecx - size of the data area in Bytes, or if the value is empty, 40 Bytes from the RSI pointer position
 ;\trsi - pointer to the data area
@@ -293,7 +286,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_ipc_send_parent"
 
-;-------------------------------------------------------------------------------
 ; output:
 ;\trax - PID of the process
 .process_pid:
@@ -308,7 +300,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_pid"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trcx - size of the string in Bytes
 ;\trsi - pointer to the string
@@ -338,7 +329,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_stream_out"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trdi - pointer to the buffer area
 ; output:
@@ -368,7 +358,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_stream_in"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trcx - how many copies of the character to send
 ;\tdl - value
@@ -491,7 +480,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_stream_meta"
 
-;-------------------------------------------------------------------------------
 ; output:
 ;\trbx - number of the entries
 ;\trcx - size of the list in Bytes
@@ -655,7 +643,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_memory_release"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trcx - number of the milliseconds
 ;\t1 second = 1024 microtime ticks
@@ -693,7 +680,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_sleep"
 
-;-------------------------------------------------------------------------------
 .process_release:
 	; preemption
 	int	KERNEL_APIC_IRQ_number
@@ -703,7 +689,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.process_release"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trcx - number of characters in the string
 ;\trsi - pointer to the string
@@ -791,7 +776,6 @@ kernel_service:
 	; no handling of the subprocedure
 	jmp	kernel_service.error
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trcx - size of the path in Bytes
 ;\trdx - number of the data in Bytes
@@ -854,7 +838,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.vfs_write"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trcx - size of the path in Bytes
 ;\trsi - pointer to the string representing the path
@@ -936,7 +919,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.vfs_read"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trcx - size of the path in Bytes
 ;\trsi - pointer to the string representing the path
@@ -1067,7 +1049,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.vfs_dir"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trcx - number of characters in the path to the file
 ;\tdl - type of the file
@@ -1094,7 +1075,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.vfs_touch"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;\trcx - number of characters in the string
 ;\trsi - pointer to the string representing the name/path of the file
@@ -1147,7 +1127,6 @@ kernel_service:
 	; no handling of the subprocedure
 	jmp	kernel_service.error
 
-;-------------------------------------------------------------------------------
 .system_memory:
 	; total size
 	mov	r8,	qword [rel kernel_page_total_count]
@@ -1159,7 +1138,6 @@ kernel_service:
 
 	macro_debug	"kernel_service.system_memory"
 
-;-------------------------------------------------------------------------------
 .system_time:
 	; return the system uptime (1 second is 1024 ticks)
 	mov	rax,	qword [rel driver_rtc_microtime]

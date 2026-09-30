@@ -48,7 +48,6 @@ kernel_wm_irq:
 
 	macro_debug	"kernel_wm_irq"
 
-;-------------------------------------------------------------------------------
 ; input:
 ;	rsi - pointer to the window structure
 .window_close:
@@ -90,7 +89,6 @@ kernel_wm_irq:
 	macro_debug	"kernel_wm_irq.window_close"
 
 
-;-------------------------------------------------------------------------------
 ; input:
 ;	rsi - pointer to the object structure
 ; output:
@@ -212,7 +210,6 @@ kernel_wm_irq:
 	; return from the subprocedure
 	ret
 
-;-------------------------------------------------------------------------------
 ; input:
 ;	rsi - pointer to the object structure
 .window_update:

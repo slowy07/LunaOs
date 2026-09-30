@@ -26,9 +26,7 @@ kernel_gui_clock:
 	xchg	bl,	byte [rel kernel_gui_window_taskbar.element_label_clock_char_colon]
 	mov	byte [rel kernel_gui_clock_colon],	bl
 
-	;-----------------------------------------------------------------------
 	; Minute
-	;-----------------------------------------------------------------------
 	shr	rax,	STATIC_MOVE_HIGH_TO_AL_shift	; move the number of minutes to register AX
 	and	eax,	0xFF	; remove the hour, day, month... information
 	mov	ebx,	STATIC_NUMBER_SYSTEM_decimal
@@ -40,9 +38,7 @@ kernel_gui_clock:
 	; fetch the current time stamp
 	mov	rax,	qword [rel kernel_gui_clock_last_state]
 
-	;-----------------------------------------------------------------------
 	; Hour
-	;-----------------------------------------------------------------------
 	shr	rax,	STATIC_MOVE_HIGH_TO_AX_shift	; move the number of hours to register AL
 	and	rax,	0xFF	; remove the day, month, year... information
 	mov	dl,	STATIC_SCANCODE_SPACE	; the prefix is "space"

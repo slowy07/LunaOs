@@ -67,7 +67,6 @@ tm_ram:
 
 	macro_debug	"software: tm_ram"
 
-;-------------------------------------------------------------------------------
 ; entry:
 ;	rax - value to display in KiB
 .show:

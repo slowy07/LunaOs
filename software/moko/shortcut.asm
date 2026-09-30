@@ -120,7 +120,6 @@ moko_shortcut:
 	; return from the procedure
 	ret
 
-;-------------------------------------------------------------------------------
 .write_file:
 	; fetch the file name from the user
 	call	moko_shortcut_file
@@ -196,7 +195,6 @@ moko_shortcut:
 
 	macro_debug	"moko_shortcut.save_file"
 
-;-------------------------------------------------------------------------------
 .read_file:
 	; fetch the file name from the user
 	call	moko_shortcut_file

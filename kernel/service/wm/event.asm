@@ -15,7 +15,6 @@ kernel_wm_event:
 	; check the state of the keyboard buffer
 	call	kernel_wm_keyboard
 
-	;-----------------------------------------------------------------------
 	; fetch the positions of the mouse pointer
 	mov	r8w,	word [rel driver_ps2_mouse_x]
 	mov	r9w,	word [rel driver_ps2_mouse_y]
@@ -28,7 +27,6 @@ kernel_wm_event:
 	mov	r15w,	r9w
 	sub	r15w,	word [rel kernel_wm_object_cursor + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.y]
 
-	;-----------------------------------------------------------------------
 	; has the left mouse button been pressed?
 	bt	word [rel driver_ps2_mouse_state],	DRIVER_PS2_DEVICE_MOUSE_PACKET_LMB_bit
 	jnc	.no_mouse_button_left_action	; no
@@ -87,7 +85,6 @@ kernel_wm_event:
 .no_mouse_button_left_action_release_selected:
 
 .no_mouse_button_left_release:
-	;-----------------------------------------------------------------------
 	; has the right mouse button been pressed?
 	bt	word [rel driver_ps2_mouse_state],	DRIVER_PS2_DEVICE_MOUSE_PACKET_RMB_bit
 	jnc	.no_mouse_button_right_action	; no
@@ -139,7 +136,6 @@ kernel_wm_event:
 	; the cursor object has been updated
 	or	word [rel kernel_wm_object_cursor + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
 
-	;-----------------------------------------------------------------------
 
 	; if along with the pressed left mouse button
 	cmp	byte [rel kernel_wm_mouse_button_left_semaphore],	STATIC_FALSE

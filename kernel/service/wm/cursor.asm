@@ -5,9 +5,7 @@ kernel_wm_cursor:
 	; preserve the original registers
 	push	rsi
 
-	;-----------------------------------------------------------------------
 	; display the new content of the cursor matrix?
-	;-----------------------------------------------------------------------
 	test	word [rel kernel_wm_object_cursor + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_flush
 	jz	.no	; no
 

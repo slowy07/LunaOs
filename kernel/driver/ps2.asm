@@ -395,7 +395,6 @@ driver_ps2_mouse:
 	mov	bx,	word [rel driver_ps2_mouse_x]
 	mov	dx,	word [rel driver_ps2_mouse_y]
 
-	;-----------------------------------------------------------------------
 	; status?
 	cmp	byte [rel driver_ps2_mouse_packet],	STATIC_TRUE
 	jne	.no_status	; no
@@ -422,7 +421,6 @@ driver_ps2_mouse:
 	jmp	.end
 
 .no_status:
-	;-----------------------------------------------------------------------
 
 	; X axis displacement?
 	cmp	byte [rel driver_ps2_mouse_packet],	STATIC_FALSE
@@ -464,7 +462,6 @@ driver_ps2_mouse:
 	jmp	.ready
 
 .no_x:
-	;-----------------------------------------------------------------------
 
 	; the next packet is the status
 	mov	byte [rel driver_ps2_mouse_packet],	STATIC_TRUE

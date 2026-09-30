@@ -147,9 +147,7 @@ kernel_wm_fill:
 	push	rcx
 	push	rsi
 
-	;-----------------------------------------------------------------------
 	; fetch the fill properties
-	;-----------------------------------------------------------------------
 	movzx	r8d,	word [rsi + KERNEL_WM_STRUCTURE_FILL.field + KERNEL_WM_STRUCTURE_FIELD.x]
 	movzx	r9d,	word [rsi + KERNEL_WM_STRUCTURE_FILL.field + KERNEL_WM_STRUCTURE_FIELD.y]
 	movzx	r10d,	word [rsi + KERNEL_WM_STRUCTURE_FILL.field + KERNEL_WM_STRUCTURE_FIELD.width]
@@ -203,14 +201,11 @@ kernel_wm_fill:
 	sub	r11w,	ax
 
 .y_inside:
-	;-----------------------------------------------------------------------
 	; compute the variables for the space copying operation
-	;-----------------------------------------------------------------------
 
 	; fetch the pointer to the filling object
 	mov	rsi,	qword [rsi + KERNEL_WM_STRUCTURE_FILL.object]
 
-	;-----------------------------------------------------------------------
 	; scanlines
 	; r12 - fill scanline in Bytes
 	movzx	r12d,	r10w
@@ -223,7 +218,6 @@ kernel_wm_fill:
 	shl	r14d,	KERNEL_VIDEO_DEPTH_shift
 
 	; compute the pointer of the fill start in the buffer space
-	;-----------------------------------------------------------------------
 
 	; position relative to the X axis
 	movzx	edi,	r8w
@@ -245,7 +239,6 @@ kernel_wm_fill:
 	js	.overflow	; the filling object outside the fragment area
 
 	; compute the pointer of the fill start in the object space
-	;-----------------------------------------------------------------------
 
 	; position on the Y axis in Bytes (relative)
 	movzx	eax,	r9w
@@ -259,9 +252,7 @@ kernel_wm_fill:
 	add	rsi,	rax
 	add	rsi,	r8
 
-	;-----------------------------------------------------------------------
 	; Filling
-	;-----------------------------------------------------------------------
 
 .row:
 	; next row of N pixels

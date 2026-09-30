@@ -28,9 +28,7 @@ bootsector:
 	; enable interrupts
 	sti
 
-	;-----------------------------------------------------------------------
 	; load the main boot program code
-	;-----------------------------------------------------------------------
 	mov	ah,	0x42
 	mov	si,	bootsector_table_disk_address_packet
 	int	0x13
@@ -41,10 +39,8 @@ bootsector:
 	; stop further execution of the boot program code
 	jmp	$
 
-;-------------------------------------------------------------------------------
 ; table-formatted data block used by function AH=0x42, interrupt 0x13
 ; http://www.ctyme.com/intr/rb-0708.htm
-;-------------------------------------------------------------------------------
 ; we keep all tables at a full address
 align 0x04
 bootsector_table_disk_address_packet:
@@ -55,7 +51,6 @@ bootsector_table_disk_address_packet:
 	dw	0x0000	; segment
 	dq	0x0000000000000001	; LBA address of the first sector of the appended file
 
-;-------------------------------------------------------------------------------
 ; boot sector signature
 times	510 - ($ - $$)	db	0x00
 			dw	0xAA55	; pure magic ;></

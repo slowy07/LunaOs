@@ -4,16 +4,12 @@
 
 	; the stack is unavailable at this point!
 
-	;-----------------------------------------------------------------------
 	; GDT
-	;-----------------------------------------------------------------------
 
 	; load the Global Descriptor Table
 	lgdt	[rel kernel_gdt_header]
 
-	;-----------------------------------------------------------------------
 	; TSS
-	;-----------------------------------------------------------------------
 
 	; fetch the logical processor identifier
 	mov	rax,	qword [rel kernel_apic_base_address]
@@ -27,9 +23,7 @@
 	mov	word [rel kernel_gdt_tss_cpu_selector],	ax
 	ltr	word [rel kernel_gdt_tss_cpu_selector]
 
-	;-----------------------------------------------------------------------
 	; IDT
-	;-----------------------------------------------------------------------
 
 	; load the Interrupt Descriptor Table
 	lidt	[rel kernel_idt_header]
@@ -43,9 +37,7 @@
 	jz	.wait	; locked, try once more
 	;=======================================================================
 
-	;-----------------------------------------------------------------------
 	; Page
-	;-----------------------------------------------------------------------
 
 	; temporarily point at the page tables of the BSP
 	mov	rax,	qword [rel kernel_page_pml4_address]
@@ -86,14 +78,10 @@
 	; release access to the procedure
 	mov	byte [rel kernel_init_ap_semaphore],	STATIC_FALSE
 
-	;-----------------------------------------------------------------------
 	; APIC
-	;-----------------------------------------------------------------------
 	call	kernel_init_apic
 
-	;-----------------------------------------------------------------------
 	; TASK - assign the first task to be processed for the logical processor
-	;-----------------------------------------------------------------------
 
 	; clear the DF flag
 	cld

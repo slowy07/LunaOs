@@ -23,7 +23,6 @@ kernel_init_task:
 	; point at the start of the active task list
 	mov	rsi,	rdi
 
-	;-----------------------------------------------------------------------
 	; prepare room for the task queue
 	call	kernel_memory_alloc_page
 	jc	kernel_panic_memory
@@ -37,7 +36,6 @@ kernel_init_task:
 	; link the end of the queue to the start (RoundRobin)
 	mov	qword [rdi + STATIC_STRUCTURE_BLOCK.link],	rdi
 
-	;-----------------------------------------------------------------------
 	; fetch the ID of the BSP
 	call	kernel_apic_id_get
 
@@ -45,7 +43,6 @@ kernel_init_task:
 	shl	rax,	STATIC_MULTIPLE_BY_8_shift
 	mov	qword [rsi + rax],	rdi
 
-	;-----------------------------------------------------------------------
 	; put the kernel in as the first process in the task queue
 	mov	ebx,	KERNEL_TASK_FLAG_active | KERNEL_TASK_FLAG_secured | KERNEL_TASK_FLAG_processing
 	mov	ecx,	kernel_init_string_name_end - kernel_init_string_name
@@ -56,7 +53,6 @@ kernel_init_task:
 	; set the kernel working directory to /
 	mov	qword [rdi + KERNEL_TASK_STRUCTURE.knot],	kernel_vfs_magicknot
 
-	;-----------------------------------------------------------------------
 	; hook up the active task switch handler
 	; under the timer interrupt of the controller, the APIC of the BSP/logical processor
 	mov	rax,	KERNEL_APIC_IRQ_number

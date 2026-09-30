@@ -1,8 +1,6 @@
 ;===============================================================================
 
-	;-----------------------------------------------------------------------
 	%include	"kernel/service/network/wrap.asm"
-	;-----------------------------------------------------------------------
 
 ;===============================================================================
 ; input:
@@ -156,7 +154,6 @@ service_network_tcp_fin:
 	; remove the ACK flag even if it was not expected
 	and	byte [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags_request],	~SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
 
-	;-----------------------------------------------------------------------
 
 	; save the sender sequence number
 	mov	eax,	dword [rdi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + rbx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.sequence]
@@ -164,7 +161,6 @@ service_network_tcp_fin:
 	inc	eax	; acknowledge the receipt of the wish to end the connection
 	mov	dword [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.source_sequence],	eax
 
-	;-----------------------------------------------------------------------
 
 	; our sequence number
 	mov	eax,	dword [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.request_acknowledgement]
@@ -175,7 +171,6 @@ service_network_tcp_fin:
 	inc	eax
 	mov	dword [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.request_acknowledgement],	eax
 
-	;-----------------------------------------------------------------------
 
 	; closing the connection
 	mov	word [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags],	SERVICE_NETWORK_FRAME_TCP_FLAGS_ack | SERVICE_NETWORK_FRAME_TCP_FLAGS_fin
@@ -183,9 +178,7 @@ service_network_tcp_fin:
 	; expect the ACK flag in the response
 	mov	word [rsi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags_request],	SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
 
-	;-----------------------------------------------------------------------
 	; send the response
-	;-----------------------------------------------------------------------
 
 	; prepare space for the response
 	call	kernel_memory_alloc_page
@@ -363,9 +356,7 @@ service_network_tcp_syn:
 	jmp	.end
 
 .found:
-	;-----------------------------------------------------------------------
 	; register the connection on the stack
-	;-----------------------------------------------------------------------
 
 	; compute the size of the IP frame
 	movzx	ecx,	byte [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.version_and_ihl]
@@ -375,7 +366,6 @@ service_network_tcp_syn:
 	; convert to the absolute position of the TCP frame
 	add	ecx,	SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE
 
-	;-----------------------------------------------------------------------
 
 	; save the service port number
 	mov	ax,	word [rsi + rcx + SERVICE_NETWORK_STRUCTURE_FRAME_TCP.port_target]
@@ -400,7 +390,6 @@ service_network_tcp_syn:
 	mov	ecx,	dword [rsi + SERVICE_NETWORK_STRUCTURE_FRAME_ETHERNET.SIZE + SERVICE_NETWORK_STRUCTURE_FRAME_IP.source_address]
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.source_ipv4],	ecx
 
-	;-----------------------------------------------------------------------
 
 	; our sequence number
 	mov	dword [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.host_sequence],	STATIC_EMPTY
@@ -408,7 +397,6 @@ service_network_tcp_syn:
 	; default window size
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.window_size],	SERVICE_NETWORK_FRAME_TCP_WINDOW_SIZE_default
 
-	;-----------------------------------------------------------------------
 
 	; current flags of the connection
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags],	SERVICE_NETWORK_FRAME_TCP_FLAGS_syn | SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
@@ -416,14 +404,10 @@ service_network_tcp_syn:
 	; expect the ACK flag in the response
 	mov	word [rdi + SERVICE_NETWORK_STRUCTURE_TCP_STACK.flags_request],	SERVICE_NETWORK_FRAME_TCP_FLAGS_ack
 
-	;-----------------------------------------------------------------------
 	; connection registered
-	;-----------------------------------------------------------------------
 	mov	rsi,	rdi
 
-	;-----------------------------------------------------------------------
 	; send the response
-	;-----------------------------------------------------------------------
 	call	service_network_tcp_reply
 
 .end:

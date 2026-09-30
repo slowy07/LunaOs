@@ -9,9 +9,7 @@
 [ORG 0x7000]
 
 boot:
-	;-----------------------------------------------------------------------
 	; prepare the 32 bit production environment
-	;-----------------------------------------------------------------------
 
 	; disable the interrupts
 	cli
@@ -39,7 +37,6 @@ boot:
 	; jump to the 32 bit boot code
 	jmp	long 0x0008:boot_protected_mode
 
-;-------------------------------------------------------------------------------
 align 0x10	; we keep all the tables under a full address
 boot_table_gdt_32bit:
 	; null descriptor
@@ -65,9 +62,7 @@ boot_protected_mode:
 	mov	ds,	ax	; data segment
 	mov	es,	ax	; extra segment
 
-	;-----------------------------------------------------------------------
 	; load the global descriptor table for 64 bit mode
-	;-----------------------------------------------------------------------
 	lgdt	[boot_header_gdt_64bit]
 
 	; enable the NX/PAE, PGE and OSFXSR bits in the CR4 register

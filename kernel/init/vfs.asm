@@ -26,9 +26,7 @@ kernel_init_vfs:
 	mov	rsi,	rdi
 	call	kernel_vfs_dir_symlinks
 
-	;-----------------------------------------------------------------------
 	; create the directory structure
-	;-----------------------------------------------------------------------
 	mov	rsi,	kernel_init_vfs_directory_structure
 
 .dir:
@@ -64,9 +62,7 @@ kernel_init_vfs:
 	jmp	.dir
 
 .next:
-	;-----------------------------------------------------------------------
 	; load the built-in software set into the file system
-	;-----------------------------------------------------------------------
 	mov	rsi,	kernel_init_vfs_files
 
 .file:

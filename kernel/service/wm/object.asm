@@ -35,7 +35,6 @@ kernel_wm_object_insert:
 	call	kernel_task_active_pid
 	mov	qword [rdi + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.pid],	rax
 
-	;-----------------------------------------------------------------------
 
 	; lock access to modifying the object list
 	macro_lock	kernel_wm_object_semaphore,	0
@@ -452,7 +451,6 @@ kernel_wm_object_find:
 	test	word [rax + KERNEL_WM_STRUCTURE_OBJECT.SIZE + KERNEL_WM_STRUCTURE_OBJECT_EXTRA.flags],	KERNEL_WM_OBJECT_FLAG_visible
 	jz	.loop	; no
 
-	;-----------------------------------------------------------------------
 	; pointer within the object space relative to the left edge?
 	cmp	r8w,	word [rax + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.x]
 	jl	.loop	; no
@@ -472,7 +470,6 @@ kernel_wm_object_find:
 	add	cx,	word [rax + KERNEL_WM_STRUCTURE_OBJECT.field + KERNEL_WM_STRUCTURE_FIELD.height]
 	cmp	r9w,	cx
 	jge	.loop	; no
-	;-----------------------------------------------------------------------
 
 	; return the pointer to the object
 	mov	qword [rsp],	rax

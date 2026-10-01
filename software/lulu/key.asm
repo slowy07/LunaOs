@@ -1,7 +1,7 @@
 
 ; entry:
 ;	ax - key code
-moko_key:
+lulu_key:
  ; was the Enter key pressed?
  cmp ax, STATIC_SCANCODE_RETURN
  je .key_enter ; yes
@@ -67,14 +67,14 @@ moko_key:
 
 .changed:
  ; save the last known inner line position pointer
- mov qword [moko_document_line_index_last], r11
+ mov qword [lulu_document_line_index_last], r11
 
  ; save the last known beginning of the displayed line
- mov qword [moko_document_line_begin_last], r12
+ mov qword [lulu_document_line_begin_last], r12
 
 .refresh:
  ; display the line contents again
- call moko_line
+ call lulu_line
 
 .done:
  ; function key, handled
@@ -88,7 +88,7 @@ moko_key:
  ; is the inner document pointer in the first line?
  mov rax, r10
  sub rax, r11
- cmp rax, qword [moko_document_start_address]
+ cmp rax, qword [lulu_document_start_address]
  je .done ; yes, ignore
 
  ; is the current line displayed from its first character?
@@ -97,11 +97,11 @@ moko_key:
 
  ; display the line again, starting at the first character
  xor r12, r12
- call moko_line
+ call lulu_line
 
 .key_page_up_first_char:
  ; is the document displayed from its first line?
- cmp qword [moko_document_show_from_line], STATIC_EMPTY
+ cmp qword [lulu_document_show_from_line], STATIC_EMPTY
  ja .key_page_up_from_other_line ; no
 
  ; set the cursor in the first line of the screen space
@@ -109,32 +109,32 @@ moko_key:
 
  ; fetch the information about the first line of the document
  xor rcx, rcx
- call moko_line_this
+ call lulu_line_this
 
  ; set the new properties of the current line
- call moko_line_update
+ call lulu_line_update
 
  ; key handled
  jmp .refresh
 
 .key_page_up_from_other_line:
  ; is the document displayed beyond the full height of the document space?
- cmp qword [moko_document_show_from_line], r9
+ cmp qword [lulu_document_show_from_line], r9
  ja .key_page_up_more_than_page ; yes
 
  ; display the document contents from the first line
- mov qword [moko_document_show_from_line], STATIC_EMPTY
+ mov qword [lulu_document_show_from_line], STATIC_EMPTY
 
  ; fetch the information about the line based on the cursor position (row)
  mov rcx, r15
- call moko_line_this
+ call lulu_line_this
 
 .key_page_up_from_other_page:
  ; refresh the document space on the screen
- call moko_document_reload
+ call lulu_document_reload
 
  ; set the new properties of the current line
- call moko_line_update
+ call lulu_line_update
 
  ; key released
  jmp .refresh
@@ -143,12 +143,12 @@ moko_key:
  ; display the document from the previous N lines
  mov rcx, r9
  inc rcx
- sub qword [moko_document_show_from_line], rcx
+ sub qword [lulu_document_show_from_line], rcx
 
  ; fetch the information about the line N rows back
- mov rcx, qword [moko_document_show_from_line]
+ mov rcx, qword [lulu_document_show_from_line]
  add rcx, r15
- call moko_line_this
+ call lulu_line_this
 
  ; continue
  jmp .key_page_up_from_other_page
@@ -158,7 +158,7 @@ moko_key:
  mov rax, r10
  sub rax, r11
  add rax, r13
- cmp rax, qword [moko_document_end_address]
+ cmp rax, qword [lulu_document_end_address]
  je .done ; yes, ignore
 
  ; is the current line displayed from its first character?
@@ -167,12 +167,12 @@ moko_key:
 
  ; display the line again, starting at the first character
  xor r12, r12
- call moko_line
+ call lulu_line
 
 .key_page_down_first_char:
  ; have the contents of the last document lines been displayed in the screen space?
- mov rax, qword [moko_document_line_count]
- sub rax, qword [moko_document_show_from_line]
+ mov rax, qword [lulu_document_line_count]
+ sub rax, qword [lulu_document_show_from_line]
  cmp rax, r9
  ja .key_page_down_from_other_line ; no
 
@@ -180,11 +180,11 @@ moko_key:
  mov r15, rax
 
  ; fetch the information about the last line of the document
- mov rcx, qword [moko_document_line_count]
- call moko_line_this
+ mov rcx, qword [lulu_document_line_count]
+ call lulu_line_this
 
  ; set the new properties of the current line
- call moko_line_update
+ call lulu_line_update
 
  ; key handled
  jmp .refresh
@@ -193,37 +193,37 @@ moko_key:
  ; display the next N lines of the document
  mov rcx, r9
  inc rcx
- add qword [moko_document_show_from_line], rcx
+ add qword [lulu_document_show_from_line], rcx
 
  ; does the document line exist based on the current cursor position in the row?
- mov rcx, qword [moko_document_show_from_line]
+ mov rcx, qword [lulu_document_show_from_line]
  add rcx, r15
- cmp rcx, qword [moko_document_line_count]
+ cmp rcx, qword [lulu_document_line_count]
  jbe .key_page_down_row_exist ; yes
 
  ; choose the last visible line of the document
- mov rcx, qword [moko_document_line_count]
+ mov rcx, qword [lulu_document_line_count]
 
  ; set the cursor in the row of the last visible line
- mov r15, qword [moko_document_line_count]
- sub r15, qword [moko_document_show_from_line]
+ mov r15, qword [lulu_document_line_count]
+ sub r15, qword [lulu_document_show_from_line]
 
 .key_page_down_row_exist:
  ; refresh the document space on the screen
- call moko_document_reload
+ call lulu_document_reload
 
  ; fetch the information about this line
- call moko_line_this
+ call lulu_line_this
 
  ; set the new properties of the current line
- call moko_line_update
+ call lulu_line_update
 
  ; key released
  jmp .refresh
 
 .key_backspace:
  ; is the cursor pointer inside the document at the beginning of the document?
- cmp r10, qword [moko_document_start_address]
+ cmp r10, qword [lulu_document_start_address]
  je .done ; yes, ignore
 
  ; is the cursor in the first column?
@@ -238,7 +238,7 @@ moko_key:
  dec r10
 
  ; remove the given character from the document
- call moko_document_remove
+ call lulu_document_remove
 
  ; move the inner line pointer to the previous character
  dec r11
@@ -271,47 +271,47 @@ moko_key:
 
  ; move all the rows below the current cursor position up by one row
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_scroll_up_end - moko_string_scroll_up
- mov rsi, moko_string_scroll_up
- mov word [moko_string_scroll_up.y], r15w
- inc word [moko_string_scroll_up.y] ; start at the next row
- mov word [moko_string_scroll_up.c], r9w ; together with all the others
- sub word [moko_string_scroll_up.c], r15w
+ mov ecx, lulu_string_scroll_up_end - lulu_string_scroll_up
+ mov rsi, lulu_string_scroll_up
+ mov word [lulu_string_scroll_up.y], r15w
+ inc word [lulu_string_scroll_up.y] ; start at the next row
+ mov word [lulu_string_scroll_up.c], r9w ; together with all the others
+ sub word [lulu_string_scroll_up.c], r15w
  int KERNEL_SERVICE
 
  ; clear the last line of the document
- call moko_line_clear_last
+ call lulu_line_clear_last
 
 .key_backspace_last_line:
  ; display the document line matching the last row of the screen space (if there is one) or clear the row
  mov rbx, r9 ; last row of the screen space
  mov rcx, r9
- add rcx, qword [moko_document_show_from_line]
+ add rcx, qword [lulu_document_show_from_line]
  inc rcx ; + removed line
- call moko_line_number
+ call lulu_line_number
 
  ; move the cursor one row up
  dec r15
 
 .key_backspace_first_row:
  ; fetch the properties of the previous line of the document
- call moko_line_previous
+ call lulu_line_previous
 
  ; move the cursor pointer inside the document back to the newline character
  dec r10
 
  ; remove the newline character from the document (join both lines into one)
- call moko_document_remove
+ call lulu_document_remove
 
  ; number of lines in the document
- dec qword [moko_document_line_count]
+ dec qword [lulu_document_line_count]
 
  ; beginning of the document?
- cmp qword [moko_document_show_from_line], STATIC_EMPTY
+ cmp qword [lulu_document_show_from_line], STATIC_EMPTY
  je .key_backspace_end ; yes
 
  ; display the document from the previous line
- dec qword [moko_document_show_from_line]
+ dec qword [lulu_document_show_from_line]
 
 .key_backspace_end:
  ; update the information about the current line
@@ -348,7 +348,7 @@ moko_key:
 
 .key_delete:
  ; end of the document
- cmp r10, qword [moko_document_end_address]
+ cmp r10, qword [lulu_document_end_address]
  je .done ; yes, ignore
 
  ; is the inner line pointer at the end of the line?
@@ -356,7 +356,7 @@ moko_key:
  je .key_delete_end_of_line ; yes
 
  ; remove the next character from the document
- call moko_document_remove
+ call lulu_document_remove
 
  ; decrease the line size by one character
  dec r13
@@ -367,35 +367,35 @@ moko_key:
 .key_delete_end_of_line:
  ; move all the rows below the current cursor position up by one row
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_scroll_up_end - moko_string_scroll_up
- mov rsi, moko_string_scroll_up
- mov word [moko_string_scroll_up.y], r15w
- inc word [moko_string_scroll_up.y] ; start at the next row
- mov word [moko_string_scroll_up.c], r9w ; together with all the others
- sub word [moko_string_scroll_up.c], r15w
+ mov ecx, lulu_string_scroll_up_end - lulu_string_scroll_up
+ mov rsi, lulu_string_scroll_up
+ mov word [lulu_string_scroll_up.y], r15w
+ inc word [lulu_string_scroll_up.y] ; start at the next row
+ mov word [lulu_string_scroll_up.c], r9w ; together with all the others
+ sub word [lulu_string_scroll_up.c], r15w
  int KERNEL_SERVICE
 
  ; clear the last line of the document
- call moko_line_clear_last
+ call lulu_line_clear_last
 
  ; display the document line matching the last row of the screen space (if there is one)
  mov rbx, r9 ; last row of the screen space
  mov rcx, r9
- add rcx, qword [moko_document_show_from_line]
+ add rcx, qword [lulu_document_show_from_line]
  inc rcx ; + removed line
- call moko_line_number
+ call lulu_line_number
 
  ; fetch the information about the next line of the document
- call moko_line_next
+ call lulu_line_next
 
  ; remove the newline character from the document
- call moko_document_remove
+ call lulu_document_remove
 
  ; extend the size of the current line by the size of the next one
  add r13, rcx
 
  ; number of lines in the document
- dec qword [moko_document_line_count]
+ dec qword [lulu_document_line_count]
 
  ; key handled
  jmp .changed
@@ -404,7 +404,7 @@ moko_key:
  ; is the cursor pointer inside the document in the first line?
  mov rax, r10
  sub rax, r11
- cmp rax, qword [moko_document_start_address]
+ cmp rax, qword [lulu_document_start_address]
  je .done ; yes, ignore the key
 
  ; is the current line displayed from its first character?
@@ -413,7 +413,7 @@ moko_key:
 
  ; display the line again, starting at the first character
  xor r12, r12
- call moko_line
+ call lulu_line
 
 .key_arrow_up_first_char:
  ; the cursor is in the first row
@@ -422,14 +422,14 @@ moko_key:
 
  ; move all the document rows down
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_scroll_down_end - moko_string_scroll_down
- mov rsi, moko_string_scroll_down
- mov word [moko_string_scroll_down.y], STATIC_EMPTY ; start at the first row
- mov word [moko_string_scroll_down.c], r9w ; together with all the others
+ mov ecx, lulu_string_scroll_down_end - lulu_string_scroll_down
+ mov rsi, lulu_string_scroll_down
+ mov word [lulu_string_scroll_down.y], STATIC_EMPTY ; start at the first row
+ mov word [lulu_string_scroll_down.c], r9w ; together with all the others
  int KERNEL_SERVICE
 
  ; display the document in the screen space from the previous line
- dec qword [moko_document_show_from_line]
+ dec qword [lulu_document_show_from_line]
 
  ; continue
  jmp .key_arrow_up_first_row
@@ -440,10 +440,10 @@ moko_key:
 
 .key_arrow_up_first_row:
  ; fetch the information about the previous line of the document
- call moko_line_previous
+ call lulu_line_previous
 
  ; set the new properties of the current line
- call moko_line_update
+ call lulu_line_update
 
  ; key handled
  jmp .refresh
@@ -453,7 +453,7 @@ moko_key:
  mov rax, r10
  sub rax, r11
  add rax, r13
- cmp rax, qword [moko_document_end_address]
+ cmp rax, qword [lulu_document_end_address]
  je .done ; yes, ignore
 
  ; is the current line displayed from its first character?
@@ -462,7 +462,7 @@ moko_key:
 
  ; display the line again, starting at the first character
  xor r12, r12
- call moko_line
+ call lulu_line
 
 .key_arrow_down_first_char:
  ; is the cursor in the last row of the document space?
@@ -471,14 +471,14 @@ moko_key:
 
  ; move rows 1..N up by one line
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_scroll_up_end - moko_string_scroll_up
- mov rsi, moko_string_scroll_up
- mov word [moko_string_scroll_up.y], 1 ; start at the first row
- mov word [moko_string_scroll_up.c], r9w ; together with all the others
+ mov ecx, lulu_string_scroll_up_end - lulu_string_scroll_up
+ mov rsi, lulu_string_scroll_up
+ mov word [lulu_string_scroll_up.y], 1 ; start at the first row
+ mov word [lulu_string_scroll_up.c], r9w ; together with all the others
  int KERNEL_SERVICE
 
  ; display the document in the screen space from the next line
- inc qword [moko_document_show_from_line]
+ inc qword [lulu_document_show_from_line]
 
  ; continue
  jmp .key_arrow_down_first_row
@@ -489,17 +489,17 @@ moko_key:
 
 .key_arrow_down_first_row:
  ; fetch the information about the next line of the document
- call moko_line_next
+ call lulu_line_next
 
  ; set the new properties of the current line
- call moko_line_update
+ call lulu_line_update
 
  ; key handled
  jmp .refresh
 
 .key_arrow_left:
  ; is the cursor position pointer inside the document at the beginning of the document?
- cmp r10, qword [moko_document_start_address]
+ cmp r10, qword [lulu_document_start_address]
  je .done ; yes, ignore
 
  ; is the cursor in the first column?
@@ -516,14 +516,14 @@ moko_key:
 
  ; move all the document rows down
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_scroll_down_end - moko_string_scroll_down
- mov rsi, moko_string_scroll_down
- mov word [moko_string_scroll_down.y], STATIC_EMPTY ; start at the first row
- mov word [moko_string_scroll_down.c], r9w ; together with all the others
+ mov ecx, lulu_string_scroll_down_end - lulu_string_scroll_down
+ mov rsi, lulu_string_scroll_down
+ mov word [lulu_string_scroll_down.y], STATIC_EMPTY ; start at the first row
+ mov word [lulu_string_scroll_down.c], r9w ; together with all the others
  int KERNEL_SERVICE
 
  ; display the document from the previous line
- dec qword [moko_document_show_from_line]
+ dec qword [lulu_document_show_from_line]
 
  ; continue as if moving one row up on the screen
  jmp .key_arrow_left_other_row_omit_cursor
@@ -534,7 +534,7 @@ moko_key:
 
 .key_arrow_left_other_row_omit_cursor:
  ; fetch the information about the previous line
- call moko_line_previous
+ call lulu_line_previous
 
  ; update the properties of the current line and the cursor
 
@@ -595,7 +595,7 @@ moko_key:
 
 .key_arrow_right:
  ; is the cursor position pointer inside the document at the end of the document?
- cmp r10, qword [moko_document_end_address]
+ cmp r10, qword [lulu_document_end_address]
  je .done ; yes, ignore
 
  ; is the inner line offset at the end of the line?
@@ -632,7 +632,7 @@ moko_key:
 
  ; display the line from the beginning
  xor r12, r12
- call moko_line
+ call lulu_line
 
 .key_arrow_right_line_visible:
  ; is the cursor in the last row?
@@ -641,14 +641,14 @@ moko_key:
 
  ; move rows 1..N up by one line
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_scroll_up_end - moko_string_scroll_up
- mov rsi, moko_string_scroll_up
- mov word [moko_string_scroll_up.y], 1 ; start at the first row
- mov word [moko_string_scroll_up.c], r9w ; together with all the others
+ mov ecx, lulu_string_scroll_up_end - lulu_string_scroll_up
+ mov rsi, lulu_string_scroll_up
+ mov word [lulu_string_scroll_up.y], 1 ; start at the first row
+ mov word [lulu_string_scroll_up.c], r9w ; together with all the others
  int KERNEL_SERVICE
 
  ; display the document from the next line
- inc qword [moko_document_show_from_line]
+ inc qword [lulu_document_show_from_line]
 
  ; leave the cursor in the current row
  jmp .key_arrow_right_last_row
@@ -659,7 +659,7 @@ moko_key:
 
 .key_arrow_right_last_row:
  ; fetch the properties of the next line of the document
- call moko_line_next
+ call lulu_line_next
 
  ; pointer to the cursor position in the document space
  mov r10, rsi
@@ -726,10 +726,10 @@ moko_key:
  ; insert a newline character into the document at the current pointer position
  mov ax, STATIC_SCANCODE_NEW_LINE
  mov bl, STATIC_FALSE ; do not modify the properties of the current line
- call moko_document_insert
+ call lulu_document_insert
 
  ; the number of lines in the document is increasing
- inc qword [moko_document_line_count]
+ inc qword [lulu_document_line_count]
 
  ; save the information about the remaining line size, if it was cut
  mov rdx, r13
@@ -738,7 +738,7 @@ moko_key:
  ; display the current line again, from its first character
  xor r12, r12 ; from the first character
  sub r13, rdx ; to the first character of the new line
- call moko_line
+ call lulu_line
 
  ; is the cursor in the last row of the screen space?
  cmp r15, r9
@@ -746,14 +746,14 @@ moko_key:
 
  ; move rows 1..N up by one line
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_scroll_up_end - moko_string_scroll_up
- mov rsi, moko_string_scroll_up
- mov word [moko_string_scroll_up.y], 1 ; start at the second row
- mov word [moko_string_scroll_up.c], r9w ; together with all the others
+ mov ecx, lulu_string_scroll_up_end - lulu_string_scroll_up
+ mov rsi, lulu_string_scroll_up
+ mov word [lulu_string_scroll_up.y], 1 ; start at the second row
+ mov word [lulu_string_scroll_up.c], r9w ; together with all the others
  int KERNEL_SERVICE
 
  ; display the document from the next line
- inc qword [moko_document_show_from_line]
+ inc qword [lulu_document_show_from_line]
 
  ; continue
  jmp .key_enter_continue
@@ -764,8 +764,8 @@ moko_key:
 
  ; move the virtual cursor to the next line
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_cursor_to_row_next_end - moko_string_cursor_to_row_next
- mov rsi, moko_string_cursor_to_row_next
+ mov ecx, lulu_string_cursor_to_row_next_end - lulu_string_cursor_to_row_next
+ mov rsi, lulu_string_cursor_to_row_next
  int KERNEL_SERVICE
 
  ; is the virtual cursor on the last line of the document on the screen?
@@ -774,11 +774,11 @@ moko_key:
 
  ; move the remaining rows of the document down
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_scroll_down_end - moko_string_scroll_down
- mov rsi, moko_string_scroll_down
- mov word [moko_string_scroll_down.y], r15w ; start at the second row
- mov word [moko_string_scroll_down.c], r9w ; together with all the others
- sub word [moko_string_scroll_down.c], r15w
+ mov ecx, lulu_string_scroll_down_end - lulu_string_scroll_down
+ mov rsi, lulu_string_scroll_down
+ mov word [lulu_string_scroll_down.y], r15w ; start at the second row
+ mov word [lulu_string_scroll_down.c], r9w ; together with all the others
+ sub word [lulu_string_scroll_down.c], r15w
  int KERNEL_SERVICE
 
 .key_enter_continue:
@@ -805,30 +805,30 @@ moko_key:
 
 .ctrl:
  ; raise the flag
- mov byte [moko_key_ctrl_semaphore], STATIC_TRUE
+ mov byte [lulu_key_ctrl_semaphore], STATIC_TRUE
  jmp .end ; key handled
 
 .ctrl_release:
  ; clear the flag
- mov byte [moko_key_ctrl_semaphore], STATIC_FALSE
+ mov byte [lulu_key_ctrl_semaphore], STATIC_FALSE
  jmp .end ; key handled
 
 .insert:
  ; change the flag state
 
  ; flag raised?
- cmp byte [moko_key_insert_semaphore], STATIC_FALSE
+ cmp byte [lulu_key_insert_semaphore], STATIC_FALSE
  je .insert_no ; no
 
  ; clear the flag
- mov byte [moko_key_insert_semaphore], STATIC_FALSE
+ mov byte [lulu_key_insert_semaphore], STATIC_FALSE
 
  ; end of the key handling
- jmp moko_key.done
+ jmp lulu_key.done
 
 .insert_no:
  ; raise the flag
- mov byte [moko_key_insert_semaphore], STATIC_TRUE
+ mov byte [lulu_key_insert_semaphore], STATIC_TRUE
 
  ; end of the key handling
- jmp moko_key.done
+ jmp lulu_key.done

@@ -1,5 +1,5 @@
 
-moko_line_clear_last:
+lulu_line_clear_last:
  ; save the original registers
  push rax
  push rcx
@@ -7,15 +7,15 @@ moko_line_clear_last:
 
  ; set the cursor to the last line of the document
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_document_cursor_end - moko_string_document_cursor
- mov rsi, moko_string_document_cursor
- mov word [moko_string_document_cursor.x], STATIC_EMPTY
- mov word [moko_string_document_cursor.y], r9w
+ mov ecx, lulu_string_document_cursor_end - lulu_string_document_cursor
+ mov rsi, lulu_string_document_cursor
+ mov word [lulu_string_document_cursor.x], STATIC_EMPTY
+ mov word [lulu_string_document_cursor.y], r9w
  int KERNEL_SERVICE
 
  ; clear
- mov ecx, moko_string_line_clean_end - moko_string_line_clean
- mov rsi, moko_string_line_clean
+ mov ecx, lulu_string_line_clean_end - lulu_string_line_clean
+ mov rsi, lulu_string_line_clean
  int KERNEL_SERVICE
 
  ; restore the original registers
@@ -32,14 +32,14 @@ moko_line_clear_last:
 ;	CF flag if error
 ;	rcx - size of the document line
 ;	rsi - pointer to the beginning of the line
-moko_line_this:
+lulu_line_this:
  ; save the original registers
  push rax
  push rcx
  push rsi
 
  ; set the pointer to the beginning of the document space
- mov rsi, qword [moko_document_start_address]
+ mov rsi, qword [lulu_document_start_address]
 
  ; fetch the information about the first line of the document?
  test rcx, rcx
@@ -47,7 +47,7 @@ moko_line_this:
 
 .search:
  ; end of the document?
- cmp rsi, qword [moko_document_end_address]
+ cmp rsi, qword [lulu_document_end_address]
  je .error ; the given line was not found in the document
 
  ; fetch the first character of the line
@@ -67,7 +67,7 @@ moko_line_this:
 
 .length:
  ; end of the document?
- cmp rsi, qword [moko_document_end_address]
+ cmp rsi, qword [lulu_document_end_address]
  je .ready ; the line size has been determined
 
  ; look for the end of line character
@@ -108,7 +108,7 @@ moko_line_this:
 ; entry:
 ;	rbx - row number on the screen
 ;	rcx - number of the document line to display
-moko_line_number:
+lulu_line_number:
  ; save the original registers
  push rax
  push rcx
@@ -120,7 +120,7 @@ moko_line_number:
  push r15
 
  ; fetch the information about the given line
- call moko_line_this
+ call lulu_line_this
  jc .end ; no information about the given line
 
  ; set the properties of the previous line
@@ -131,7 +131,7 @@ moko_line_number:
  mov r15, rbx ; in the line provided for it
 
  ; display
- call moko_line
+ call lulu_line
 
 .end:
  ; restore the original registers
@@ -150,7 +150,7 @@ moko_line_number:
 ; entry:
 ;	rcx - size of the examined line
 ;	rsi - pointer to the beginning of the examined line
-moko_line_update:
+lulu_line_update:
  ; pointer to the cursor position in the document space
  mov r10, rsi
 
@@ -158,7 +158,7 @@ moko_line_update:
  mov r13, rcx
 
  ; is the last used column number within the size range of the current line?
- cmp qword [moko_document_line_index_last], r13
+ cmp qword [lulu_document_line_index_last], r13
  jbe .in_line ; yes
 
  ; set the inner document pointer to the end of the line
@@ -178,8 +178,8 @@ moko_line_update:
 
 .in_line:
  ; display the line based on the last known properties
- mov r11, qword [moko_document_line_index_last]
- mov r12, qword [moko_document_line_begin_last]
+ mov r11, qword [lulu_document_line_index_last]
+ mov r12, qword [lulu_document_line_begin_last]
 
  ; set the inner document pointer to the position
  add r10, r11
@@ -203,7 +203,7 @@ moko_line_update:
 ;	CF flag, if the beginning of the document
 ;	rcx - size of the previous line
 ;	rsi - pointer to the beginning of the previous line in the document
-moko_line_previous:
+lulu_line_previous:
  ; save the original registers
  push rsi
 
@@ -212,7 +212,7 @@ moko_line_previous:
  sub rsi, r11
 
  ; beginning of the document?
- cmp rsi, qword [moko_document_start_address]
+ cmp rsi, qword [lulu_document_start_address]
  ja .ok ; no
 
  ; flag, error
@@ -230,7 +230,7 @@ moko_line_previous:
 
 .loop:
  ; beginning of the document?
- cmp rsi, qword [moko_document_start_address]
+ cmp rsi, qword [lulu_document_start_address]
  je .found ; yes
 
  ; end of the previous line?
@@ -244,7 +244,7 @@ moko_line_previous:
  dec rsi
 
  ; end of the document?
- cmp rsi, qword [moko_document_start_address]
+ cmp rsi, qword [lulu_document_start_address]
  jne .loop ; no
 
 .found:
@@ -262,7 +262,7 @@ moko_line_previous:
 ;	CF flag - if end of the document
 ;	rcx - line size in characters
 ;	rsi - pointer to the beginning of the next line
-moko_line_next:
+lulu_line_next:
  ; save the original registers
  push rsi
 
@@ -272,7 +272,7 @@ moko_line_next:
  add rsi, r13
 
  ; end of the document?
- cmp rsi, qword [moko_document_end_address]
+ cmp rsi, qword [lulu_document_end_address]
  jb .ok ; no
 
  ; flag, error
@@ -290,7 +290,7 @@ moko_line_next:
 
 .loop:
  ; end of the document?
- cmp rsi, qword [moko_document_end_address]
+ cmp rsi, qword [lulu_document_end_address]
  je .found ; yes
 
  ; end of the next line?
@@ -320,7 +320,7 @@ moko_line_next:
  ; return from the procedure
  ret
 
-moko_line:
+lulu_line:
  ; save the original registers
  push rax
  push rcx
@@ -329,10 +329,10 @@ moko_line:
 
  ; set the cursor to the beginning of the current row of the character space
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_document_cursor_end - moko_string_document_cursor
- mov rsi, moko_string_document_cursor
- mov word [moko_string_document_cursor.x], STATIC_EMPTY
- mov word [moko_string_document_cursor.y], r15w
+ mov ecx, lulu_string_document_cursor_end - lulu_string_document_cursor
+ mov rsi, lulu_string_document_cursor
+ mov word [lulu_string_document_cursor.x], STATIC_EMPTY
+ mov word [lulu_string_document_cursor.y], r15w
  int KERNEL_SERVICE
 
  ; set the pointer to the beginning/fragment of the line to display
@@ -373,10 +373,10 @@ moko_line:
 .no:
  ; set the cursor to the position
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_document_cursor_end - moko_string_document_cursor
- mov rsi, moko_string_document_cursor
- mov word [moko_string_document_cursor.x], r14w
- mov word [moko_string_document_cursor.y], r15w
+ mov ecx, lulu_string_document_cursor_end - lulu_string_document_cursor
+ mov rsi, lulu_string_document_cursor
+ mov word [lulu_string_document_cursor.x], r14w
+ mov word [lulu_string_document_cursor.y], r15w
  int KERNEL_SERVICE
 
  ; restore the original registers

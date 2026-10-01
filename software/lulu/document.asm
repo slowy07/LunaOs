@@ -2,13 +2,13 @@
 ; entry:
 ;	rcx - size of the document in bytes
 ;	rdi - pointer to the beginning of the document
-moko_document_analyze:
+lulu_document_analyze:
  ; reset the local and global variables to their default values
- mov qword [moko_document_show_from_line], STATIC_EMPTY
- mov qword [moko_document_line_begin_last], STATIC_EMPTY
- mov qword [moko_document_line_index_last], STATIC_EMPTY
- mov qword [moko_document_line_count], STATIC_EMPTY
- mov r10, qword [moko_document_start_address]
+ mov qword [lulu_document_show_from_line], STATIC_EMPTY
+ mov qword [lulu_document_line_begin_last], STATIC_EMPTY
+ mov qword [lulu_document_line_index_last], STATIC_EMPTY
+ mov qword [lulu_document_line_count], STATIC_EMPTY
+ mov r10, qword [lulu_document_start_address]
  xor r11, r11
  xor r12, r12
  xor r14, r14
@@ -16,18 +16,18 @@ moko_document_analyze:
 
  ; remove the "caret" characters from the document, Moko does not handle them by default
  mov rsi, rdi
- call moko_document_enter_remove
+ call lulu_document_enter_remove
 
  ; set the size of the document in bytes
- mov qword [moko_document_size], rcx
+ mov qword [lulu_document_size], rcx
 
  ; save the pointer to the end of the document
  add rdi, rcx
- mov qword [moko_document_end_address], rdi
+ mov qword [lulu_document_end_address], rdi
 
  ; fetch the information about the first line of the document
  xor ecx, ecx
- call moko_line_this
+ call lulu_line_this
  jc .end ; empty document
 
  ; size of the current line in characters
@@ -35,7 +35,7 @@ moko_document_analyze:
 
  ; move the pointer past the first line of the document
  add rsi, r13
- mov rcx, qword [moko_document_size]
+ mov rcx, qword [lulu_document_size]
  sub rcx, r13
 
 .loop:
@@ -48,7 +48,7 @@ moko_document_analyze:
  jne .next ; next
 
  ; end of line found
- inc qword [moko_document_line_count]
+ inc qword [lulu_document_line_count]
 
 .next:
  ; next character from the document
@@ -65,7 +65,7 @@ moko_document_analyze:
 ; entry:
 ;	rcx - size of the document in bytes
 ;	rsi - pointer to the beginning of the document
-moko_document_enter_remove:
+lulu_document_enter_remove:
  ; save the original registers
  push rsi
  push rdi
@@ -113,7 +113,7 @@ moko_document_enter_remove:
  ; return from the procedure
  ret
 
-moko_document_reload:
+lulu_document_reload:
  ; save the original registers
  push rax
  push rbx
@@ -122,7 +122,7 @@ moko_document_reload:
 
  ; start the document at the given lines
  xor ebx, ebx
- mov rcx, qword [moko_document_show_from_line]
+ mov rcx, qword [lulu_document_show_from_line]
 
  ; start
  jmp .init
@@ -134,7 +134,7 @@ moko_document_reload:
 
 .init:
  ; display the "first" line of the document
- call moko_line_number
+ call lulu_line_number
  jc .ready ; the remaining document lines have been displayed
 
  ; end of the document space?
@@ -144,8 +144,8 @@ moko_document_reload:
 .ready:
  ; clear the next lines of the document
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_line_clean_next_end - moko_string_line_clean_next
- mov rsi, moko_string_line_clean_next
+ mov ecx, lulu_string_line_clean_next_end - lulu_string_line_clean_next
+ mov rsi, lulu_string_line_clean_next
 
 .clean:
  ; have the remaining document lines been cleared?
@@ -171,7 +171,7 @@ moko_document_reload:
  ; return from the procedure
  ret
 
-moko_document_remove:
+lulu_document_remove:
  ; save the original registers
  push rcx
  push rsi
@@ -179,8 +179,8 @@ moko_document_remove:
 
  ; number of characters to shift
  mov rdi, r10
- sub rdi, qword [moko_document_start_address]
- mov rcx, qword [moko_document_size]
+ sub rdi, qword [lulu_document_start_address]
+ mov rcx, qword [lulu_document_size]
  sub rcx, rdi
 
  ; start in
@@ -192,13 +192,13 @@ moko_document_remove:
  rep movsb
 
  ; the number of characters in the document has decreased
- dec qword [moko_document_size]
+ dec qword [lulu_document_size]
 
  ; move the end of the document pointer
- dec qword [moko_document_end_address]
+ dec qword [lulu_document_end_address]
 
  ; the document status has been modified
- mov byte [moko_modified_semaphore], STATIC_TRUE
+ mov byte [lulu_modified_semaphore], STATIC_TRUE
 
  ; restore the original registers
  pop rdi
@@ -213,7 +213,7 @@ moko_document_remove:
 ;	bl - updating the global variables == STATIC_EMPTY
 ; exit:
 ;	CF flag - if the character is not printable
-moko_document_insert:
+lulu_document_insert:
  ; save the original registers
  push rbx
  push rcx
@@ -221,7 +221,7 @@ moko_document_insert:
  push rdi
 
  ; insert a character at the end of the document?
- cmp r10, qword [moko_document_end_address]
+ cmp r10, qword [lulu_document_end_address]
  je .at_end_of_document ; yes
 
  ; are we inserting a newline character?
@@ -229,7 +229,7 @@ moko_document_insert:
  je .no_insert_key ; ignore the insert key
 
  ; is the Insert key active?
- cmp byte [moko_key_insert_semaphore], STATIC_FALSE
+ cmp byte [lulu_key_insert_semaphore], STATIC_FALSE
  je .no_insert_key ; no
 
  ; is there a newline character at this position now?
@@ -246,11 +246,11 @@ moko_document_insert:
  ; move the document contents one character forward relative to the pointer
 
  ; number of characters to move
- mov rcx, qword [moko_document_end_address]
+ mov rcx, qword [lulu_document_end_address]
  sub rcx, r10
 
  ; start from the last character in the document
- mov rdi, qword [moko_document_end_address]
+ mov rdi, qword [lulu_document_end_address]
  mov rsi, rdi
  dec rsi
 
@@ -264,10 +264,10 @@ moko_document_insert:
  mov byte [r10], al
 
  ; number of characters in the document + 1
- inc qword [moko_document_size]
+ inc qword [lulu_document_size]
 
  ; set the end of the document pointer one position further
- inc qword [moko_document_end_address]
+ inc qword [lulu_document_end_address]
 
  ; do not modify the line size?
  test bl, bl
@@ -291,7 +291,7 @@ moko_document_insert:
  inc r11
 
  ; save the last known inner line position pointer
- mov qword [moko_document_line_index_last], r11
+ mov qword [lulu_document_line_index_last], r11
 
  ; has the cursor gone off screen?
  cmp r14, r8
@@ -304,11 +304,11 @@ moko_document_insert:
  inc r12
 
  ; save the last known pointer to the beginning of the displayed line
- mov qword [moko_document_line_begin_last], r12
+ mov qword [lulu_document_line_begin_last], r12
 
 .end:
  ; the document status has been modified
- mov byte [moko_modified_semaphore], STATIC_TRUE
+ mov byte [lulu_modified_semaphore], STATIC_TRUE
 
  ; restore the original registers
  pop rdi
@@ -322,7 +322,7 @@ moko_document_insert:
 ; entry:
 ;	rcx - size of the argument list in bytes
 ;	rsi - pointer to the argument string
-moko_document_area:
+lulu_document_area:
  ; save the original registers
  push rax
  push rbx
@@ -333,7 +333,7 @@ moko_document_area:
  ; fetch the output stream information
  mov ax, KERNEL_SERVICE_PROCESS_stream_meta
  mov bl, KERNEL_SERVICE_PROCESS_STREAM_META_FLAG_get | KERNEL_SERVICE_PROCESS_STREAM_META_FLAG_out
- mov rdi, moko_stream_meta
+ mov rdi, lulu_stream_meta
  int KERNEL_SERVICE
  jc .retry ; no current information, try once more
 
@@ -343,27 +343,27 @@ moko_document_area:
  movzx r9, word [rdi + CONSOLE_STRUCTURE_STREAM_META.height]
 
  ; shrink the document space by the menu and turn the value into a zero based one
- sub r9, MOKO_MENU_HEIGHT_char + STATIC_BYTE_SIZE_byte
+ sub r9, LULU_MENU_HEIGHT_char + STATIC_BYTE_SIZE_byte
 
  ; were the arguments passed?
  test rcx, rcx
  jz .no_args ; no
 
  ; load and process the contents of the file
- call moko_document_format
+ call lulu_document_format
  jnc .end ; executed correctly
 
 .no_args:
  ; prepare room for an empty document (4 KiB by default, about 4000 characters)
  mov ax, KERNEL_SERVICE_PROCESS_memory_alloc
- mov rcx, MOKO_DOCUMENT_AREA_SIZE_default
+ mov rcx, LULU_DOCUMENT_AREA_SIZE_default
  int KERNEL_SERVICE
- jc moko.end ; not enough memory
+ jc lulu.end ; not enough memory
 
 .set_up:
  ; update the properties of the document
- mov qword [moko_document_start_address], rdi
- mov qword [moko_document_end_address], rdi
+ mov qword [lulu_document_start_address], rdi
+ mov qword [lulu_document_end_address], rdi
 
  ; update the cursor positions inside the document
  mov r10, rdi
@@ -382,7 +382,7 @@ moko_document_area:
 ;	CF flag - if no new document was processed
 ;	rcx - number of characters in the string
 ;	rsi - pointer to the string
-moko_document_format:
+lulu_document_format:
  ; save the original registers
  push rax
  push rcx
@@ -411,10 +411,10 @@ moko_document_format:
  jc .end ; file not found or it could not be loaded
 
  ; save the size of the loaded document
- mov qword [moko_document_size], rcx
+ mov qword [lulu_document_size], rcx
 
  ; swap the document pointer
- xchg qword [moko_document_start_address], rdi
+ xchg qword [lulu_document_start_address], rdi
 
  ; free the space of the old document?
  test rdi, rdi
@@ -434,22 +434,22 @@ moko_document_format:
 
 .no:
  ; analyse the contents of the document
- mov rcx, qword [moko_document_size]
- mov rdi, qword [moko_document_start_address]
- call moko_document_analyze
+ mov rcx, qword [lulu_document_size]
+ mov rdi, qword [lulu_document_start_address]
+ call lulu_document_analyze
 
  ; display the document contents
- call moko_document_reload
+ call lulu_document_reload
 
  ; set the cursor to the beginning of the document
  mov ax, KERNEL_SERVICE_PROCESS_stream_out
- mov ecx, moko_string_document_cursor_end - moko_string_document_cursor
- mov rsi, moko_string_document_cursor
- mov dword [moko_string_document_cursor.joint], STATIC_EMPTY
+ mov ecx, lulu_string_document_cursor_end - lulu_string_document_cursor
+ mov rsi, lulu_string_document_cursor
+ mov dword [lulu_string_document_cursor.joint], STATIC_EMPTY
  int KERNEL_SERVICE
 
  ; remember the information about displaying the message
- mov byte [moko_status_semaphore], STATIC_TRUE
+ mov byte [lulu_status_semaphore], STATIC_TRUE
 
 .end:
  ; restore the original registers
